@@ -25,21 +25,39 @@ async def discover_bestsellers(category_slug: str, pages: int = 2) -> List[Dict[
                 response.raise_for_status()
                 
                 tree = HTMLParser(response.text)
-                for item in tree.css(".zg-grid-general-faceout"):
+                for item in tree.css(".zg-grid-general-faceout, .zg-item-immersion, .a-carousel-card"):
                     link_tag = item.css_first("a.a-link-normal")
                     if link_tag:
                         href = link_tag.attributes.get("href", "")
                         match = ASIN_REGEX.search(href)
                         if match:
                             asin = match.group(1)
-                            title_tag = link_tag.css_first("div")
-                            title = title_tag.text(strip=True) if title_tag else ""
+                            title = ""
+                            for t_sel in [
+                                "[class*='p13n-sc-css-line-clamp']",
+                                "div._cDEzb_p13n-sc-css-line-clamp-2_EWgCb",
+                                "div._cDEzb_p13n-sc-css-line-clamp-1_1Fn1y",
+                                ".p13n-sc-truncate-desktop-type2",
+                                "a.a-link-normal span",
+                                "img[alt]"
+                            ]:
+                                t_node = item.css_first(t_sel)
+                                if t_node:
+                                    title = t_node.attributes.get("alt") if t_node.tag == "img" else t_node.text(strip=True)
+                                    if title:
+                                        break
+
+                            # Image URL
+                            img_node = item.css_first("img")
+                            image_url = img_node.attributes.get("src", "") if img_node else ""
+
                             results.append({
                                 "platform": "amazon",
                                 "platform_id": asin,
                                 "product_url": f"https://www.amazon.in/dp/{asin}",
                                 "affiliate_url": build_affiliate_url(asin),
-                                "title": title
+                                "title": title,
+                                "image_url": image_url
                             })
             except Exception as e:
                 logger.error(f"Error scraping Amazon bestsellers {category_slug} page {page}: {e}")

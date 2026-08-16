@@ -154,9 +154,11 @@ async def upsert_product(data: dict) -> int:
 
 async def update_price(product_id: int, new_price: float, in_stock: bool,
                         has_coupon: bool = False, coupon_value: float = 0,
-                        has_bank_offer: bool = False, bank_offer_text: str = None):
+                        has_bank_offer: bool = False, bank_offer_text: str = None,
+                        title: str = None, mrp: float = None, rating: float = None,
+                        review_count: int = None, image_url: str = None, brand: str = None):
     """
-    Update a product's live price snapshot and upsert today's daily price.
+    Update a product's live price snapshot and product details (title, mrp, rating, etc.).
     Also updates min benchmarks and all_time_low.
     """
     await execute("""
@@ -168,6 +170,12 @@ async def update_price(product_id: int, new_price: float, in_stock: bool,
             coupon_value = $5,
             has_bank_offer = $6,
             bank_offer_text = $7,
+            title = CASE WHEN $8 IS NOT NULL AND $8 != '' THEN $8 ELSE title END,
+            mrp = COALESCE($9, mrp),
+            rating = COALESCE($10, rating),
+            review_count = COALESCE($11, review_count),
+            image_url = CASE WHEN $12 IS NOT NULL AND $12 != '' THEN $12 ELSE image_url END,
+            brand = CASE WHEN $13 IS NOT NULL AND $13 != '' THEN $13 ELSE brand END,
             last_checked = NOW(),
             last_price_change = CASE
                 WHEN current_price IS DISTINCT FROM $2 THEN NOW()
@@ -176,7 +184,8 @@ async def update_price(product_id: int, new_price: float, in_stock: bool,
             all_time_low = LEAST(all_time_low, $2)
         WHERE id = $1
     """, product_id, new_price, in_stock, has_coupon, coupon_value,
-         has_bank_offer, bank_offer_text)
+         has_bank_offer, bank_offer_text, title, mrp, rating,
+         review_count, image_url, brand)
 
 
 async def upsert_daily_price(product_id: int, price: float):
