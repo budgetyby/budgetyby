@@ -24,7 +24,7 @@ DB_USER = os.getenv("DB_USER", "budgetby")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_SSL = os.getenv("DB_SSL", "require" if os.getenv("DB_HOST", "localhost") != "localhost" else None)
 
-AMAZON_ASSOCIATE_TAG = os.getenv("AMAZON_ASSOCIATE_TAG", "budgetby-21")
+AMAZON_ASSOCIATE_TAG = os.getenv("AMAZON_ASSOCIATE_TAG", "dealpulse21-21")
 EARNKARO_API_KEY = os.getenv("EARNKARO_API_KEY", "")
 
 # ════════════════════════════════════════════════════════════════════════
