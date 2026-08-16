@@ -42,6 +42,7 @@ async def init_pool() -> asyncpg.Pool:
         "min_size": 2,
         "max_size": 10,
         "command_timeout": 30,
+        "statement_cache_size": 0,
     }
     if config.DB_SSL:
         pool_kwargs["ssl"] = ctx
