@@ -63,15 +63,12 @@ async def main():
 
     await cleanup.catchup_scan()
     
-    # Auto-seed all categories in background on startup if catalog is small
+    # Auto-seed all categories in continuous bootstrap loop until 15,000 products reached
     async def auto_seed_if_needed():
         try:
-            total_prods = await database.fetchval("SELECT COUNT(*) FROM products") or 0
-            if total_prods < 10000:
-                logger.info(f"Catalog has {total_prods} products (< 10,000). Starting autonomous bootstrap discovery across all categories...")
-                from budgetby.discovery.seeder import ProductSeeder
-                seeder = ProductSeeder()
-                await seeder.run_full_discovery()
+            from budgetby.discovery.seeder import ProductSeeder
+            seeder = ProductSeeder()
+            await seeder.run_bootstrap_until_target(target_count=15000)
         except Exception as e:
             logger.error(f"Error in auto_seed_if_needed: {e}")
 

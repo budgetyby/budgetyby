@@ -1,5 +1,5 @@
 """
-Amazon discovery engine.
+Amazon discovery engine with massive keyword matrix for scaling to 15k+ products.
 """
 import logging
 import re
@@ -16,18 +16,74 @@ logger = logging.getLogger("budgetby.discovery.amazon")
 ASIN_REGEX = re.compile(r'/dp/([A-Z0-9]{10})')
 
 AMAZON_CATEGORY_KEYWORDS = {
-    "electronics": ["wireless earbuds", "bluetooth speaker", "smart watch", "headphones", "power bank", "soundbar", "fast charger"],
-    "computers": ["gaming laptop", "ssd 1tb", "wireless mouse", "mechanical keyboard", "computer monitor", "laptop stand"],
-    "smartphones": ["5g mobile phone", "iphone 15", "oneplus 12", "samsung galaxy phone", "redmi mobile"],
-    "appliances": ["air fryer", "mixer grinder", "water purifier", "microwave oven", "vacuum cleaner", "refrigerator"],
-    "home": ["cookware set", "bedsheets king size", "water bottle steel", "office chair", "curtains for door", "wall clock"],
-    "apparel": ["men t-shirt", "women kurti", "jeans men", "dresses for women", "track pants", "formal shirts"],
-    "shoes": ["running shoes men", "sneakers women", "formal shoes men", "sandals for men", "walking shoes"],
-    "watches": ["casio watch", "titan watch", "fastrack watch", "smart watch men", "fossil watch", "timex watch"],
-    "beauty": ["face wash", "sunscreen spf 50", "body lotion", "perfume men", "shampoo for hair fall", "serum for face"],
-    "sports": ["badminton racket", "dumbbells set", "yoga mat", "cricket kit", "resistance bands", "treadmill"],
-    "toys": ["lego sets", "rc car", "board games", "action figures", "educational toys for kids"],
-    "automotive": ["car dash camera", "tyre inflator", "car vacuum cleaner", "bike helmet", "car pressure washer"],
+    "electronics": [
+        "wireless earbuds", "bluetooth speaker", "smart watch", "headphones", "power bank", "soundbar", "fast charger",
+        "boat airdopes", "noise earbuds", "sony headphones", "jbl speaker", "boult audio", "realme buds", "oneplus bullets",
+        "apple airpods", "sennheiser", "skullcandy", "marshall speaker", "zebronics soundbar", "portronics power bank",
+        "ambrane power bank", "wireless charger", "ring light with stand", "gimbal for smartphone", "action camera 4k",
+        "tripod for mobile", "bluetooth audio transmitter", "usb c hub"
+    ],
+    "computers": [
+        "gaming laptop", "ssd 1tb", "wireless mouse", "mechanical keyboard", "computer monitor", "laptop stand",
+        "hp victus laptop", "asus tuf gaming", "lenovo ideapad", "dell laptop i5", "macbook air", "samsung ssd 1tb",
+        "crucial ssd 500gb", "sandisk pendrive 128gb", "logitech wireless keyboard", "razer mouse", "ergonomic mouse",
+        "gaming chair", "24 inch ips monitor", "27 inch 144hz monitor", "mechanical keyboard red switch", "laptop cooling pad",
+        "wifi 6 router", "drawing tablet with pen"
+    ],
+    "smartphones": [
+        "5g mobile phone", "iphone 15", "iphone 14", "oneplus 12", "oneplus nord ce", "samsung galaxy s24", "samsung m34 5g",
+        "redmi note 13 pro", "realme 12 pro", "iqoo z9 5g", "poco x6 pro", "motorola edge 50", "mobile back cover",
+        "tempered glass 9d", "car phone mount", "magsafe power bank"
+    ],
+    "appliances": [
+        "air fryer", "mixer grinder", "water purifier", "microwave oven", "vacuum cleaner", "refrigerator",
+        "philips air fryer", "prestige pressure cooker", "pigeon mixer grinder 750w", "kent ro water purifier",
+        "morphy richards oven toaster grill", "induction cooktop 2000w", "sandwich maker grill", "electric kettle 1.8l stainless steel",
+        "cold press juicer", "hand blender with chopper", "food processor multi purpose", "steam iron 2000w", "robot vacuum mop"
+    ],
+    "home": [
+        "cookware set non stick", "bedsheets king size cotton", "water bottle steel insulated", "office chair ergonomic",
+        "curtains for door 7 feet", "wall clock modern", "sleepwell mattress", "wakefit orthopaedic mattress",
+        "cast iron kadai", "milton thermosteel flask", "borosil glass storage containers", "dinner set 32 piece",
+        "chef knife set", "blackout curtains", "study table foldable", "led strip lights rgb", "water geyser 25 litre"
+    ],
+    "apparel": [
+        "men t-shirt cotton", "women kurti set with dupatta", "jeans men slim fit", "dresses for women western",
+        "track pants men", "formal shirts for men", "levi's jeans men", "pepe jeans", "us polo assn polo t shirt",
+        "tommy hilfiger shirt", "allen solly formal shirt", "van heusen trousers", "biba women kurta", "libas silk saree",
+        "aurelia women ethnic set", "monte carlo jacket men", "jockey track pants"
+    ],
+    "shoes": [
+        "running shoes men", "sneakers women white", "formal shoes men leather", "sandals for men leather", "walking shoes breathable",
+        "nike running shoes men", "adidas sneakers men", "puma court shoes", "woodland boots leather", "skechers walking shoes d lites",
+        "red tape sneakers", "asics gel running shoes", "crocs clogs unisex", "bata formal shoes"
+    ],
+    "watches": [
+        "casio vintage digital watch", "casio edifice analog", "titan octane chronograph", "fastrack reflex smartwatch",
+        "fossil gen 6 smartwatch", "timex analog watch men", "fossil grant watch", "g shock tough solar watch",
+        "citizen eco drive", "sonata men analog watch", "daniel wellington watch women", "noise smart watch amoled"
+    ],
+    "beauty": [
+        "minimalist 10% niacinamide serum", "the derma co 1% hyaluronic sunscreen", "cetaphil gentle skin cleanser",
+        "dot and key vitamin c moisturizer", "plum green tea toner", "mamaearth onion hair oil", "l'oreal paris professional shampoo",
+        "philips beard trimmer series 3000", "beardo hair styling wax", "bombay shaving company razor", "bellavita perfume combo pack",
+        "villain perfume hydra", "skinn by titan perfume raw", "maybelline liquid lipstick", "neutrogena hydro boost water gel"
+    ],
+    "sports": [
+        "yonex nanoray badminton racket", "lining windstorm badminton racket", "nivia football size 5 storm", "sg cricket bat english willow",
+        "boldfit resistance bands set", "kore dumbbells 20kg combo set", "strauss yoga mat 6mm with carry bag", "fitkit treadmill motorised for home",
+        "gym shaker bottle stainless steel", "whey protein isolate 1kg", "creatine monohydrate micronized", "cycling helmet adult isi"
+    ],
+    "toys": [
+        "lego classic creative bricks", "hot wheels 5 car pack original", "nerf elite blaster gun", "monopoly board game classic",
+        "uno card game original", "barbie doll set with accessories", "rubiks cube 3x3 magnetic speedcube", "remote control drone with hd camera",
+        "stem educational science kit for kids", "rc rock crawler monster truck 4wd"
+    ],
+    "automotive": [
+        "70mai dash cam pro plus", "qubo car dashcam front and rear", "tusa tyre inflator 12v digital", "bergmann car vacuum cleaner high power",
+        "solimo microfiber cloth 800 gsm", "formula 1 car wax liquid polish", "vega cliff helmet isi certified", "studds ninja 3g flip up helmet",
+        "motul chain cleaner and lube combo", "pressure washer 1800w for car washing"
+    ],
 }
 
 async def _parse_amazon_listing(tree: HTMLParser) -> List[Dict[str, Any]]:
@@ -39,7 +95,6 @@ async def _parse_amazon_listing(tree: HTMLParser) -> List[Dict[str, Any]]:
         href = link_tag.attributes.get("href", "")
         match = ASIN_REGEX.search(href)
         if not match:
-            # Also check data-asin
             data_asin = item.attributes.get("data-asin")
             if data_asin and len(data_asin) == 10:
                 asin = data_asin
@@ -84,7 +139,7 @@ async def _parse_amazon_listing(tree: HTMLParser) -> List[Dict[str, Any]]:
         })
     return results
 
-async def discover_bestsellers(category_slug: str, pages: int = 2) -> List[Dict[str, Any]]:
+async def discover_bestsellers(category_slug: str, pages: int = 3) -> List[Dict[str, Any]]:
     results = []
     async with AsyncSession(impersonate="chrome", timeout=config.SCRAPER_TIMEOUT) as session:
         for page in range(1, pages + 1):
@@ -146,7 +201,7 @@ async def discover_movers_and_shakers(category_slug: str) -> List[Dict[str, Any]
             logger.error(f"Error scraping Amazon movers {category_slug}: {e}")
     return results
 
-async def discover_search_keywords(keyword: str, pages: int = 2) -> List[Dict[str, Any]]:
+async def discover_search_keywords(keyword: str, pages: int = 3) -> List[Dict[str, Any]]:
     results = []
     async with AsyncSession(impersonate="chrome", timeout=config.SCRAPER_TIMEOUT) as session:
         for page in range(1, pages + 1):
