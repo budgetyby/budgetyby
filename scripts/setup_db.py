@@ -24,7 +24,6 @@ CREATE TABLE IF NOT EXISTS products (
     platform_id         VARCHAR(50) NOT NULL,
     title               TEXT NOT NULL,
     category            VARCHAR(50),
-    brand               VARCHAR(100),
     product_url         TEXT NOT NULL,
     affiliate_url       TEXT NOT NULL,
     image_url           TEXT,

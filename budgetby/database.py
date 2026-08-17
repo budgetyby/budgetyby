@@ -128,17 +128,16 @@ async def upsert_product(data: dict) -> int:
         title = f"{str(data.get('platform', '')).capitalize()} Item {data.get('platform_id', '')}"
 
     row = await fetchrow("""
-        INSERT INTO products (platform, platform_id, title, category, brand,
+        INSERT INTO products (platform, platform_id, title, category,
                               product_url, affiliate_url, image_url,
                               current_price, mrp, rating, review_count,
                               in_stock, is_renewed, status, priority_tier,
                               last_checked, next_check, all_time_low)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
-                $13, $14, $15, $16, NOW(), NOW(), $9)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
+                $12, $13, $14, $15, NOW(), NOW(), $8)
         ON CONFLICT (platform, platform_id) DO UPDATE SET
             title = COALESCE(EXCLUDED.title, products.title),
             category = COALESCE(EXCLUDED.category, products.category),
-            brand = COALESCE(EXCLUDED.brand, products.brand),
             image_url = COALESCE(EXCLUDED.image_url, products.image_url),
             affiliate_url = EXCLUDED.affiliate_url,
             last_checked = NOW()
@@ -148,7 +147,6 @@ async def upsert_product(data: dict) -> int:
         data.get("platform_id"),
         title,
         data.get("category"),
-        data.get("brand"),
         data.get("product_url"),
         data.get("affiliate_url"),
         data.get("image_url"),
@@ -168,7 +166,7 @@ async def update_price(product_id: int, new_price: float, in_stock: bool,
                         has_coupon: bool = False, coupon_value: float = 0,
                         has_bank_offer: bool = False, bank_offer_text: str = None,
                         title: str = None, mrp: float = None, rating: float = None,
-                        review_count: int = None, image_url: str = None, brand: str = None):
+                        review_count: int = None, image_url: str = None):
     """
     Update a product's live price snapshot and product details (title, mrp, rating, etc.).
     Also updates min benchmarks and all_time_low.
@@ -187,7 +185,6 @@ async def update_price(product_id: int, new_price: float, in_stock: bool,
             rating = COALESCE($10, rating),
             review_count = COALESCE($11, review_count),
             image_url = CASE WHEN $12 IS NOT NULL AND $12 != '' THEN $12 ELSE image_url END,
-            brand = CASE WHEN $13 IS NOT NULL AND $13 != '' THEN $13 ELSE brand END,
             last_checked = NOW(),
             last_price_change = CASE
                 WHEN current_price IS DISTINCT FROM $2 THEN NOW()
@@ -197,7 +194,7 @@ async def update_price(product_id: int, new_price: float, in_stock: bool,
         WHERE id = $1
     """, product_id, new_price, in_stock, has_coupon, coupon_value,
          has_bank_offer, bank_offer_text, title, mrp, rating,
-         review_count, image_url, brand)
+         review_count, image_url)
 
 
 async def upsert_daily_price(product_id: int, price: float):
