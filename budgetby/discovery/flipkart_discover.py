@@ -66,19 +66,38 @@ async def discover_category(name: str, sid: str, pages: int = 5) -> List[Dict[st
                     img_node = item.css_first("img")
                     image_url = img_node.attributes.get("src", "") if img_node else ""
 
-                    # Price
+                    # Price extraction (multi-selector + regex fallback)
                     price = None
-                    price_node = item.css_first("div.Nx9bqj, div._30jeq3")
+                    price_node = item.css_first("div.Nx9bqj, div._30jeq3, div[class*='Nx9bqj'], div[class*='_30jeq3'], div.hl05eU")
                     if price_node:
                         price = extract_price(price_node.text())
+                    
+                    if not price:
+                        raw_text = item.text()
+                        price_matches = re.findall(r'[\u20b9₹]\s*([\d]{1,3}(?:,\d{2,3})*|\d+)', raw_text)
+                        if price_matches:
+                            try:
+                                price = float(price_matches[0].replace(',', ''))
+                            except Exception:
+                                pass
 
-                    # MRP
+                    # MRP extraction
                     mrp = price
-                    mrp_node = item.css_first("div.yRaY8j, div._3I9_wc")
+                    mrp_node = item.css_first("div.yRaY8j, div._3I9_wc, div[class*='yRaY8j'], div[class*='_3I9_wc']")
                     if mrp_node:
                         mrp = extract_price(mrp_node.text())
+                    elif price and price_matches and len(price_matches) > 1:
+                        try:
+                            mrp_cand = float(price_matches[1].replace(',', ''))
+                            if mrp_cand >= price:
+                                mrp = mrp_cand
+                        except Exception:
+                            pass
 
-                    aff_url = await build_earnkaro_url(product_url)
+                    if not mrp or mrp < (price or 0):
+                        mrp = price
+
+                    aff_url = build_earnkaro_url_sync(product_url)
 
                     results.append({
                         "platform": "flipkart",

@@ -55,7 +55,7 @@ async def catchup_scan():
     """Catchup scan for missed high-priority products & automated title sanitization."""
     try:
         logger.info("Starting catchup scan and title sanitization...")
-        await database.execute("UPDATE products SET next_check = NOW() WHERE priority_tier = 1")
+        await database.execute("UPDATE products SET next_check = NOW() WHERE priority_tier = 1 OR current_price IS NULL")
         
         # Autonomous title sanitizer for all platforms
         rows = await database.fetch("""
