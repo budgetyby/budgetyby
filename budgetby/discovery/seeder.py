@@ -57,7 +57,7 @@ class ProductSeeder:
                     p["category"] = info.get("category", category)
                     await self._upsert(p)
 
-                # In bootstrap mode (< 15,000 items), also crawl New Releases & Most Wished
+                # In bootstrap mode (< 15,000 items), also crawl New Releases, Most Wished & High-Volume Search Keywords
                 if total_prods < 15000:
                     new_rel = await amazon_discover.discover_new_releases(slug, pages=2)
                     for p in new_rel:
@@ -68,6 +68,14 @@ class ProductSeeder:
                     for p in wished:
                         p["category"] = info.get("category", category)
                         await self._upsert(p)
+
+                    keywords = amazon_discover.AMAZON_CATEGORY_KEYWORDS.get(category, [])
+                    for kw in keywords:
+                        kw_prods = await amazon_discover.discover_search_keywords(kw, pages=2)
+                        for p in kw_prods:
+                            p["category"] = info.get("category", category)
+                            await self._upsert(p)
+                        await asyncio.sleep(config.SCRAPER_DELAY_MIN)
 
                 logger.info(f"Amazon {category}: Completed discovery pass")
                 await asyncio.sleep(config.SCRAPER_DELAY_MIN)
