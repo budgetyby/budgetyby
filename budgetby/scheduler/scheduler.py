@@ -22,6 +22,8 @@ async def price_check_loop():
         from budgetby.scrapers.amazon import AmazonScraper
         from budgetby.scrapers.flipkart import FlipkartScraper
         from budgetby.scrapers.myntra import MyntraScraper
+        from budgetby.scrapers.ajio import AjioScraper
+        from budgetby.scrapers.nykaa import NykaaScraper
         from budgetby.engine.deal_detector import detect_deal
         from budgetby.engine.deal_scorer import score_deal
         from budgetby.engine.fake_discount import is_fake_discount
@@ -33,6 +35,8 @@ async def price_check_loop():
             "amazon": AmazonScraper(),
             "flipkart": FlipkartScraper(),
             "myntra": MyntraScraper(),
+            "ajio": AjioScraper(),
+            "nykaa": NykaaScraper(),
         }
 
         products = await database.get_products_due_for_check(limit=50)

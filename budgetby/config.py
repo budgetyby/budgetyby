@@ -230,6 +230,15 @@ EARNKARO_COMMISSION_RATES = {
         "fashion_existing": 0.0375,
         "default":          0.05,
     },
+    "ajio": {
+        "fashion":          0.085,
+        "default":          0.07,
+    },
+    "nykaa": {
+        "beauty":           0.06,
+        "fashion":          0.05,
+        "default":          0.05,
+    },
 }
 
 # ════════════════════════════════════════════════════════════════════════
@@ -554,6 +563,45 @@ MYNTRA_DISCOVERY_TARGETS = {
     # STATIONERY
     "stationery":                   {"pages": 2, "category": "books"},
     "notebooks-journals":           {"pages": 2, "category": "books"},
+}
+
+# ════════════════════════════════════════════════════════════════════════
+# 14b. AJIO DISCOVERY TARGETS (Category Codes)
+# ════════════════════════════════════════════════════════════════════════
+AJIO_DISCOVERY_TARGETS = {
+    "men-tshirts":       {"code": "830216014", "category": "fashion"},
+    "men-shirts":        {"code": "830216013", "category": "fashion"},
+    "men-jeans":         {"code": "830216001", "category": "fashion"},
+    "men-trousers":      {"code": "830216002", "category": "fashion"},
+    "men-footwear":      {"code": "830207",    "category": "fashion"},
+    "men-jackets":       {"code": "830216010", "category": "fashion"},
+    "women-kurtas":      {"code": "830303011", "category": "fashion"},
+    "women-dresses":     {"code": "830316007", "category": "fashion"},
+    "women-tops":        {"code": "830316018", "category": "fashion"},
+    "women-jeans":       {"code": "830316009", "category": "fashion"},
+    "women-footwear":    {"code": "830307",    "category": "fashion"},
+    "women-handbags":    {"code": "830302001", "category": "fashion"},
+    "kids-clothing":     {"code": "8304",      "category": "fashion"},
+    "home-decor":        {"code": "8305",      "category": "home"},
+}
+
+# ════════════════════════════════════════════════════════════════════════
+# 14c. NYKAA DISCOVERY TARGETS (Category Slugs)
+# ════════════════════════════════════════════════════════════════════════
+NYKAA_DISCOVERY_TARGETS = {
+    "skincare":          {"path": "skin/c/8377",             "category": "beauty"},
+    "face-wash":         {"path": "skin/cleansers/face-wash/c/8390", "category": "beauty"},
+    "sunscreen":         {"path": "skin/sun-care/face-sunscreen/c/8404", "category": "beauty"},
+    "serums":            {"path": "skin/serums-face-oils/serums-essences/c/8401", "category": "beauty"},
+    "moisturizers":      {"path": "skin/moisturizers/face-moisturizer-day-cream/c/8394", "category": "beauty"},
+    "haircare":          {"path": "hair-care/c/9525",         "category": "beauty"},
+    "shampoo":           {"path": "hair-care/shampoo-conditioner/shampoo/c/9531", "category": "beauty"},
+    "fragrances":        {"path": "fragrance/c/8446",         "category": "beauty"},
+    "perfumes-men":      {"path": "fragrance/perfumes-edp-edt/eau-de-parfum-edp/c/8451", "category": "beauty"},
+    "makeup-lips":       {"path": "makeup/lips/c/8327",       "category": "beauty"},
+    "makeup-eyes":       {"path": "makeup/eyes/c/8340",       "category": "beauty"},
+    "bath-and-body":     {"path": "bath-body/c/8412",         "category": "beauty"},
+    "mens-grooming":     {"path": "men/shaving-hair-removal/c/9571", "category": "beauty"},
 }
 
 # ════════════════════════════════════════════════════════════════════════

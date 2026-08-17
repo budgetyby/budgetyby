@@ -1,14 +1,12 @@
 """
 ProductSeeder orchestrator for populating the database with discovered products.
-Implements intelligent dynamic scaling:
-- Bootstrap Mode (< 15,000 products): Continuously runs discovery waves across 300+ brand/category searches until 15,000 items are reached.
-- Maintenance Mode (>= 15,000 products): Runs standard 6-hour refresh cycles.
+Supports Amazon, Flipkart, Myntra, Ajio, and Nykaa with EarnKaro & Amazon monetization.
 """
 import logging
 import asyncio
 from budgetby import config
 from budgetby import database
-from budgetby.discovery import amazon_discover, flipkart_discover, myntra_discover
+from budgetby.discovery import amazon_discover, flipkart_discover, myntra_discover, ajio_discover, nykaa_discover
 
 logger = logging.getLogger("budgetby.discovery.seeder")
 
@@ -27,16 +25,15 @@ class ProductSeeder:
         except Exception:
             total_prods = 0
 
-        # If database is small (< 15,000 products), scale up crawl depth
         if total_prods < 15000:
             if category_commission >= 0.08:
                 return 6  # High commission (Fashion, Beauty, Watches, Shoes) -> 6 pages
             elif category_commission >= 0.04:
                 return 4  # Core categories (Electronics, Laptops, Home, Sports, Toys) -> 4 pages
             else:
-                return 3  # Smartphones, low commission -> 3 pages
+                return 3  # Low commission -> 3 pages
         else:
-            return config.NORMAL_PAGES_PER_CATEGORY  # Standard 2 pages in maintenance mode
+            return config.NORMAL_PAGES_PER_CATEGORY
 
     async def seed_amazon(self):
         logger.info("Starting Amazon full discovery across all categories & keywords...")
@@ -69,7 +66,6 @@ class ProductSeeder:
                         p["category"] = info.get("category", category)
                         await self._upsert(p)
 
-                    # Crawl massive search keyword pool
                     keywords = amazon_discover.AMAZON_CATEGORY_KEYWORDS.get(category, [])
                     for kw in keywords:
                         kw_prods = await amazon_discover.discover_search_keywords(kw, pages=3)
@@ -121,6 +117,38 @@ class ProductSeeder:
                 logger.error(f"Error seeding Myntra {category}: {e}")
                 self.stats["errors"] += 1
 
+    async def seed_ajio(self):
+        logger.info("Starting Ajio discovery...")
+        for category, info in getattr(config, "AJIO_DISCOVERY_TARGETS", {}).items():
+            try:
+                code = info.get("code", "")
+                cat_type = info.get("category", "fashion")
+                products = await ajio_discover.discover_category(code, pages=2)
+                for p in products:
+                    p["category"] = cat_type
+                    await self._upsert(p)
+                logger.info(f"Ajio {category}: Discovered {len(products)} products")
+                await asyncio.sleep(config.SCRAPER_DELAY_MIN)
+            except Exception as e:
+                logger.error(f"Error seeding Ajio {category}: {e}")
+                self.stats["errors"] += 1
+
+    async def seed_nykaa(self):
+        logger.info("Starting Nykaa discovery...")
+        for category, info in getattr(config, "NYKAA_DISCOVERY_TARGETS", {}).items():
+            try:
+                path = info.get("path", "")
+                cat_type = info.get("category", "beauty")
+                products = await nykaa_discover.discover_category(path, pages=2)
+                for p in products:
+                    p["category"] = cat_type
+                    await self._upsert(p)
+                logger.info(f"Nykaa {category}: Discovered {len(products)} products")
+                await asyncio.sleep(config.SCRAPER_DELAY_MIN)
+            except Exception as e:
+                logger.error(f"Error seeding Nykaa {category}: {e}")
+                self.stats["errors"] += 1
+
     async def _upsert(self, product_data: dict):
         try:
             if not product_data.get("product_url"):
@@ -146,6 +174,8 @@ class ProductSeeder:
 
             logger.info(f"Bootstrap Progress: {total_prods}/{target_count} products. Starting full wave...")
             await self.seed_amazon()
+            await self.seed_ajio()
+            await self.seed_nykaa()
             
             try:
                 total_prods = await database.fetchval("SELECT COUNT(*) FROM products") or 0
@@ -160,8 +190,12 @@ class ProductSeeder:
             await asyncio.sleep(15)
 
     async def run_full_discovery(self) -> dict:
-        """Run standard single discovery pass."""
-        logger.info("Running routine multi-platform discovery pass...")
+        """Run standard multi-platform discovery pass."""
+        logger.info("Running routine multi-platform discovery pass across Amazon, Flipkart, Myntra, Ajio, Nykaa...")
         await self.seed_amazon()
+        await self.seed_flipkart()
+        await self.seed_myntra()
+        await self.seed_ajio()
+        await self.seed_nykaa()
         logger.info(f"Discovery pass complete. Stats: {self.stats}")
         return self.stats
