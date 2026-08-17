@@ -9,7 +9,6 @@ import asyncio
 from budgetby import config
 from budgetby import database
 from budgetby.discovery import amazon_discover, flipkart_discover, myntra_discover
-from budgetby.affiliate import earnkaro_links, amazon_links
 
 logger = logging.getLogger("budgetby.discovery.seeder")
 
@@ -41,17 +40,36 @@ class ProductSeeder:
 
     async def seed_amazon(self):
         logger.info("Starting Amazon full discovery across all categories...")
+        try:
+            total_prods = await database.fetchval("SELECT COUNT(*) FROM products") or 0
+        except Exception:
+            total_prods = 0
+
         for category, info in config.AMAZON_DISCOVERY_TARGETS.items():
             try:
                 slug = info.get("slug", category)
                 comm_rate = info.get("commission", 0.045)
                 pages = await self.get_target_pages(comm_rate)
                 
+                # Bestsellers
                 products = await amazon_discover.discover_bestsellers(slug, pages=pages)
                 for p in products:
                     p["category"] = info.get("category", category)
                     await self._upsert(p)
-                logger.info(f"Amazon {category}: Discovered {len(products)} products ({pages} pages)")
+
+                # In bootstrap mode (< 15,000 items), also crawl New Releases & Most Wished
+                if total_prods < 15000:
+                    new_rel = await amazon_discover.discover_new_releases(slug, pages=2)
+                    for p in new_rel:
+                        p["category"] = info.get("category", category)
+                        await self._upsert(p)
+
+                    wished = await amazon_discover.discover_most_wished_for(slug)
+                    for p in wished:
+                        p["category"] = info.get("category", category)
+                        await self._upsert(p)
+
+                logger.info(f"Amazon {category}: Completed discovery pass")
                 await asyncio.sleep(config.SCRAPER_DELAY_MIN)
             except Exception as e:
                 logger.error(f"Error seeding Amazon {category}: {e}")
@@ -70,7 +88,6 @@ class ProductSeeder:
                 products = await flipkart_discover.discover_category(category, sid, pages=pages)
                 for p in products:
                     p["category"] = cat_type
-                    p["affiliate_url"] = await earnkaro_links.build_earnkaro_url(p["product_url"])
                     await self._upsert(p)
                 logger.info(f"Flipkart {category}: Discovered {len(products)} products")
                 await asyncio.sleep(config.SCRAPER_DELAY_MIN)
@@ -90,7 +107,6 @@ class ProductSeeder:
                 products = await myntra_discover.discover_category(category, pages=pages)
                 for p in products:
                     p["category"] = cat_type
-                    p["affiliate_url"] = await earnkaro_links.build_earnkaro_url(p["product_url"])
                     await self._upsert(p)
                 logger.info(f"Myntra {category}: Discovered {len(products)} products")
                 await asyncio.sleep(config.SCRAPER_DELAY_MIN)
