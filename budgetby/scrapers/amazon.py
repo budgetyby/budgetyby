@@ -33,15 +33,26 @@ class AmazonScraper(BaseScraper):
                 if price > 0:
                     break
                     
-        # MRP
+        # MRP (Strike-through list price)
         mrp = 0.0
-        for sel in [".priceBlockStrikePriceString", ".a-text-price .a-offscreen"]:
+        for sel in [
+            "span.basisPrice span.a-offscreen",
+            "div#corePriceDisplay_desktop_feature_div span.a-text-price span.a-offscreen",
+            "span.a-price.a-text-price span.a-offscreen",
+            "span[data-a-strike='true']",
+            "span.a-text-strike",
+            "td.a-span12.a-color-secondary.a-size-base span.a-price.a-text-price span.a-offscreen",
+            ".priceBlockStrikePriceString",
+            "#priceblock_saleprice_lbl + span"
+        ]:
             node = tree.css_first(sel)
             if node:
-                mrp = extract_price(node.text())
-                if mrp > 0:
+                mrp_cand = extract_price(node.text())
+                if mrp_cand > (price or 0):
+                    mrp = mrp_cand
                     break
-        if not mrp or mrp < price:
+
+        if not mrp or mrp < (price or 0):
             mrp = price
             
         # Rating

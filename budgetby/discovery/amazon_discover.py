@@ -123,9 +123,16 @@ async def _parse_amazon_listing(tree: HTMLParser) -> List[Dict[str, Any]]:
         image_url = img_node.attributes.get("src", "") if img_node else ""
 
         price = None
-        price_node = item.css_first(".p13n-sc-price, ._cDEzb_p13n-sc-price_3mJ9Z, span.a-price-whole")
+        price_node = item.css_first(".p13n-sc-price, ._cDEzb_p13n-sc-price_3mJ9Z, span.a-price-whole, span.a-price span.a-offscreen")
         if price_node:
             price = extract_price(price_node.text())
+
+        mrp = price
+        mrp_node = item.css_first("span.a-price.a-text-price span.a-offscreen, span.a-text-strike, span.basisPrice span.a-offscreen")
+        if mrp_node:
+            mrp_cand = extract_price(mrp_node.text())
+            if mrp_cand > (price or 0):
+                mrp = mrp_cand
 
         results.append({
             "platform": "amazon",
@@ -135,7 +142,7 @@ async def _parse_amazon_listing(tree: HTMLParser) -> List[Dict[str, Any]]:
             "title": title,
             "image_url": image_url,
             "current_price": price,
-            "mrp": price,
+            "mrp": mrp,
         })
     return results
 
