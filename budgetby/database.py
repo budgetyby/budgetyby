@@ -134,7 +134,7 @@ async def upsert_product(data: dict) -> int:
     """,
         data.get("platform"),
         data.get("platform_id"),
-        data.get("title"),
+        data.get("title") or f"{str(data.get('platform', '')).capitalize()} Product",
         data.get("category"),
         data.get("brand"),
         data.get("product_url"),

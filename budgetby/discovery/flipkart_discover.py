@@ -48,12 +48,19 @@ async def discover_category(name: str, sid: str, pages: int = 5) -> List[Dict[st
 
                     # Extract title
                     title = ""
-                    for t_sel in ["div.KzDlHZ", "a.wByIpH", "div._4rR01T", "a.s1Q9rs", "div._2WkVRV", "img[alt]"]:
+                    for t_sel in ["div.KzDlHZ", "a.wByIpH", "div._4rR01T", "a.s1Q9rs", "div._2WkVRV", "div.WKTcLC", "a.IRpwTa", "img[alt]"]:
                         t_node = item.css_first(t_sel)
                         if t_node:
                             title = t_node.attributes.get("alt") if t_node.tag == "img" else t_node.text(strip=True)
                             if title:
                                 break
+
+                    if not title:
+                        title = link_node.text(strip=True) if hasattr(item, 'text') else ""
+                    if not title:
+                        # Derive from URL slug
+                        slug = re.sub(r'https?://[^/]+/', '', product_url).split('/p/')[0].replace('-', ' ').title()
+                        title = slug if slug else f"Flipkart Product {pid}"
 
                     # Image
                     img_node = item.css_first("img")
