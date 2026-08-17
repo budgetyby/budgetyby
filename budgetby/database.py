@@ -214,15 +214,15 @@ async def upsert_daily_price(product_id: int, price: float):
 
 async def get_products_due_for_check(limit: int = 50) -> list[asyncpg.Record]:
     """
-    Get products whose next_check time has passed.
-    Prioritizes products missing prices first, then priority_tier, then next_check.
+    Get products due for checking.
+    Prioritizes products missing prices or strike-through MRPs first, then priority_tier, then next_check.
     """
     return await fetch("""
         SELECT * FROM products
         WHERE status IN ($1, $2)
-          AND (next_check <= NOW() OR current_price IS NULL)
+          AND (next_check <= NOW() OR current_price IS NULL OR mrp = current_price)
         ORDER BY 
-            CASE WHEN current_price IS NULL THEN 0 ELSE 1 END ASC,
+            CASE WHEN current_price IS NULL OR mrp = current_price THEN 0 ELSE 1 END ASC,
             priority_tier ASC, 
             next_check ASC
         LIMIT $3
