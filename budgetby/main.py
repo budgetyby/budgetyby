@@ -63,12 +63,12 @@ async def main():
 
     await cleanup.catchup_scan()
     
-    # Auto-seed all categories in continuous bootstrap loop until 15,000 products reached
+    # Auto-seed all platforms in continuous bootstrap loop until 75,000 products reached
     async def auto_seed_if_needed():
         try:
             from budgetby.discovery.seeder import ProductSeeder
             seeder = ProductSeeder()
-            await seeder.run_bootstrap_until_target(target_count=15000)
+            await seeder.run_bootstrap_until_target(target_count=75000)
         except Exception as e:
             logger.error(f"Error in auto_seed_if_needed: {e}")
 
