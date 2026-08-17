@@ -25,7 +25,7 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_SSL = os.getenv("DB_SSL", "require" if os.getenv("DB_HOST", "localhost") != "localhost" else None)
 
 AMAZON_ASSOCIATE_TAG = os.getenv("AMAZON_ASSOCIATE_TAG", "dealpulse21-21")
-EARNKARO_API_KEY = os.getenv("EARNKARO_API_KEY", "")
+EARNKARO_API_KEY = os.getenv("EARNKARO_API_KEY", "5549565")
 
 # ════════════════════════════════════════════════════════════════════════
 # 2. SCRAPER SETTINGS

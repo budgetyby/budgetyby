@@ -1,15 +1,24 @@
 """
-EarnKaro affiliate link generator for Flipkart and Myntra.
+EarnKaro affiliate link generator for Flipkart, Myntra, Ajio, and Nykaa.
+Automatically routes products through EarnKaro profit referral tracking.
 """
 import logging
-from budgetby.config import EARNKARO_API_KEY
+import urllib.parse
+from budgetby import config
 
 logger = logging.getLogger("budgetby.affiliate.earnkaro")
 
+def build_earnkaro_url_sync(url: str) -> str:
+    """
+    Convert any Flipkart, Myntra, Ajio, or Nykaa URL to an EarnKaro affiliate profit link.
+    Format: https://earnkaro.com/product?r={user_id}&url={encoded_url}
+    """
+    if not url:
+        return ""
+    user_id = config.EARNKARO_API_KEY or "5549565"
+    encoded_url = urllib.parse.quote_plus(url)
+    return f"https://earnkaro.com/product?r={user_id}&url={encoded_url}"
+
 async def build_earnkaro_url(url: str) -> str:
-    """
-    Convert a Flipkart or Myntra URL to an EarnKaro affiliate link.
-    TODO: Implement actual EarnKaro API integration.
-    """
-    logger.debug(f"Placeholder: building EarnKaro URL for {url}")
-    return url
+    """Async wrapper for compatibility."""
+    return build_earnkaro_url_sync(url)
