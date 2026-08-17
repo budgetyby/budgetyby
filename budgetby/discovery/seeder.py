@@ -191,12 +191,15 @@ class ProductSeeder:
                 logger.info(f"Target catalog reached ({total_prods} >= {target_count}). Switching to routine 6h maintenance.")
                 break
 
-            logger.info(f"Bootstrap progress: {total_prods}/{target_count} products. Running discovery wave across all 5 platforms...")
-            await self.seed_amazon()
-            await self.seed_flipkart()
-            await self.seed_myntra()
-            await self.seed_ajio()
-            await self.seed_nykaa()
+            logger.info(f"Bootstrap progress: {total_prods}/{target_count} products. Running concurrent discovery across all 5 platforms...")
+            await asyncio.gather(
+                self.seed_flipkart(),
+                self.seed_myntra(),
+                self.seed_ajio(),
+                self.seed_nykaa(),
+                self.seed_amazon(),
+                return_exceptions=True
+            )
             
             try:
                 total_prods = await database.fetchval("SELECT COUNT(*) FROM products") or 0
@@ -207,16 +210,19 @@ class ProductSeeder:
                 logger.info(f"Target reached: {total_prods} products! Switching to routine maintenance mode.")
                 break
 
-            logger.info(f"Wave finished. Current count: {total_prods}/{target_count}. Pausing 20s before next wave...")
-            await asyncio.sleep(20)
+            logger.info(f"Wave finished. Current count: {total_prods}/{target_count}. Pausing 10s before next wave...")
+            await asyncio.sleep(10)
 
     async def run_full_discovery(self) -> dict:
         """Runs standard multi-platform discovery pass."""
         logger.info("Running routine multi-platform discovery pass across Amazon, Flipkart, Myntra, Ajio, Nykaa...")
-        await self.seed_amazon()
-        await self.seed_flipkart()
-        await self.seed_myntra()
-        await self.seed_ajio()
-        await self.seed_nykaa()
+        await asyncio.gather(
+            self.seed_flipkart(),
+            self.seed_myntra(),
+            self.seed_ajio(),
+            self.seed_nykaa(),
+            self.seed_amazon(),
+            return_exceptions=True
+        )
         logger.info(f"Discovery pass complete. Stats: {self.stats}")
         return self.stats
