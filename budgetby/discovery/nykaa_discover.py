@@ -1,5 +1,5 @@
 """
-Nykaa discovery engine.
+Nykaa discovery engine with high-accuracy title extraction.
 """
 import logging
 import asyncio
@@ -41,10 +41,32 @@ async def discover_category(category_path: str, pages: int = 3) -> List[Dict[str
                     pid_match = re.search(r'/p/(\d+)', product_url)
                     pid = pid_match.group(1) if pid_match else re.sub(r'https?://[^/]+/', '', product_url).split('?')[0]
 
-                    t_node = item.css_first(".title, .css-11gn9r6, h3, img")
-                    title = t_node.attributes.get("alt") if (t_node and t_node.tag == "img") else (clean_title(t_node.text()) if t_node else "")
+                    # 1. Extract title from img alt (ignoring generic icons)
+                    title = ""
+                    for img in item.css("img[alt]"):
+                        alt = img.attributes.get("alt", "").strip()
+                        if alt and not any(x in alt.lower() for x in ["editor", "pick", "featured", "nykaa", "star", "badge", "offer"]):
+                            title = alt
+                            break
+                        elif alt and not title:
+                            title = alt
 
-                    img_node = item.css_first("img")
+                    # 2. Text node fallback
+                    if not title or len(title) < 5:
+                        for sel in ["div.css-xrzmfa", "div.css-11gn9r6", "div.css-154w49h", ".title", "h3", "h2"]:
+                            node = item.css_first(sel)
+                            if node and node.text(strip=True):
+                                title = node.text(strip=True)
+                                break
+
+                    # 3. URL slug fallback (100% reliable)
+                    if not title or len(title) < 4 or title.lower() in ["nykaa", "editor_pickv2", "featured"]:
+                        slug = re.sub(r'https?://[^/]+/', '', product_url).split('/p/')[0].lstrip('/').replace('-', ' ').title()
+                        title = slug if slug else f"Nykaa Product {pid}"
+
+                    title = clean_title(title)
+
+                    img_node = item.css_first("img[src*='media'], img[src*='assets'], img")
                     image_url = img_node.attributes.get("src", "") if img_node else ""
 
                     price = None

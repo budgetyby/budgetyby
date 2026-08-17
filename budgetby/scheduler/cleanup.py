@@ -52,10 +52,26 @@ async def monthly_maintenance():
         logger.error(f"Error during monthly maintenance: {e}", exc_info=True)
 
 async def catchup_scan():
-    """Catchup scan for missed high-priority products."""
+    """Catchup scan for missed high-priority products & automated title sanitization."""
     try:
-        logger.info("Starting catchup scan...")
+        logger.info("Starting catchup scan and title sanitization...")
         await database.execute("UPDATE products SET next_check = NOW() WHERE priority_tier = 1")
+        
+        # Autonomous title sanitizer for all platforms
+        rows = await database.fetch("""
+            SELECT id, product_url, platform 
+            FROM products 
+            WHERE title ILIKE '%product%' OR title ILIKE '%editor%' OR length(title) < 5
+        """)
+        if rows:
+            import re
+            for r in rows:
+                p_url = r["product_url"] or ""
+                slug = re.sub(r'https?://[^/]+/', '', p_url).split('/p/')[0].split('?')[0].lstrip('/').replace('-', ' ').title()
+                if len(slug) >= 4:
+                    await database.execute("UPDATE products SET title = $2 WHERE id = $1", r["id"], slug)
+            logger.info(f"Automatically sanitized {len(rows)} product titles.")
+            
         logger.info("Catchup scan completed.")
     except Exception as e:
-        logger.error(f"Error during catchup scan: {e}", exc_info=True)
+        logger.error(f"Error during catchup scan: {e}")

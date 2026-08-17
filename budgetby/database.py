@@ -115,6 +115,18 @@ async def upsert_product(data: dict) -> int:
     Insert a new product or update if it already exists (same platform + platform_id).
     Returns the product id.
     """
+    # Automated title sanitizer: if title is missing or generic, derive from URL slug
+    title = data.get("title") or ""
+    p_url = data.get("product_url") or ""
+    if not title or len(title) < 5 or "product" in title.lower() or "editor" in title.lower():
+        if p_url:
+            import re
+            slug = re.sub(r'https?://[^/]+/', '', p_url).split('/p/')[0].split('?')[0].lstrip('/').replace('-', ' ').title()
+            if len(slug) >= 4:
+                title = slug
+    if not title:
+        title = f"{str(data.get('platform', '')).capitalize()} Item {data.get('platform_id', '')}"
+
     row = await fetchrow("""
         INSERT INTO products (platform, platform_id, title, category, brand,
                               product_url, affiliate_url, image_url,
@@ -134,7 +146,7 @@ async def upsert_product(data: dict) -> int:
     """,
         data.get("platform"),
         data.get("platform_id"),
-        data.get("title") or f"{str(data.get('platform', '')).capitalize()} Product",
+        title,
         data.get("category"),
         data.get("brand"),
         data.get("product_url"),
