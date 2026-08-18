@@ -92,12 +92,12 @@ class ProductSeeder:
                 sid = info.get("sid", "")
                 cat_type = info.get("category", "fashion")
 
-                products = await flipkart_discover.discover_category(category, sid, pages=10)
+                products = await flipkart_discover.discover_category(category, sid, pages=25)
                 for p in products:
                     p["category"] = cat_type
                     await self._upsert(p)
                 logger.info(f"Flipkart {category}: Added {len(products)} products")
-                await asyncio.sleep(config.SCRAPER_DELAY_MIN)
+                await asyncio.sleep(0.1)
             except Exception as e:
                 logger.error(f"Error seeding Flipkart {category}: {e}")
                 self.stats["errors"] += 1
@@ -114,12 +114,12 @@ class ProductSeeder:
             try:
                 cat_type = info.get("category", "fashion")
 
-                products = await myntra_discover.discover_category(category, pages=5)
+                products = await myntra_discover.discover_category(category, pages=20)
                 for p in products:
                     p["category"] = cat_type
                     await self._upsert(p)
                 logger.info(f"Myntra {category}: Added {len(products)} products")
-                await asyncio.sleep(config.SCRAPER_DELAY_MIN)
+                await asyncio.sleep(0.1)
             except Exception as e:
                 logger.error(f"Error seeding Myntra {category}: {e}")
                 self.stats["errors"] += 1
@@ -136,12 +136,12 @@ class ProductSeeder:
             try:
                 code = info.get("code", "")
                 cat_type = info.get("category", "fashion")
-                products = await ajio_discover.discover_category(code, pages=18)
+                products = await ajio_discover.discover_category(code, pages=30)
                 for p in products:
                     p["category"] = cat_type
                     await self._upsert(p)
                 logger.info(f"Ajio {category}: Added {len(products)} products")
-                await asyncio.sleep(config.SCRAPER_DELAY_MIN)
+                await asyncio.sleep(0.1)
             except Exception as e:
                 logger.error(f"Error seeding Ajio {category}: {e}")
                 self.stats["errors"] += 1
@@ -158,7 +158,7 @@ class ProductSeeder:
             try:
                 path = info.get("path", "")
                 cat_type = info.get("category", "beauty")
-                products = await nykaa_discover.discover_category(path, pages=15)
+                products = await nykaa_discover.discover_category(path, pages=25)
                 for p in products:
                     p["category"] = cat_type
                     await self._upsert(p)

@@ -8,7 +8,7 @@ from typing import List, Dict, Any
 from curl_cffi.requests import AsyncSession
 from selectolax.parser import HTMLParser
 from budgetby import config
-from budgetby.affiliate.earnkaro_links import build_earnkaro_url
+from budgetby.affiliate.earnkaro_links import build_earnkaro_url, build_earnkaro_url_sync
 from budgetby.scrapers.utils import extract_price
 
 logger = logging.getLogger("budgetby.discovery.flipkart")
@@ -56,7 +56,7 @@ async def discover_category(name: str, sid: str, pages: int = 5) -> List[Dict[st
                                 break
 
                     if not title:
-                        title = link_node.text(strip=True) if hasattr(item, 'text') else ""
+                        title = item.text(strip=True) if hasattr(item, 'text') else ""
                     if not title:
                         # Derive from URL slug
                         slug = re.sub(r'https?://[^/]+/', '', product_url).split('/p/')[0].replace('-', ' ').title()
