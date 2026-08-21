@@ -40,9 +40,30 @@ class PostingQueue:
             try:
                 deal_data = await self._queue.get()
                 
-                # In real bot, format message and send via bot
-                # bot.send_message(...)
-                logger.info(f"Posting deal: {deal_data.get('product', {}).get('title')}")
+                from budgetby.bot import templates
+                product = deal_data.get("product", {})
+                deal_type = deal_data.get("type")
+                badge = deal_data.get("badge")
+                
+                if deal_type == "evergreen":
+                    text = templates.format_evergreen_deal(product, 1)
+                elif badge == "ATL" or badge == "near_ATL":
+                    text = templates.format_mega_deal(product)
+                elif badge in ["90d_low", "60d_low"]:
+                    text = templates.format_hot_deal(product)
+                else:
+                    text = templates.format_good_deal(product)
+                    
+                url = product.get("url", "")
+                reply_markup = templates.build_buy_button(url) if url else None
+                
+                await bot.send_message(
+                    chat_id=config.TELEGRAM_CHANNEL_ID,
+                    text=text,
+                    parse_mode="HTML",
+                    reply_markup=reply_markup
+                )
+                logger.info(f"Posting deal: {product.get('title')}")
                 
                 self.posts_this_hour += 1
                 self._queue.task_done()

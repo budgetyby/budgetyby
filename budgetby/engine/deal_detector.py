@@ -18,6 +18,12 @@ async def detect_deal(product: Record, new_price: float) -> dict | None:
         if new_price <= 0:
             return None
 
+        current_price = product.get("current_price")
+        previous_price = product.get("previous_price")
+        
+        if not ((current_price and new_price < current_price) or (previous_price and new_price < previous_price)):
+            return None
+
         margins = config.BENCHMARK_MARGINS
         
         min_30d = product.get("min_30d")
@@ -91,13 +97,17 @@ async def detect_deal(product: Record, new_price: float) -> dict | None:
             savings_amount = 0
             savings_pct = 0.0
 
+        from budgetby.engine import fake_discount
+        is_fake = await fake_discount.is_fake_discount(product, new_price)
+
         return {
             "should_post": True,
             "badge": best_badge,
             "all_badges": all_badges,
             "savings_amount": savings_amount,
             "savings_pct": savings_pct,
-            "deal_type": deal_type
+            "deal_type": deal_type,
+            "is_fake_discount": is_fake
         }
     except Exception as e:
         logger.error(f"Error in detect_deal for product {product.get('id')}: {e}")

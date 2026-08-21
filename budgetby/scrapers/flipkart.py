@@ -3,7 +3,7 @@ BudgetBy — Flipkart Scraper
 """
 import re
 import json
-import httpx
+from curl_cffi.requests import AsyncSession
 from selectolax.parser import HTMLParser
 from budgetby.scrapers.base import BaseScraper
 from budgetby.scrapers.utils import get_random_ua, extract_price, clean_title
@@ -11,9 +11,8 @@ from budgetby import config
 
 class FlipkartScraper(BaseScraper):
     async def _do_scrape_product(self, url: str) -> dict:
-        headers = {"User-Agent": get_random_ua()}
-        async with httpx.AsyncClient(headers=headers, timeout=config.SCRAPER_TIMEOUT, follow_redirects=True) as client:
-            r = await client.get(url)
+        async with AsyncSession(impersonate="chrome", timeout=config.SCRAPER_TIMEOUT) as client:
+            r = await client.get(url, follow_redirects=True)
             
         tree = HTMLParser(r.text)
         title = ""
@@ -105,9 +104,8 @@ class FlipkartScraper(BaseScraper):
         }
 
     async def _do_scrape_listing(self, url: str) -> list[dict]:
-        headers = {"User-Agent": get_random_ua()}
-        async with httpx.AsyncClient(headers=headers, timeout=config.SCRAPER_TIMEOUT, follow_redirects=True) as client:
-            r = await client.get(url)
+        async with AsyncSession(impersonate="chrome", timeout=config.SCRAPER_TIMEOUT) as client:
+            r = await client.get(url, follow_redirects=True)
             
         tree = HTMLParser(r.text)
         products = []

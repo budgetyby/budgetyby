@@ -37,7 +37,9 @@ async def run_backup():
     """Runs pg_dump and compresses output."""
     try:
         logger.info("Starting database backup...")
-        os.system(f"pg_dump -U {config.DB_USER} -h {config.DB_HOST} -p {config.DB_PORT} {config.DB_NAME} | gzip > backup_$(date +%Y%m%d).sql.gz")
+        cmd = f"pg_dump -U {config.DB_USER} -h {config.DB_HOST} -p {config.DB_PORT} {config.DB_NAME} | gzip > backup_$(date +%Y%m%d).sql.gz"
+        process = await asyncio.create_subprocess_shell(cmd)
+        await process.communicate()
         logger.info("Database backup completed.")
     except Exception as e:
         logger.error(f"Error during backup: {e}", exc_info=True)
@@ -55,22 +57,34 @@ async def catchup_scan():
     """Catchup scan for missed high-priority products & automated title sanitization."""
     try:
         logger.info("Starting catchup scan and title sanitization...")
-        await database.execute("UPDATE products SET next_check = NOW() WHERE priority_tier = 1 OR current_price IS NULL OR mrp = current_price")
+        await database.execute("UPDATE products SET next_check = NOW() WHERE priority_tier = 1 OR current_price IS NULL")
         
         # Autonomous title sanitizer for all platforms
-        rows = await database.fetch("""
-            SELECT id, product_url, platform 
-            FROM products 
-            WHERE title ILIKE '%product%' OR title ILIKE '%editor%' OR length(title) < 5
-        """)
-        if rows:
-            import re
+        offset = 0
+        limit = 500
+        total_sanitized = 0
+        import re
+        while True:
+            rows = await database.fetch(f"""
+                SELECT id, product_url, platform 
+                FROM products 
+                WHERE title ILIKE '%product%' OR title ILIKE '%editor%' OR length(title) < 5
+                LIMIT {limit} OFFSET {offset}
+            """)
+            if not rows:
+                break
+            
             for r in rows:
                 p_url = r["product_url"] or ""
                 slug = re.sub(r'https?://[^/]+/', '', p_url).split('/p/')[0].split('?')[0].lstrip('/').replace('-', ' ').title()
                 if len(slug) >= 4:
                     await database.execute("UPDATE products SET title = $2 WHERE id = $1", r["id"], slug)
-            logger.info(f"Automatically sanitized {len(rows)} product titles.")
+            
+            total_sanitized += len(rows)
+            offset += limit
+            
+        if total_sanitized > 0:
+            logger.info(f"Automatically sanitized {total_sanitized} product titles.")
             
         logger.info("Catchup scan completed.")
     except Exception as e:

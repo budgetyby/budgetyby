@@ -10,14 +10,9 @@ logger = logging.getLogger("budgetby.engine.cooldown")
 
 async def is_on_cooldown(product_id: int) -> bool:
     try:
-        query = "SELECT expires_at FROM post_cooldowns WHERE product_id = $1"
+        query = "SELECT EXISTS(SELECT 1 FROM post_cooldowns WHERE product_id = $1 AND expires_at > NOW()) as active"
         row = await database.fetchrow(query, product_id)
-        if row and row['expires_at']:
-            # Assuming db NOW() is handled gracefully or we do a boolean check
-            query_check = "SELECT expires_at > NOW() as active FROM post_cooldowns WHERE product_id = $1"
-            res = await database.fetchrow(query_check, product_id)
-            return res['active'] if res else False
-        return False
+        return row['active'] if row else False
     except Exception as e:
         logger.error(f"Error checking cooldown: {e}")
         return False

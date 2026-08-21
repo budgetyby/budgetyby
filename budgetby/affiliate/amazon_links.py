@@ -14,6 +14,9 @@ def extract_asin(url: str) -> str | None:
     match2 = re.search(r'/product/([A-Z0-9]{10})', url)
     if match2:
         return match2.group(1)
+    match3 = re.search(r'/gp/product/([A-Z0-9]{10})', url)
+    if match3:
+        return match3.group(1)
     return None
 
 def build_affiliate_url(asin: str) -> str:

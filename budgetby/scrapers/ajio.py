@@ -51,8 +51,13 @@ class AjioScraper(BaseScraper):
                         images = data.get("images", [])
                         if images:
                             image_url = images[0].get("url", "")
+                    else:
+                        return None
                 except Exception as e:
                     logger.debug(f"Ajio API failed for {code}: {e}")
+                    return None
+            else:
+                return None
 
         if not mrp or mrp < price:
             mrp = price

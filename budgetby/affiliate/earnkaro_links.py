@@ -9,15 +9,7 @@ from budgetby import config
 logger = logging.getLogger("budgetby.affiliate.earnkaro")
 
 def build_earnkaro_url_sync(url: str) -> str:
-    """
-    Convert any Flipkart, Myntra, Ajio, or Nykaa URL to an EarnKaro affiliate profit link.
-    Format: https://earnkaro.com/product?r={user_id}&url={encoded_url}
-    """
-    if not url:
-        return ""
-    user_id = config.EARNKARO_API_KEY or "5549565"
-    encoded_url = urllib.parse.quote_plus(url)
-    return f"https://earnkaro.com/product?r={user_id}&url={encoded_url}"
+    return url or ""
 
 async def build_earnkaro_url(url: str) -> str:
     """Async wrapper for compatibility."""

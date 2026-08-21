@@ -40,7 +40,7 @@ async def init_pool() -> asyncpg.Pool:
         "user": config.DB_USER,
         "password": config.DB_PASSWORD,
         "min_size": 2,
-        "max_size": 10,
+        "max_size": 20,
         "command_timeout": 30,
         "statement_cache_size": 0,
     }
@@ -48,7 +48,7 @@ async def init_pool() -> asyncpg.Pool:
         pool_kwargs["ssl"] = ctx
 
     _pool = await asyncpg.create_pool(**pool_kwargs)
-    logger.info(f"Database connection pool initialized to {host_to_use}:{config.DB_PORT} (min=2, max=10)")
+    logger.info(f"Database connection pool initialized to {host_to_use}:{config.DB_PORT} (min=2, max=20)")
     return _pool
 
 
@@ -205,7 +205,7 @@ async def upsert_daily_price(product_id: int, price: float):
     """
     await execute("""
         INSERT INTO daily_prices (product_id, date, min_price, close_price)
-        VALUES ($1, CURRENT_DATE, $2, $2)
+        VALUES ($1, (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE, $2, $2)
         ON CONFLICT (product_id, date) DO UPDATE SET
             min_price = LEAST(daily_prices.min_price, $2),
             close_price = $2
@@ -220,9 +220,9 @@ async def get_products_due_for_check(limit: int = 50) -> list[asyncpg.Record]:
     return await fetch("""
         SELECT * FROM products
         WHERE status IN ($1, $2)
-          AND (next_check <= NOW() OR current_price IS NULL OR mrp = current_price)
+          AND next_check <= NOW()
         ORDER BY 
-            CASE WHEN current_price IS NULL OR mrp = current_price THEN 0 ELSE 1 END ASC,
+            CASE WHEN current_price IS NULL THEN 0 ELSE 1 END ASC,
             priority_tier ASC, 
             next_check ASC
         LIMIT $3
@@ -255,7 +255,7 @@ async def refresh_30d_benchmarks():
                 MIN(min_price) AS min_30d,
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY close_price) AS median_price
             FROM daily_prices
-            WHERE date >= CURRENT_DATE - 30
+            WHERE date >= ((NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - 30)
             GROUP BY product_id
         ) sub
         WHERE p.id = sub.product_id
@@ -281,7 +281,7 @@ async def cleanup_old_daily_prices():
     """Delete daily_prices older than retention period."""
     result = await execute("""
         DELETE FROM daily_prices
-        WHERE date < CURRENT_DATE - $1
+        WHERE date < (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - $1
     """, config.DAILY_PRICE_RETENTION_DAYS)
     logger.info(f"Cleaned up old daily prices: {result}")
 

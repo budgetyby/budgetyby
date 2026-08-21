@@ -45,78 +45,84 @@ async def price_check_loop():
 
         logger.info(f"Checking {len(products)} products")
 
-        for product in products:
-            try:
-                platform = product["platform"]
-                scraper = scrapers.get(platform)
-                if not scraper:
-                    continue
+        import asyncio
+        sem = asyncio.Semaphore(10)
 
-                # Scrape current price
-                data = await scraper.scrape_product(product["product_url"])
-                if not data or not data.get("current_price"):
+        async def process_product(product):
+            async with sem:
+                try:
+                    platform = product["platform"]
+                    scraper = scrapers.get(platform)
+                    if not scraper:
+                        return
+
+                    # Scrape current price
+                    data = await scraper.scrape_product(product["product_url"])
+                    if not data or not data.get("current_price"):
+                        await database.schedule_next_check(product["id"], product["priority_tier"])
+                        return
+
+                    new_price = data["current_price"]
+
+                    # Update price and product metadata in DB
+                    await database.update_price(
+                        product["id"], new_price, data.get("in_stock", True),
+                        data.get("has_coupon", False), data.get("coupon_value", 0),
+                        data.get("has_bank_offer", False), data.get("bank_offer_text"),
+                        title=data.get("title"), mrp=data.get("mrp"), rating=data.get("rating"),
+                        review_count=data.get("review_count"), image_url=data.get("image_url")
+                    )
+                    await database.upsert_daily_price(product["id"], new_price)
+
+                    # Skip if on cooldown
+                    if await is_on_cooldown(product["id"]):
+                        new_tier = assign_priority(product)
+                        await database.schedule_next_check(product["id"], new_tier)
+                        return
+
+                    # Detect deal
+                    deal_result = await detect_deal(product, new_price)
+                    if not deal_result:
+                        new_tier = assign_priority(product)
+                        await database.schedule_next_check(product["id"], new_tier)
+                        return
+
+                    # Check fake discount
+                    if await is_fake_discount(product, new_price):
+                        deal_result["is_fake"] = True
+
+                    # Score the deal
+                    score = score_deal(product, deal_result)
+                    if score < config.MIN_DEAL_SCORE:
+                        new_tier = assign_priority(product)
+                        await database.schedule_next_check(product["id"], new_tier)
+                        return
+
+                    # Queue for posting
+                    deal_data = {
+                        "product": dict(product),
+                        "deal_result": deal_result,
+                        "score": score,
+                        "new_price": new_price,
+                    }
+                    deal_data["product"].update(data)
+
+                    logger.info(
+                        f"Deal found: {product['title'][:50]}... "
+                        f"Score={score:.0f} Badge={deal_result['badge']}"
+                    )
+
+                    # Set cooldown
+                    await set_cooldown(product["id"], config.PRICE_DROP_COOLDOWN_HOURS)
+
+                    # Reschedule with updated priority (critical since price just changed)
+                    await database.schedule_next_check(product["id"], 1)
+
+                except Exception as e:
+                    logger.error(f"Error checking product {product['id']}: {e}")
                     await database.schedule_next_check(product["id"], product["priority_tier"])
-                    continue
 
-                new_price = data["current_price"]
-
-                # Update price and product metadata in DB
-                await database.update_price(
-                    product["id"], new_price, data.get("in_stock", True),
-                    data.get("has_coupon", False), data.get("coupon_value", 0),
-                    data.get("has_bank_offer", False), data.get("bank_offer_text"),
-                    title=data.get("title"), mrp=data.get("mrp"), rating=data.get("rating"),
-                    review_count=data.get("review_count"), image_url=data.get("image_url")
-                )
-                await database.upsert_daily_price(product["id"], new_price)
-
-                # Skip if on cooldown
-                if await is_on_cooldown(product["id"]):
-                    new_tier = assign_priority(product)
-                    await database.schedule_next_check(product["id"], new_tier)
-                    continue
-
-                # Detect deal
-                deal_result = await detect_deal(product, new_price)
-                if not deal_result:
-                    new_tier = assign_priority(product)
-                    await database.schedule_next_check(product["id"], new_tier)
-                    continue
-
-                # Check fake discount
-                if await is_fake_discount(product, new_price):
-                    deal_result["is_fake"] = True
-
-                # Score the deal
-                score = score_deal(product, deal_result)
-                if score < config.MIN_DEAL_SCORE:
-                    new_tier = assign_priority(product)
-                    await database.schedule_next_check(product["id"], new_tier)
-                    continue
-
-                # Queue for posting
-                deal_data = {
-                    "product": dict(product),
-                    "deal_result": deal_result,
-                    "score": score,
-                    "new_price": new_price,
-                }
-                deal_data["product"].update(data)
-
-                logger.info(
-                    f"Deal found: {product['title'][:50]}... "
-                    f"Score={score:.0f} Badge={deal_result['badge']}"
-                )
-
-                # Set cooldown
-                await set_cooldown(product["id"], config.PRICE_DROP_COOLDOWN_HOURS)
-
-                # Reschedule with updated priority (critical since price just changed)
-                await database.schedule_next_check(product["id"], 1)
-
-            except Exception as e:
-                logger.error(f"Error checking product {product['id']}: {e}")
-                await database.schedule_next_check(product["id"], product["priority_tier"])
+        await asyncio.gather(*(process_product(p) for p in products))
 
     except Exception as e:
         logger.error(f"Error in price_check_loop: {e}")
@@ -218,10 +224,12 @@ async def hourly_backfill():
         evergreen_deals = await find_evergreen_deals(limit=gap)
         logger.info(f"Found {len(evergreen_deals)} evergreen deals for backfill")
 
-        # The actual posting would happen through the posting queue
-        # For now, log the availability
+        from budgetby.engine.posting_queue import PostingQueue
+        pq = PostingQueue()
         for deal in evergreen_deals:
             logger.info(f"Evergreen candidate: {deal['title'][:50]}...")
+            await pq.queue_deal({"product": deal, "type": "evergreen"})
+        await pq.process_queue(None)
 
     except Exception as e:
         logger.error(f"Error in hourly_backfill: {e}")
@@ -272,25 +280,25 @@ def start_scheduler():
     logger.info("Starting scheduler...")
 
     # Core price checking — every 30 seconds
-    _scheduler.add_job(price_check_loop, "interval", seconds=30, id="price_check")
+    _scheduler.add_job(price_check_loop, "interval", seconds=30, id="price_check", max_instances=1, misfire_grace_time=30)
 
     # Discovery — every 6 hours
     _scheduler.add_job(discovery_job, "interval",
-                       hours=config.DISCOVERY_INTERVAL_HOURS, id="discovery")
+                       hours=config.DISCOVERY_INTERVAL_HOURS, id="discovery", max_instances=1, misfire_grace_time=30)
 
     # Deals page crawl — every 1 hour
     _scheduler.add_job(deals_page_crawl, "interval",
-                       hours=config.DEALS_PAGE_CRAWL_INTERVAL_HOURS, id="deals_crawl")
+                       hours=config.DEALS_PAGE_CRAWL_INTERVAL_HOURS, id="deals_crawl", max_instances=1, misfire_grace_time=30)
 
     # Movers & Shakers — every 3 hours
     _scheduler.add_job(movers_shakers_crawl, "interval",
-                       hours=config.MOVERS_AND_SHAKERS_INTERVAL_HOURS, id="movers_shakers")
+                       hours=config.MOVERS_AND_SHAKERS_INTERVAL_HOURS, id="movers_shakers", max_instances=1, misfire_grace_time=30)
 
     # Hourly backfill check
-    _scheduler.add_job(hourly_backfill, "interval", hours=1, id="hourly_backfill")
+    _scheduler.add_job(hourly_backfill, "interval", hours=1, id="hourly_backfill", max_instances=1, misfire_grace_time=30)
 
     # Deal tracking check — every 10 minutes
-    _scheduler.add_job(deal_tracking_check, "interval", minutes=10, id="deal_tracking")
+    _scheduler.add_job(deal_tracking_check, "interval", minutes=10, id="deal_tracking", max_instances=1, misfire_grace_time=30)
 
     # Daily cleanup at midnight IST
     _scheduler.add_job(cleanup.daily_cleanup, "cron", hour=0, minute=0, id="daily_cleanup")

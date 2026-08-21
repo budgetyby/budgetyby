@@ -45,6 +45,9 @@ class ProductSeeder:
 
         logger.info(f"Starting Amazon discovery ({current_count}/{target} target)...")
         for category, info in config.AMAZON_DISCOVERY_TARGETS.items():
+            current_count = await self.get_platform_count("amazon")
+            if current_count >= target:
+                break
             try:
                 slug = info.get("slug", category)
                 
@@ -67,7 +70,7 @@ class ProductSeeder:
 
                 # Search Keywords
                 keywords = amazon_discover.AMAZON_CATEGORY_KEYWORDS.get(category, [])
-                for kw in keywords[:8]:
+                for kw in keywords[:20]:
                     kw_prods = await amazon_discover.discover_search_keywords(kw, pages=2)
                     for p in kw_prods:
                         p["category"] = info.get("category", category)
@@ -88,6 +91,9 @@ class ProductSeeder:
 
         logger.info(f"Starting Flipkart discovery ({current_count}/{target} target)...")
         for category, info in config.FLIPKART_DISCOVERY_TARGETS.items():
+            current_count = await self.get_platform_count("flipkart")
+            if current_count >= target:
+                break
             try:
                 sid = info.get("sid", "")
                 cat_type = info.get("category", "fashion")
@@ -111,6 +117,9 @@ class ProductSeeder:
 
         logger.info(f"Starting Myntra discovery ({current_count}/{target} target)...")
         for category, info in config.MYNTRA_DISCOVERY_TARGETS.items():
+            current_count = await self.get_platform_count("myntra")
+            if current_count >= target:
+                break
             try:
                 cat_type = info.get("category", "fashion")
 
@@ -133,6 +142,9 @@ class ProductSeeder:
 
         logger.info(f"Starting Ajio discovery ({current_count}/{target} target)...")
         for category, info in getattr(config, "AJIO_DISCOVERY_TARGETS", {}).items():
+            current_count = await self.get_platform_count("ajio")
+            if current_count >= target:
+                break
             try:
                 code = info.get("code", "")
                 cat_type = info.get("category", "fashion")
@@ -155,6 +167,9 @@ class ProductSeeder:
 
         logger.info(f"Starting Nykaa discovery ({current_count}/{target} target)...")
         for category, info in getattr(config, "NYKAA_DISCOVERY_TARGETS", {}).items():
+            current_count = await self.get_platform_count("nykaa")
+            if current_count >= target:
+                break
             try:
                 path = info.get("path", "")
                 cat_type = info.get("category", "beauty")
@@ -192,7 +207,7 @@ class ProductSeeder:
                 break
 
             logger.info(f"Bootstrap progress: {total_prods}/{target_count} products. Running concurrent discovery across all 5 platforms...")
-            await asyncio.gather(
+            results = await asyncio.gather(
                 self.seed_flipkart(),
                 self.seed_myntra(),
                 self.seed_ajio(),
@@ -200,6 +215,10 @@ class ProductSeeder:
                 self.seed_amazon(),
                 return_exceptions=True
             )
+            
+            for r in results:
+                if isinstance(r, Exception):
+                    logger.error(f"Discovery task failed: {r}", exc_info=r)
             
             try:
                 total_prods = await database.fetchval("SELECT COUNT(*) FROM products") or 0
@@ -216,7 +235,7 @@ class ProductSeeder:
     async def run_full_discovery(self) -> dict:
         """Runs standard multi-platform discovery pass."""
         logger.info("Running routine multi-platform discovery pass across Amazon, Flipkart, Myntra, Ajio, Nykaa...")
-        await asyncio.gather(
+        results = await asyncio.gather(
             self.seed_flipkart(),
             self.seed_myntra(),
             self.seed_ajio(),
@@ -224,5 +243,8 @@ class ProductSeeder:
             self.seed_amazon(),
             return_exceptions=True
         )
+        for r in results:
+            if isinstance(r, Exception):
+                logger.error(f"Discovery task failed: {r}", exc_info=r)
         logger.info(f"Discovery pass complete. Stats: {self.stats}")
         return self.stats

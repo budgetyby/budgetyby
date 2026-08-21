@@ -148,14 +148,14 @@ def format_budget_segment(segment_name: str, deals: list) -> str:
     """Format a roundup of best deals in a budget segment."""
     text = f"📋 <b>Best Deals {segment_name} Today!</b>\n\n"
     for d in deals:
-        text += f"• <a href='{d.get('url')}'>{d.get('title')}</a> - {format_price(d.get('price'))}\n"
+        text += f"• <a href='{d.get('url')}'>{d.get('title')}</a> - {format_price(d.get('current_price'))}\n"
     return text
 
 def format_trending_roundup(category: str, deals: list) -> str:
     """Format a trending roundup for a category."""
     text = f"🔥 <b>Trending Now: {category}</b>\n\n"
     for d in deals:
-        text += f"• <a href='{d.get('url')}'>{d.get('title')}</a> - {format_price(d.get('price'))}\n"
+        text += f"• <a href='{d.get('url')}'>{d.get('title')}</a> - {format_price(d.get('current_price'))}\n"
     return text
 
 def format_deal_expiry_edit(original_caption: str, new_price: float = None, is_oos: bool = False, dropped_more: bool = False) -> str:
