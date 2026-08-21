@@ -13,11 +13,17 @@ logger = logging.getLogger("budgetby.discovery.myntra")
 
 async def discover_category(slug: str, pages: int = 5) -> List[Dict[str, Any]]:
     results = []
-    async with AsyncSession(impersonate="chrome", timeout=config.SCRAPER_TIMEOUT) as session:
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://www.myntra.com/"
+    }
+    async with AsyncSession(impersonate="chrome", headers=headers, timeout=config.SCRAPER_TIMEOUT) as session:
         for page in range(1, pages + 1):
             url = f"https://www.myntra.com/{slug}?p={page}&sort=popularity"
             try:
-                await asyncio.sleep(config.SCRAPER_DELAY_MIN)
+                await asyncio.sleep(0.05)
                 response = await session.get(url)
                 if response.status_code != 200:
                     continue
