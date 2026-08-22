@@ -21,11 +21,11 @@ MYNTRA_HEADERS = {
     "Sec-Fetch-Site": "same-origin",
 }
 
-async def discover_category(slug: str, pages: int = 5) -> List[Dict[str, Any]]:
+async def discover_category(slug: str, pages: int = 5, sort: str = "popularity") -> List[Dict[str, Any]]:
     results = []
     async with AsyncSession(impersonate="chrome", headers=MYNTRA_HEADERS, timeout=config.SCRAPER_TIMEOUT) as session:
         for page in range(1, pages + 1):
-            url = f"https://www.myntra.com/{slug}?p={page}&sort=popularity"
+            url = f"https://www.myntra.com/{slug}?p={page}&sort={sort}"
             try:
                 await asyncio.sleep(1.0)
                 response = await session.get(url)

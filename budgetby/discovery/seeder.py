@@ -82,14 +82,14 @@ class ProductSeeder:
                 logger.error(f"Error seeding Amazon {category}: {e}")
                 self.stats["errors"] += 1
 
-    async def seed_flipkart(self):
+    async def seed_flipkart(self, sort_mode: str = "popularity"):
         current_count = await self.get_platform_count("flipkart")
         target = TARGET_PROPORTIONS["flipkart"]
         if current_count >= target:
             logger.info(f"Flipkart target reached ({current_count}/{target}). Skipping deep wave.")
             return
 
-        logger.info(f"Starting Flipkart discovery ({current_count}/{target} target)...")
+        logger.info(f"Starting Flipkart discovery [sort={sort_mode}] ({current_count}/{target} target)...")
         for category, info in config.FLIPKART_DISCOVERY_TARGETS.items():
             current_count = await self.get_platform_count("flipkart")
             if current_count >= target:
@@ -98,24 +98,24 @@ class ProductSeeder:
                 sid = info.get("sid", "")
                 cat_type = info.get("category", "fashion")
 
-                products = await flipkart_discover.discover_category(category, sid, pages=25)
+                products = await flipkart_discover.discover_category(category, sid, pages=25, sort=sort_mode)
                 for p in products:
                     p["category"] = cat_type
                     await self._upsert(p)
-                logger.info(f"Flipkart {category}: Added {len(products)} products")
+                logger.info(f"Flipkart {category} ({sort_mode}): Added {len(products)} products")
                 await asyncio.sleep(0.1)
             except Exception as e:
                 logger.error(f"Error seeding Flipkart {category}: {e}")
                 self.stats["errors"] += 1
 
-    async def seed_myntra(self):
+    async def seed_myntra(self, sort_mode: str = "popularity"):
         current_count = await self.get_platform_count("myntra")
         target = TARGET_PROPORTIONS["myntra"]
         if current_count >= target:
             logger.info(f"Myntra target reached ({current_count}/{target}). Skipping deep wave.")
             return
 
-        logger.info(f"Starting concurrent Myntra discovery ({current_count}/{target} target)...")
+        logger.info(f"Starting concurrent Myntra discovery [sort={sort_mode}] ({current_count}/{target} target)...")
         sem = asyncio.Semaphore(3)
 
         async def process_category(category, info):
@@ -125,11 +125,11 @@ class ProductSeeder:
             async with sem:
                 try:
                     cat_type = info.get("category", "fashion")
-                    products = await myntra_discover.discover_category(category, pages=15)
+                    products = await myntra_discover.discover_category(category, pages=15, sort=sort_mode)
                     for p in products:
                         p["category"] = cat_type
                         await self._upsert(p)
-                    logger.info(f"Myntra {category}: Added {len(products)} products")
+                    logger.info(f"Myntra {category} ({sort_mode}): Added {len(products)} products")
                     await asyncio.sleep(0.5)
                 except Exception as e:
                     logger.error(f"Error seeding Myntra {category}: {e}")
@@ -163,14 +163,14 @@ class ProductSeeder:
                 logger.error(f"Error seeding Ajio {category}: {e}")
                 self.stats["errors"] += 1
 
-    async def seed_nykaa(self):
+    async def seed_nykaa(self, sort_mode: str = "popularity"):
         current_count = await self.get_platform_count("nykaa")
         target = TARGET_PROPORTIONS["nykaa"]
         if current_count >= target:
             logger.info(f"Nykaa target reached ({current_count}/{target}). Skipping deep wave.")
             return
 
-        logger.info(f"Starting Nykaa discovery ({current_count}/{target} target)...")
+        logger.info(f"Starting Nykaa discovery [sort={sort_mode}] ({current_count}/{target} target)...")
         for category, info in getattr(config, "NYKAA_DISCOVERY_TARGETS", {}).items():
             current_count = await self.get_platform_count("nykaa")
             if current_count >= target:
@@ -178,11 +178,11 @@ class ProductSeeder:
             try:
                 path = info.get("path", "")
                 cat_type = info.get("category", "beauty")
-                products = await nykaa_discover.discover_category(path, pages=25)
+                products = await nykaa_discover.discover_category(path, pages=25, sort=sort_mode)
                 for p in products:
                     p["category"] = cat_type
                     await self._upsert(p)
-                logger.info(f"Nykaa {category}: Added {len(products)} products")
+                logger.info(f"Nykaa {category} ({sort_mode}): Added {len(products)} products")
                 await asyncio.sleep(config.SCRAPER_DELAY_MIN)
             except Exception as e:
                 logger.error(f"Error seeding Nykaa {category}: {e}")
@@ -198,9 +198,12 @@ class ProductSeeder:
             logger.error(f"Error upserting product {product_data.get('platform_id')}: {e}")
             self.stats["errors"] += 1
 
-    async def _platform_worker(self, platform: str, seed_func):
-        """Runs continuous discovery for a single platform until its target is reached."""
+    async def _platform_worker(self, platform: str, seed_func, sort_modes: list = None):
+        """Runs continuous multi-sort discovery for a single platform until its target is reached."""
         target = TARGET_PROPORTIONS.get(platform, 15000)
+        sort_modes = sort_modes or ["popularity"]
+        mode_idx = 0
+
         while True:
             try:
                 current_count = await self.get_platform_count(platform)
@@ -209,9 +212,15 @@ class ProductSeeder:
                     await asyncio.sleep(600)
                     continue
 
-                logger.info(f"[{platform.upper()}] Starting discovery pass ({current_count}/{target} target)...")
-                await seed_func()
-                logger.info(f"[{platform.upper()}] Discovery pass completed. Brief pause before next cycle.")
+                active_sort = sort_modes[mode_idx % len(sort_modes)]
+                mode_idx += 1
+
+                logger.info(f"[{platform.upper()}] Starting discovery pass [sort={active_sort}] ({current_count}/{target} target)...")
+                if platform in ("myntra", "nykaa", "flipkart"):
+                    await seed_func(sort_mode=active_sort)
+                else:
+                    await seed_func()
+                logger.info(f"[{platform.upper()}] Discovery pass ({active_sort}) completed. Brief pause before next cycle.")
                 await asyncio.sleep(5)
             except Exception as e:
                 logger.error(f"[{platform.upper()}] Worker error: {e}", exc_info=True)
@@ -221,9 +230,9 @@ class ProductSeeder:
         """Runs continuous independent multi-platform workers until custom targets are reached."""
         logger.info(f"Starting independent multi-platform workers until {target_count} total products...")
         workers = [
-            self._platform_worker("myntra", self.seed_myntra),
-            self._platform_worker("nykaa", self.seed_nykaa),
-            self._platform_worker("flipkart", self.seed_flipkart),
+            self._platform_worker("myntra", self.seed_myntra, ["popularity", "discount", "new"]),
+            self._platform_worker("nykaa", self.seed_nykaa, ["popularity", "discount", "new_arrival", "customer_top_rated"]),
+            self._platform_worker("flipkart", self.seed_flipkart, ["popularity", "discount", "recency_desc", "relevance"]),
             self._platform_worker("ajio", self.seed_ajio),
             self._platform_worker("amazon", self.seed_amazon),
         ]

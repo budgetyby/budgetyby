@@ -13,14 +13,14 @@ from budgetby.scrapers.utils import extract_price, clean_title
 
 logger = logging.getLogger("budgetby.discovery.nykaa")
 
-async def discover_category(category_path: str, pages: int = 3) -> List[Dict[str, Any]]:
+async def discover_category(category_path: str, pages: int = 3, sort: str = "popularity") -> List[Dict[str, Any]]:
     results = []
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
     }
     async with AsyncSession(impersonate="chrome", headers=headers, timeout=config.SCRAPER_TIMEOUT) as session:
         for page in range(1, pages + 1):
-            url = f"https://www.nykaa.com/{category_path}?page_no={page}&sort=popularity"
+            url = f"https://www.nykaa.com/{category_path}?page_no={page}&sort={sort}"
             try:
                 await asyncio.sleep(config.SCRAPER_DELAY_MIN)
                 response = await session.get(url)
