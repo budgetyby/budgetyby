@@ -39,8 +39,8 @@ async def init_pool() -> asyncpg.Pool:
         "database": config.DB_NAME,
         "user": config.DB_USER,
         "password": config.DB_PASSWORD,
-        "min_size": 2,
-        "max_size": 20,
+        "min_size": 1,
+        "max_size": 6,
         "command_timeout": 30,
         "statement_cache_size": 0,
     }
@@ -48,7 +48,7 @@ async def init_pool() -> asyncpg.Pool:
         pool_kwargs["ssl"] = ctx
 
     _pool = await asyncpg.create_pool(**pool_kwargs)
-    logger.info(f"Database connection pool initialized to {host_to_use}:{config.DB_PORT} (min=2, max=20)")
+    logger.info(f"Database connection pool initialized to {host_to_use}:{config.DB_PORT} (min=1, max=6)")
     return _pool
 
 
