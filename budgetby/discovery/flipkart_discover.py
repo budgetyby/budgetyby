@@ -27,7 +27,22 @@ async def discover_category(name: str, sid: str, pages: int = 5, sort: str = "po
                     continue
 
                 tree = HTMLParser(response.text)
-                for item in tree.css("div[data-id], a[href*='pid=']"):
+                items = tree.css("div[data-id], a[href*='pid=']")
+
+                # If primary URL returns 0 items on page 1, fallback to search URL
+                if not items and page == 1:
+                    query = name.replace('-', '+')
+                    search_url = f"https://www.flipkart.com/search?q={query}&sort={sort}&page={page}"
+                    s_resp = await session.get(search_url)
+                    if s_resp.status_code == 200:
+                        tree = HTMLParser(s_resp.text)
+                        items = tree.css("div[data-id], a[href*='pid=']")
+
+                if not items:
+                    # No more products in this category, stop paging early
+                    break
+
+                for item in items:
                     try:
                         pid = item.attributes.get("data-id")
                         href = item.attributes.get("href", "")

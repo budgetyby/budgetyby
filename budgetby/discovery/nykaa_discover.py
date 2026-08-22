@@ -28,7 +28,12 @@ async def discover_category(category_path: str, pages: int = 3, sort: str = "pop
                     continue
 
                 tree = HTMLParser(response.text)
-                for item in tree.css("div.productWrapper, div.product-listing"):
+                items = tree.css("div.productWrapper, div.product-listing")
+                if not items:
+                    # No more products in this category, stop paging early
+                    break
+
+                for item in items:
                     link_node = item.css_first("a[href*='/p/']")
                     if not link_node:
                         continue
