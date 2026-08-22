@@ -56,12 +56,23 @@ async def main():
         application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
         register_handlers(application)
         register_admin_handlers(application)
+        
+        from budgetby.scheduler import scheduler as sched_module
+        if application:
+            sched_module.set_bot(application.bot)
+            
         logger.info("Telegram application configured with all handlers.")
     else:
         logger.warning("No TELEGRAM_BOT_TOKEN provided. Telegram features will be disabled.")
         application = None
 
     await cleanup.catchup_scan()
+    
+    try:
+        result = await database.execute("DELETE FROM products WHERE platform = 'flipkart' AND (title = 'Product' OR length(title) < 5);")
+        logger.info(f"Cleaned up bad Flipkart titles: {result}")
+    except Exception as e:
+        logger.warning(f"Could not clean bad titles: {e}")
     
     # Auto-seed all platforms in continuous bootstrap loop until 75,000 products reached
     async def auto_seed_if_needed():

@@ -12,6 +12,12 @@ logger = logging.getLogger("budgetby.scheduler")
 
 _scheduler = AsyncIOScheduler(timezone=config.TIMEZONE)
 
+_bot = None
+
+def set_bot(bot):
+    global _bot
+    _bot = bot
+
 
 async def price_check_loop():
     """
@@ -72,7 +78,10 @@ async def price_check_loop():
                         title=data.get("title"), mrp=data.get("mrp"), rating=data.get("rating"),
                         review_count=data.get("review_count"), image_url=data.get("image_url")
                     )
-                    await database.upsert_daily_price(product["id"], new_price)
+                    try:
+                        await database.upsert_daily_price(product["id"], new_price)
+                    except Exception as e:
+                        logger.warning(f"Failed to upsert daily price for product {product['id']}: {e}")
 
                     # Skip if on cooldown
                     if await is_on_cooldown(product["id"]):
@@ -114,6 +123,13 @@ async def price_check_loop():
 
                     # Set cooldown
                     await set_cooldown(product["id"], config.PRICE_DROP_COOLDOWN_HOURS)
+
+                    # Actually queue and post the deal
+                    pq = PostingQueue()
+                    deal_data["badge"] = deal_result["badge"]
+                    await pq.queue_deal(deal_data)
+                    if _bot is not None:
+                        await pq.process_queue(_bot)
 
                     # Reschedule with updated priority (critical since price just changed)
                     await database.schedule_next_check(product["id"], 1)
