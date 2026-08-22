@@ -589,19 +589,73 @@ AJIO_DISCOVERY_TARGETS = {
 # 14c. NYKAA DISCOVERY TARGETS (Category Slugs)
 # ════════════════════════════════════════════════════════════════════════
 NYKAA_DISCOVERY_TARGETS = {
-    "skincare":          {"path": "skin/c/8377",             "category": "beauty"},
-    "face-wash":         {"path": "skin/cleansers/face-wash/c/8390", "category": "beauty"},
-    "sunscreen":         {"path": "skin/sun-care/face-sunscreen/c/8404", "category": "beauty"},
-    "serums":            {"path": "skin/serums-face-oils/serums-essences/c/8401", "category": "beauty"},
-    "moisturizers":      {"path": "skin/moisturizers/face-moisturizer-day-cream/c/8394", "category": "beauty"},
-    "haircare":          {"path": "hair-care/c/9525",         "category": "beauty"},
-    "shampoo":           {"path": "hair-care/shampoo-conditioner/shampoo/c/9531", "category": "beauty"},
-    "fragrances":        {"path": "fragrance/c/8446",         "category": "beauty"},
-    "perfumes-men":      {"path": "fragrance/perfumes-edp-edt/eau-de-parfum-edp/c/8451", "category": "beauty"},
-    "makeup-lips":       {"path": "makeup/lips/c/8327",       "category": "beauty"},
-    "makeup-eyes":       {"path": "makeup/eyes/c/8340",       "category": "beauty"},
-    "bath-and-body":     {"path": "bath-body/c/8412",         "category": "beauty"},
-    "mens-grooming":     {"path": "men/shaving-hair-removal/c/9571", "category": "beauty"},
+    # SKINCARE
+    "skincare":               {"path": "skin/c/8377",                             "category": "beauty"},
+    "face-wash":              {"path": "skin/cleansers/face-wash/c/8390",         "category": "beauty"},
+    "sunscreen":              {"path": "skin/sun-care/face-sunscreen/c/8404",     "category": "beauty"},
+    "serums":                 {"path": "skin/serums-face-oils/serums-essences/c/8401", "category": "beauty"},
+    "moisturizers":           {"path": "skin/moisturizers/face-moisturizer-day-cream/c/8394", "category": "beauty"},
+    "night-creams":           {"path": "skin/moisturizers/night-cream/c/8395",     "category": "beauty"},
+    "toners":                 {"path": "skin/toners-mists/c/8392",                 "category": "beauty"},
+    "eye-creams":             {"path": "skin/eye-care/under-eye-creams-serums/c/8408", "category": "beauty"},
+    "lip-balms":              {"path": "skin/lip-care/lip-balms/c/8410",          "category": "beauty"},
+    "face-masks":             {"path": "skin/masks-peels/sheet-masks/c/8407",      "category": "beauty"},
+    "face-scrubs":            {"path": "skin/cleansers/face-scrubs-exfoliators/c/8389", "category": "beauty"},
+    
+    # MAKEUP
+    "makeup-lips":            {"path": "makeup/lips/c/8327",                       "category": "beauty"},
+    "lipsticks":              {"path": "makeup/lips/liquid-lipstick/c/8329",      "category": "beauty"},
+    "matte-lipsticks":        {"path": "makeup/lips/matte-lipstick/c/8330",       "category": "beauty"},
+    "makeup-eyes":            {"path": "makeup/eyes/c/8340",                       "category": "beauty"},
+    "eyeliner":               {"path": "makeup/eyes/eyeliner/c/8342",             "category": "beauty"},
+    "kajal":                  {"path": "makeup/eyes/kajal-kohl/c/8341",           "category": "beauty"},
+    "mascara":                {"path": "makeup/eyes/mascara/c/8343",              "category": "beauty"},
+    "eyeshadow":              {"path": "makeup/eyes/eyeshadow-palette/c/8344",     "category": "beauty"},
+    "makeup-face":            {"path": "makeup/face/c/8354",                       "category": "beauty"},
+    "foundation":             {"path": "makeup/face/foundation/c/8356",           "category": "beauty"},
+    "compact-powder":         {"path": "makeup/face/compact/c/8357",              "category": "beauty"},
+    "concealer":              {"path": "makeup/face/concealer/c/8358",            "category": "beauty"},
+    "blush":                  {"path": "makeup/face/blush/c/8360",                "category": "beauty"},
+    "highlighter":            {"path": "makeup/face/highlighter/c/8361",          "category": "beauty"},
+    "makeup-remover":         {"path": "makeup/makeup-remover/c/8372",            "category": "beauty"},
+    "makeup-brushes":         {"path": "makeup/tools-brushes/makeup-brushes/c/8366", "category": "beauty"},
+    "nail-polish":            {"path": "makeup/nails/nail-polish/c/8336",         "category": "beauty"},
+
+    # HAIRCARE
+    "haircare":               {"path": "hair-care/c/9525",                         "category": "beauty"},
+    "shampoo":                {"path": "hair-care/shampoo-conditioner/shampoo/c/9531", "category": "beauty"},
+    "conditioner":            {"path": "hair-care/shampoo-conditioner/conditioner/c/9532", "category": "beauty"},
+    "hair-oil":               {"path": "hair-care/hair-oil/c/9528",               "category": "beauty"},
+    "hair-serum":             {"path": "hair-care/hair-serum-mask/c/9530",        "category": "beauty"},
+    "hair-masks":             {"path": "hair-care/hair-masks/c/9537",             "category": "beauty"},
+    "hair-color":             {"path": "hair-care/hair-color/c/9534",             "category": "beauty"},
+    "hair-styling":           {"path": "hair-care/hair-styling/c/9535",           "category": "beauty"},
+
+    # FRAGRANCES
+    "fragrances":             {"path": "fragrance/c/8446",                         "category": "beauty"},
+    "perfumes-men":           {"path": "fragrance/perfumes-edp-edt/eau-de-parfum-edp/c/8451", "category": "beauty"},
+    "perfumes-women":         {"path": "fragrance/perfumes-women/c/8447",         "category": "beauty"},
+    "body-mists":             {"path": "fragrance/body-mists-sprays/c/8450",      "category": "beauty"},
+    "deodorants":             {"path": "fragrance/deodorants-roll-ons/c/8449",    "category": "beauty"},
+
+    # BATH & BODY
+    "bath-and-body":          {"path": "bath-body/c/8412",                         "category": "beauty"},
+    "body-wash":              {"path": "bath-body/shower-gels-body-wash/c/8415",   "category": "beauty"},
+    "body-lotion":            {"path": "bath-body/body-lotions-moisturizers/c/8416", "category": "beauty"},
+    "hand-cream":             {"path": "bath-body/hand-care/hand-creams/c/8419",   "category": "beauty"},
+    "body-scrub":             {"path": "bath-body/body-scrubs-exfoliators/c/8422", "category": "beauty"},
+
+    # MEN'S GROOMING
+    "mens-grooming":          {"path": "men/c/9564",                              "category": "beauty"},
+    "mens-shaving":           {"path": "men/shaving-hair-removal/c/9571",         "category": "beauty"},
+    "mens-beard-care":        {"path": "men/beard-care/c/9570",                   "category": "beauty"},
+    "mens-face-care":         {"path": "men/face-care/c/9567",                    "category": "beauty"},
+
+    # APPLIANCES & WELLNESS
+    "hair-dryers":            {"path": "appliances/hair-styling-tools/hair-dryers/c/8459", "category": "appliances"},
+    "straighteners":          {"path": "appliances/hair-styling-tools/hair-straighteners/c/8460", "category": "appliances"},
+    "face-epilators":         {"path": "appliances/hair-removal-tools/epilators/c/8464", "category": "appliances"},
+    "health-wellness":        {"path": "wellness/c/9580",                         "category": "health"},
 }
 
 # ════════════════════════════════════════════════════════════════════════

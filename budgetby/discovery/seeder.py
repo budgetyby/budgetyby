@@ -193,44 +193,36 @@ class ProductSeeder:
             logger.error(f"Error upserting product {product_data.get('platform_id')}: {e}")
             self.stats["errors"] += 1
 
-    async def run_bootstrap_until_target(self, target_count: int = 75000):
-        """Continuously runs discovery until custom multi-platform proportional targets are reached."""
-        logger.info(f"Starting continuous multi-platform bootstrap loop until {target_count} products...")
+    async def _platform_worker(self, platform: str, seed_func):
+        """Runs continuous discovery for a single platform until its target is reached."""
+        target = TARGET_PROPORTIONS.get(platform, 15000)
         while True:
             try:
-                total_prods = await database.fetchval("SELECT COUNT(*) FROM products") or 0
-            except Exception:
-                total_prods = 0
+                current_count = await self.get_platform_count(platform)
+                if current_count >= target:
+                    logger.info(f"[{platform.upper()}] Target reached ({current_count}/{target}). Worker sleeping for 10 min.")
+                    await asyncio.sleep(600)
+                    continue
 
-            if total_prods >= target_count:
-                logger.info(f"Target catalog reached ({total_prods} >= {target_count}). Switching to routine 6h maintenance.")
-                break
+                logger.info(f"[{platform.upper()}] Starting discovery pass ({current_count}/{target} target)...")
+                await seed_func()
+                logger.info(f"[{platform.upper()}] Discovery pass completed. Brief pause before next cycle.")
+                await asyncio.sleep(5)
+            except Exception as e:
+                logger.error(f"[{platform.upper()}] Worker error: {e}", exc_info=True)
+                await asyncio.sleep(30)
 
-            logger.info(f"Bootstrap progress: {total_prods}/{target_count} products. Running concurrent discovery across all 5 platforms...")
-            results = await asyncio.gather(
-                self.seed_flipkart(),
-                self.seed_myntra(),
-                self.seed_ajio(),
-                self.seed_nykaa(),
-                self.seed_amazon(),
-                return_exceptions=True
-            )
-            
-            for r in results:
-                if isinstance(r, Exception):
-                    logger.error(f"Discovery task failed: {r}", exc_info=r)
-            
-            try:
-                total_prods = await database.fetchval("SELECT COUNT(*) FROM products") or 0
-            except Exception:
-                pass
-
-            if total_prods >= target_count:
-                logger.info(f"Target reached: {total_prods} products! Switching to routine maintenance mode.")
-                break
-
-            logger.info(f"Wave finished. Current count: {total_prods}/{target_count}. Pausing 10s before next wave...")
-            await asyncio.sleep(10)
+    async def run_bootstrap_until_target(self, target_count: int = 75000):
+        """Runs continuous independent multi-platform workers until custom targets are reached."""
+        logger.info(f"Starting independent multi-platform workers until {target_count} total products...")
+        workers = [
+            self._platform_worker("myntra", self.seed_myntra),
+            self._platform_worker("nykaa", self.seed_nykaa),
+            self._platform_worker("flipkart", self.seed_flipkart),
+            self._platform_worker("ajio", self.seed_ajio),
+            self._platform_worker("amazon", self.seed_amazon),
+        ]
+        await asyncio.gather(*workers, return_exceptions=True)
 
     async def run_full_discovery(self) -> dict:
         """Runs standard multi-platform discovery pass."""
