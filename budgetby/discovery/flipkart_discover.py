@@ -21,7 +21,7 @@ async def discover_category(name: str, sid: str, pages: int = 5, sort: str = "po
         for page in range(1, pages + 1):
             url = f"https://www.flipkart.com/{name}/pr?sid={sid}&sort={sort}&page={page}"
             try:
-                await asyncio.sleep(config.SCRAPER_DELAY_MIN)
+                await asyncio.sleep(0.3)  # Fast discovery: 0.3s per page (was 2.0s - too slow, caused restarts)
                 response = await session.get(url)
                 if response.status_code != 200:
                     continue

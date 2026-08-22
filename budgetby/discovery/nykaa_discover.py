@@ -22,7 +22,7 @@ async def discover_category(category_path: str, pages: int = 3, sort: str = "pop
         for page in range(1, pages + 1):
             url = f"https://www.nykaa.com/{category_path}?page_no={page}&sort={sort}"
             try:
-                await asyncio.sleep(config.SCRAPER_DELAY_MIN)
+                await asyncio.sleep(0.5)  # Fast discovery: 0.5s per page (was 2.0s - too slow)
                 response = await session.get(url)
                 if response.status_code != 200:
                     continue
