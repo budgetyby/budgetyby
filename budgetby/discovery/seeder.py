@@ -115,23 +115,28 @@ class ProductSeeder:
             logger.info(f"Myntra target reached ({current_count}/{target}). Skipping deep wave.")
             return
 
-        logger.info(f"Starting Myntra discovery ({current_count}/{target} target)...")
-        for category, info in config.MYNTRA_DISCOVERY_TARGETS.items():
-            current_count = await self.get_platform_count("myntra")
-            if current_count >= target:
-                break
-            try:
-                cat_type = info.get("category", "fashion")
+        logger.info(f"Starting concurrent Myntra discovery ({current_count}/{target} target)...")
+        sem = asyncio.Semaphore(3)
 
-                products = await myntra_discover.discover_category(category, pages=20)
-                for p in products:
-                    p["category"] = cat_type
-                    await self._upsert(p)
-                logger.info(f"Myntra {category}: Added {len(products)} products")
-                await asyncio.sleep(0.1)
-            except Exception as e:
-                logger.error(f"Error seeding Myntra {category}: {e}")
-                self.stats["errors"] += 1
+        async def process_category(category, info):
+            cnt = await self.get_platform_count("myntra")
+            if cnt >= target:
+                return
+            async with sem:
+                try:
+                    cat_type = info.get("category", "fashion")
+                    products = await myntra_discover.discover_category(category, pages=15)
+                    for p in products:
+                        p["category"] = cat_type
+                        await self._upsert(p)
+                    logger.info(f"Myntra {category}: Added {len(products)} products")
+                    await asyncio.sleep(0.5)
+                except Exception as e:
+                    logger.error(f"Error seeding Myntra {category}: {e}")
+                    self.stats["errors"] += 1
+
+        tasks = [process_category(cat, info) for cat, info in config.MYNTRA_DISCOVERY_TARGETS.items()]
+        await asyncio.gather(*tasks, return_exceptions=True)
 
     async def seed_ajio(self):
         current_count = await self.get_platform_count("ajio")

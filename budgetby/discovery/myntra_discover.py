@@ -64,6 +64,10 @@ async def discover_category(slug: str, pages: int = 5) -> List[Dict[str, Any]]:
                         except Exception:
                             pass
 
+                if not products:
+                    # No more products in this category, stop paging early
+                    break
+
                 for p in products:
                     style_id = str(p.get("productId", p.get("styleId", "")))
                     if not style_id:
