@@ -40,10 +40,10 @@ class ProductSeeder:
         current_count = await self.get_platform_count("amazon")
         target = TARGET_PROPORTIONS["amazon"]
         if current_count >= target:
-            logger.info(f"Amazon target reached ({current_count}/{target}). Skipping deep wave.")
+            logger.info(f"Amazon target reached ({current_count}/{target}). Skipping discovery.")
             return
 
-        logger.info(f"Starting Amazon discovery ({current_count}/{target} target)...")
+        logger.info(f"Starting throttled Amazon discovery ({current_count}/{target} target)...")
         for category, info in config.AMAZON_DISCOVERY_TARGETS.items():
             current_count = await self.get_platform_count("amazon")
             if current_count >= target:
@@ -51,33 +51,30 @@ class ProductSeeder:
             try:
                 slug = info.get("slug", category)
                 
-                # Bestsellers
-                products = await amazon_discover.discover_bestsellers(slug, pages=3)
+                # Bestsellers (single page, slowed down)
+                products = await amazon_discover.discover_bestsellers(slug, pages=1)
                 for p in products:
                     p["category"] = info.get("category", category)
                     await self._upsert(p)
+                await asyncio.sleep(3.0)
 
-                # New Releases & Most Wished
-                new_rel = await amazon_discover.discover_new_releases(slug, pages=2)
+                # New Releases (single page, slowed down)
+                new_rel = await amazon_discover.discover_new_releases(slug, pages=1)
                 for p in new_rel:
                     p["category"] = info.get("category", category)
                     await self._upsert(p)
+                await asyncio.sleep(3.0)
 
-                wished = await amazon_discover.discover_most_wished_for(slug)
-                for p in wished:
-                    p["category"] = info.get("category", category)
-                    await self._upsert(p)
-
-                # Search Keywords
+                # Search Keywords (throttled to max 2 keywords with 4s pause)
                 keywords = amazon_discover.AMAZON_CATEGORY_KEYWORDS.get(category, [])
-                for kw in keywords[:20]:
-                    kw_prods = await amazon_discover.discover_search_keywords(kw, pages=2)
+                for kw in keywords[:2]:
+                    kw_prods = await amazon_discover.discover_search_keywords(kw, pages=1)
                     for p in kw_prods:
                         p["category"] = info.get("category", category)
                         await self._upsert(p)
-                    await asyncio.sleep(config.SCRAPER_DELAY_MIN)
+                    await asyncio.sleep(4.0)
 
-                await asyncio.sleep(config.SCRAPER_DELAY_MIN)
+                await asyncio.sleep(5.0)
             except Exception as e:
                 logger.error(f"Error seeding Amazon {category}: {e}")
                 self.stats["errors"] += 1
@@ -208,8 +205,8 @@ class ProductSeeder:
             try:
                 current_count = await self.get_platform_count(platform)
                 if current_count >= target:
-                    logger.info(f"[{platform.upper()}] Target reached ({current_count}/{target}). Worker sleeping for 10 min.")
-                    await asyncio.sleep(600)
+                    logger.info(f"[{platform.upper()}] Target reached ({current_count}/{target}). Worker sleeping for 1 hour.")
+                    await asyncio.sleep(3600)
                     continue
 
                 active_sort = sort_modes[mode_idx % len(sort_modes)]
