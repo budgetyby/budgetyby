@@ -229,14 +229,26 @@ class ProductSeeder:
     async def run_bootstrap_until_target(self, target_count: int = 75000):
         """Runs continuous independent multi-platform workers until custom targets are reached."""
         logger.info(f"Starting independent multi-platform workers until {target_count} total products...")
-        workers = [
-            self._platform_worker("myntra", self.seed_myntra, ["popularity", "discount", "new"]),
-            self._platform_worker("nykaa", self.seed_nykaa, ["popularity", "discount", "new_arrival", "customer_top_rated"]),
-            self._platform_worker("flipkart", self.seed_flipkart, ["popularity", "discount", "recency_desc", "relevance"]),
-            self._platform_worker("ajio", self.seed_ajio),
-            self._platform_worker("amazon", self.seed_amazon),
+
+        async def guarded_worker(platform, seed_func, sort_modes):
+            """Wraps _platform_worker with outer crash recovery so the worker NEVER permanently dies."""
+            while True:
+                try:
+                    await self._platform_worker(platform, seed_func, sort_modes)
+                    break  # Worker exited cleanly (target reached)
+                except Exception as e:
+                    logger.error(f"[{platform.upper()}] Worker crashed unexpectedly: {e}. Restarting in 30s...", exc_info=True)
+                    await asyncio.sleep(30)
+
+        tasks = [
+            asyncio.create_task(guarded_worker("myntra", self.seed_myntra, ["popularity", "discount", "new"])),
+            asyncio.create_task(guarded_worker("nykaa", self.seed_nykaa, ["popularity", "discount", "new_arrival", "customer_top_rated"])),
+            asyncio.create_task(guarded_worker("flipkart", self.seed_flipkart, ["popularity", "discount", "recency_desc", "relevance"])),
+            asyncio.create_task(guarded_worker("ajio", self.seed_ajio, None)),
+            asyncio.create_task(guarded_worker("amazon", self.seed_amazon, None)),
         ]
-        await asyncio.gather(*workers, return_exceptions=True)
+        await asyncio.gather(*tasks, return_exceptions=True)
+
 
     async def run_full_discovery(self) -> dict:
         """Runs standard multi-platform discovery pass."""

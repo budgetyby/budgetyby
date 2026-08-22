@@ -76,12 +76,17 @@ async def main():
     
     # Auto-seed all platforms in continuous bootstrap loop until 75,000 products reached
     async def auto_seed_if_needed():
-        try:
-            from budgetby.discovery.seeder import ProductSeeder
-            seeder = ProductSeeder()
-            await seeder.run_bootstrap_until_target(target_count=75000)
-        except Exception as e:
-            logger.error(f"Error in auto_seed_if_needed: {e}")
+        while True:
+            try:
+                from budgetby.discovery.seeder import ProductSeeder
+                seeder = ProductSeeder()
+                logger.info("Starting bootstrap seeder workers...")
+                await seeder.run_bootstrap_until_target(target_count=75000)
+                logger.info("Bootstrap target reached! Seeder workers done.")
+                break  # All targets met, exit cleanly
+            except Exception as e:
+                logger.error(f"Seeder crashed: {e}. Restarting in 60 seconds...", exc_info=True)
+                await asyncio.sleep(60)  # Brief pause then restart everything
 
     asyncio.create_task(auto_seed_if_needed())
 
