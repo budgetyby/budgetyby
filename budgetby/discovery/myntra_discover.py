@@ -4,6 +4,7 @@ Myntra discovery engine.
 import logging
 import json
 import asyncio
+import re
 from typing import List, Dict, Any
 from curl_cffi.requests import AsyncSession
 from budgetby import config
@@ -11,42 +12,58 @@ from budgetby.affiliate.earnkaro_links import build_earnkaro_url_sync
 
 logger = logging.getLogger("budgetby.discovery.myntra")
 
+MYNTRA_HEADERS = {
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Referer": "https://www.myntra.com/",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "same-origin",
+}
+
 async def discover_category(slug: str, pages: int = 5) -> List[Dict[str, Any]]:
     results = []
-    async with AsyncSession(impersonate="chrome", timeout=config.SCRAPER_TIMEOUT) as session:
+    async with AsyncSession(impersonate="chrome", headers=MYNTRA_HEADERS, timeout=config.SCRAPER_TIMEOUT) as session:
         for page in range(1, pages + 1):
             url = f"https://www.myntra.com/{slug}?p={page}&sort=popularity"
             try:
-                await asyncio.sleep(1.5)
+                await asyncio.sleep(1.0)
                 response = await session.get(url)
                 if response.status_code != 200:
+                    logger.warning(f"Myntra {slug} page {page} returned status {response.status_code}")
                     continue
 
                 text = response.text
+                products = []
+
+                # Strategy 1: Find window.__myx
                 idx = text.find("window.__myx =")
                 if idx == -1:
                     idx = text.find("window.__myx=")
                 if idx == -1:
                     idx = text.find("window.__myx_data__ =")
+                if idx == -1:
+                    idx = text.find("window.__myx_data__=")
 
-                products = []
                 if idx != -1:
-                    json_start = text.find("{", idx)
-                    decoder = json.JSONDecoder()
-                    data, _ = decoder.raw_decode(text[json_start:])
-                    products = data.get("searchData", {}).get("results", {}).get("products", [])
-                else:
-                    logger.warning(f"Myntra HTML JSON extraction failed for {slug} page {page}. Response length: {len(text)}. Trying API fallback...")
-                    offset = (page - 1) * 50
-                    api_url = f"https://www.myntra.com/gateway/v2/search/{slug}?p={page}&rows=50&o={offset}&plaession_id=auto&sort=popularity"
-                    api_resp = await session.get(api_url)
-                    if api_resp.status_code == 200:
+                    try:
+                        json_start = text.find("{", idx)
+                        decoder = json.JSONDecoder()
+                        data, _ = decoder.raw_decode(text[json_start:])
+                        products = data.get("searchData", {}).get("results", {}).get("products", [])
+                    except Exception as e:
+                        logger.warning(f"Failed to raw_decode Myntra JSON on page {page}: {e}")
+
+                # Strategy 2: Regex fallback
+                if not products:
+                    match = re.search(r'window\.__myx\s*=\s*({.*?});</script>', text, re.DOTALL)
+                    if match:
                         try:
-                            api_data = api_resp.json()
-                            products = api_data.get("products", api_data.get("results", []))
-                        except Exception as e:
-                            logger.error(f"Myntra API fallback JSON parse failed: {e}")
-                    
+                            data = json.loads(match.group(1))
+                            products = data.get("searchData", {}).get("results", {}).get("products", [])
+                        except Exception:
+                            pass
+
                 for p in products:
                     style_id = str(p.get("productId", p.get("styleId", "")))
                     if not style_id:
