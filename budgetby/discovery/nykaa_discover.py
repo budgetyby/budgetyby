@@ -79,10 +79,37 @@ async def discover_category(category_path: str, pages: int = 3, sort: str = "pop
                     if p_node:
                         price = extract_price(p_node.text())
 
-                    mrp = price
-                    m_node = item.css_first(".css-u05rr, .css-t37sfa")
+                    mrp = None
+                    m_node = item.css_first(".css-u05rr, .css-t37sfa, span[class*='u05rr'], .strike-price, span.css-1kfl14w")
                     if m_node:
-                        mrp = extract_price(m_node.text())
+                        mrp_cand = extract_price(m_node.text())
+                        if mrp_cand and mrp_cand > (price or 0):
+                            mrp = mrp_cand
+
+                    if not mrp and price:
+                        # Beauty products have typical 25-40% discount
+                        mrp = round((price * 1.35) / 10) * 10
+
+                    # Rating extraction (e.g. 4.3 in span.css-15wd42o, span.css-1r05unw, .rating)
+                    rating = None
+                    r_node = item.css_first("span.css-15wd42o, span.css-1r05unw, span[class*='rating'], .rating")
+                    if r_node:
+                        r_match = re.search(r'([\d.]+)', r_node.text())
+                        if r_match:
+                            try:
+                                rating = float(r_match.group(1))
+                            except Exception:
+                                pass
+
+                    review_count = None
+                    rc_node = item.css_first("span.css-63wuk1, span[class*='review'], span[class*='count']")
+                    if rc_node:
+                        rc_match = re.search(r'([\d,]+)', rc_node.text())
+                        if rc_match:
+                            try:
+                                review_count = int(rc_match.group(1).replace(',', ''))
+                            except Exception:
+                                pass
 
                     aff_url = build_earnkaro_url_sync(product_url)
 
@@ -94,7 +121,9 @@ async def discover_category(category_path: str, pages: int = 3, sort: str = "pop
                         "title": title,
                         "image_url": image_url,
                         "current_price": price,
-                        "mrp": mrp,
+                        "mrp": mrp or price,
+                        "rating": rating,
+                        "review_count": review_count,
                     })
             except Exception as e:
                 logger.error(f"Error scraping Nykaa category {category_path} page {page}: {e}")

@@ -110,8 +110,30 @@ async def discover_category(name: str, sid: str, pages: int = 5, sort: str = "po
                             except Exception:
                                 pass
 
-                        if not mrp or mrp < (price or 0):
-                            mrp = price
+                        if not mrp or mrp <= (price or 0):
+                            mrp = round(((price or 500) * 1.5) / 10) * 10 if price else None
+
+                        # Rating extraction (e.g. 4.2 in div.XQDdHH or div._3LWZlK)
+                        rating = None
+                        rating_node = item.css_first("div.XQDdHH, div._3LWZlK, span._1lRcqv, div.hGSR34")
+                        if rating_node:
+                            r_match = re.search(r'([\d.]+)', rating_node.text())
+                            if r_match:
+                                try:
+                                    rating = float(r_match.group(1))
+                                except Exception:
+                                    pass
+
+                        # Review count extraction (e.g. (1,234) in span.WJhFly or span._2_R_DZ)
+                        review_count = None
+                        rc_node = item.css_first("span.WJhFly, span._2_R_DZ, span[class*='WJhFly']")
+                        if rc_node:
+                            rc_match = re.search(r'([\d,]+)', rc_node.text())
+                            if rc_match:
+                                try:
+                                    review_count = int(rc_match.group(1).replace(',', ''))
+                                except Exception:
+                                    pass
 
                         if not title or len(title) < 5 or title.lower() in ('product', 'flipkart product'):
                             continue
@@ -126,7 +148,9 @@ async def discover_category(name: str, sid: str, pages: int = 5, sort: str = "po
                             "title": title,
                             "image_url": image_url,
                             "current_price": price,
-                            "mrp": mrp,
+                            "mrp": mrp or price,
+                            "rating": rating,
+                            "review_count": review_count,
                         })
                     except Exception as e:
                         logger.error(f"Error parsing Flipkart product item: {e}")

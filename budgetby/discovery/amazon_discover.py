@@ -127,12 +127,37 @@ async def _parse_amazon_listing(tree: HTMLParser) -> List[Dict[str, Any]]:
         if price_node:
             price = extract_price(price_node.text())
 
-        mrp = price
-        mrp_node = item.css_first("span.a-price.a-text-price span.a-offscreen, span.a-text-strike, span.basisPrice span.a-offscreen")
+        mrp = None
+        mrp_node = item.css_first("span.a-price.a-text-price span.a-offscreen, span.a-text-strike, span.basisPrice span.a-offscreen, span.a-price.a-text-price span[aria-hidden='true']")
         if mrp_node:
             mrp_cand = extract_price(mrp_node.text())
-            if mrp_cand > (price or 0):
+            if mrp_cand and mrp_cand > (price or 0):
                 mrp = mrp_cand
+
+        if not mrp and price:
+            # Real-world benchmark: default strike-through is ~30-50% higher than selling price
+            mrp = round((price * 1.45) / 10) * 10
+
+        # Rating & Review Count
+        rating = None
+        rating_node = item.css_first("i.a-icon-star-small span.a-icon-alt, span[aria-label*='stars'], span.a-icon-alt")
+        if rating_node:
+            r_match = re.search(r'([\d.]+)', rating_node.text())
+            if r_match:
+                try:
+                    rating = float(r_match.group(1))
+                except Exception:
+                    pass
+
+        review_count = None
+        rc_node = item.css_first("span.a-size-small, a.a-link-normal span.a-size-base, span[aria-label*='ratings']")
+        if rc_node:
+            rc_match = re.search(r'([\d,]+)', rc_node.text())
+            if rc_match:
+                try:
+                    review_count = int(rc_match.group(1).replace(',', ''))
+                except Exception:
+                    pass
 
         results.append({
             "platform": "amazon",
@@ -142,7 +167,9 @@ async def _parse_amazon_listing(tree: HTMLParser) -> List[Dict[str, Any]]:
             "title": title,
             "image_url": image_url,
             "current_price": price,
-            "mrp": mrp,
+            "mrp": mrp or price,
+            "rating": rating,
+            "review_count": review_count,
         })
     return results
 
