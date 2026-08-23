@@ -56,10 +56,16 @@ async def catalog_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             WHERE last_checked IS NOT NULL ORDER BY last_checked DESC LIMIT 1
         """)
 
-        # 4. Telegram Posting & Deal Tracking
+        # 4. Telegram Posting & Deal Tracking by Source Engine
         total_deals = await database.fetchval("SELECT COUNT(*) FROM deals;")
         today_deals = await database.fetchval("""
             SELECT COUNT(*) FROM deals WHERE posted_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE
+        """)
+        engine_rows = await database.fetch("""
+            SELECT COALESCE(badge, 'PRICE_DROP') as badge, COUNT(*) as cnt 
+            FROM deals 
+            GROUP BY COALESCE(badge, 'PRICE_DROP') 
+            ORDER BY cnt DESC;
         """)
         active_tracking = await database.fetchval("""
             SELECT COUNT(*) FROM deal_tracking WHERE track_until > NOW() AND is_finalized = FALSE
@@ -98,9 +104,23 @@ async def catalog_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             lc = last_checked[0]
             text += f"• Latest Checked: [{lc['platform'].upper()}] {lc['title'][:32]}... (₹{lc['current_price']})\n\n"
 
-        # Telegram Section
-        text += "📢 <b>TELEGRAM DEALS & TRACKING:</b>\n"
-        text += f"• Posted Today: {today_deals:,} | Total All-Time: {total_deals:,}\n"
+        # Telegram Section & Source Engine Breakdown
+        text += "📢 <b>TELEGRAM DEALS BY SOURCE ENGINE:</b>\n"
+        text += f"• Total Deals Posted: {total_deals:,} (Today: {today_deals:,})\n"
+        for er in engine_rows:
+            b = er["badge"]
+            cnt = er["cnt"]
+            if b == "EVERGREEN":
+                engine_name = "Hourly Bestseller Backfill"
+            elif b == "TODAY_DEAL":
+                engine_name = "Flash / Deals Hub Crawler"
+            elif b in ["ATL", "near_ATL"]:
+                engine_name = "All-Time Low Detector"
+            elif b in ["90d_low", "60d_low"]:
+                engine_name = "Multi-Month Low Detector"
+            else:
+                engine_name = "Price Drop Detector"
+            text += f"  ↳ <b>{engine_name}</b> ({b}): {cnt:,} deals\n"
         text += f"• Active Auto-Edits Monitored: {active_tracking:,} deals (60h window)\n"
         if latest_deal:
             ld = latest_deal[0]
