@@ -101,11 +101,19 @@ async def discover_category(slug: str, pages: int = 5, sort: str = "popularity")
     return results
 
 async def discover_deals_page(pages: int = 2) -> List[Dict[str, Any]]:
-    """Crawls Myntra Deals of the Day and 50%+ Discount Clearance Hubs."""
+    """Crawls Myntra Top Discount Categories sorted by highest discount."""
     results = []
-    for slug in ["deals", "men-clothing?f=Discount_Range%3A50.0_100.0", "women-clothing?f=Discount_Range%3A50.0_100.0"]:
+    deal_categories = [
+        "men-tshirts",
+        "men-casual-shoes",
+        "women-kurtas-kurtis-suits",
+        "women-dresses",
+        "smart-watches",
+        "headphones",
+    ]
+    for slug in deal_categories:
         try:
-            items = await discover_category(slug, pages=pages)
+            items = await discover_category(slug, pages=pages, sort="discount")
             for it in items:
                 it["deal_type"] = "today_deal"
                 it["badge"] = "TODAY_DEAL"
