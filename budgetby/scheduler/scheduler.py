@@ -244,8 +244,8 @@ async def hourly_backfill():
         pq = PostingQueue()
         for deal in evergreen_deals:
             logger.info(f"Evergreen candidate: {deal['title'][:50]}...")
-            await pq.queue_deal({"product": deal, "type": "evergreen"})
-        await pq.process_queue(None)
+            await pq.queue_deal({"product": deal, "type": "evergreen", "badge": "EVERGREEN"})
+        await pq.process_queue(_bot)
 
     except Exception as e:
         logger.error(f"Error in hourly_backfill: {e}")

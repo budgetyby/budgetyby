@@ -34,16 +34,26 @@ class PostingQueue:
         await self._queue.put(deal_data)
         logger.info(f"Queued deal: {deal_data.get('product', {}).get('id')}")
 
-    async def process_queue(self, bot):
-        """Processes the queue and posts deals with delays."""
+    async def process_queue(self, bot=None):
+        """Processes the queue and posts deals with delays, recording each in the database."""
+        if not bot and config.TELEGRAM_BOT_TOKEN:
+            from telegram import Bot
+            bot = Bot(token=config.TELEGRAM_BOT_TOKEN)
+
+        if not bot:
+            logger.warning("No Telegram bot available for process_queue.")
+            return
+
         while not self._queue.empty():
             try:
                 deal_data = await self._queue.get()
                 
                 from budgetby.bot import templates
+                from budgetby import database
                 product = deal_data.get("product", {})
-                deal_type = deal_data.get("type")
-                badge = deal_data.get("badge")
+                deal_type = deal_data.get("type", "price_drop")
+                badge = deal_data.get("badge", "DEAL")
+                score = deal_data.get("score", 50)
                 
                 if deal_type == "evergreen":
                     text = templates.format_evergreen_deal(product, 1)
@@ -54,23 +64,41 @@ class PostingQueue:
                 else:
                     text = templates.format_good_deal(product)
                     
-                url = product.get("url", "")
+                url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
                 reply_markup = templates.build_buy_button(url) if url else None
                 
-                await bot.send_message(
+                msg = await bot.send_message(
                     chat_id=config.TELEGRAM_CHANNEL_ID,
                     text=text,
                     parse_mode="HTML",
                     reply_markup=reply_markup
                 )
-                logger.info(f"Posting deal: {product.get('title')}")
+                logger.info(f"Successfully posted deal #{product.get('id')} to Telegram (Msg ID: {msg.message_id}): {product.get('title')[:50]}")
                 
+                # Record deal in database
+                price = float(product.get("current_price") or 0)
+                mrp = float(product.get("mrp") or price)
+                savings_amt = max(0.0, mrp - price)
+                savings_pct = (savings_amt / mrp) if mrp > 0 else 0.0
+
+                deal_row = await database.fetchrow("""
+                    INSERT INTO deals (product_id, deal_type, badge, posted_price, posted_mrp, savings_amount, savings_pct, deal_score, posted_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+                    RETURNING id;
+                """, product.get("id"), deal_type, badge, price, mrp, savings_amt, savings_pct, float(score))
+
+                if deal_row and deal_row["id"]:
+                    await database.insert_deal_tracking(
+                        deal_row["id"], product.get("id"), msg.message_id,
+                        str(config.TELEGRAM_CHANNEL_ID), text, price
+                    )
+
                 self.posts_this_hour += 1
                 self._queue.task_done()
                 
                 await asyncio.sleep(config.POST_DELAY_SECONDS)
             except Exception as e:
-                logger.error(f"Error processing deal queue: {e}")
+                logger.error(f"Error processing deal queue: {e}", exc_info=True)
 
     async def hourly_backfill_check(self, bot):
         """Fills hourly gap with evergreen deals if minimum not met."""
