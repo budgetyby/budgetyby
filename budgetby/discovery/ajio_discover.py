@@ -15,18 +15,14 @@ async def discover_category(category_code: str, pages: int = 2) -> List[Dict[str
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9",
     }
-    async with AsyncSession(impersonate="chrome", headers=headers, timeout=config.SCRAPER_TIMEOUT) as session:
+    async with AsyncSession(impersonate="chrome", headers=headers, timeout=25) as session:
         for page in range(0, pages):
-            url = f"https://www.ajio.com/c/{category_code}?currentPage={page}&pageSize=45&format=json&query=%3Aprce-dt-desc"
+            url = f"https://www.ajio.com/c/{category_code}?curpage={page}"
             try:
                 await asyncio.sleep(0.5)
                 response = await session.get(url)
                 if response.status_code != 200:
-                    # Fallback to direct HTML category URL
-                    url = f"https://www.ajio.com/c/{category_code}?curpage={page}"
-                    response = await session.get(url)
-                    if response.status_code != 200:
-                        continue
+                    continue
 
                 text = response.text
                 products = []
