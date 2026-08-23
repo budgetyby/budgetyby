@@ -100,10 +100,10 @@ async def discover_category(slug: str, pages: int = 5, sort: str = "popularity")
                 logger.error(f"Error scraping Myntra category {slug} page {page}: {e}")
     return results
 
-async def discover_deals_page(pages: int = 3) -> List[Dict[str, Any]]:
-    """Crawls Myntra Deals of the Day and Top Discount sections."""
+async def discover_deals_page(pages: int = 2) -> List[Dict[str, Any]]:
+    """Crawls Myntra Deals of the Day and 50%+ Discount Clearance Hubs."""
     results = []
-    for slug in ["deals", "myntra-fashion-store"]:
+    for slug in ["deals", "men-clothing?f=Discount_Range%3A50.0_100.0", "women-clothing?f=Discount_Range%3A50.0_100.0"]:
         try:
             items = await discover_category(slug, pages=pages)
             for it in items:

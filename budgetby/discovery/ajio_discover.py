@@ -59,10 +59,11 @@ async def discover_category(category_code: str, pages: int = 3) -> List[Dict[str
                 logger.error(f"Error scraping Ajio category {category_code} page {page}: {e}")
     return results
 
-async def discover_deals_page(pages: int = 3) -> List[Dict[str, Any]]:
-    """Crawls Ajio Special Deals and Trending Offers."""
+async def discover_deals_page(pages: int = 2) -> List[Dict[str, Any]]:
+    """Crawls Ajio 50-90% Discount Clearance Hubs."""
     results = []
-    for code in ["special-deals", "trending-offers", "83"]:
+    # 830201=Men Clothing, 830202=Women Clothing, 830216=Footwear
+    for code in ["830201", "830202", "830216"]:
         try:
             items = await discover_category(code, pages=pages)
             for it in items:

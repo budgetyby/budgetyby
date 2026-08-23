@@ -163,8 +163,8 @@ async def discover_offers_store(pages: int = 3) -> List[Dict[str, Any]]:
     results = []
     hubs = [
         ("offers-store", "all"),
-        ("dotd-store", "all"),
-        ("offers-list/fashion-best-deals", "fashion"),
+        ("search?q=deals+of+the+day", "all"),
+        ("search?q=top+deals", "all"),
     ]
     for slug, cat in hubs:
         try:
