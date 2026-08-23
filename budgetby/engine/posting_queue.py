@@ -77,10 +77,18 @@ class PostingQueue:
 
                     deal_type = deal_data.get("type", "price_drop")
                     badge = deal_data.get("badge", "DEAL")
-                    score = deal_data.get("score", 50)
+                    # Guaranteed URL resolution & verification
+                    url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
+                    if not url and product.get("platform") == "amazon" and product.get("platform_id"):
+                        url = f"https://www.amazon.in/dp/{product.get('platform_id')}?tag={config.AMAZON_ASSOCIATE_TAG}"
+                        product["affiliate_url"] = url
+                        product["product_url"] = url
                     
-                    price = float(product.get("current_price") or 0)
-                    mrp = float(product.get("mrp") or price)
+                    if not url or not url.startswith("http"):
+                        logger.warning(f"Skipping product #{pid} ({product.get('title')[:30]}...) — no valid URL available for posting.")
+                        self._queue.task_done()
+                        continue
+
                     # Pre-post sanity check: ensure MRP is realistic and non-corrupted
                     if price > 0 and (mrp > 3.5 * price or (mrp > 100000 and price < 10000)):
                         mrp = round((price * 1.35) / 10) * 10
@@ -97,8 +105,11 @@ class PostingQueue:
                     else:
                         text = templates.format_good_deal(product)
                         
-                    url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
-                    
+                    # Strict Quality Verification: Ensure message is in premium format with direct URL
+                    if "👉 http" not in text and "http" in url:
+                        platform_name = (product.get("platform") or "Store").capitalize()
+                        text += f"\n🛒 <b>Buy Directly on {platform_name}:</b>\n👉 {url}\n━━━━━━━━━━━━━━━━━━━━━"
+
                     msg = await bot.send_message(
                         chat_id=config.TELEGRAM_CHANNEL_ID,
                         text=text,
