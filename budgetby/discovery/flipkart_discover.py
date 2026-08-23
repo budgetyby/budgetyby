@@ -42,6 +42,7 @@ async def discover_category(name: str, sid: str, pages: int = 5, sort: str = "po
                     # No more products in this category, stop paging early
                     break
 
+                seen_pids = set()
                 for item in items:
                     try:
                         pid = item.attributes.get("data-id")
@@ -52,8 +53,9 @@ async def discover_category(name: str, sid: str, pages: int = 5, sort: str = "po
                             if match:
                                 pid = match.group(1)
                         
-                        if not pid:
+                        if not pid or pid in seen_pids:
                             continue
+                        seen_pids.add(pid)
 
                         if href and not href.startswith("http"):
                             product_url = "https://www.flipkart.com" + href
@@ -62,21 +64,32 @@ async def discover_category(name: str, sid: str, pages: int = 5, sort: str = "po
                         else:
                             product_url = href
 
-                        # Extract title
-                        title = ""
-                        for t_sel in ["div.KzDlHZ", "a.wByIpH", "div._4rR01T", "a.s1Q9rs", "div._2WkVRV", "div.WKTcLC", "a.IRpwTa", "img[alt]"]:
-                            t_node = item.css_first(t_sel)
-                            if t_node:
-                                title = t_node.attributes.get("alt") if t_node.tag == "img" else t_node.text(strip=True)
-                                if title:
-                                    break
+                        # Extract title with proper brand + description separation
+                        brand_node = item.css_first("div._2WkVRV, div.syl9yP")
+                        brand = brand_node.text(strip=True) if brand_node else ""
+                        
+                        desc_node = item.css_first("a.WKTcLC, a.IRpwTa, div.KzDlHZ, div._4rR01T, a.s1Q9rs, a.wByIpH, a[title]")
+                        desc = ""
+                        if desc_node:
+                            desc = desc_node.attributes.get("title") or desc_node.text(strip=True)
+                            
+                        if brand and desc and not desc.lower().startswith(brand.lower()):
+                            title = f"{brand} {desc}"
+                        elif desc:
+                            title = desc
+                        elif brand:
+                            title = brand
+                        else:
+                            # Try img alt
+                            img_node = item.css_first("img[alt]")
+                            if img_node:
+                                title = img_node.attributes.get("alt", "")
+                            elif href:
+                                slug = re.sub(r'https?://[^/]+/', '', product_url).split('/p/')[0].split('?')[0].replace('-', ' ').title()
+                                if slug and len(slug) >= 5:
+                                    title = slug
 
-                        if not title:
-                            title = item.text(strip=True) if hasattr(item, 'text') else ""
-                        if not title:
-                            # Derive from URL slug
-                            slug = re.sub(r'https?://[^/]+/', '', product_url).split('/p/')[0].replace('-', ' ').title()
-                            title = slug if slug else f"Flipkart Product {pid}"
+                        title = clean_title(title)
 
                         # Image
                         img_node = item.css_first("img")

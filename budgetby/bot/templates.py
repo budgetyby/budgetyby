@@ -31,33 +31,35 @@ def format_mega_deal(product: dict, deal_result: dict = None) -> str:
     title = html.escape(product.get("title", ""))
     current_price = product.get("current_price", 0)
     mrp = product.get("mrp", 0)
+    platform = (product.get("platform") or "store").capitalize()
     savings = mrp - current_price if mrp and mrp > current_price else 0
+    pct = round((savings / mrp) * 100) if mrp and mrp > 0 else 0
     rating = product.get("rating", "")
     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
     
-    text = "🚨 <b>MEGA DEAL ALERT!</b>\n\n"
-    text += f"<b>{title}</b>\n\n"
+    text = f"🚨 <b>MEGA DEAL ALERT! ({platform})</b>\n\n"
+    text += f"🛍️ <b>{title}</b>\n\n"
     if savings > 0:
-        text += f"📉 Price: {format_price(current_price)} (<s>{format_price(mrp)}</s>)\n"
-        text += f"💰 You Save: {format_price(savings)}\n"
+        text += f"💥 Deal Price: <b>{format_price(current_price)}</b> (<s>{format_price(mrp)}</s>)\n"
+        text += f"🏷️ Massive Savings: <b>{pct}% OFF</b> (Save {format_price(savings)})\n"
     else:
-        text += f"📉 Price: {format_price(current_price)}\n"
+        text += f"💥 Deal Price: <b>{format_price(current_price)}</b>\n"
         
     if product.get("has_coupon"):
         coupon_val = product.get("coupon_value")
         if coupon_val:
-            text += f"🎫 Coupon: Save {format_price(coupon_val)} more!\n"
+            text += f"🎫 Extra Coupon: Save {format_price(coupon_val)} more!\n"
         else:
-            text += f"🎫 Coupon: Extra savings available!\n"
+            text += f"🎫 Extra Coupon: Coupon discount available!\n"
             
     if product.get("has_bank_offer"):
         text += f"💳 Bank Offer: {product.get('bank_offer_text', 'Available')}\n"
         
     if rating:
-        text += f"⭐ Rating: {rating}\n"
+        text += f"⭐ Rating: {rating} ★\n"
         
     if url:
-        text += f"\n🛍️ <b>Buy Link:</b>\n{url}\n"
+        text += f"\n🔗 <b>Direct Buy Link:</b>\n{url}\n"
         
     return text
 
@@ -73,7 +75,7 @@ def format_today_deal(product: dict, deal_result: dict = None) -> str:
     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
 
     text = f"⚡ <b>TODAY'S DEAL ALERT! ({platform})</b>\n\n"
-    text += f"<b>{title}</b>\n\n"
+    text += f"🛍️ <b>{title}</b>\n\n"
     if savings > 0:
         text += f"💥 Deal Price: <b>{format_price(current_price)}</b> (<s>{format_price(mrp)}</s>)\n"
         text += f"🏷️ Discount: <b>{pct}% OFF</b> (Save {format_price(savings)})\n"
@@ -84,7 +86,7 @@ def format_today_deal(product: dict, deal_result: dict = None) -> str:
         text += f"⭐ Rating: {rating} ★\n"
 
     if url:
-        text += f"\n🛍️ <b>Buy Link:</b>\n{url}\n"
+        text += f"\n🔗 <b>Direct Buy Link:</b>\n{url}\n"
 
     return text
 
@@ -94,17 +96,25 @@ def format_hot_deal(product: dict, deal_result: dict = None) -> str:
     title = html.escape(product.get("title", ""))
     current_price = product.get("current_price", 0)
     mrp = product.get("mrp", 0)
+    platform = (product.get("platform") or "store").capitalize()
+    savings = mrp - current_price if mrp and mrp > current_price else 0
+    pct = round((savings / mrp) * 100) if mrp and mrp > 0 else 0
+    rating = product.get("rating", "")
     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
     
-    text = "🔥 <b>HOT DEAL!</b>\n\n"
-    text += f"<b>{title}</b>\n\n"
-    if mrp and mrp > current_price:
-        text += f"Price: {format_price(current_price)} (<s>{format_price(mrp)}</s>)\n"
+    text = f"🔥 <b>HOT PRICE DROP! ({platform})</b>\n\n"
+    text += f"🛍️ <b>{title}</b>\n\n"
+    if savings > 0:
+        text += f"💥 Offer Price: <b>{format_price(current_price)}</b> (<s>{format_price(mrp)}</s>)\n"
+        text += f"🏷️ Discount: <b>{pct}% OFF</b> (Save {format_price(savings)})\n"
     else:
-        text += f"Price: {format_price(current_price)}\n"
+        text += f"💥 Offer Price: <b>{format_price(current_price)}</b>\n"
+        
+    if rating:
+        text += f"⭐ Rating: {rating} ★\n"
         
     if url:
-        text += f"\n🛍️ <b>Buy Link:</b>\n{url}\n"
+        text += f"\n🔗 <b>Direct Buy Link:</b>\n{url}\n"
         
     return text
 
@@ -112,23 +122,49 @@ def format_good_deal(product: dict, deal_result: dict = None) -> str:
     """Format a 35-59 score Good Deal."""
     title = html.escape(product.get("title", ""))
     current_price = product.get("current_price", 0)
+    mrp = product.get("mrp", 0)
+    platform = (product.get("platform") or "store").capitalize()
+    savings = mrp - current_price if mrp and mrp > current_price else 0
+    pct = round((savings / mrp) * 100) if mrp and mrp > 0 else 0
     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
-    text = "✅ <b>Good Price Drop</b>\n\n"
-    text += f"<b>{title}</b>\n"
-    text += f"Price: {format_price(current_price)}\n"
+    
+    text = f"✅ <b>PRICE DROP ALERT ({platform})</b>\n\n"
+    text += f"🛍️ <b>{title}</b>\n\n"
+    if savings > 0:
+        text += f"💥 Deal Price: <b>{format_price(current_price)}</b> (<s>{format_price(mrp)}</s>)\n"
+        text += f"🏷️ Discount: <b>{pct}% OFF</b>\n"
+    else:
+        text += f"💥 Deal Price: <b>{format_price(current_price)}</b>\n"
+        
     if url:
-        text += f"\n🛍️ <b>Buy Link:</b>\n{url}\n"
+        text += f"\n🔗 <b>Direct Buy Link:</b>\n{url}\n"
     return text
 
 def format_evergreen_deal(product: dict, post_count: int) -> str:
     """Format an evergreen deal repost."""
     title = html.escape(product.get("title", ""))
     current_price = product.get("current_price", 0)
+    mrp = product.get("mrp", 0)
+    platform = (product.get("platform") or "store").capitalize()
+    savings = mrp - current_price if mrp and mrp > current_price else 0
+    pct = round((savings / mrp) * 100) if mrp and mrp > 0 else 0
+    rating = product.get("rating", "")
     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
-    header = "⏰ <b>STILL AVAILABLE</b>" if post_count == 1 else "🔔 <b>REMINDER</b>"
-    text = f"{header}\n\n<b>{title}</b>\nPrice: {format_price(current_price)}\n"
+    
+    header = "⏰ <b>STILL AVAILABLE — TOP DEAL!</b>" if post_count == 1 else "🔔 <b>DEAL REMINDER — DON'T MISS OUT!</b>"
+    text = f"{header} ({platform})\n\n"
+    text += f"🛍️ <b>{title}</b>\n\n"
+    if savings > 0:
+        text += f"💥 Offer Price: <b>{format_price(current_price)}</b> (<s>{format_price(mrp)}</s>)\n"
+        text += f"🏷️ Discount: <b>{pct}% OFF</b> (Save {format_price(savings)})\n"
+    else:
+        text += f"💥 Offer Price: <b>{format_price(current_price)}</b>\n"
+        
+    if rating:
+        text += f"⭐ Rating: {rating} ★\n"
+        
     if url:
-        text += f"\n🛍️ <b>Buy Link:</b>\n{url}\n"
+        text += f"\n🔗 <b>Direct Buy Link:</b>\n{url}\n"
     return text
 
 def format_refurbished_deal(product: dict, new_product: dict = None) -> str:

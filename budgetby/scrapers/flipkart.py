@@ -41,11 +41,20 @@ class FlipkartScraper(BaseScraper):
                 
         # Fallback to HTML
         if not title:
-            t_node = tree.css_first(".VU-Tz5")
-            if not t_node:
-                t_node = tree.css_first(".B_NuCI")
-            if t_node:
-                title = clean_title(t_node.text())
+            brand_node = tree.css_first("div._2WkVRV, span.mEh187")
+            brand = brand_node.text(strip=True) if brand_node else ""
+            
+            t_node = tree.css_first("h1.VU-Tz5, span.VU-Tz5, .VU-Tz5, .B_NuCI, h1._6EBuvT, h1")
+            desc = t_node.text(strip=True) if t_node else ""
+            
+            if brand and desc and not desc.lower().startswith(brand.lower()):
+                title = f"{brand} {desc}"
+            elif desc:
+                title = desc
+            elif brand:
+                title = brand
+                
+            title = clean_title(title)
                 
         if not price:
             p_node = tree.css_first(".Nx9bqj.CxhGGd")
