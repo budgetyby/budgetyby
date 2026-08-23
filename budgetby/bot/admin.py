@@ -56,11 +56,19 @@ async def catalog_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             WHERE last_checked IS NOT NULL ORDER BY last_checked DESC LIMIT 1
         """)
 
-        # 4. Telegram Posting & Deal Tracking by Source Engine
+        # 4. Telegram Posting & Deal Tracking (Platform + Source Engine breakdown)
         total_deals = await database.fetchval("SELECT COUNT(*) FROM deals;")
         today_deals = await database.fetchval("""
             SELECT COUNT(*) FROM deals WHERE posted_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE
         """)
+        deal_platform_rows = await database.fetch("""
+            SELECT p.platform, COUNT(*) as cnt 
+            FROM deals d 
+            JOIN products p ON d.product_id = p.id 
+            GROUP BY p.platform 
+            ORDER BY cnt DESC;
+        """)
+        dp_counts = {r["platform"]: r["cnt"] for r in deal_platform_rows}
         engine_rows = await database.fetch("""
             SELECT COALESCE(badge, 'PRICE_DROP') as badge, COUNT(*) as cnt 
             FROM deals 
@@ -104,9 +112,13 @@ async def catalog_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             lc = last_checked[0]
             text += f"• Latest Checked: [{lc['platform'].upper()}] {lc['title'][:32]}... (₹{lc['current_price']})\n\n"
 
-        # Telegram Section & Source Engine Breakdown
-        text += "📢 <b>TELEGRAM DEALS BY SOURCE ENGINE:</b>\n"
-        text += f"• Total Deals Posted: {total_deals:,} (Today: {today_deals:,})\n"
+        # Telegram Section: Platform + Source Engine Breakdown
+        text += f"📢 <b>TELEGRAM DEALS POSTED (Total: {total_deals:,} | Today: {today_deals:,}):</b>\n\n"
+        text += "🛒 <b>Deals by Platform:</b>\n"
+        for p in ["amazon", "flipkart", "myntra", "ajio", "nykaa"]:
+            c = dp_counts.get(p, 0)
+            text += f"• <b>{p.capitalize()}</b>: {c:,} deals\n"
+        text += "\n⚙️ <b>Deals by Source Engine:</b>\n"
         for er in engine_rows:
             b = er["badge"]
             cnt = er["cnt"]
@@ -120,8 +132,8 @@ async def catalog_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 engine_name = "Multi-Month Low Detector"
             else:
                 engine_name = "Price Drop Detector"
-            text += f"  ↳ <b>{engine_name}</b> ({b}): {cnt:,} deals\n"
-        text += f"• Active Auto-Edits Monitored: {active_tracking:,} deals (60h window)\n"
+            text += f"• <b>{engine_name}</b> ({b}): {cnt:,} deals\n"
+        text += f"\n• Active Auto-Edits Monitored: {active_tracking:,} deals (60h window)\n"
         if latest_deal:
             ld = latest_deal[0]
             text += f"• Latest Deal: [{ld['platform'].upper()}] {ld['title'][:30]}... (₹{ld['posted_price']} | {ld['badge']})\n\n"
