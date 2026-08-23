@@ -360,16 +360,15 @@ def start_scheduler():
     """Configure and start all scheduled jobs."""
     logger.info("Starting scheduler...")
 
-    # Core price checking — every 30 seconds
+    # Core catalog price checking — every 30 seconds
     _scheduler.add_job(price_check_loop, "interval", seconds=30, id="price_check", max_instances=1, misfire_grace_time=30)
+
+    # Quick Deals & Flash Sale Crawler — automatically every 30 minutes
+    _scheduler.add_job(deals_page_crawl, "interval", minutes=30, id="deals_crawl", max_instances=1, misfire_grace_time=30)
 
     # Discovery — every 6 hours
     _scheduler.add_job(discovery_job, "interval",
                        hours=config.DISCOVERY_INTERVAL_HOURS, id="discovery", max_instances=1, misfire_grace_time=30)
-
-    # Deals page crawl — every 1 hour
-    _scheduler.add_job(deals_page_crawl, "interval",
-                       hours=config.DEALS_PAGE_CRAWL_INTERVAL_HOURS, id="deals_crawl", max_instances=1, misfire_grace_time=30)
 
     # Movers & Shakers — every 3 hours
     _scheduler.add_job(movers_shakers_crawl, "interval",
