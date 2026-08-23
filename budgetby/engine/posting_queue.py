@@ -98,13 +98,11 @@ class PostingQueue:
                         text = templates.format_good_deal(product)
                         
                     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
-                    reply_markup = templates.build_buy_button(url) if url else None
                     
                     msg = await bot.send_message(
                         chat_id=config.TELEGRAM_CHANNEL_ID,
                         text=text,
-                        parse_mode="HTML",
-                        reply_markup=reply_markup
+                        parse_mode="HTML"
                     )
                     logger.info(f"Successfully posted deal #{pid} to Telegram (Msg ID: {msg.message_id}): {product.get('title')[:50]}")
                     
