@@ -188,9 +188,23 @@ async def deals_page_crawl():
                 logger.error(f"Error in deal hub crawl: {r}")
 
         logger.info(f"Discovered {len(all_deals)} live deals from Today's Deals hubs")
+        
+        # Sort and select top qualifying deals (highest savings percentage)
+        valid_candidates = []
+        for item in all_deals:
+            price = float(item.get("current_price") or 0)
+            mrp = float(item.get("mrp") or price)
+            if price > 0 and mrp > price:
+                savings_pct = (mrp - price) / mrp
+                if savings_pct >= 0.25:  # At least 25% OFF
+                    valid_candidates.append((savings_pct, item))
+
+        valid_candidates.sort(key=lambda x: x[0], reverse=True)
+        top_deals = [item for _, item in valid_candidates[:6]]  # Cap at Top 6 best deals per cycle
+
         pq = PostingQueue()
 
-        for item in all_deals:
+        for item in top_deals:
             try:
                 pid = await database.upsert_product(item)
                 if not pid:
@@ -201,13 +215,7 @@ async def deals_page_crawl():
 
                 price = float(item.get("current_price") or 0)
                 mrp = float(item.get("mrp") or price)
-                if price <= 0 or mrp <= price:
-                    continue
-
                 savings_pct = (mrp - price) / mrp
-                # Only post genuine deals (>= 20% OFF)
-                if savings_pct < 0.20:
-                    continue
 
                 deal_dict = {
                     "product": {
@@ -227,16 +235,15 @@ async def deals_page_crawl():
                     "score": round(savings_pct * 100),
                 }
 
-                logger.info(f"Queuing Today's Deal: [{item.get('platform')}] {item.get('title')[:40]}... (₹{price} / ₹{mrp} | {round(savings_pct*100)}% OFF)")
+                logger.info(f"Queuing Top Today's Deal: [{item.get('platform')}] {item.get('title')[:40]}... (₹{price} / ₹{mrp} | {round(savings_pct*100)}% OFF)")
                 await pq.queue_deal(deal_dict)
-                await set_cooldown(pid, config.PRICE_DROP_COOLDOWN_HOURS)
 
             except Exception as e:
                 logger.error(f"Error processing deal hub item: {e}")
 
-        # Post queued deals with rate limiting
+        # Post top queued deals with 3s delays (finishes in ~18s)
         await pq.process_queue(_bot)
-        logger.info("Completed Today's Deals hub crawl & dispatch cycle")
+        logger.info(f"Completed Today's Deals hub crawl & dispatched {len(top_deals)} top deals")
 
     except Exception as e:
         logger.error(f"Error in deals_page_crawl: {e}")
