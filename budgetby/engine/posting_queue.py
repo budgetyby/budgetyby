@@ -9,11 +9,20 @@ from budgetby import config
 
 logger = logging.getLogger("budgetby.engine.posting_queue")
 
+_global_posting_queue = None
+
+def get_posting_queue() -> 'PostingQueue':
+    global _global_posting_queue
+    if _global_posting_queue is None:
+        _global_posting_queue = PostingQueue()
+    return _global_posting_queue
+
 class PostingQueue:
     def __init__(self):
         self.posts_this_hour = 0
         self.hour_started = self._get_ist_hour()
         self._queue = asyncio.Queue()
+        self._is_processing = False
 
     def _get_ist_hour(self) -> int:
         utc_now = datetime.now(timezone.utc)
@@ -32,21 +41,27 @@ class PostingQueue:
 
     async def queue_deal(self, deal_data: dict):
         await self._queue.put(deal_data)
-        logger.info(f"Queued deal: {deal_data.get('product', {}).get('id')}")
+        logger.info(f"Queued deal: {deal_data.get('product', {}).get('id')} (Queue size: {self._queue.qsize()})")
 
     async def process_queue(self, bot=None):
         """Processes the queue and posts deals with delays, recording each in the database."""
-        if not bot and config.TELEGRAM_BOT_TOKEN:
-            from telegram import Bot
-            bot = Bot(token=config.TELEGRAM_BOT_TOKEN)
-
-        if not bot:
-            logger.warning("No Telegram bot available for process_queue.")
+        if self._is_processing:
+            logger.info("PostingQueue is already processing in background.")
             return
 
-        while not self._queue.empty():
-            try:
-                deal_data = await self._queue.get()
+        self._is_processing = True
+        try:
+            if not bot and config.TELEGRAM_BOT_TOKEN:
+                from telegram import Bot
+                bot = Bot(token=config.TELEGRAM_BOT_TOKEN)
+
+            if not bot:
+                logger.warning("No Telegram bot available for process_queue.")
+                return
+
+            while not self._queue.empty():
+                try:
+                    deal_data = await self._queue.get()
                 
                 from budgetby.bot import templates
                 from budgetby import database
@@ -114,6 +129,8 @@ class PostingQueue:
                 await asyncio.sleep(config.POST_DELAY_SECONDS)
             except Exception as e:
                 logger.error(f"Error processing deal queue: {e}", exc_info=True)
+        finally:
+            self._is_processing = False
 
     async def hourly_backfill_check(self, bot):
         """Fills hourly gap with evergreen deals if minimum not met."""

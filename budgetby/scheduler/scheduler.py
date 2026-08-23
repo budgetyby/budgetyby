@@ -126,11 +126,14 @@ async def price_check_loop():
                     await set_cooldown(product["id"], config.PRICE_DROP_COOLDOWN_HOURS)
 
                     # Actually queue and post the deal
-                    pq = PostingQueue()
+                    from budgetby.engine.posting_queue import get_posting_queue
+                    pq = get_posting_queue()
                     deal_data["badge"] = deal_result["badge"]
                     await pq.queue_deal(deal_data)
                     if _bot is not None:
-                        await pq.process_queue(_bot)
+                        asyncio.create_task(pq.process_queue(_bot))
+                    else:
+                        asyncio.create_task(pq.process_queue())
 
                     # Reschedule with updated priority (critical since price just changed)
                     await database.schedule_next_check(product["id"], 1)
@@ -200,10 +203,11 @@ async def deals_page_crawl():
                     valid_candidates.append((savings_pct, item))
 
         valid_candidates.sort(key=lambda x: x[0], reverse=True)
-        top_deals = [item for _, item in valid_candidates[:6]]  # Cap at Top 6 best deals per cycle
+        top_deals = [item for _, item in valid_candidates[:150]]  # Pick top 150 highest-discount deals
 
-        pq = PostingQueue()
+        pq = get_posting_queue()
 
+        queued_count = 0
         for item in top_deals:
             try:
                 pid = await database.upsert_product(item)
@@ -235,15 +239,20 @@ async def deals_page_crawl():
                     "score": round(savings_pct * 100),
                 }
 
-                logger.info(f"Queuing Top Today's Deal: [{item.get('platform')}] {item.get('title')[:40]}... (₹{price} / ₹{mrp} | {round(savings_pct*100)}% OFF)")
                 await pq.queue_deal(deal_dict)
+                queued_count += 1
 
             except Exception as e:
                 logger.error(f"Error processing deal hub item: {e}")
 
-        # Post top queued deals with 3s delays (finishes in ~18s)
-        await pq.process_queue(_bot)
-        logger.info(f"Completed Today's Deals hub crawl & dispatched {len(top_deals)} top deals")
+        # Dispatch background worker to post smoothly at 20-30s intervals
+        if _bot is not None:
+            asyncio.create_task(pq.process_queue(_bot))
+        else:
+            # Fallback to local background task
+            asyncio.create_task(pq.process_queue())
+
+        logger.info(f"Completed Today's Deals hub crawl & queued {queued_count} top deals for smooth continuous posting")
 
     except Exception as e:
         logger.error(f"Error in deals_page_crawl: {e}")

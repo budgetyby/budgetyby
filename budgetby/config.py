@@ -142,8 +142,8 @@ MIN_POSTS_PER_HOUR_NIGHT = 2    # 11:00 PM - 7:00 AM IST
 DAYTIME_START_HOUR = 7          # IST
 DAYTIME_END_HOUR = 23           # IST
 
-# Delay between Telegram posts (seconds) — respects 20 msg/min limit
-POST_DELAY_SECONDS = 3
+# Delay between Telegram posts (seconds) — smooth, non-spammy 20-30s pacing
+POST_DELAY_SECONDS = 20
 
 # ════════════════════════════════════════════════════════════════════════
 # 8. COOLDOWN SETTINGS
