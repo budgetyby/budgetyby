@@ -50,7 +50,16 @@ class PostingQueue:
                 
                 from budgetby.bot import templates
                 from budgetby import database
+                from budgetby.engine.cooldown import is_on_cooldown, set_cooldown
                 product = deal_data.get("product", {})
+                pid = product.get("id")
+
+                # Strict 24-Hour Anti-Duplicate Guard
+                if pid and await is_on_cooldown(pid):
+                    logger.info(f"Skipping product #{pid} ({product.get('title')[:30]}...) — already posted within last 24 hours.")
+                    self._queue.task_done()
+                    continue
+
                 deal_type = deal_data.get("type", "price_drop")
                 badge = deal_data.get("badge", "DEAL")
                 score = deal_data.get("score", 50)
@@ -75,8 +84,12 @@ class PostingQueue:
                     parse_mode="HTML",
                     reply_markup=reply_markup
                 )
-                logger.info(f"Successfully posted deal #{product.get('id')} to Telegram (Msg ID: {msg.message_id}): {product.get('title')[:50]}")
+                logger.info(f"Successfully posted deal #{pid} to Telegram (Msg ID: {msg.message_id}): {product.get('title')[:50]}")
                 
+                # Enforce strict 24-hour cooldown immediately after post
+                if pid:
+                    await set_cooldown(pid, config.PRICE_DROP_COOLDOWN_HOURS)
+
                 # Record deal in database
                 price = float(product.get("current_price") or 0)
                 mrp = float(product.get("mrp") or price)
@@ -87,11 +100,11 @@ class PostingQueue:
                     INSERT INTO deals (product_id, deal_type, badge, posted_price, posted_mrp, savings_amount, savings_pct, deal_score, posted_at)
                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
                     RETURNING id;
-                """, product.get("id"), deal_type, badge, price, mrp, savings_amt, savings_pct, float(score))
+                """, pid, deal_type, badge, price, mrp, savings_amt, savings_pct, float(score))
 
                 if deal_row and deal_row["id"]:
                     await database.insert_deal_tracking(
-                        deal_row["id"], product.get("id"), msg.message_id,
+                        deal_row["id"], pid, msg.message_id,
                         str(config.TELEGRAM_CHANNEL_ID), text, price
                     )
 

@@ -18,7 +18,8 @@ TELEGRAM_CHANNEL_ID = os.getenv("TELEGRAM_CHANNEL_ID", "")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "")
 
 DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = int(os.getenv("DB_PORT", "5432"))
+_default_port = "6543" if "pooler.supabase.com" in DB_HOST else "5432"
+DB_PORT = int(os.getenv("DB_PORT", _default_port))
 DB_NAME = os.getenv("DB_NAME", "budgetby")
 DB_USER = os.getenv("DB_USER", "budgetby")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
@@ -148,8 +149,8 @@ POST_DELAY_SECONDS = 3
 # 8. COOLDOWN SETTINGS
 # ════════════════════════════════════════════════════════════════════════
 
-# Anti-spam cooldown for price-drop deals (hours)
-PRICE_DROP_COOLDOWN_HOURS = 18
+# Anti-spam cooldown for price-drop & quick deals (minimum 24 hours)
+PRICE_DROP_COOLDOWN_HOURS = 24
 
 # Evergreen deal re-post cooldowns (days) by discount depth
 EVERGREEN_COOLDOWNS = {
