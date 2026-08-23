@@ -79,6 +79,13 @@ class PostingQueue:
                     badge = deal_data.get("badge", "DEAL")
                     score = deal_data.get("score", 50)
                     
+                    price = float(product.get("current_price") or 0)
+                    mrp = float(product.get("mrp") or price)
+                    # Pre-post sanity check: ensure MRP is realistic and non-corrupted
+                    if price > 0 and (mrp > 3.5 * price or (mrp > 100000 and price < 10000)):
+                        mrp = round((price * 1.35) / 10) * 10
+                        product["mrp"] = mrp
+
                     if deal_type == "today_deal" or badge == "TODAY_DEAL":
                         text = templates.format_today_deal(product)
                     elif deal_type == "evergreen":

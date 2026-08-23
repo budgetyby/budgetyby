@@ -127,6 +127,12 @@ async def upsert_product(data: dict) -> int:
     if not title:
         title = f"{str(data.get('platform', '')).capitalize()} Item {data.get('platform_id', '')}"
 
+    cur_price = data.get("current_price")
+    mrp_val = data.get("mrp")
+    if cur_price and mrp_val and cur_price > 0:
+        if mrp_val > 4.0 * cur_price or (mrp_val > 100000 and cur_price < 10000):
+            mrp_val = round((cur_price * 1.35) / 10) * 10
+
     row = await fetchrow("""
         INSERT INTO products (platform, platform_id, title, category,
                               product_url, affiliate_url, image_url,
@@ -150,8 +156,8 @@ async def upsert_product(data: dict) -> int:
         data.get("product_url"),
         data.get("affiliate_url"),
         data.get("image_url"),
-        data.get("current_price"),
-        data.get("mrp"),
+        cur_price,
+        mrp_val,
         data.get("rating"),
         data.get("review_count", 0),
         data.get("in_stock", True),
@@ -171,6 +177,9 @@ async def update_price(product_id: int, new_price: float, in_stock: bool,
     Update a product's live price snapshot and product details (title, mrp, rating, etc.).
     Also updates min benchmarks and all_time_low.
     """
+    if new_price and mrp and new_price > 0:
+        if mrp > 4.0 * new_price or (mrp > 100000 and new_price < 10000):
+            mrp = round((new_price * 1.35) / 10) * 10
     await execute("""
         UPDATE products SET
             previous_price = current_price,

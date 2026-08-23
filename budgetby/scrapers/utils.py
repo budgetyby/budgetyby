@@ -51,12 +51,16 @@ class RetryQueue:
             pass
 
 def extract_price(text: str) -> float:
-    """Parses Indian price strings like '₹1,999.00' or '1,999' to float."""
+    """Parses Indian price strings like '₹1,999.00' or '1,999' to float, avoiding concatenated digits."""
     if not text:
         return 0.0
-    cleaned = re.sub(r'[^\d.]', '', text.replace(',', ''))
+    cleaned = text.replace('\xa0', ' ').replace(',', '').strip()
+    match = re.search(r'(\d+(?:\.\d{1,2})?)', cleaned)
+    if not match:
+        return 0.0
     try:
-        return float(cleaned)
+        val = float(match.group(1))
+        return val
     except ValueError:
         return 0.0
 

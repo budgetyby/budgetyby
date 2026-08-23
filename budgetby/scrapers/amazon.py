@@ -49,6 +49,8 @@ class AmazonScraper(BaseScraper):
             if node:
                 mrp_cand = extract_price(node.text())
                 if mrp_cand > (price or 0):
+                    if price and (mrp_cand > 3.5 * price or (mrp_cand > 100000 and price < 10000)):
+                        mrp_cand = round((price * 1.35) / 10) * 10
                     mrp = mrp_cand
                     break
 
