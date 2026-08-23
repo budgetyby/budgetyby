@@ -170,7 +170,7 @@ async def deals_page_crawl():
         from budgetby.discovery.nykaa_discover import discover_deals_page as nykaa_deals_hub
         from budgetby.engine.deal_scorer import score_deal
         from budgetby.engine.cooldown import is_on_cooldown, set_cooldown
-        from budgetby.engine.posting_queue import PostingQueue
+        from budgetby.engine.posting_queue import get_posting_queue
 
         logger.info("Starting concurrent crawl of Today's Deals hubs across all 5 platforms...")
 
