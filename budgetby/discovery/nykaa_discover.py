@@ -128,3 +128,18 @@ async def discover_category(category_path: str, pages: int = 3, sort: str = "pop
             except Exception as e:
                 logger.error(f"Error scraping Nykaa category {category_path} page {page}: {e}")
     return results
+
+async def discover_deals_page(pages: int = 2) -> List[Dict[str, Any]]:
+    """Crawls Nykaa Top Discount & Beauty Flash Sale items."""
+    results = []
+    for path in ["skin-care/c/8397", "makeup/c/12", "hair-care/c/8378"]:
+        try:
+            items = await discover_category(path, pages=pages, sort="discount")
+            for it in items:
+                it["deal_type"] = "today_deal"
+                it["badge"] = "TODAY_DEAL"
+            results.extend(items)
+        except Exception as e:
+            logger.error(f"Error scraping Nykaa deals {path}: {e}")
+    return results
+

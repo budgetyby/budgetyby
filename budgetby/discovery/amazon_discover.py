@@ -235,18 +235,28 @@ async def discover_movers_and_shakers(category_slug: str) -> List[Dict[str, Any]
             logger.error(f"Error scraping Amazon movers {category_slug}: {e}")
     return results
 
-async def discover_search_keywords(keyword: str, pages: int = 3) -> List[Dict[str, Any]]:
+async def discover_deals_page(pages: int = 3) -> List[Dict[str, Any]]:
+    """Scrapes Amazon India Today's Deals and Goldbox Lightning Deals hub."""
     results = []
+    deal_urls = [
+        "https://www.amazon.in/deals",
+        "https://www.amazon.in/gp/goldbox",
+    ]
     async with AsyncSession(impersonate="chrome", timeout=config.SCRAPER_TIMEOUT) as session:
-        for page in range(1, pages + 1):
-            url = f"https://www.amazon.in/s?k={keyword.replace(' ', '+')}&page={page}"
-            try:
-                await asyncio.sleep(config.SCRAPER_DELAY_MIN)
-                response = await session.get(url)
-                if response.status_code == 200:
-                    tree = HTMLParser(response.text)
-                    items = await _parse_amazon_listing(tree)
-                    results.extend(items)
-            except Exception as e:
-                logger.error(f"Error searching Amazon keyword {keyword} page {page}: {e}")
+        for base_url in deal_urls:
+            for page in range(1, pages + 1):
+                url = f"{base_url}?page={page}" if page > 1 else base_url
+                try:
+                    await asyncio.sleep(0.5)
+                    response = await session.get(url)
+                    if response.status_code == 200:
+                        tree = HTMLParser(response.text)
+                        items = await _parse_amazon_listing(tree)
+                        for it in items:
+                            it["deal_type"] = "today_deal"
+                            it["badge"] = "TODAY_DEAL"
+                        results.extend(items)
+                except Exception as e:
+                    logger.error(f"Error scraping Amazon deals {url}: {e}")
     return results
+

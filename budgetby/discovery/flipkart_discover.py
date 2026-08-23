@@ -158,5 +158,22 @@ async def discover_category(name: str, sid: str, pages: int = 5, sort: str = "po
                 logger.error(f"Error scraping Flipkart category {name} page {page}: {e}")
     return results
 
-async def discover_offers_store() -> List[Dict[str, Any]]:
-    return await discover_category("offers-store", "all", pages=2)
+async def discover_offers_store(pages: int = 3) -> List[Dict[str, Any]]:
+    """Crawls Flipkart Top Offers Store and Deals of the Day."""
+    results = []
+    hubs = [
+        ("offers-store", "all"),
+        ("dotd-store", "all"),
+        ("offers-list/fashion-best-deals", "fashion"),
+    ]
+    for slug, cat in hubs:
+        try:
+            items = await discover_category(slug, cat, pages=pages)
+            for it in items:
+                it["deal_type"] = "today_deal"
+                it["badge"] = "TODAY_DEAL"
+            results.extend(items)
+        except Exception as e:
+            logger.error(f"Error scraping Flipkart offers hub {slug}: {e}")
+    return results
+

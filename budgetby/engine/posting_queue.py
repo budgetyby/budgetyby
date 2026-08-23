@@ -55,7 +55,9 @@ class PostingQueue:
                 badge = deal_data.get("badge", "DEAL")
                 score = deal_data.get("score", 50)
                 
-                if deal_type == "evergreen":
+                if deal_type == "today_deal" or badge == "TODAY_DEAL":
+                    text = templates.format_today_deal(product)
+                elif deal_type == "evergreen":
                     text = templates.format_evergreen_deal(product, 1)
                 elif badge == "ATL" or badge == "near_ATL":
                     text = templates.format_mega_deal(product)

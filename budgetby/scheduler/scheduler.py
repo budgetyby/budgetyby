@@ -4,6 +4,7 @@ Sets up all recurring jobs using APScheduler.
 """
 
 import logging
+import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from budgetby import config, database
 from budgetby.scheduler import cleanup
@@ -157,32 +158,89 @@ async def discovery_job():
 
 
 async def deals_page_crawl():
-    """Crawl Amazon deals page and Flipkart offers store."""
+    """Crawl Amazon, Flipkart, Myntra, Ajio, and Nykaa 'Today's Deals' hubs and post top deals."""
     try:
-        from budgetby.discovery.amazon_discover import discover_deals_page
-        from budgetby.discovery.flipkart_discover import discover_offers_store
-        from budgetby.discovery.seeder import ProductSeeder
+        from budgetby.discovery.amazon_discover import discover_deals_page as amazon_deals_hub
+        from budgetby.discovery.flipkart_discover import discover_offers_store as flipkart_deals_hub
+        from budgetby.discovery.myntra_discover import discover_deals_page as myntra_deals_hub
+        from budgetby.discovery.ajio_discover import discover_deals_page as ajio_deals_hub
+        from budgetby.discovery.nykaa_discover import discover_deals_page as nykaa_deals_hub
+        from budgetby.engine.deal_scorer import score_deal
+        from budgetby.engine.cooldown import is_on_cooldown, set_cooldown
+        from budgetby.engine.posting_queue import PostingQueue
 
-        logger.info("Crawling deals pages...")
-        seeder = ProductSeeder()
+        logger.info("Starting concurrent crawl of Today's Deals hubs across all 5 platforms...")
 
-        amazon_deals = await discover_deals_page()
-        for product_data in amazon_deals:
+        results = await asyncio.gather(
+            amazon_deals_hub(pages=2),
+            flipkart_deals_hub(pages=2),
+            myntra_deals_hub(pages=2),
+            ajio_deals_hub(pages=2),
+            nykaa_deals_hub(pages=2),
+            return_exceptions=True
+        )
+
+        all_deals = []
+        for r in results:
+            if isinstance(r, list):
+                all_deals.extend(r)
+            elif isinstance(r, Exception):
+                logger.error(f"Error in deal hub crawl: {r}")
+
+        logger.info(f"Discovered {len(all_deals)} live deals from Today's Deals hubs")
+        pq = PostingQueue()
+
+        for item in all_deals:
             try:
-                await database.upsert_product(product_data)
-            except Exception:
-                pass
+                pid = await database.upsert_product(item)
+                if not pid:
+                    continue
 
-        flipkart_deals = await discover_offers_store()
-        for product_data in flipkart_deals:
-            try:
-                await database.upsert_product(product_data)
-            except Exception:
-                pass
+                if await is_on_cooldown(pid):
+                    continue
 
-        logger.info(f"Deals crawl: {len(amazon_deals)} Amazon, {len(flipkart_deals)} Flipkart")
+                price = float(item.get("current_price") or 0)
+                mrp = float(item.get("mrp") or price)
+                if price <= 0 or mrp <= price:
+                    continue
+
+                savings_pct = (mrp - price) / mrp
+                # Only post genuine deals (>= 20% OFF)
+                if savings_pct < 0.20:
+                    continue
+
+                deal_dict = {
+                    "product": {
+                        "id": pid,
+                        "title": item.get("title"),
+                        "current_price": price,
+                        "mrp": mrp,
+                        "rating": item.get("rating") or 4.2,
+                        "review_count": item.get("review_count") or 100,
+                        "affiliate_url": item.get("affiliate_url") or item.get("product_url"),
+                        "product_url": item.get("product_url"),
+                        "image_url": item.get("image_url"),
+                        "platform": item.get("platform"),
+                    },
+                    "type": "today_deal",
+                    "badge": "TODAY_DEAL",
+                    "score": round(savings_pct * 100),
+                }
+
+                logger.info(f"Queuing Today's Deal: [{item.get('platform')}] {item.get('title')[:40]}... (₹{price} / ₹{mrp} | {round(savings_pct*100)}% OFF)")
+                await pq.queue_deal(deal_dict)
+                await set_cooldown(pid, config.PRICE_DROP_COOLDOWN_HOURS)
+
+            except Exception as e:
+                logger.error(f"Error processing deal hub item: {e}")
+
+        # Post queued deals with rate limiting
+        await pq.process_queue(_bot)
+        logger.info("Completed Today's Deals hub crawl & dispatch cycle")
+
     except Exception as e:
         logger.error(f"Error in deals_page_crawl: {e}")
+
 
 
 async def movers_shakers_crawl():
