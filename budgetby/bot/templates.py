@@ -1,8 +1,4 @@
-"""
-Message formatting templates for Telegram.
-All templates use HTML mode.
-"""
-
+import html
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 def format_price(amount: float | int | None) -> str:
@@ -32,11 +28,12 @@ def build_buy_button(url: str, text: str = "🛒 Buy Now") -> InlineKeyboardMark
 
 def format_mega_deal(product: dict, deal_result: dict = None) -> str:
     """Format a 80+ score MEGA DEAL."""
-    title = product.get("title", "")
+    title = html.escape(product.get("title", ""))
     current_price = product.get("current_price", 0)
     mrp = product.get("mrp", 0)
     savings = mrp - current_price if mrp and mrp > current_price else 0
     rating = product.get("rating", "")
+    url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
     
     text = "🚨 <b>MEGA DEAL ALERT!</b>\n\n"
     text += f"<b>{title}</b>\n\n"
@@ -59,17 +56,21 @@ def format_mega_deal(product: dict, deal_result: dict = None) -> str:
     if rating:
         text += f"⭐ Rating: {rating}\n"
         
+    if url:
+        text += f"\n🛍️ <b>Buy Link:</b>\n{url}\n"
+        
     return text
 
 def format_today_deal(product: dict, deal_result: dict = None) -> str:
     """Format a Today's Deal / Flash Sale alert."""
-    title = product.get("title", "")
+    title = html.escape(product.get("title", ""))
     current_price = product.get("current_price", 0)
     mrp = product.get("mrp", 0)
     platform = (product.get("platform") or "store").capitalize()
     savings = mrp - current_price if mrp and mrp > current_price else 0
     pct = round((savings / mrp) * 100) if mrp and mrp > 0 else 0
     rating = product.get("rating", "")
+    url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
 
     text = f"⚡ <b>TODAY'S DEAL ALERT! ({platform})</b>\n\n"
     text += f"<b>{title}</b>\n\n"
@@ -82,14 +83,18 @@ def format_today_deal(product: dict, deal_result: dict = None) -> str:
     if rating:
         text += f"⭐ Rating: {rating} ★\n"
 
+    if url:
+        text += f"\n🛍️ <b>Buy Link:</b>\n{url}\n"
+
     return text
 
 
 def format_hot_deal(product: dict, deal_result: dict = None) -> str:
     """Format a 60-79 score HOT DEAL."""
-    title = product.get("title", "")
+    title = html.escape(product.get("title", ""))
     current_price = product.get("current_price", 0)
     mrp = product.get("mrp", 0)
+    url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
     
     text = "🔥 <b>HOT DEAL!</b>\n\n"
     text += f"<b>{title}</b>\n\n"
@@ -98,29 +103,39 @@ def format_hot_deal(product: dict, deal_result: dict = None) -> str:
     else:
         text += f"Price: {format_price(current_price)}\n"
         
+    if url:
+        text += f"\n🛍️ <b>Buy Link:</b>\n{url}\n"
+        
     return text
 
 def format_good_deal(product: dict, deal_result: dict = None) -> str:
     """Format a 35-59 score Good Deal."""
-    title = product.get("title", "")
+    title = html.escape(product.get("title", ""))
     current_price = product.get("current_price", 0)
+    url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
     text = "✅ <b>Good Price Drop</b>\n\n"
     text += f"<b>{title}</b>\n"
     text += f"Price: {format_price(current_price)}\n"
+    if url:
+        text += f"\n🛍️ <b>Buy Link:</b>\n{url}\n"
     return text
 
 def format_evergreen_deal(product: dict, post_count: int) -> str:
     """Format an evergreen deal repost."""
-    title = product.get("title", "")
+    title = html.escape(product.get("title", ""))
     current_price = product.get("current_price", 0)
+    url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
     header = "⏰ <b>STILL AVAILABLE</b>" if post_count == 1 else "🔔 <b>REMINDER</b>"
     text = f"{header}\n\n<b>{title}</b>\nPrice: {format_price(current_price)}\n"
+    if url:
+        text += f"\n🛍️ <b>Buy Link:</b>\n{url}\n"
     return text
 
 def format_refurbished_deal(product: dict, new_product: dict = None) -> str:
     """Format a refurbished deal with optional new product comparison."""
-    title = product.get("title", "")
+    title = html.escape(product.get("title", ""))
     current_price = product.get("current_price", 0)
+    url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
     text = "♻️ <b>REFURBISHED DEAL</b>\n\n"
     text += f"<b>{title}</b>\n\n"
     text += f"Refurbished Price: {format_price(current_price)}\n"
@@ -128,6 +143,8 @@ def format_refurbished_deal(product: dict, new_product: dict = None) -> str:
         new_price = new_product.get("current_price", 0)
         text += f"Brand New Product Price: {format_price(new_price)}\n"
     text += "\n<i>Note: This is a refurbished product.</i>\n"
+    if url:
+        text += f"\n🛍️ <b>Buy Link:</b>\n{url}\n"
     return text
 
 def format_bundle_deal(bundle_data: dict) -> str:
@@ -150,13 +167,16 @@ def format_bundle_deal(bundle_data: dict) -> str:
 
 def format_back_in_stock(product: dict, days_oos: int) -> str:
     """Format a back in stock notification."""
-    title = product.get("title", "")
+    title = html.escape(product.get("title", ""))
     current_price = product.get("current_price", 0)
+    url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
     text = "🔔 <b>BACK IN STOCK!</b>\n\n"
     text += f"<b>{title}</b>\n"
     text += f"Price: {format_price(current_price)}\n"
     if days_oos > 0:
         text += f"<i>(Was out of stock for {days_oos} days)</i>\n"
+    if url:
+        text += f"\n🛍️ <b>Buy Link:</b>\n{url}\n"
     return text
 
 def format_variant_deal(product: dict, variants: list) -> str:
