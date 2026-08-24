@@ -133,7 +133,8 @@ FAKE_DISCOUNT_PENALTY = 12
 # 7. POSTING RULES & PER-PLATFORM MINIMUMS
 # ════════════════════════════════════════════════════════════════════════
 
-# Per-platform hourly minimum quotas for fresh deals (Amazon=3, Flipkart=3, Myntra=2, Ajio=2, Nykaa=1)
+# Hourly minimum quotas per platform (24/7 identical, Day & Night):
+# Amazon: 3, Flipkart: 3, Myntra: 2, Ajio: 2, Nykaa: 1 (Total = 11 products / hour)
 PLATFORM_MIN_HOURLY_POSTS = {
     "amazon": 3,
     "flipkart": 3,
@@ -142,14 +143,13 @@ PLATFORM_MIN_HOURLY_POSTS = {
     "nykaa": 1
 }
 
-# NO maximum limit — post every qualifying deal
+# NO maximum limit — every genuine deal / price drop is posted immediately without cap
 MAX_POSTS_PER_DAY = None  # None = unlimited
+MAX_POSTS_PER_HOUR = None # None = unlimited
 
-# Daytime total hourly minimum = 3 + 3 + 2 + 2 + 1 = 11 products
-MIN_POSTS_PER_HOUR_DAY = sum(PLATFORM_MIN_HOURLY_POSTS.values())  # 11 products
-MIN_POSTS_PER_HOUR_NIGHT = 2    # 11:00 PM - 7:00 AM IST
-DAYTIME_START_HOUR = 7          # IST
-DAYTIME_END_HOUR = 23           # IST
+# Hourly minimum = 3 + 3 + 2 + 2 + 1 = 11 products (Always enforced 24/7)
+MIN_POSTS_PER_HOUR_DAY = sum(PLATFORM_MIN_HOURLY_POSTS.values())    # 11 products
+MIN_POSTS_PER_HOUR_NIGHT = sum(PLATFORM_MIN_HOURLY_POSTS.values())  # 11 products (Same 24/7)
 
 # Delay between Telegram posts (seconds) — smooth, non-spammy 20-30s pacing
 POST_DELAY_SECONDS = 20

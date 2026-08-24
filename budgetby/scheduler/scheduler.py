@@ -287,15 +287,8 @@ async def hourly_backfill():
         import pytz
         from datetime import datetime
 
-        ist = pytz.timezone(config.TIMEZONE)
-        now = datetime.now(ist)
-        hour = now.hour
-        is_daytime = config.DAYTIME_START_HOUR <= hour < config.DAYTIME_END_HOUR
-
-        # Platform minimum quotas: Amazon=3, Flipkart=3, Myntra=2, Ajio=2, Nykaa=1 (11 total)
-        platform_targets = config.PLATFORM_MIN_HOURLY_POSTS if is_daytime else {
-            "amazon": 1, "flipkart": 1, "myntra": 0, "ajio": 0, "nykaa": 0
-        }
+        # 24/7 Platform minimum quotas: Amazon=3, Flipkart=3, Myntra=2, Ajio=2, Nykaa=1 (11 total per hour always)
+        platform_targets = config.PLATFORM_MIN_HOURLY_POSTS
 
         pq = get_posting_queue()
         total_backfilled = 0

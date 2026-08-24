@@ -53,10 +53,7 @@ class PostingQueue:
         return ist_now.hour
 
     def get_minimum_per_hour(self) -> int:
-        hour = self._get_ist_hour()
-        if config.DAYTIME_START_HOUR <= hour < config.DAYTIME_END_HOUR:
-            return config.MIN_POSTS_PER_HOUR_DAY
-        return config.MIN_POSTS_PER_HOUR_NIGHT
+        return config.MIN_POSTS_PER_HOUR_DAY
 
     def reset_hour(self):
         self.posts_this_hour = 0
