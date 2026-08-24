@@ -51,7 +51,7 @@ def score_deal(product: Record, detection_result: dict) -> float:
 
         # 3. Commission Potential (30%)
         # Assuming max standard commission per item around 200 INR for 100 score
-        current_price = product.get("current_price", 0)
+        current_price = float(product.get("current_price", 0) or 0)
         category = product.get("category", "default")
         platform = product.get("platform", "amazon")
         
@@ -68,7 +68,7 @@ def score_deal(product: Record, detection_result: dict) -> float:
         score += comm_score * weights["commission_potential"]
 
         # 4. Popularity (20%)
-        review_count = product.get("review_count", 0)
+        review_count = int(product.get("review_count", 0) or 0)
         pop_score = 10
         if review_count >= 50000:
             pop_score = 100
