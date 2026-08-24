@@ -444,6 +444,20 @@ async def paced_posting_loop():
         logger.error(f"Error in paced_posting_loop: {e}")
 
 
+
+async def channel_monitor_loop():
+    """
+    Channel Spy & Deal Ingestor:
+    Polls monitored public Telegram channels every 2 minutes, extracts deals,
+    verifies live price & stock, and queues legitimate deals into local catalog.
+    """
+    try:
+        from budgetby.ingest.channel_monitor import run_channel_monitor
+        await run_channel_monitor()
+    except Exception as e:
+        logger.error(f"Error in channel_monitor_loop: {e}")
+
+
 def start_scheduler():
     """Configure and start all scheduled jobs."""
     logger.info("Starting scheduler...")
@@ -488,6 +502,9 @@ def start_scheduler():
 
         # Continuous 2-Minute Paced Broadcaster (30 posts/hour, 24/7 balanced rotation)
     _scheduler.add_job(paced_posting_loop, "interval", seconds=120, id="paced_posting", max_instances=1, misfire_grace_time=60)
+
+        # Telegram Channel Deal Spy & Ingestion Monitor — every 2 minutes
+    _scheduler.add_job(channel_monitor_loop, "interval", seconds=120, id="channel_monitor", max_instances=1, misfire_grace_time=60)
 
     _scheduler.start()
     logger.info("Scheduler started with all jobs configured")

@@ -86,6 +86,10 @@ async def get_stats():
         cooldowns = await database.fetchval("SELECT COUNT(*) FROM post_cooldowns WHERE expires_at > NOW();")
         daily_prices = await database.fetchval("SELECT COUNT(*) FROM daily_prices;")
         
+        # Channel Ingestion Stats
+        total_ingested = await database.fetchval("SELECT COUNT(*) FROM ingested_channel_deals;")
+        ingested_today = await database.fetchval("SELECT COUNT(*) FROM ingested_channel_deals WHERE created_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE;")
+        
         # Monthly History Breakdown
         history_rows = await database.fetch("""
             SELECT 
@@ -103,8 +107,6 @@ async def get_stats():
             ORDER BY date_trunc('month', d.posted_at AT TIME ZONE 'Asia/Kolkata') DESC;
         """)
         
-        history_data = [dict(r) for r in history_rows]
-        
         return {
             "status": "online",
             "db_host": f"{config.DB_HOST}:{config.DB_PORT}",
@@ -119,7 +121,9 @@ async def get_stats():
             "posted_today_by_platform": posted_today_by_plat,
             "posted_this_month_by_platform": posted_month_by_plat,
             "posted_lifetime_by_platform": posted_life_by_plat,
-            "monthly_history": history_data,
+            "total_ingested_from_channels": total_ingested or 0,
+            "ingested_today_from_channels": ingested_today or 0,
+            "monthly_history": [dict(r) for r in history_rows],
             "hourly_targets": config.PLATFORM_MIN_HOURLY_POSTS,
             "active_cooldowns": cooldowns or 0,
             "daily_prices_recorded": daily_prices or 0
@@ -127,11 +131,32 @@ async def get_stats():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/channel_stats")
+async def get_channel_stats():
+    """Returns deals picked up from each monitored Telegram channel."""
+    try:
+        rows = await database.fetch("""
+            SELECT 
+                source_channel,
+                COUNT(*) as total_picked_up,
+                COUNT(CASE WHEN status = 'VERIFIED_DEAL' THEN 1 END) as verified_deals,
+                COUNT(CASE WHEN status = 'SAVED_TO_CATALOG' THEN 1 END) as saved_to_catalog,
+                COUNT(CASE WHEN status = 'OUT_OF_STOCK' THEN 1 END) as out_of_stock,
+                COUNT(CASE WHEN status = 'FAILED_SCRAPE' THEN 1 END) as failed_scrapes,
+                MAX(created_at) as last_activity
+            FROM ingested_channel_deals
+            GROUP BY source_channel
+            ORDER BY total_picked_up DESC;
+        """)
+        return [dict(r) for r in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/deals")
 async def get_deals(limit: int = 25):
     try:
         rows = await database.fetch(f"""
-            SELECT d.id, d.posted_price, d.posted_mrp, d.savings_pct, d.badge, d.deal_score, d.posted_at,
+            SELECT d.id, d.posted_price, d.posted_mrp, d.savings_pct, d.badge, d.deal_score, d.posted_at, d.source_channel,
                    p.title, p.platform, p.category, p.product_url, p.affiliate_url, p.image_url, p.rating
             FROM deals d
             JOIN products p ON d.product_id = p.id
@@ -171,6 +196,15 @@ async def trigger_backfill():
         from budgetby.scheduler.scheduler import hourly_backfill
         asyncio.create_task(hourly_backfill())
         return {"status": "success", "message": "Hourly backfill post triggered successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/trigger/channel_scan")
+async def trigger_channel_scan():
+    try:
+        from budgetby.ingest.channel_monitor import run_channel_monitor
+        asyncio.create_task(run_channel_monitor())
+        return {"status": "success", "message": "Channel spy monitor scan triggered in background!"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -23,7 +23,8 @@
                 </span>
             </div>
             <div class="flex items-center space-x-3">
-                <button onclick="triggerBackfill()" class="px-3.5 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition shadow-sm">🚀 Post Quota Now</button>
+                <button onclick="triggerChannelScan()" class="px-3.5 py-1.5 text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition shadow-sm flex items-center gap-1">📡 Spy Scan Channels</button>
+                <button onclick="triggerBackfill()" class="px-3.5 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition shadow-sm">🚀 Post Next Deal</button>
                 <button onclick="triggerBackup()" class="px-3.5 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition">💾 Backup DB</button>
                 <button onclick="fetchData()" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition">🔄</button>
             </div>
@@ -69,6 +70,40 @@
             </div>
         </div>
 
+        <!-- NEW: Monitored Telegram Channels & Deals Ingested Section -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <span>📡</span> Monitored Telegram Deal Channels & Ingestion Stats
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Live deals automatically intercepted, affiliate tags replaced, and pricing verified locally</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="channelIngestedTotalBadge" class="text-xs font-semibold px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20">Ingestion Active</span>
+                    <button onclick="triggerChannelScan()" class="text-xs px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition">Scan Now ⚡</button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-slate-400 uppercase tracking-wider">
+                            <th class="pb-3 font-semibold">📡 Channel</th>
+                            <th class="pb-3 font-semibold">📥 Deals Picked Up</th>
+                            <th class="pb-3 font-semibold">🎯 Verified Deals (Queued)</th>
+                            <th class="pb-3 font-semibold">💾 Saved to Catalog</th>
+                            <th class="pb-3 font-semibold">❌ Out of Stock / Expired</th>
+                            <th class="pb-3 font-semibold">⏱️ Last Scanned</th>
+                        </tr>
+                    </thead>
+                    <tbody id="channelsTableBody" class="divide-y divide-slate-800/60 text-slate-300">
+                        <tr><td colspan="6" class="py-6 text-center text-slate-500">Scanning monitored channels...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Platform Posting Quotas & Detailed Breakdown Section -->
         <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
             <div class="flex items-center justify-between mb-5">
@@ -76,9 +111,9 @@
                     <h3 class="text-base font-bold text-white flex items-center gap-2">
                         <span>📢</span> Platform Deals Breakdown (Today • This Month • Lifetime)
                     </h3>
-                    <p class="text-xs text-slate-400 mt-0.5">Live platform performance against 24/7 hourly quotas</p>
+                    <p class="text-xs text-slate-400 mt-0.5">Live platform performance against 2-minute rotation pacing</p>
                 </div>
-                <span class="text-xs font-semibold px-3 py-1 bg-slate-800 text-slate-300 rounded-full border border-slate-700">Target Pacing: 1 post every 2 minutes (30 deals/hour)</span>
+                <span class="text-xs font-semibold px-3 py-1 bg-slate-800 text-slate-300 rounded-full border border-slate-700">Pacing: 1 post every 2 minutes (30 deals/hour)</span>
             </div>
 
             <div id="platformPostCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -86,7 +121,7 @@
             </div>
         </div>
 
-        <!-- NEW: Monthly History & Archives Section -->
+        <!-- Monthly History & Archives Section -->
         <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
             <div class="flex items-center justify-between mb-5">
                 <div>
@@ -133,7 +168,7 @@
             <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 lg:col-span-2 flex flex-col">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-base font-semibold text-white">🔍 Live Catalog Search</h3>
-                    <span class="text-xs text-slate-400">Search 73,000+ local products</span>
+                    <span class="text-xs text-slate-400">Search 78,000+ local products</span>
                 </div>
                 <div class="relative mb-4 flex gap-2">
                     <input type="text" id="searchInput" placeholder="Search iPhone, Nike, Kurta, T-shirt, Shoes..." 
@@ -171,11 +206,11 @@
         }
 
         const platformMeta = {
-            'amazon':   { name: 'Amazon',   color: '#f59e0b', icon: '🟠', target: '3 / hr' },
-            'flipkart': { name: 'Flipkart', color: '#3b82f6', icon: '🔵', target: '3 / hr' },
-            'myntra':   { name: 'Myntra',   color: '#ec4899', icon: '🔴', target: '2 / hr' },
-            'ajio':     { name: 'Ajio',     color: '#8b5cf6', icon: '🟣', target: '2 / hr' },
-            'nykaa':    { name: 'Nykaa',    color: '#10b981', icon: '🌸', target: '1 / hr' }
+            'amazon':   { name: 'Amazon',   color: '#f59e0b', icon: '🟠', target: '9 / hr' },
+            'flipkart': { name: 'Flipkart', color: '#3b82f6', icon: '🔵', target: '8 / hr' },
+            'myntra':   { name: 'Myntra',   color: '#ec4899', icon: '🔴', target: '6 / hr' },
+            'ajio':     { name: 'Ajio',     color: '#8b5cf6', icon: '🟣', target: '4 / hr' },
+            'nykaa':    { name: 'Nykaa',    color: '#10b981', icon: '🌸', target: '3 / hr' }
         };
 
         async function fetchData() {
@@ -183,7 +218,7 @@
                 const res = await fetch('/api/stats');
                 const data = await res.json();
                 
-                // Top overview cards with bulletproof fallbacks
+                // Top overview cards
                 const lifeCount = data.deals_lifetime !== undefined ? data.deals_lifetime : (data.total_deals_lifetime || 0);
                 const monthCount = data.deals_this_month !== undefined ? data.deals_this_month : (data.total_deals_lifetime || 0);
                 const lastMonthCount = data.deals_last_month || 0;
@@ -301,8 +336,45 @@
                 });
                 document.getElementById('platformList').innerHTML = platHTML;
 
-                // Fetch deals feed
+                // Fetch Channel Ingestion Stats & Deals Feed
+                fetchChannelStats();
                 fetchDeals();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function fetchChannelStats() {
+            try {
+                const res = await fetch('/api/channel_stats');
+                const channels = await res.json();
+                
+                if (!channels.length) {
+                    document.getElementById('channelsTableBody').innerHTML = '<tr><td colspan="6" class="py-6 text-center text-slate-500">No channel deals ingested yet. Click "Scan Now" above to initiate spy monitor.</td></tr>';
+                    return;
+                }
+
+                let totalPicked = 0;
+                let html = '';
+                channels.forEach(ch => {
+                    totalPicked += Number(ch.total_picked_up || 0);
+                    const lastTime = ch.last_activity ? new Date(ch.last_activity).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'Just now';
+                    
+                    html += `
+                    <tr class="hover:bg-slate-900/40 transition">
+                        <td class="py-3.5 font-bold text-white flex items-center gap-1.5">
+                            <span class="text-indigo-400">📡</span> ${ch.source_channel}
+                        </td>
+                        <td class="py-3.5 font-extrabold text-white">${Number(ch.total_picked_up).toLocaleString('en-IN')}</td>
+                        <td class="py-3.5 font-bold text-emerald-400">${Number(ch.verified_deals || 0).toLocaleString('en-IN')}</td>
+                        <td class="py-3.5 font-semibold text-indigo-300">${Number(ch.saved_to_catalog || 0).toLocaleString('en-IN')}</td>
+                        <td class="py-3.5 font-medium text-slate-500">${Number(ch.out_of_stock || 0).toLocaleString('en-IN')}</td>
+                        <td class="py-3.5 text-slate-400">${lastTime}</td>
+                    </tr>`;
+                });
+
+                document.getElementById('channelsTableBody').innerHTML = html;
+                document.getElementById('channelIngestedTotalBadge').innerText = `${totalPicked} Deals Intercepted`;
             } catch (err) {
                 console.error(err);
             }
@@ -323,12 +395,13 @@
                     const pct = d.savings_pct ? Math.round(d.savings_pct * 100) : 0;
                     const url = d.affiliate_url || d.product_url || '#';
                     const time = new Date(d.posted_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+                    const sourceTag = d.source_channel ? `<span class="text-[10px] text-slate-500 ml-1">via ${d.source_channel}</span>` : '';
                     
                     html += `
                     <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition">
                         <div>
                             <div class="flex items-center justify-between text-xs mb-2">
-                                <span class="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 font-semibold uppercase tracking-wider">${d.platform}</span>
+                                <span class="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 font-semibold uppercase tracking-wider">${d.platform} ${sourceTag}</span>
                                 <span class="text-slate-500">${time}</span>
                             </div>
                             <div class="font-semibold text-slate-200 line-clamp-2 text-xs leading-relaxed mb-3">${d.title}</div>
@@ -385,6 +458,12 @@
             }
         }
 
+        async function triggerChannelScan() {
+            const res = await fetch('/api/trigger/channel_scan', { method: 'POST' });
+            alert("Spy Channel Scan triggered! Monitoring channels and ingesting deals now.");
+            setTimeout(fetchData, 3000);
+        }
+
         async function triggerBackup() {
             if (confirm("Run local database backup now?")) {
                 const res = await fetch('/api/trigger/backup', { method: 'POST' });
@@ -393,9 +472,9 @@
         }
 
         async function triggerBackfill() {
-            if (confirm("Force hourly quota backfill post now?")) {
+            if (confirm("Post next paced deal immediately?")) {
                 const res = await fetch('/api/trigger/backfill', { method: 'POST' });
-                alert("Hourly backfill triggered in background!");
+                alert("Deal post triggered in background!");
             }
         }
 
