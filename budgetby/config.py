@@ -718,3 +718,11 @@ TIMEZONE = "Asia/Kolkata"
 BACKUP_ENABLED = True
 BACKUP_HOUR = 3       # 3:00 AM IST daily backup
 BACKUP_RETAIN_DAYS = 7 # Keep last 7 backup files
+
+
+# ════════════════════════════════════════════════════════════════════════
+# UNIFIED DEAL THRESHOLDS & QUALITY GUARDS
+# ════════════════════════════════════════════════════════════════════════
+MIN_DEAL_DISCOUNT_PCT = 10.0    # Minimum 10% discount from MRP
+MIN_DEAL_SAVINGS_INR = 30.0     # Minimum ₹30 absolute savings
+EVERGREEN_MIN_DISCOUNT_PCT = 10.0 # Minimum discount for catalog deals

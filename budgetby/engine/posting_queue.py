@@ -1,9 +1,10 @@
 """
-BudgetBy — Paced & Dynamic Overflow Deal Posting Engine
+BudgetBy — High-Efficiency Paced & Dynamic Burst Deal Posting Engine
 Guarantees:
-1. Minimum Cadence: 1 post every 2 minutes (30 posts/hour) 24/7.
-2. Dynamic Burst Drain: If queue size > 2 deals, immediately drain and post queued deals with 15s pacing until queue size <= 2.
-3. Multi-Platform Diversity: Alternates stores proportionally (Amazon ~30%, Flipkart ~27%, Myntra ~20%, Ajio ~13%, Nykaa ~10%) and strictly prevents consecutive posts from the same platform.
+1. Minimum Cadence: Exactly 1 post every 2 minutes (30 posts/hour) 24/7.
+2. Dynamic Burst Drain: If queue size > 2 deals, rapidly posts with 15s pacing until queue <= 2.
+3. Multi-Store Interleaving: Even during single-store surges (e.g., 5 Amazon deals), interleaves alternate stores to strictly preserve anti-clustering.
+4. Cooldown Accuracy: Cooldowns are applied only after successful delivery.
 """
 
 import asyncio
@@ -18,7 +19,6 @@ from budgetby.bot import templates
 logger = logging.getLogger("budgetby.engine.posting_queue")
 
 # 30-slot weighted, interleaved platform rotation sequence
-# Amazon: 9 (30%), Flipkart: 8 (26.7%), Myntra: 6 (20%), Ajio: 4 (13.3%), Nykaa: 3 (10%)
 ROTATION_SEQUENCE = [
     "amazon", "flipkart", "myntra", "amazon", "ajio", "flipkart", "nykaa",
     "amazon", "myntra", "flipkart", "amazon", "ajio", "flipkart", "myntra",
@@ -66,7 +66,7 @@ class PostingQueue:
         self.hour_started = self._get_ist_hour()
         self.ROTATION_SEQUENCE = ROTATION_SEQUENCE
         self._initialized = True
-        logger.info("PostingQueue initialized with 2-minute pacer and dynamic >2 overflow burst drainage.")
+        logger.info("PostingQueue initialized with 2-minute pacer, smart interleaving, and dynamic >2 burst drain.")
 
     def set_bot(self, bot):
         self._bot = bot
@@ -92,7 +92,6 @@ class PostingQueue:
         qsize = self._queue.qsize()
         logger.info(f"📥 Queued deal #{pid} [{plat.upper()}] (Current Queue Size: {qsize})")
 
-        # If queue exceeds 2, trigger burst drainage immediately
         if qsize > 2 and not self._draining:
             asyncio.create_task(self._drain_overflow_queue())
 
@@ -135,37 +134,48 @@ class PostingQueue:
                 logger.warning("No Telegram bot available for deal posting.")
                 return
 
+            target_platform = self.ROTATION_SEQUENCE[self._rotation_index % len(self.ROTATION_SEQUENCE)]
             deal_data = None
             
-            # 1. Check if we have queued deals
+            # 1. Search Queue for an Anti-Clustering Compatible Deal
             if not self._queue.empty():
                 pending_items = []
                 while not self._queue.empty():
                     item = self._queue.get_nowait()
                     plat = item.get("product", {}).get("platform", "").lower()
                     
-                    # Anti-clustering: prefer item from different platform than last post
+                    # Ideal: Platform is different from last post
                     if not deal_data and plat != self._last_posted_platform:
                         deal_data = item
                     else:
                         pending_items.append(item)
 
-                # If all queued items were same platform as last post but queue is backing up, take the first one
-                if not deal_data and pending_items:
-                    deal_data = pending_items.pop(0)
-
                 # Re-enqueue remaining items
                 for item in pending_items:
                     await self._queue.put(item)
 
-            # 2. If no queued deal was eligible or queue is empty, select catalog deal using rotation
-            if not deal_data:
-                target_platform = self.ROTATION_SEQUENCE[self._rotation_index % len(self.ROTATION_SEQUENCE)]
+            # 2. If all queued items were same platform as last post, interleave 1 alternate store catalog deal!
+            if not deal_data and not self._queue.empty():
+                logger.info(f"Interleaving alternate platform deal to maintain anti-clustering...")
                 from budgetby.engine.evergreen import find_evergreen_deals
-                
+                for alt_plat in ["flipkart", "amazon", "myntra", "ajio", "nykaa"]:
+                    if alt_plat != self._last_posted_platform:
+                        candidates = await find_evergreen_deals(limit=1, platform=alt_plat)
+                        if candidates:
+                            deal_data = {
+                                "product": dict(candidates[0]),
+                                "type": "evergreen",
+                                "badge": "EVERGREEN",
+                                "score": 75
+                            }
+                            break
+
+            # 3. If queue was empty, fetch standard rotation deal
+            if not deal_data:
+                from budgetby.engine.evergreen import find_evergreen_deals
                 candidates = await find_evergreen_deals(limit=1, platform=target_platform)
                 
-                # Fallback to alternate platform if target platform has no deal
+                # Fallback to alternate platform if target platform has no candidate
                 if not candidates:
                     for alt_plat in ["amazon", "flipkart", "myntra", "ajio", "nykaa"]:
                         if alt_plat != self._last_posted_platform and alt_plat != target_platform:
@@ -175,9 +185,8 @@ class PostingQueue:
                                 break
 
                 if candidates:
-                    product_row = dict(candidates[0])
                     deal_data = {
-                        "product": product_row,
+                        "product": dict(candidates[0]),
                         "type": "evergreen",
                         "badge": "EVERGREEN",
                         "score": 75
@@ -188,7 +197,7 @@ class PostingQueue:
                 self._rotation_index += 1
                 return
 
-            # 3. Process and Broadcast Deal to Telegram
+            # 4. Process and Broadcast Deal to Telegram
             try:
                 from budgetby import database
                 from budgetby.engine.cooldown import is_on_cooldown, set_cooldown
@@ -200,7 +209,6 @@ class PostingQueue:
                 # Anti-duplicate check
                 if pid and await is_on_cooldown(pid):
                     logger.info(f"Skipping product #{pid} — on cooldown.")
-                    self._rotation_index += 1
                     return
 
                 deal_type = deal_data.get("type", "price_drop")
@@ -211,8 +219,9 @@ class PostingQueue:
                 price = float(product.get("current_price") or 0)
                 mrp = float(product.get("mrp") or price)
 
-                if mrp > 0 and price > 0 and ((mrp - price) / mrp) < 0.10 and deal_type != "price_drop":
-                    self._rotation_index += 1
+                # Quality guard: minimum discount from MRP
+                min_discount = getattr(config, "MIN_DEAL_DISCOUNT_PCT", 10.0) / 100.0
+                if mrp > 0 and price > 0 and ((mrp - price) / mrp) < min_discount and deal_type != "price_drop":
                     return
 
                 # URL Resolution
@@ -238,7 +247,6 @@ class PostingQueue:
                 # Record in deals database table
                 await database.insert_deal({
                     "product_id": pid,
-                    "channel_message_id": getattr(sent_msg, "message_id", None),
                     "deal_type": deal_type,
                     "posted_price": price,
                     "posted_mrp": mrp,
@@ -249,19 +257,21 @@ class PostingQueue:
                     "source_channel": source_channel
                 })
 
-                # Set 24h Cooldown
+                # Set 24h Cooldown only AFTER successful post
                 if pid:
                     await set_cooldown(pid, config.PRICE_DROP_COOLDOWN_HOURS)
 
                 self._last_posted_platform = platform
-                self._rotation_index += 1
-                self.posts_this_hour += 1
+                
+                # Advance rotation schedule only if this was on-schedule
+                if platform == target_platform:
+                    self._rotation_index += 1
 
+                self.posts_this_hour += 1
                 logger.info(f"📢 [POSTED TO TELEGRAM] [{platform.upper()}] {product.get('title', '')[:40]} | ₹{price:.0f} (MRP: ₹{mrp:.0f}) | Source: {source_channel}")
 
             except Exception as e:
                 logger.error(f"Error posting deal to Telegram: {e}", exc_info=True)
-                self._rotation_index += 1
 
 
 _global_posting_queue = None

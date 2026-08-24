@@ -120,8 +120,6 @@ async def price_check_loop():
                         f"Score={score:.0f} Badge={deal_result['badge']}"
                     )
 
-                    # Set cooldown
-                    await set_cooldown(product["id"], config.PRICE_DROP_COOLDOWN_HOURS)
 
                     # Actually queue and post the deal
                     from budgetby.engine.posting_queue import get_posting_queue
@@ -477,7 +475,8 @@ def start_scheduler():
                        hours=config.MOVERS_AND_SHAKERS_INTERVAL_HOURS, id="movers_shakers", max_instances=1, misfire_grace_time=30)
 
     # Hourly backfill check
-    _scheduler.add_job(hourly_backfill, "interval", hours=1, id="hourly_backfill", max_instances=1, misfire_grace_time=30)
+    # Hourly backfill replaced by continuous 2-minute paced posting loop
+    # _scheduler.add_job(hourly_backfill, ...)
 
     # Deal tracking check — every 10 minutes
     _scheduler.add_job(deal_tracking_check, "interval", minutes=10, id="deal_tracking", max_instances=1, misfire_grace_time=30)

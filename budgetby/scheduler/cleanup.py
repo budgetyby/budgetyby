@@ -31,6 +31,16 @@ async def daily_cleanup():
         # Delete OOS > DELETE_THRESHOLD_DAYS
         await database.execute(f"DELETE FROM products WHERE status IN ('{config.STATUS_TEMP_OOS}', '{config.STATUS_DORMANT}') AND last_checked < NOW() - INTERVAL '{config.DELETE_THRESHOLD_DAYS} days'")
         
+                # Decay stale Tier 1 products back to Tier 3 if no price change for 7 days
+        decayed = await database.execute("""
+            UPDATE products 
+            SET priority_tier = 3 
+            WHERE priority_tier = 1 
+              AND (last_price_change < NOW() - INTERVAL '7 days' OR last_price_change IS NULL)
+              AND status = 'active';
+        """)
+        logger.info(f"Decayed stale Tier 1 priority products to Tier 3: {decayed}")
+
         logger.info("Daily cleanup completed.")
     except Exception as e:
         logger.error(f"Error during daily cleanup: {e}", exc_info=True)
