@@ -44,7 +44,7 @@ async def init_pool() -> asyncpg.Pool:
         "command_timeout": 30,
         "statement_cache_size": 0,
     }
-    if config.DB_SSL:
+    if config.DB_SSL and str(config.DB_SSL).lower() not in ("disable", "false", "none", "0", ""):
         pool_kwargs["ssl"] = ctx
 
     _pool = await asyncpg.create_pool(**pool_kwargs)
