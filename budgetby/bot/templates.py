@@ -182,73 +182,105 @@ def format_evergreen_deal(product: dict, post_count: int = 1) -> str:
 
 def format_refurbished_deal(product: dict, new_product: dict = None) -> str:
     """Format a refurbished deal with optional new product comparison."""
-    title = html.escape(product.get("title", ""))
+    title = html.escape(clean_title(product.get("title", "")))
     current_price = product.get("current_price", 0)
+    platform = (product.get("platform") or "Store").capitalize()
     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
-    text = "♻️ <b>REFURBISHED DEAL</b>\n\n"
-    text += f"<b>{title}</b>\n\n"
-    text += f"Refurbished Price: {format_price(current_price)}\n"
+    text = f"♻️ <b>VERIFIED REFURBISHED DEAL! ({platform})</b>\n"
+    text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += f"🛍️ <b>{title}</b>\n\n"
+    text += f"💸 <b>Refurbished Price:</b> <b>{format_price(current_price)}</b>\n"
     if new_product:
         new_price = new_product.get("current_price", 0)
-        text += f"Brand New Product Price: {format_price(new_price)}\n"
-    text += "\n<i>Note: This is a refurbished product.</i>\n"
+        text += f"🏷️ <b>Brand New Price:</b> <s>{format_price(new_price)}</s>\n"
     if url:
-        text += f"\n🛍️ <b>Buy Link:</b>\n{url}\n"
+        text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
+    text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += "✨ <i>Certified refurbished with warranty!</i>"
     return text
 
 def format_bundle_deal(bundle_data: dict) -> str:
     """Format a bundle deal containing multiple items."""
-    text = "📦 <b>BUNDLE DEAL</b>\n\n"
+    text = "📦 <b>COMBO BUNDLE DEAL!</b>\n"
+    text += "━━━━━━━━━━━━━━━━━━━━━\n"
     items = bundle_data.get("items", [])
     total_separate = sum(i.get("price", 0) for i in items)
     bundle_price = bundle_data.get("bundle_price", 0)
     savings = total_separate - bundle_price
     
     for item in items:
-        text += f"• {item.get('name')}: {format_price(item.get('price', 0))}\n"
+        text += f"• <b>{item.get('name')}</b>: {format_price(item.get('price', 0))}\n"
         
-    text += f"\nTotal separate cost: {format_price(total_separate)}\n"
-    text += f"Bundle price: <b>{format_price(bundle_price)}</b>\n"
+    text += f"\n💸 <b>Bundle Price:</b> <b>{format_price(bundle_price)}</b> (<s>{format_price(total_separate)}</s>)\n"
     if savings > 0:
-        text += f"💰 You Save: {format_price(savings)}\n"
-        
+        pct = round((savings / total_separate) * 100) if total_separate > 0 else 0
+        text += f"🏷️ <b>Combo Savings:</b> <b>{pct}% OFF</b> (Save {format_price(savings)})\n"
+    text += "━━━━━━━━━━━━━━━━━━━━━"
     return text
 
-def format_back_in_stock(product: dict, days_oos: int) -> str:
+def format_back_in_stock(product: dict, days_oos: int = 0) -> str:
     """Format a back in stock notification."""
-    title = html.escape(product.get("title", ""))
+    title = html.escape(clean_title(product.get("title", "")))
     current_price = product.get("current_price", 0)
+    mrp = product.get("mrp", 0)
+    platform = (product.get("platform") or "Store").capitalize()
+    savings = mrp - current_price if mrp and mrp > current_price else 0
+    pct = round((savings / mrp) * 100) if mrp and mrp > 0 else 0
+    rating = product.get("rating")
+    rc = product.get("review_count", 0)
     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
-    text = "🔔 <b>BACK IN STOCK!</b>\n\n"
-    text += f"<b>{title}</b>\n"
-    text += f"Price: {format_price(current_price)}\n"
-    if days_oos > 0:
-        text += f"<i>(Was out of stock for {days_oos} days)</i>\n"
+    
+    text = f"🔔 <b>BACK IN STOCK ALERT! ({platform})</b>\n"
+    text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += f"🛍️ <b>{title}</b>\n\n"
+    if savings > 0:
+        text += f"💸 <b>Current Price:</b> <b>{format_price(current_price)}</b> (<s>{format_price(mrp)}</s>)\n"
+        text += f"🏷️ <b>Discount:</b> <b>{pct}% OFF</b>\n"
+    else:
+        text += f"💸 <b>Current Price:</b> <b>{format_price(current_price)}</b>\n"
+    if rating:
+        rc_str = f" ({rc:,}+ reviews)" if rc and rc > 10 else ""
+        text += f"⭐ <b>Rating:</b> {rating} ★{rc_str}\n"
     if url:
-        text += f"\n🛍️ <b>Buy Link:</b>\n{url}\n"
+        text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
+    text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += "⚡ <i>Limited inventory restocked — grab before it sells out!</i>"
     return text
 
 def format_variant_deal(product: dict, variants: list) -> str:
     """Format a deal with multiple variants."""
-    title = product.get("title", "")
-    text = f"🎨 <b>MULTIPLE VARIANTS ON SALE</b>\n\n<b>{title}</b>\n\n"
+    title = html.escape(clean_title(product.get("title", "")))
+    platform = (product.get("platform") or "Store").capitalize()
+    url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
+    text = f"🎨 <b>MULTIPLE VARIANTS ON SALE! ({platform})</b>\n"
+    text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += f"🛍️ <b>{title}</b>\n\n"
     variants_sorted = sorted(variants, key=lambda x: x.get("price", 0))
     for v in variants_sorted:
-        text += f"• {v.get('name')}: {format_price(v.get('price', 0))}\n"
+        text += f"• {v.get('name')}: <b>{format_price(v.get('price', 0))}</b>\n"
+    if url:
+        text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
+    text += "━━━━━━━━━━━━━━━━━━━━━"
     return text
 
 def format_budget_segment(segment_name: str, deals: list) -> str:
     """Format a roundup of best deals in a budget segment."""
-    text = f"📋 <b>Best Deals {segment_name} Today!</b>\n\n"
+    text = f"📋 <b>Top {segment_name} Deals Right Now!</b>\n"
+    text += "━━━━━━━━━━━━━━━━━━━━━\n"
     for d in deals:
-        text += f"• <a href='{d.get('url')}'>{d.get('title')}</a> - {format_price(d.get('current_price'))}\n"
+        url = d.get('affiliate_url') or d.get('product_url') or d.get('url', '')
+        text += f"• <b>{d.get('title')}</b> — <b>{format_price(d.get('current_price'))}</b>\n  👉 {url}\n"
+    text += "━━━━━━━━━━━━━━━━━━━━━"
     return text
 
 def format_trending_roundup(category: str, deals: list) -> str:
     """Format a trending roundup for a category."""
-    text = f"🔥 <b>Trending Now: {category}</b>\n\n"
+    text = f"🔥 <b>Trending Deals in {category.title()}</b>\n"
+    text += "━━━━━━━━━━━━━━━━━━━━━\n"
     for d in deals:
-        text += f"• <a href='{d.get('url')}'>{d.get('title')}</a> - {format_price(d.get('current_price'))}\n"
+        url = d.get('affiliate_url') or d.get('product_url') or d.get('url', '')
+        text += f"• <b>{d.get('title')}</b> — <b>{format_price(d.get('current_price'))}</b>\n  👉 {url}\n"
+    text += "━━━━━━━━━━━━━━━━━━━━━"
     return text
 
 def format_deal_expiry_edit(original_caption: str, new_price: float = None, is_oos: bool = False, dropped_more: bool = False) -> str:
