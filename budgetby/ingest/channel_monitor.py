@@ -2,6 +2,7 @@
 BudgetBy — Telegram Channel Deal Monitor & Ingestion Engine
 Monitors public deal channels (bypassing ISP blocks with DoH), sanitizes affiliate tags,
 verifies live product pricing locally, stores in local PostgreSQL database, and broadcasts legitimate deals.
+Strictly processes only new deals posted from the moment the monitor starts (ignores all past history).
 """
 
 import logging
@@ -14,7 +15,7 @@ from budgetby import database, config
 
 logger = logging.getLogger("budgetby.ingest.channel_monitor")
 
-# Configurable list of active high-velocity public deal channels to monitor
+# Configurable list of active high-velocity public deal channels to monitor in parallel
 DEFAULT_MONITORED_CHANNELS = [
     "dealbeeofficial",
     "dealsmagnet",
@@ -27,6 +28,10 @@ DEFAULT_MONITORED_CHANNELS = [
 
 # Cloudflare DoH IP for Telegram Web
 TELEGRAM_WEB_IP = "149.154.167.99"
+
+# In-memory baseline tracker: {channel_name: max_seen_post_id}
+_channel_baseline_post_ids = {}
+_is_initialized = False
 
 async def unshorten_url(url: str, client: httpx.AsyncClient) -> str:
     """Follow HTTP redirects to unshorten shortened links."""
@@ -131,7 +136,7 @@ async def scrape_channel_posts(channel: str, limit: int = 15) -> List[Dict[str, 
                     if href and href.startswith("http") and "t.me/" not in href and "telegram.org" not in href:
                         raw_urls.append(href)
 
-                if raw_urls:
+                if raw_urls and post_id > 0:
                     extracted_posts.append({
                         "channel": f"@{channel_name}",
                         "post_id": post_id,
@@ -278,28 +283,52 @@ async def verify_and_ingest_single_deal(channel: str, post_id: int, raw_url: str
         logger.error(f"Error ingesting deal from {channel}: {e}")
         return None
 
+async def _process_single_channel(channel: str, client: httpx.AsyncClient):
+    """Processes a single channel, strictly filtering for posts created after initial baseline."""
+    global _channel_baseline_post_ids
+    ch_key = channel.lstrip("@").lower()
+
+    try:
+        posts = await scrape_channel_posts(channel, limit=15)
+        if not posts:
+            return
+
+        max_id_on_page = max(p["post_id"] for p in posts)
+
+        # First boot for this channel: record baseline and skip historical deals
+        if ch_key not in _channel_baseline_post_ids:
+            _channel_baseline_post_ids[ch_key] = max_id_on_page
+            logger.info(f"📍 Channel @{ch_key}: Initialized baseline at Post #{max_id_on_page}. (All prior history skipped, monitoring live from this moment forward!)")
+            return
+
+        baseline_id = _channel_baseline_post_ids[ch_key]
+        new_posts = [p for p in posts if p["post_id"] > baseline_id]
+
+        if new_posts:
+            logger.info(f"⚡ Channel @{ch_key}: Found {len(new_posts)} NEW incoming deal posts (since #{baseline_id})")
+            for p in new_posts:
+                for raw_url in p["raw_urls"]:
+                    await verify_and_ingest_single_deal(
+                        channel=p["channel"],
+                        post_id=p["post_id"],
+                        raw_url=raw_url,
+                        client=client
+                    )
+                    await asyncio.sleep(0.3)
+
+            # Update baseline
+            _channel_baseline_post_ids[ch_key] = max_id_on_page
+
+    except Exception as e:
+        logger.error(f"Error processing channel @{channel}: {e}")
+
 async def run_channel_monitor(channels: List[str] = None):
     """
-    Main background job: Scrapes all monitored channels, processes deals concurrently.
+    Main background job: Scrapes all monitored channels concurrently in parallel.
+    Strictly processes ONLY new deals posted from the moment of initialization.
     """
     target_channels = channels or DEFAULT_MONITORED_CHANNELS
-    logger.info(f"📡 Starting channel monitor scan across {len(target_channels)} channels...")
+    logger.info(f"📡 Scanning {len(target_channels)} deal channels in parallel (from-this-moment filter active)...")
 
     async with httpx.AsyncClient(timeout=12, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}) as client:
-        for channel in target_channels:
-            try:
-                posts = await scrape_channel_posts(channel, limit=10)
-                logger.info(f"Channel @{channel}: Found {len(posts)} recent posts with deal URLs")
-
-                for p in posts:
-                    for raw_url in p["raw_urls"]:
-                        await verify_and_ingest_single_deal(
-                            channel=p["channel"],
-                            post_id=p["post_id"],
-                            raw_url=raw_url,
-                            client=client
-                        )
-                        await asyncio.sleep(0.3)
-
-            except Exception as e:
-                logger.error(f"Error monitoring channel {channel}: {e}")
+        await asyncio.gather(*(_process_single_channel(ch, client) for ch in target_channels))
