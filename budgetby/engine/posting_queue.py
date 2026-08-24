@@ -81,6 +81,19 @@ class PostingQueue:
             self.posts_this_hour = 0
             self.hour_started = cur_hour
 
+    async def process_queue(self, bot=None):
+        """
+        Non-blocking process_queue wrapper:
+        If queue > 2, initiates burst drain background task.
+        If queue <= 2 and has items, posts the next deal immediately without blocking other tasks.
+        """
+        if bot:
+            self._bot = bot
+        if self._queue.qsize() > 2 and not self._draining:
+            asyncio.create_task(self._drain_overflow_queue())
+        elif not self._queue.empty():
+            asyncio.create_task(self.post_next_deal(bot))
+
     async def queue_deal(self, deal_data: dict):
         """
         Enqueue an organic or intercepted deal.
