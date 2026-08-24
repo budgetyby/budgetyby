@@ -4,6 +4,9 @@ Cleanup tasks for the scheduler.
 import logging
 import asyncio
 import os
+import gzip
+import shutil
+import datetime
 from budgetby import database, config
 
 logger = logging.getLogger("budgetby.scheduler.cleanup")
@@ -33,13 +36,59 @@ async def daily_cleanup():
         logger.error(f"Error during daily cleanup: {e}", exc_info=True)
 
 async def run_backup():
-    """Runs pg_dump and compresses output."""
+    """Runs pg_dump and compresses output with native Python gzip, keeping 14-day retention."""
     try:
         logger.info("Starting database backup...")
-        cmd = f"pg_dump -U {config.DB_USER} -h {config.DB_HOST} -p {config.DB_PORT} {config.DB_NAME} | gzip > backup_$(date +%Y%m%d).sql.gz"
-        process = await asyncio.create_subprocess_shell(cmd)
-        await process.communicate()
-        logger.info("Database backup completed.")
+        base_dir = r"c:\Users\jaysi\.gemini\antigravity\scratch\budget-by"
+        backup_dir = os.path.join(base_dir, "backups")
+        os.makedirs(backup_dir, exist_ok=True)
+
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
+        sql_file = os.path.join(backup_dir, f"backup_{timestamp}.sql")
+        gz_file = os.path.join(backup_dir, f"backup_{timestamp}.sql.gz")
+
+        pg_dump_bin = r"C:\Program Files\PostgreSQL\18\bin\pg_dump.exe"
+        if not os.path.exists(pg_dump_bin):
+            pg_dump_bin = "pg_dump"
+
+        # Run pg_dump
+        env = os.environ.copy()
+        env["PGPASSWORD"] = str(config.DB_PASSWORD)
+
+        cmd = [
+            pg_dump_bin,
+            "-h", str(config.DB_HOST),
+            "-p", str(config.DB_PORT),
+            "-U", str(config.DB_USER),
+            "-d", str(config.DB_NAME),
+            "-f", sql_file
+        ]
+
+        proc = await asyncio.create_subprocess_exec(*cmd, env=env)
+        await proc.communicate()
+
+        if os.path.exists(sql_file) and os.path.getsize(sql_file) > 0:
+            # Compress with gzip
+            with open(sql_file, "rb") as f_in:
+                with gzip.open(gz_file, "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+            os.remove(sql_file)
+
+            size_mb = os.path.getsize(gz_file) / (1024 * 1024)
+            logger.info(f"✅ Database backup created successfully: {gz_file} ({size_mb:.2f} MB)")
+
+            # Clean backups older than 14 days
+            now = datetime.datetime.now()
+            for f in os.listdir(backup_dir):
+                if f.endswith(".sql.gz"):
+                    fp = os.path.join(backup_dir, f)
+                    mtime = datetime.datetime.fromtimestamp(os.path.getmtime(fp))
+                    if (now - mtime).days > 14:
+                        os.remove(fp)
+                        logger.info(f"Pruned old backup: {f}")
+        else:
+            logger.warning(f"Backup file was empty or failed to generate.")
+
     except Exception as e:
         logger.error(f"Error during backup: {e}", exc_info=True)
 

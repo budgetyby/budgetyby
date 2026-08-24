@@ -1,0 +1,359 @@
+import asyncio
+import sys
+import os
+from fastapi import FastAPI, Query, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse
+import uvicorn
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+from budgetby import database, config
+
+app = FastAPI(title="BudgetBy Control Center", version="2.0")
+
+@app.on_event("startup")
+async def startup():
+    await database.init_pool()
+
+@app.on_event("shutdown")
+async def shutdown():
+    await database.close_pool()
+
+@app.get("/api/stats")
+async def get_stats():
+    try:
+        total_prods = await database.fetchval("SELECT COUNT(*) FROM products;")
+        by_plat = await database.fetch("SELECT platform, COUNT(*) as count FROM products GROUP BY platform ORDER BY count DESC;")
+        deals_today = await database.fetchval("SELECT COUNT(*) FROM deals WHERE posted_at >= CURRENT_DATE;")
+        deals_1h = await database.fetchval("SELECT COUNT(*) FROM deals WHERE posted_at >= NOW() - INTERVAL '1 hour';")
+        cooldowns = await database.fetchval("SELECT COUNT(*) FROM post_cooldowns WHERE expires_at > NOW();")
+        daily_prices = await database.fetchval("SELECT COUNT(*) FROM daily_prices;")
+        latest_deals = await database.fetchval("SELECT COUNT(*) FROM deals;")
+        
+        return {
+            "status": "online",
+            "db_host": f"{config.DB_HOST}:{config.DB_PORT}",
+            "db_name": config.DB_NAME,
+            "total_products": total_prods or 0,
+            "by_platform": {r["platform"]: r["count"] for r in by_plat},
+            "deals_today": deals_today or 0,
+            "deals_last_hour": deals_1h or 0,
+            "active_cooldowns": cooldowns or 0,
+            "daily_prices_recorded": daily_prices or 0,
+            "total_deals_lifetime": latest_deals or 0
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/deals")
+async def get_deals(limit: int = 25):
+    try:
+        rows = await database.fetch(f"""
+            SELECT d.id, d.posted_price, d.posted_mrp, d.savings_pct, d.badge, d.deal_score, d.posted_at,
+                   p.title, p.platform, p.category, p.product_url, p.affiliate_url, p.image_url, p.rating
+            FROM deals d
+            JOIN products p ON d.product_id = p.id
+            ORDER BY d.posted_at DESC
+            LIMIT {limit};
+        """)
+        return [dict(r) for r in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/search")
+async def search_products(q: str = Query(..., min_length=2), limit: int = 20):
+    try:
+        rows = await database.fetch("""
+            SELECT id, platform, title, current_price, mrp, rating, review_count, in_stock, affiliate_url, product_url, image_url, min_30d, all_time_low
+            FROM products
+            WHERE title ILIKE $1 OR platform_id ILIKE $1
+            ORDER BY current_price ASC NULLS LAST
+            LIMIT $2;
+        """, f"%{q}%", limit)
+        return [dict(r) for r in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/trigger/backup")
+async def trigger_backup():
+    try:
+        from budgetby.scheduler.cleanup import run_backup
+        asyncio.create_task(run_backup())
+        return {"status": "success", "message": "Database backup triggered successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/trigger/backfill")
+async def trigger_backfill():
+    try:
+        from budgetby.scheduler.scheduler import hourly_backfill
+        asyncio.create_task(hourly_backfill())
+        return {"status": "success", "message": "Hourly backfill post triggered successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/", response_class=HTMLResponse)
+async def dashboard_home():
+    return """
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BudgetBy DealPulse — 100% Local Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+    <!-- Navbar -->
+    <header class="border-b border-slate-800 bg-slate-900/70 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl">⚡</span>
+                <span class="text-xl font-extrabold bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">BudgetBy DealPulse</span>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> 100% LOCAL
+                </span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="triggerBackfill()" class="px-3.5 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition shadow-sm">🚀 Post Quota Now</button>
+                <button onclick="triggerBackup()" class="px-3.5 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition">💾 Backup DB</button>
+                <button onclick="fetchData()" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition">🔄</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        <!-- Top Metrics Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Products Tracked</div>
+                <div id="stat-products" class="text-3xl font-extrabold mt-2 text-white">---</div>
+                <div class="text-xs text-emerald-400 mt-2 flex items-center gap-1">🟢 PostgreSQL 18 Local</div>
+            </div>
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Deals Posted Today</div>
+                <div id="stat-deals-today" class="text-3xl font-extrabold mt-2 text-indigo-400">---</div>
+                <div class="text-xs text-slate-400 mt-2"><span id="stat-deals-1h">-</span> posted in last 60m</div>
+            </div>
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Historical Price Snapshots</div>
+                <div id="stat-snapshots" class="text-3xl font-extrabold mt-2 text-amber-400">---</div>
+                <div class="text-xs text-slate-400 mt-2">Daily minimums & closing prices</div>
+            </div>
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Active Anti-Spam Timers</div>
+                <div id="stat-cooldowns" class="text-3xl font-extrabold mt-2 text-purple-400">---</div>
+                <div class="text-xs text-slate-400 mt-2">Guarding against duplicate posts</div>
+            </div>
+        </div>
+
+        <!-- Middle Section: Chart & Quick Search -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Platform Distribution Chart -->
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 lg:col-span-1 flex flex-col justify-between">
+                <h3 class="text-base font-semibold text-white mb-4">🛍️ Platform Catalog Breakdown</h3>
+                <div class="h-56 relative flex items-center justify-center">
+                    <canvas id="platformChart"></canvas>
+                </div>
+                <div id="platformList" class="mt-4 grid grid-cols-2 gap-2 text-xs"></div>
+            </div>
+
+            <!-- Live Product Catalog Search -->
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 lg:col-span-2 flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-semibold text-white">🔍 Live Catalog Search</h3>
+                    <span class="text-xs text-slate-400">Search 73,000+ local products</span>
+                </div>
+                <div class="relative mb-4">
+                    <input type="text" id="searchInput" placeholder="Search iPhone, Nike, Kurta, T-shirt, Shoes..." 
+                           class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500 transition text-white placeholder-slate-500">
+                    <button onclick="runSearch()" class="absolute right-2 top-2 px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold rounded-lg transition text-white">Search</button>
+                </div>
+                <div id="searchResults" class="flex-1 overflow-y-auto max-h-64 space-y-2 pr-1 text-xs text-slate-400">
+                    <div class="text-center py-8 text-slate-500">Type product name above and click Search</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Deals Feed -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-lg font-bold text-white">📢 Real-Time Deals Posted to Telegram</h3>
+                    <p class="text-xs text-slate-400 mt-1">Live broadcasted stream sent to @deal_pulse_alerts</p>
+                </div>
+                <span class="px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-semibold rounded-full">Channel: @deal_pulse_alerts</span>
+            </div>
+            
+            <div id="dealsFeed" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="text-center py-12 text-slate-500 col-span-full">Loading live deals...</div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let chartInstance = null;
+
+        function formatINR(val) {
+            if (!val) return '₹0';
+            return '₹' + Number(val).toLocaleString('en-IN');
+        }
+
+        async function fetchData() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                
+                document.getElementById('stat-products').innerText = Number(data.total_products).toLocaleString('en-IN');
+                document.getElementById('stat-deals-today').innerText = data.deals_today;
+                document.getElementById('stat-deals-1h').innerText = data.deals_last_hour;
+                document.getElementById('stat-snapshots').innerText = Number(data.daily_prices_recorded).toLocaleString('en-IN');
+                document.getElementById('stat-cooldowns').innerText = data.active_cooldowns;
+
+                // Update Chart
+                const labels = Object.keys(data.by_platform).map(k => k.toUpperCase());
+                const counts = Object.values(data.by_platform);
+                
+                const colors = ['#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#10b981'];
+                
+                if (chartInstance) chartInstance.destroy();
+                const ctx = document.getElementById('platformChart').getContext('2d');
+                chartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: counts,
+                            backgroundColor: colors,
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } }
+                    }
+                });
+
+                // Render platform list
+                let platHTML = '';
+                labels.forEach((l, i) => {
+                    platHTML += `<div class="flex items-center justify-between p-2 bg-slate-950/60 rounded-lg border border-slate-800/60">
+                        <span class="font-medium flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background:${colors[i]}"></span>${l}</span>
+                        <span class="font-bold text-slate-200">${Number(counts[i]).toLocaleString('en-IN')}</span>
+                    </div>`;
+                });
+                document.getElementById('platformList').innerHTML = platHTML;
+
+                // Fetch deals
+                fetchDeals();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function fetchDeals() {
+            try {
+                const res = await fetch('/api/deals?limit=12');
+                const deals = await res.json();
+                
+                if (!deals.length) {
+                    document.getElementById('dealsFeed').innerHTML = '<div class="text-center py-8 text-slate-500 col-span-full">No deals logged yet today.</div>';
+                    return;
+                }
+
+                let html = '';
+                deals.forEach(d => {
+                    const pct = d.savings_pct ? Math.round(d.savings_pct * 100) : 0;
+                    const url = d.affiliate_url || d.product_url || '#';
+                    const time = new Date(d.posted_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+                    
+                    html += `
+                    <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition">
+                        <div>
+                            <div class="flex items-center justify-between text-xs mb-2">
+                                <span class="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 font-semibold uppercase tracking-wider">${d.platform}</span>
+                                <span class="text-slate-500">${time}</span>
+                            </div>
+                            <div class="font-semibold text-slate-200 line-clamp-2 text-xs leading-relaxed mb-3">${d.title}</div>
+                        </div>
+                        <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                            <div>
+                                <span class="text-sm font-bold text-emerald-400">${formatINR(d.posted_price)}</span>
+                                ${d.posted_mrp > d.posted_price ? `<span class="text-xs line-through text-slate-500 ml-1">${formatINR(d.posted_mrp)}</span>` : ''}
+                                ${pct > 0 ? `<span class="text-xs font-bold text-amber-400 ml-1.5">${pct}% OFF</span>` : ''}
+                            </div>
+                            <a href="${url}" target="_blank" class="px-2.5 py-1 bg-indigo-600/80 hover:bg-indigo-600 text-white rounded text-xs font-medium transition">View Deal ↗</a>
+                        </div>
+                    </div>`;
+                });
+                document.getElementById('dealsFeed').innerHTML = html;
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function runSearch() {
+            const q = document.getElementById('searchInput').value.trim();
+            if (!q || q.length < 2) return;
+            
+            document.getElementById('searchResults').innerHTML = '<div class="text-center py-4 text-slate-400">Searching local database...</div>';
+            
+            try {
+                const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+                const items = await res.json();
+                
+                if (!items.length) {
+                    document.getElementById('searchResults').innerHTML = '<div class="text-center py-4 text-slate-500">No products found matching query.</div>';
+                    return;
+                }
+
+                let html = '';
+                items.forEach(it => {
+                    const url = it.affiliate_url || it.product_url || '#';
+                    html += `
+                    <div class="flex items-center justify-between p-2.5 bg-slate-950 rounded-lg border border-slate-800/80 hover:border-slate-700 transition">
+                        <div class="truncate mr-3">
+                            <span class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 mr-1.5 uppercase">${it.platform}</span>
+                            <span class="font-medium text-slate-200">${it.title}</span>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <span class="font-bold text-emerald-400">${formatINR(it.current_price)}</span>
+                            <a href="${url}" target="_blank" class="text-indigo-400 hover:text-indigo-300 font-medium">Link ↗</a>
+                        </div>
+                    </div>`;
+                });
+                document.getElementById('searchResults').innerHTML = html;
+            } catch (err) {
+                document.getElementById('searchResults').innerHTML = `<div class="text-red-400 text-center py-2">Error: ${err.message}</div>`;
+            }
+        }
+
+        async function triggerBackup() {
+            if (confirm("Run local database backup now?")) {
+                const res = await fetch('/api/trigger/backup', { method: 'POST' });
+                alert("Backup job triggered in background!");
+            }
+        }
+
+        async function triggerBackfill() {
+            if (confirm("Force hourly quota backfill post now?")) {
+                const res = await fetch('/api/trigger/backfill', { method: 'POST' });
+                alert("Hourly backfill triggered in background!");
+            }
+        }
+
+        // Auto refresh every 15 seconds
+        fetchData();
+        setInterval(fetchData, 15000);
+        
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') runSearch();
+        });
+    </script>
+</body>
+</html>

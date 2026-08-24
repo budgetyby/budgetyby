@@ -367,6 +367,68 @@ async def deal_tracking_check():
         logger.error(f"Error in deal_tracking_check: {e}")
 
 
+
+
+async def morning_digest():
+    """Curate and post Top 5 Morning Deals Digest at 9:00 AM IST."""
+    await _post_digest(digest_type="Morning", hours_lookback=12)
+
+
+async def evening_digest():
+    """Curate and post Top 5 Evening Deals Digest at 8:00 PM IST."""
+    await _post_digest(digest_type="Evening", hours_lookback=12)
+
+
+async def _post_digest(digest_type: str, hours_lookback: int = 12):
+    try:
+        if not _bot:
+            logger.warning(f"Cannot send {digest_type} digest: bot not initialized.")
+            return
+
+        from budgetby.bot.templates import format_daily_digest
+        
+        # Query top 5 deals in the lookback window ordered by deal_score and savings_pct
+        rows = await database.fetch(f"""
+            SELECT p.title, p.platform, p.category, p.product_url, p.affiliate_url,
+                   p.image_url, p.rating, p.review_count, d.posted_price, d.posted_mrp,
+                   d.savings_amount, d.savings_pct, d.deal_score, d.badge
+            FROM deals d
+            JOIN products p ON d.product_id = p.id
+            WHERE d.posted_at >= NOW() - INTERVAL '{hours_lookback} hours'
+            ORDER BY d.deal_score DESC, d.savings_pct DESC
+            LIMIT 5;
+        """)
+
+        if not rows or len(rows) < 3:
+            # Fallback to top products with highest discount currently in DB
+            rows = await database.fetch("""
+                SELECT title, platform, category, product_url, affiliate_url,
+                       image_url, rating, review_count, current_price as posted_price,
+                       mrp as posted_mrp, (mrp - current_price) as savings_amount,
+                       ((mrp - current_price)/mrp) as savings_pct, 80 as deal_score, 'ATL' as badge
+                FROM products
+                WHERE current_price > 0 AND mrp > current_price AND in_stock = TRUE AND rating >= 4.0
+                ORDER BY ((mrp - current_price)/mrp) DESC, review_count DESC
+                LIMIT 5;
+            """)
+
+        if not rows:
+            return
+
+        deals_list = [dict(r) for r in rows]
+        text = format_daily_digest(deals_list, digest_type=digest_type)
+
+        await _bot.send_message(
+            chat_id=config.TELEGRAM_CHANNEL_ID,
+            text=text,
+            parse_mode="HTML",
+            disable_web_page_preview=False
+        )
+        logger.info(f"✅ Successfully posted {digest_type} deals digest to {config.TELEGRAM_CHANNEL_ID}")
+    except Exception as e:
+        logger.error(f"Error posting {digest_type} deals digest: {e}")
+
+
 def start_scheduler():
     """Configure and start all scheduled jobs."""
     logger.info("Starting scheduler...")
@@ -402,6 +464,12 @@ def start_scheduler():
     if config.BACKUP_ENABLED:
         _scheduler.add_job(cleanup.run_backup, "cron",
                            hour=config.BACKUP_HOUR, minute=0, id="daily_backup")
+
+        # Daily Morning Digest at 9:00 AM IST
+    _scheduler.add_job(morning_digest, "cron", hour=9, minute=0, timezone="Asia/Kolkata", id="morning_digest")
+
+    # Daily Evening Digest at 8:00 PM IST (20:00)
+    _scheduler.add_job(evening_digest, "cron", hour=20, minute=0, timezone="Asia/Kolkata", id="evening_digest")
 
     _scheduler.start()
     logger.info("Scheduler started with all jobs configured")

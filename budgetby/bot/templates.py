@@ -7,8 +7,8 @@ def format_price(amount: float | int | None) -> str:
     if amount is None:
         return "N/A"
     try:
-        amount = int(amount)
-    except ValueError:
+        amount = int(round(float(amount)))
+    except (ValueError, TypeError):
         return f"₹{amount}"
         
     s = str(amount)
@@ -27,6 +27,72 @@ def build_buy_button(url: str, text: str = "🛒 Buy Now") -> InlineKeyboardMark
     """Create an InlineKeyboardMarkup with a single URL button."""
     return InlineKeyboardMarkup([[InlineKeyboardButton(text, url=url)]])
 
+def get_tiered_badge(badge: str = None, pct: int = 0) -> str:
+    """Determine high-impact visual badge based on drop magnitude and historical baseline."""
+    if pct >= 70:
+        return "🚨 LOOT DEAL (70%+ OFF) 🚨"
+    elif pct >= 50:
+        return "⚡ MEGA PRICE DROP (50%+ OFF) ⚡"
+    elif badge == "ATL":
+        return "📉 ALL-TIME LOW PRICE 📉"
+    elif badge == "near_ATL":
+        return "🔥 NEAR RECORD LOW 🔥"
+    elif badge == "90d_low":
+        return "🏷️ 90-DAY LOWEST PRICE"
+    elif badge == "60d_low":
+        return "🏷️ 60-DAY LOWEST PRICE"
+    elif badge == "30d_low":
+        return "🏷️ 30-DAY LOWEST PRICE"
+    return "🔥 PRICE DROP ALERT"
+
+def get_category_hashtags(platform: str = "", category: str = "", pct: int = 0, badge: str = "") -> str:
+    """Generate relevant, searchable category and platform hashtags."""
+    tags = ["#DealPulse"]
+    
+    # Platform tag
+    p = (platform or "").lower()
+    if "amazon" in p:
+        tags.append("#Amazon")
+    elif "flipkart" in p:
+        tags.append("#Flipkart")
+    elif "myntra" in p:
+        tags.append("#Myntra")
+    elif "ajio" in p:
+        tags.append("#Ajio")
+    elif "nykaa" in p:
+        tags.append("#Nykaa")
+        
+    # Category tag mappings
+    c = (category or "").lower()
+    if any(k in c for k in ["phone", "mobile", "electronics", "laptop", "audio", "headphone", "watch", "tv", "camera"]):
+        tags.append("#Electronics")
+        if "phone" in c or "mobile" in c:
+            tags.append("#Smartphones")
+        elif "audio" in c or "headphone" in c:
+            tags.append("#Audio")
+    elif any(k in c for k in ["shirt", "jean", "trouser", "dress", "saree", "kurta", "jacket", "top", "clothing", "wear"]):
+        tags.append("#Fashion")
+        tags.append("#Clothing")
+    elif any(k in c for k in ["shoe", "sneaker", "sandal", "footwear", "boot"]):
+        tags.append("#Footwear")
+        tags.append("#Sneakers")
+    elif any(k in c for k in ["beauty", "makeup", "skincare", "haircare", "perfume", "fragrance", "bath"]):
+        tags.append("#Beauty")
+    elif any(k in c for k in ["home", "kitchen", "furniture", "decor", "dining", "cookware"]):
+        tags.append("#HomeKitchen")
+    elif any(k in c for k in ["baby", "kids", "toy"]):
+        tags.append("#KidsBaby")
+        
+    # Deal severity tags
+    if pct >= 70 or badge == "ATL":
+        tags.append("#LootDeal")
+    elif pct >= 50:
+        tags.append("#MegaDrop")
+    else:
+        tags.append("#Deals")
+        
+    return " ".join(tags)
+
 def format_mega_deal(product: dict, deal_result: dict = None) -> str:
     """Format a 80+ score MEGA DEAL."""
     title = html.escape(clean_title(product.get("title", "")))
@@ -35,11 +101,15 @@ def format_mega_deal(product: dict, deal_result: dict = None) -> str:
     platform = (product.get("platform") or "Store").capitalize()
     savings = mrp - current_price if mrp and mrp > current_price else 0
     pct = round((savings / mrp) * 100) if mrp and mrp > 0 else 0
+    badge = (deal_result or {}).get("badge") or product.get("badge")
     rating = product.get("rating", "")
     rc = product.get("review_count", 0)
     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
     
-    text = f"🚨 <b>MEGA PRICE DROP ALERT! ({platform})</b>\n"
+    badge_header = get_tiered_badge(badge, pct)
+    hashtags = get_category_hashtags(platform, product.get("category", ""), pct, badge)
+    
+    text = f"<b>{badge_header} ({platform})</b>\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
     text += f"🛍️ <b>{title}</b>\n\n"
     if savings > 0:
@@ -55,7 +125,7 @@ def format_mega_deal(product: dict, deal_result: dict = None) -> str:
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
-    text += "🔥 <i>Lowest price recorded — grab it now!</i>"
+    text += f"{hashtags}"
         
     return text
 
@@ -67,11 +137,15 @@ def format_today_deal(product: dict, deal_result: dict = None) -> str:
     platform = (product.get("platform") or "Store").capitalize()
     savings = mrp - current_price if mrp and mrp > current_price else 0
     pct = round((savings / mrp) * 100) if mrp and mrp > 0 else 0
+    badge = (deal_result or {}).get("badge") or product.get("badge")
     rating = product.get("rating", "")
     rc = product.get("review_count", 0)
     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
+    
+    badge_header = get_tiered_badge(badge, pct)
+    hashtags = get_category_hashtags(platform, product.get("category", ""), pct, badge)
 
-    text = f"⚡ <b>TODAY'S FLASH DEAL! ({platform})</b>\n"
+    text = f"<b>{badge_header} ({platform})</b>\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
     text += f"🛍️ <b>{title}</b>\n\n"
     if savings > 0:
@@ -87,10 +161,9 @@ def format_today_deal(product: dict, deal_result: dict = None) -> str:
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
-    text += "⚡ <i>Limited time offer — grab it before it sells out!</i>"
+    text += f"{hashtags}"
 
     return text
-
 
 def format_hot_deal(product: dict, deal_result: dict = None) -> str:
     """Format a 60-79 score HOT DEAL."""
@@ -100,11 +173,15 @@ def format_hot_deal(product: dict, deal_result: dict = None) -> str:
     platform = (product.get("platform") or "Store").capitalize()
     savings = mrp - current_price if mrp and mrp > current_price else 0
     pct = round((savings / mrp) * 100) if mrp and mrp > 0 else 0
+    badge = (deal_result or {}).get("badge") or product.get("badge")
     rating = product.get("rating", "")
     rc = product.get("review_count", 0)
     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
     
-    text = f"🔥 <b>HOT PRICE DROP! ({platform})</b>\n"
+    badge_header = get_tiered_badge(badge, pct)
+    hashtags = get_category_hashtags(platform, product.get("category", ""), pct, badge)
+    
+    text = f"<b>{badge_header} ({platform})</b>\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
     text += f"🛍️ <b>{title}</b>\n\n"
     if savings > 0:
@@ -120,7 +197,7 @@ def format_hot_deal(product: dict, deal_result: dict = None) -> str:
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
-    text += "🔥 <i>Great deal with high savings — check it out!</i>"
+    text += f"{hashtags}"
         
     return text
 
@@ -132,9 +209,13 @@ def format_good_deal(product: dict, deal_result: dict = None) -> str:
     platform = (product.get("platform") or "Store").capitalize()
     savings = mrp - current_price if mrp and mrp > current_price else 0
     pct = round((savings / mrp) * 100) if mrp and mrp > 0 else 0
+    badge = (deal_result or {}).get("badge") or product.get("badge")
     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
     
-    text = f"✅ <b>PRICE DROP ALERT ({platform})</b>\n"
+    badge_header = get_tiered_badge(badge, pct)
+    hashtags = get_category_hashtags(platform, product.get("category", ""), pct, badge)
+    
+    text = f"<b>{badge_header} ({platform})</b>\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
     text += f"🛍️ <b>{title}</b>\n\n"
     if savings > 0:
@@ -145,7 +226,8 @@ def format_good_deal(product: dict, deal_result: dict = None) -> str:
         
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
-    text += "━━━━━━━━━━━━━━━━━━━━━"
+    text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += f"{hashtags}"
     return text
 
 def format_evergreen_deal(product: dict, post_count: int = 1) -> str:
@@ -159,6 +241,7 @@ def format_evergreen_deal(product: dict, post_count: int = 1) -> str:
     rating = product.get("rating", "")
     rc = product.get("review_count", 0)
     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
+    hashtags = get_category_hashtags(platform, product.get("category", ""), pct, "evergreen")
     
     header = "🌟 <b>HANDPICKED BESTSELLER DEAL!</b>" if post_count == 1 else "🔔 <b>DEAL REMINDER — DON'T MISS OUT!</b>"
     text = f"{header} ({platform})\n"
@@ -177,7 +260,42 @@ def format_evergreen_deal(product: dict, post_count: int = 1) -> str:
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
-    text += "✨ <i>Top rated product with verified discount!</i>"
+    text += f"{hashtags}"
+    return text
+
+def format_daily_digest(top_deals: list[dict], digest_type: str = "Morning") -> str:
+    """Format a clean Top 5 Deals Daily Digest for morning or evening roundups."""
+    icon = "🌅" if digest_type.lower() == "morning" else "🌙"
+    num_emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"]
+    
+    text = f"{icon} <b>{digest_type.upper()} DEALS DIGEST — Top 5 Best Drops!</b>\n"
+    text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += "Here are the top-rated, biggest price drops curated for you right now:\n\n"
+    
+    for i, d in enumerate(top_deals[:5]):
+        num = num_emojis[i] if i < len(num_emojis) else f"#{i+1}"
+        title = html.escape(clean_title(d.get("title", "")))
+        price = d.get("current_price") or d.get("posted_price", 0)
+        mrp = d.get("mrp") or d.get("posted_mrp", 0)
+        platform = (d.get("platform") or "Store").capitalize()
+        url = d.get("affiliate_url") or d.get("product_url") or d.get("url", "")
+        
+        pct = 0
+        if mrp and mrp > price:
+            pct = round(((mrp - price) / mrp) * 100)
+            
+        pct_str = f" (<b>{pct}% OFF</b>)" if pct > 0 else ""
+        rating_str = f" ⭐ {d.get('rating')}★" if d.get('rating') else ""
+        
+        text += f"{num} <b>{title}</b>\n"
+        text += f"   💰 <b>{format_price(price)}</b>{pct_str}{rating_str}\n"
+        if url:
+            text += f"   👉 <a href='{url}'>Grab Deal on {platform}</a>\n\n"
+        else:
+            text += "\n"
+            
+    text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += "#DailyDigest #TopPicks #BestDeals #DealPulse"
     return text
 
 def format_refurbished_deal(product: dict, new_product: dict = None) -> str:
@@ -186,6 +304,8 @@ def format_refurbished_deal(product: dict, new_product: dict = None) -> str:
     current_price = product.get("current_price", 0)
     platform = (product.get("platform") or "Store").capitalize()
     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
+    hashtags = get_category_hashtags(platform, product.get("category", ""), 0, "refurbished")
+    
     text = f"♻️ <b>VERIFIED REFURBISHED DEAL! ({platform})</b>\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
     text += f"🛍️ <b>{title}</b>\n\n"
@@ -196,7 +316,7 @@ def format_refurbished_deal(product: dict, new_product: dict = None) -> str:
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
-    text += "✨ <i>Certified refurbished with warranty!</i>"
+    text += f"{hashtags}"
     return text
 
 def format_bundle_deal(bundle_data: dict) -> str:
@@ -215,7 +335,8 @@ def format_bundle_deal(bundle_data: dict) -> str:
     if savings > 0:
         pct = round((savings / total_separate) * 100) if total_separate > 0 else 0
         text += f"🏷️ <b>Combo Savings:</b> <b>{pct}% OFF</b> (Save {format_price(savings)})\n"
-    text += "━━━━━━━━━━━━━━━━━━━━━"
+    text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += "#BundleDeal #ComboOffer #DealPulse"
     return text
 
 def format_back_in_stock(product: dict, days_oos: int = 0) -> str:
@@ -229,6 +350,7 @@ def format_back_in_stock(product: dict, days_oos: int = 0) -> str:
     rating = product.get("rating")
     rc = product.get("review_count", 0)
     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
+    hashtags = get_category_hashtags(platform, product.get("category", ""), pct, "back_in_stock")
     
     text = f"🔔 <b>BACK IN STOCK ALERT! ({platform})</b>\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
@@ -244,7 +366,7 @@ def format_back_in_stock(product: dict, days_oos: int = 0) -> str:
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
-    text += "⚡ <i>Limited inventory restocked — grab before it sells out!</i>"
+    text += f"{hashtags}"
     return text
 
 def format_variant_deal(product: dict, variants: list) -> str:
@@ -260,7 +382,8 @@ def format_variant_deal(product: dict, variants: list) -> str:
         text += f"• {v.get('name')}: <b>{format_price(v.get('price', 0))}</b>\n"
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
-    text += "━━━━━━━━━━━━━━━━━━━━━"
+    text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += "#VariantDeals #DealPulse"
     return text
 
 def format_budget_segment(segment_name: str, deals: list) -> str:
@@ -270,7 +393,8 @@ def format_budget_segment(segment_name: str, deals: list) -> str:
     for d in deals:
         url = d.get('affiliate_url') or d.get('product_url') or d.get('url', '')
         text += f"• <b>{d.get('title')}</b> — <b>{format_price(d.get('current_price'))}</b>\n  👉 {url}\n"
-    text += "━━━━━━━━━━━━━━━━━━━━━"
+    text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += "#BudgetDeals #DealPulse"
     return text
 
 def format_trending_roundup(category: str, deals: list) -> str:
@@ -280,7 +404,8 @@ def format_trending_roundup(category: str, deals: list) -> str:
     for d in deals:
         url = d.get('affiliate_url') or d.get('product_url') or d.get('url', '')
         text += f"• <b>{d.get('title')}</b> — <b>{format_price(d.get('current_price'))}</b>\n  👉 {url}\n"
-    text += "━━━━━━━━━━━━━━━━━━━━━"
+    text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += "#TrendingDeals #DealPulse"
     return text
 
 def format_deal_expiry_edit(original_caption: str, new_price: float = None, is_oos: bool = False, dropped_more: bool = False) -> str:
