@@ -429,6 +429,21 @@ async def _post_digest(digest_type: str, hours_lookback: int = 12):
         logger.error(f"Error posting {digest_type} deals digest: {e}")
 
 
+
+async def paced_posting_loop():
+    """
+    Continuous 2-Minute Deal Broadcaster:
+    Fires every 120 seconds (30 posts/hr) to post the next deal from the weighted rotation schedule.
+    Guarantees no 2 consecutive posts from the same platform and matches catalog proportions.
+    """
+    try:
+        from budgetby.engine.posting_queue import get_posting_queue
+        pq = get_posting_queue()
+        await pq.post_next_deal(_bot)
+    except Exception as e:
+        logger.error(f"Error in paced_posting_loop: {e}")
+
+
 def start_scheduler():
     """Configure and start all scheduled jobs."""
     logger.info("Starting scheduler...")
@@ -470,6 +485,9 @@ def start_scheduler():
 
     # Daily Evening Digest at 8:00 PM IST (20:00)
     _scheduler.add_job(evening_digest, "cron", hour=20, minute=0, timezone="Asia/Kolkata", id="evening_digest")
+
+        # Continuous 2-Minute Paced Broadcaster (30 posts/hour, 24/7 balanced rotation)
+    _scheduler.add_job(paced_posting_loop, "interval", seconds=120, id="paced_posting", max_instances=1, misfire_grace_time=60)
 
     _scheduler.start()
     logger.info("Scheduler started with all jobs configured")

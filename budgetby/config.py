@@ -136,11 +136,11 @@ FAKE_DISCOUNT_PENALTY = 12
 # Hourly minimum quotas per platform (24/7 identical, Day & Night):
 # Amazon: 3, Flipkart: 3, Myntra: 2, Ajio: 2, Nykaa: 1 (Total = 11 products / hour)
 PLATFORM_MIN_HOURLY_POSTS = {
-    "amazon": 3,
-    "flipkart": 3,
-    "myntra": 2,
-    "ajio": 2,
-    "nykaa": 1
+    "amazon": 9,
+    "flipkart": 8,
+    "myntra": 6,
+    "ajio": 4,
+    "nykaa": 3
 }
 
 # NO maximum limit — every genuine deal / price drop is posted immediately without cap
@@ -152,7 +152,7 @@ MIN_POSTS_PER_HOUR_DAY = sum(PLATFORM_MIN_HOURLY_POSTS.values())    # 11 product
 MIN_POSTS_PER_HOUR_NIGHT = sum(PLATFORM_MIN_HOURLY_POSTS.values())  # 11 products (Same 24/7)
 
 # Delay between Telegram posts (seconds) — smooth, non-spammy 20-30s pacing
-POST_DELAY_SECONDS = 20
+POST_DELAY_SECONDS = 120
 
 # ════════════════════════════════════════════════════════════════════════
 # 8. COOLDOWN & DUPLICATE RULES
