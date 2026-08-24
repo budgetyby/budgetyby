@@ -79,32 +79,6 @@ class AmazonScraper(BaseScraper):
         out_of_stock_node = tree.css_first("#outOfStock")
         in_stock = not bool(out_of_stock_node)
         
-        # Coupons
-        has_coupon = False
-        coupon_value = 0.0
-        for sel in ["#couponBadgeRegularVpc", "#couponText", ".couponBadge", "[id*='coupon']"]:
-            node = tree.css_first(sel)
-            if node:
-                has_coupon = True
-                coupon_text = node.text()
-                if "%" in coupon_text:
-                    match = re.search(r'(\d+)%', coupon_text)
-                    if match:
-                        coupon_value = price * (float(match.group(1)) / 100)
-                else:
-                    coupon_value = extract_price(coupon_text)
-                break
-                
-        # Bank offers
-        has_bank_offer = False
-        bank_offer_text = ""
-        for sel in ["#itemBuyBoxBankOfferText", ".bankOfferText", "[data-feature-name='bankOffers'] li"]:
-            node = tree.css_first(sel)
-            if node:
-                has_bank_offer = True
-                bank_offer_text = clean_title(node.text())
-                break
-                
         # Renewed
         is_renewed = "Renewed" in title or "Refurbished" in title or "renewed" in r.text.lower()
         
@@ -118,10 +92,6 @@ class AmazonScraper(BaseScraper):
             "image_url": image_url,
             "brand": "",
             "category": "",
-            "has_coupon": has_coupon,
-            "coupon_value": coupon_value,
-            "has_bank_offer": has_bank_offer,
-            "bank_offer_text": bank_offer_text,
             "is_renewed": is_renewed,
             "affiliate_url": affiliate_url
         }

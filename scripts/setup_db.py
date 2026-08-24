@@ -44,10 +44,6 @@ CREATE TABLE IF NOT EXISTS products (
     rating              NUMERIC(3,1),
     review_count        INTEGER DEFAULT 0,
     in_stock            BOOLEAN DEFAULT TRUE,
-    has_coupon          BOOLEAN DEFAULT FALSE,
-    coupon_value        NUMERIC(10,2),
-    has_bank_offer      BOOLEAN DEFAULT FALSE,
-    bank_offer_text     TEXT,
     is_renewed          BOOLEAN DEFAULT FALSE,
 
     -- Scheduling & state

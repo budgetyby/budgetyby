@@ -105,10 +105,6 @@ class FlipkartScraper(BaseScraper):
             "image_url": image_url,
             "brand": "",
             "category": "",
-            "has_coupon": False,
-            "coupon_value": 0,
-            "has_bank_offer": False,
-            "bank_offer_text": "",
             "is_renewed": False
         }
 

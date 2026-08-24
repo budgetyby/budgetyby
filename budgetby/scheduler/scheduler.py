@@ -74,8 +74,6 @@ async def price_check_loop():
                     # Update price and product metadata in DB
                     await database.update_price(
                         product["id"], new_price, data.get("in_stock", True),
-                        data.get("has_coupon", False), data.get("coupon_value", 0),
-                        data.get("has_bank_offer", False), data.get("bank_offer_text"),
                         title=data.get("title"), mrp=data.get("mrp"), rating=data.get("rating"),
                         review_count=data.get("review_count"), image_url=data.get("image_url")
                     )

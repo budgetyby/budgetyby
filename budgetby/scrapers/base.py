@@ -44,8 +44,7 @@ class BaseScraper(ABC):
         """
         Scrape product details from URL.
         Returns dict with: title, current_price, mrp, rating, review_count, 
-        in_stock, image_url, brand, category, has_coupon, coupon_value, 
-        has_bank_offer, bank_offer_text, is_renewed
+        in_stock, image_url, brand, category, is_renewed
         """
         pass
 

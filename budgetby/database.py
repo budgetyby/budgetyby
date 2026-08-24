@@ -169,8 +169,6 @@ async def upsert_product(data: dict) -> int:
 
 
 async def update_price(product_id: int, new_price: float, in_stock: bool,
-                        has_coupon: bool = False, coupon_value: float = 0,
-                        has_bank_offer: bool = False, bank_offer_text: str = None,
                         title: str = None, mrp: float = None, rating: float = None,
                         review_count: int = None, image_url: str = None):
     """
@@ -185,15 +183,11 @@ async def update_price(product_id: int, new_price: float, in_stock: bool,
             previous_price = current_price,
             current_price = $2,
             in_stock = $3,
-            has_coupon = $4,
-            coupon_value = $5,
-            has_bank_offer = $6,
-            bank_offer_text = $7,
-            title = CASE WHEN $8 IS NOT NULL AND $8 != '' THEN $8 ELSE title END,
-            mrp = COALESCE($9, mrp),
-            rating = COALESCE($10, rating),
-            review_count = COALESCE($11, review_count),
-            image_url = CASE WHEN $12 IS NOT NULL AND $12 != '' THEN $12 ELSE image_url END,
+            title = CASE WHEN $4 IS NOT NULL AND $4 != '' THEN $4 ELSE title END,
+            mrp = COALESCE($5, mrp),
+            rating = COALESCE($6, rating),
+            review_count = COALESCE($7, review_count),
+            image_url = CASE WHEN $8 IS NOT NULL AND $8 != '' THEN $8 ELSE image_url END,
             last_checked = NOW(),
             last_price_change = CASE
                 WHEN current_price IS DISTINCT FROM $2 THEN NOW()
@@ -201,8 +195,7 @@ async def update_price(product_id: int, new_price: float, in_stock: bool,
             END,
             all_time_low = LEAST(all_time_low, $2)
         WHERE id = $1
-    """, product_id, new_price, in_stock, has_coupon, coupon_value,
-         has_bank_offer, bank_offer_text, title, mrp, rating,
+    """, product_id, new_price, in_stock, title, mrp, rating,
          review_count, image_url)
 
 

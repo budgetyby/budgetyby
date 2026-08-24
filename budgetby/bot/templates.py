@@ -48,16 +48,6 @@ def format_mega_deal(product: dict, deal_result: dict = None) -> str:
     else:
         text += f"💸 <b>Deal Price:</b> <b>{format_price(current_price)}</b>\n"
         
-    if product.get("has_coupon"):
-        coupon_val = product.get("coupon_value")
-        if coupon_val:
-            text += f"🎫 <b>Extra Coupon:</b> Save {format_price(coupon_val)} more at checkout!\n"
-        else:
-            text += f"🎫 <b>Extra Coupon:</b> Apply coupon discount on product page!\n"
-            
-    if product.get("has_bank_offer"):
-        text += f"💳 <b>Bank Offer:</b> {product.get('bank_offer_text', 'Available')}\n"
-        
     if rating:
         rc_str = f" ({rc:,}+ reviews)" if rc and rc > 10 else ""
         text += f"⭐ <b>Rating:</b> {rating} ★{rc_str}\n"
