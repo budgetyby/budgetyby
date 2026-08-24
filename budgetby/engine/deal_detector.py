@@ -11,18 +11,42 @@ logger = logging.getLogger("budgetby.engine.deal_detector")
 
 async def detect_deal(product: Record, new_price: float) -> dict | None:
     """
-    Detects if a new_price constitutes a deal based on a 5-level cascading comparison.
-    Returns a dict with deal details or None if it's not a deal.
+    Detects if a new_price constitutes a REAL deal based on a 5-level cascading comparison.
+    Returns a dict with deal details or None if it's not a valid qualifying deal.
     """
     try:
-        if new_price <= 0:
+        if not new_price or new_price <= 0:
             return None
 
         new_price = float(new_price)
         current_price = float(product.get("current_price")) if product.get("current_price") is not None else None
         previous_price = float(product.get("previous_price")) if product.get("previous_price") is not None else None
+        mrp = float(product.get("mrp")) if product.get("mrp") is not None else new_price
         
-        if not ((current_price and new_price < current_price) or (previous_price and new_price < previous_price)):
+        # 1. Strict MRP Savings Filter: Deal MUST have at least 10% discount from MRP and at least ₹30 savings
+        if mrp <= new_price or mrp <= 0:
+            return None
+            
+        mrp_savings = mrp - new_price
+        mrp_discount_pct = mrp_savings / mrp
+        if mrp_discount_pct < 0.10 or mrp_savings < 30:
+            return None
+
+        # 2. Strict Price Drop Filter: Price MUST have actually dropped from previous or current price
+        # Drop must be >= 3% AND >= ₹20
+        has_dropped = False
+        baseline = current_price or previous_price
+        if baseline and baseline > new_price:
+            drop_val = baseline - new_price
+            drop_pct = drop_val / baseline
+            if drop_pct >= 0.03 or drop_val >= 20:
+                has_dropped = True
+                
+        # If product is newly discovered and has 25%+ discount, allow it
+        if not baseline and mrp_discount_pct >= 0.25:
+            has_dropped = True
+
+        if not has_dropped:
             return None
 
         margins = config.BENCHMARK_MARGINS
@@ -32,7 +56,6 @@ async def detect_deal(product: Record, new_price: float) -> dict | None:
         min_90d = float(product.get("min_90d")) if product.get("min_90d") is not None else None
         all_time_low = float(product.get("all_time_low")) if product.get("all_time_low") is not None else None
         median_30d = float(product.get("median_30d_price")) if product.get("median_30d_price") is not None else None
-        mrp = float(product.get("mrp")) if product.get("mrp") is not None else new_price
         
         category = product.get("category", "default")
         cat_min_drop_pct, cat_min_savings = config.CATEGORY_MIN_DROPS.get(
@@ -87,29 +110,31 @@ async def detect_deal(product: Record, new_price: float) -> dict | None:
                     best_badge = "median_drop"
                 should_post = True
 
+        # Default fallback badge if significant discount
+        if not should_post and mrp_discount_pct >= 0.25:
+            best_badge = "PRICE_DROP"
+            all_badges.append("PRICE_DROP")
+            should_post = True
+
         if not should_post:
             return None
 
-        # Calculate savings against MRP or baseline
-        savings_amount = mrp - new_price
-        savings_pct = savings_amount / mrp if mrp > 0 else 0.0
-
-        if savings_amount < 0:
-            savings_amount = 0
-            savings_pct = 0.0
-
+        # Check fake discount
         from budgetby.engine import fake_discount
         is_fake = await fake_discount.is_fake_discount(product, new_price)
+        if is_fake:
+            logger.info(f"Skipping fake discount product #{product.get('id')} ({product.get('title')[:30]})")
+            return None
 
         return {
             "should_post": True,
-            "badge": best_badge,
+            "badge": best_badge or "PRICE_DROP",
             "all_badges": all_badges,
-            "savings_amount": savings_amount,
-            "savings_pct": savings_pct,
+            "savings_amount": mrp_savings,
+            "savings_pct": mrp_discount_pct,
             "deal_type": deal_type,
-            "is_fake_discount": is_fake
+            "is_fake_discount": False,
         }
     except Exception as e:
-        logger.error(f"Error in detect_deal for product {product.get('id')}: {e}")
+        logger.error(f"Error in detect_deal: {e}")
         return None

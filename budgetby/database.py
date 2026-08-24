@@ -216,19 +216,29 @@ async def upsert_daily_price(product_id: int, price: float):
 
 async def get_products_due_for_check(limit: int = 50) -> list[asyncpg.Record]:
     """
-    Get products due for checking.
-    Prioritizes products missing prices or strike-through MRPs first, then priority_tier, then next_check.
+    Get products due for checking with balanced round-robin sampling across all 5 platforms.
+    Prevents any single platform from starving or monopolizing the scanner queue.
     """
+    per_platform = max(5, limit // 5)
     return await fetch("""
-        SELECT * FROM products
-        WHERE status IN ($1, $2)
-          AND next_check <= NOW()
-        ORDER BY 
-            CASE WHEN current_price IS NULL THEN 0 ELSE 1 END ASC,
-            priority_tier ASC, 
-            next_check ASC
-        LIMIT $3
-    """, config.STATUS_ACTIVE, config.STATUS_TEMP_OOS, limit)
+        WITH ranked_candidates AS (
+            SELECT *,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY platform 
+                       ORDER BY 
+                           CASE WHEN current_price IS NULL THEN 0 ELSE 1 END ASC,
+                           priority_tier ASC, 
+                           next_check ASC
+                   ) as rank_in_platform
+            FROM products
+            WHERE status IN ($1, $2)
+              AND next_check <= NOW()
+        )
+        SELECT * FROM ranked_candidates
+        WHERE rank_in_platform <= $4
+        ORDER BY rank_in_platform ASC, next_check ASC
+        LIMIT $3;
+    """, config.STATUS_ACTIVE, config.STATUS_TEMP_OOS, limit, per_platform)
 
 
 async def schedule_next_check(product_id: int, priority_tier: int):
