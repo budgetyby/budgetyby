@@ -24,19 +24,49 @@ async def get_stats():
         total_prods = await database.fetchval("SELECT COUNT(*) FROM products;")
         by_plat = await database.fetch("SELECT platform, COUNT(*) as count FROM products GROUP BY platform ORDER BY count DESC;")
         
-        # Deals posted today & last hour
-        deals_today = await database.fetchval("SELECT COUNT(*) FROM deals WHERE posted_at >= CURRENT_DATE;")
-        deals_1h = await database.fetchval("SELECT COUNT(*) FROM deals WHERE posted_at >= NOW() - INTERVAL '1 hour';")
+        # Time-based deals counts (IST Timezone)
+        deals_today = await database.fetchval("""
+            SELECT COUNT(*) FROM deals 
+            WHERE posted_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE;
+        """)
+        
+        deals_1h = await database.fetchval("""
+            SELECT COUNT(*) FROM deals 
+            WHERE posted_at >= NOW() - INTERVAL '1 hour';
+        """)
+        
+        deals_this_month = await database.fetchval("""
+            SELECT COUNT(*) FROM deals 
+            WHERE posted_at >= date_trunc('month', NOW() AT TIME ZONE 'Asia/Kolkata');
+        """)
+        
+        deals_last_month = await database.fetchval("""
+            SELECT COUNT(*) FROM deals 
+            WHERE posted_at >= date_trunc('month', (NOW() AT TIME ZONE 'Asia/Kolkata') - INTERVAL '1 month')
+              AND posted_at < date_trunc('month', NOW() AT TIME ZONE 'Asia/Kolkata');
+        """)
+        
+        deals_lifetime = await database.fetchval("SELECT COUNT(*) FROM deals;")
         
         # Deals posted TODAY grouped by platform
         posted_today_rows = await database.fetch("""
             SELECT p.platform, COUNT(*) as count 
             FROM deals d 
             JOIN products p ON d.product_id = p.id 
-            WHERE d.posted_at >= CURRENT_DATE 
+            WHERE d.posted_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE 
             GROUP BY p.platform;
         """)
         posted_today_by_plat = {r["platform"].lower(): r["count"] for r in posted_today_rows}
+        
+        # Deals posted THIS MONTH grouped by platform
+        posted_month_rows = await database.fetch("""
+            SELECT p.platform, COUNT(*) as count 
+            FROM deals d 
+            JOIN products p ON d.product_id = p.id 
+            WHERE d.posted_at >= date_trunc('month', NOW() AT TIME ZONE 'Asia/Kolkata')
+            GROUP BY p.platform;
+        """)
+        posted_month_by_plat = {r["platform"].lower(): r["count"] for r in posted_month_rows}
         
         # Deals posted LIFETIME grouped by platform
         posted_life_rows = await database.fetch("""
@@ -47,17 +77,33 @@ async def get_stats():
         """)
         posted_life_by_plat = {r["platform"].lower(): r["count"] for r in posted_life_rows}
         
-        # Ensure all 5 platforms exist in dicts
         all_plats = ["amazon", "flipkart", "myntra", "ajio", "nykaa"]
         for p in all_plats:
-            if p not in posted_today_by_plat:
-                posted_today_by_plat[p] = 0
-            if p not in posted_life_by_plat:
-                posted_life_by_plat[p] = 0
+            posted_today_by_plat.setdefault(p, 0)
+            posted_month_by_plat.setdefault(p, 0)
+            posted_life_by_plat.setdefault(p, 0)
                 
         cooldowns = await database.fetchval("SELECT COUNT(*) FROM post_cooldowns WHERE expires_at > NOW();")
         daily_prices = await database.fetchval("SELECT COUNT(*) FROM daily_prices;")
-        latest_deals = await database.fetchval("SELECT COUNT(*) FROM deals;")
+        
+        # Monthly History Breakdown
+        history_rows = await database.fetch("""
+            SELECT 
+                to_char(date_trunc('month', d.posted_at AT TIME ZONE 'Asia/Kolkata'), 'YYYY-MM') as month_key,
+                to_char(date_trunc('month', d.posted_at AT TIME ZONE 'Asia/Kolkata'), 'FMMonth YYYY') as month_name,
+                COUNT(*) as total_deals,
+                COUNT(CASE WHEN p.platform = 'amazon' THEN 1 END) as amazon_deals,
+                COUNT(CASE WHEN p.platform = 'flipkart' THEN 1 END) as flipkart_deals,
+                COUNT(CASE WHEN p.platform = 'myntra' THEN 1 END) as myntra_deals,
+                COUNT(CASE WHEN p.platform = 'ajio' THEN 1 END) as ajio_deals,
+                COUNT(CASE WHEN p.platform = 'nykaa' THEN 1 END) as nykaa_deals
+            FROM deals d
+            LEFT JOIN products p ON d.product_id = p.id
+            GROUP BY date_trunc('month', d.posted_at AT TIME ZONE 'Asia/Kolkata')
+            ORDER BY date_trunc('month', d.posted_at AT TIME ZONE 'Asia/Kolkata') DESC;
+        """)
+        
+        history_data = [dict(r) for r in history_rows]
         
         return {
             "status": "online",
@@ -67,12 +113,16 @@ async def get_stats():
             "by_platform": {r["platform"]: r["count"] for r in by_plat},
             "deals_today": deals_today or 0,
             "deals_last_hour": deals_1h or 0,
+            "deals_this_month": deals_this_month or 0,
+            "deals_last_month": deals_last_month or 0,
+            "deals_lifetime": deals_lifetime or 0,
             "posted_today_by_platform": posted_today_by_plat,
+            "posted_this_month_by_platform": posted_month_by_plat,
             "posted_lifetime_by_platform": posted_life_by_plat,
+            "monthly_history": history_data,
             "hourly_targets": config.PLATFORM_MIN_HOURLY_POSTS,
             "active_cooldowns": cooldowns or 0,
-            "daily_prices_recorded": daily_prices or 0,
-            "total_deals_lifetime": latest_deals or 0
+            "daily_prices_recorded": daily_prices or 0
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

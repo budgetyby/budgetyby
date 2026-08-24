@@ -31,44 +31,90 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        <!-- Top Metrics Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <!-- Top Metrics Summary Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <!-- Lifetime -->
             <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
-                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Products Tracked</div>
-                <div id="stat-products" class="text-3xl font-extrabold mt-2 text-white">---</div>
+                <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">🌐 Total Posts (Lifetime)</div>
+                <div id="stat-deals-life" class="text-3xl font-extrabold mt-2 text-white">---</div>
+                <div class="text-xs text-slate-500 mt-2">All-time broadcasted deals</div>
+            </div>
+
+            <!-- This Month -->
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+                <div class="text-[11px] font-semibold text-indigo-400 uppercase tracking-wider">📅 Posted This Month</div>
+                <div id="stat-deals-month" class="text-3xl font-extrabold mt-2 text-indigo-400">---</div>
+                <div class="text-xs text-slate-500 mt-2">Current calendar month</div>
+            </div>
+
+            <!-- Last Month -->
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+                <div class="text-[11px] font-semibold text-purple-400 uppercase tracking-wider">📆 Posted Last Month</div>
+                <div id="stat-deals-last-month" class="text-3xl font-extrabold mt-2 text-purple-400">---</div>
+                <div class="text-xs text-slate-500 mt-2">Previous calendar month</div>
+            </div>
+
+            <!-- Today -->
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+                <div class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">⚡ Posted Today</div>
+                <div id="stat-deals-today" class="text-3xl font-extrabold mt-2 text-emerald-400">---</div>
+                <div class="text-xs text-slate-400 mt-2"><span id="stat-deals-1h">-</span> in last 60 mins</div>
+            </div>
+
+            <!-- Catalog Size -->
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+                <div class="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">🛍️ Total Catalog</div>
+                <div id="stat-products" class="text-3xl font-extrabold mt-2 text-amber-400">---</div>
                 <div class="text-xs text-emerald-400 mt-2 flex items-center gap-1">🟢 PostgreSQL 18 Local</div>
-            </div>
-            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
-                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Deals Posted Today</div>
-                <div id="stat-deals-today" class="text-3xl font-extrabold mt-2 text-indigo-400">---</div>
-                <div class="text-xs text-slate-400 mt-2"><span id="stat-deals-1h">-</span> posted in last 60m</div>
-            </div>
-            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
-                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Historical Price Snapshots</div>
-                <div id="stat-snapshots" class="text-3xl font-extrabold mt-2 text-amber-400">---</div>
-                <div class="text-xs text-slate-400 mt-2">Daily minimums & closing prices</div>
-            </div>
-            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
-                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Active Anti-Spam Timers</div>
-                <div id="stat-cooldowns" class="text-3xl font-extrabold mt-2 text-purple-400">---</div>
-                <div class="text-xs text-slate-400 mt-2">Guarding against duplicate posts</div>
             </div>
         </div>
 
-        <!-- NEW: Platform Posting Quotas & Counts Section -->
+        <!-- Platform Posting Quotas & Detailed Breakdown Section -->
         <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
             <div class="flex items-center justify-between mb-5">
                 <div>
                     <h3 class="text-base font-bold text-white flex items-center gap-2">
-                        <span>📢</span> Platform Deals Posted & 24/7 Quotas
+                        <span>📢</span> Platform Deals Breakdown (Today • This Month • Lifetime)
                     </h3>
-                    <p class="text-xs text-slate-400 mt-0.5">Live breakdown of deals broadcasted to Telegram per platform</p>
+                    <p class="text-xs text-slate-400 mt-0.5">Live platform performance against 24/7 hourly quotas</p>
                 </div>
-                <span class="text-xs font-semibold px-3 py-1 bg-slate-800 text-slate-300 rounded-full border border-slate-700">Quota: 11 deals/hour (24/7)</span>
+                <span class="text-xs font-semibold px-3 py-1 bg-slate-800 text-slate-300 rounded-full border border-slate-700">Target Quota: 11 deals/hour (24/7)</span>
             </div>
 
             <div id="platformPostCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                <!-- Dynamically populated -->
+                <!-- Populated via JS -->
+            </div>
+        </div>
+
+        <!-- NEW: Monthly History & Archives Section -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <span>📜</span> Monthly Posting History & Archives
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Historical breakdown of deals broadcasted across all recorded months</p>
+                </div>
+                <span class="text-xs text-indigo-400 font-semibold bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">Monthly Archives</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-slate-400 uppercase tracking-wider">
+                            <th class="pb-3 font-semibold">🗓️ Month</th>
+                            <th class="pb-3 font-semibold">📦 Total Deals</th>
+                            <th class="pb-3 font-semibold">🟠 Amazon</th>
+                            <th class="pb-3 font-semibold">🔵 Flipkart</th>
+                            <th class="pb-3 font-semibold">🔴 Myntra</th>
+                            <th class="pb-3 font-semibold">🟣 Ajio</th>
+                            <th class="pb-3 font-semibold">🌸 Nykaa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody" class="divide-y divide-slate-800/60 text-slate-300">
+                        <tr><td colspan="7" class="py-6 text-center text-slate-500">Loading posting history...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -137,47 +183,78 @@
                 const res = await fetch('/api/stats');
                 const data = await res.json();
                 
-                document.getElementById('stat-products').innerText = Number(data.total_products).toLocaleString('en-IN');
+                // Top overview cards
+                document.getElementById('stat-deals-life').innerText = Number(data.deals_lifetime).toLocaleString('en-IN');
+                document.getElementById('stat-deals-month').innerText = Number(data.deals_this_month).toLocaleString('en-IN');
+                document.getElementById('stat-deals-last-month').innerText = Number(data.deals_last_month).toLocaleString('en-IN');
                 document.getElementById('stat-deals-today').innerText = data.deals_today;
                 document.getElementById('stat-deals-1h').innerText = data.deals_last_hour;
-                document.getElementById('stat-snapshots').innerText = Number(data.daily_prices_recorded).toLocaleString('en-IN');
-                document.getElementById('stat-cooldowns').innerText = data.active_cooldowns;
+                document.getElementById('stat-products').innerText = Number(data.total_products).toLocaleString('en-IN');
 
-                // Render Platform Posting Cards
+                // Render Platform Detailed Cards (Today • This Month • Lifetime)
                 let postCardsHTML = '';
                 const todayPosts = data.posted_today_by_platform || {};
+                const monthPosts = data.posted_this_month_by_platform || {};
                 const lifePosts = data.posted_lifetime_by_platform || {};
                 const targets = data.hourly_targets || {};
 
                 Object.keys(platformMeta).forEach(p => {
                     const meta = platformMeta[p];
                     const tCount = todayPosts[p] || 0;
+                    const mCount = monthPosts[p] || 0;
                     const lCount = lifePosts[p] || 0;
                     const target = targets[p] ? `${targets[p]}/hr` : meta.target;
 
                     postCardsHTML += `
                     <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition">
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="font-bold text-sm text-slate-200 flex items-center gap-1.5">
-                                <span>${meta.icon}</span> ${meta.name}
-                            </span>
-                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-400">${target}</span>
-                        </div>
                         <div>
-                            <div class="flex items-baseline justify-between">
-                                <span class="text-2xl font-extrabold text-white">${tCount}</span>
-                                <span class="text-xs text-slate-400">today</span>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-bold text-sm text-slate-200 flex items-center gap-1.5">
+                                    <span>${meta.icon}</span> ${meta.name}
+                                </span>
+                                <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-400">${target}</span>
                             </div>
-                            <div class="text-[11px] text-slate-500 mt-1 flex items-center justify-between border-t border-slate-900 pt-2">
-                                <span>All-Time:</span>
-                                <span class="font-semibold text-slate-300">${Number(lCount).toLocaleString('en-IN')} deals</span>
+                            <div class="flex items-baseline justify-between mt-2">
+                                <span class="text-2xl font-extrabold text-white">${tCount}</span>
+                                <span class="text-[11px] text-emerald-400 font-medium">posted today</span>
+                            </div>
+                        </div>
+                        <div class="text-[11px] text-slate-400 mt-3 pt-2.5 border-t border-slate-900 space-y-1">
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">This Month:</span>
+                                <span class="font-bold text-indigo-300">${Number(mCount).toLocaleString('en-IN')}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">All-Time:</span>
+                                <span class="font-bold text-slate-300">${Number(lCount).toLocaleString('en-IN')}</span>
                             </div>
                         </div>
                     </div>`;
                 });
                 document.getElementById('platformPostCards').innerHTML = postCardsHTML;
 
-                // Update Chart
+                // Render Monthly History Table
+                const history = data.monthly_history || [];
+                let historyHTML = '';
+                if (!history.length) {
+                    historyHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-500">No monthly history recorded yet.</td></tr>';
+                } else {
+                    history.forEach(h => {
+                        historyHTML += `
+                        <tr class="hover:bg-slate-900/40 transition">
+                            <td class="py-3.5 font-bold text-white">${h.month_name || h.month_key}</td>
+                            <td class="py-3.5 font-extrabold text-indigo-400">${Number(h.total_deals).toLocaleString('en-IN')}</td>
+                            <td class="py-3.5 font-semibold text-amber-400">${h.amazon_deals || 0}</td>
+                            <td class="py-3.5 font-semibold text-blue-400">${h.flipkart_deals || 0}</td>
+                            <td class="py-3.5 font-semibold text-pink-400">${h.myntra_deals || 0}</td>
+                            <td class="py-3.5 font-semibold text-purple-400">${h.ajio_deals || 0}</td>
+                            <td class="py-3.5 font-semibold text-emerald-400">${h.nykaa_deals || 0}</td>
+                        </tr>`;
+                    });
+                }
+                document.getElementById('historyTableBody').innerHTML = historyHTML;
+
+                // Update Catalog Chart
                 const labels = Object.keys(data.by_platform).map(k => k.toUpperCase());
                 const counts = Object.values(data.by_platform);
                 const colors = ['#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#10b981'];
@@ -211,7 +288,7 @@
                 });
                 document.getElementById('platformList').innerHTML = platHTML;
 
-                // Fetch deals
+                // Fetch deals feed
                 fetchDeals();
             } catch (err) {
                 console.error(err);
