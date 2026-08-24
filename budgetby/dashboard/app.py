@@ -133,20 +133,22 @@ async def get_stats():
 
 @app.get("/api/channel_stats")
 async def get_channel_stats():
-    """Returns deals picked up from each monitored Telegram channel."""
+    """Returns all monitored Telegram channels with real-time heartbeat and deal statistics."""
     try:
         rows = await database.fetch("""
             SELECT 
-                source_channel,
-                COUNT(*) as total_picked_up,
-                COUNT(CASE WHEN product_id IS NOT NULL THEN 1 END) as saved_to_catalog,
-                COUNT(CASE WHEN status = 'VERIFIED_DEAL' THEN 1 END) as verified_deals,
-                COUNT(CASE WHEN status = 'OUT_OF_STOCK' THEN 1 END) as out_of_stock,
-                COUNT(CASE WHEN status = 'FAILED_SCRAPE' THEN 1 END) as failed_scrapes,
-                MAX(created_at) as last_activity
-            FROM ingested_channel_deals
-            GROUP BY source_channel
-            ORDER BY total_picked_up DESC;
+                m.channel_name as source_channel,
+                m.status as monitor_status,
+                COALESCE(COUNT(d.id), 0) as total_picked_up,
+                COALESCE(COUNT(CASE WHEN d.product_id IS NOT NULL THEN 1 END), 0) as saved_to_catalog,
+                COALESCE(COUNT(CASE WHEN d.status = 'VERIFIED_DEAL' THEN 1 END), 0) as verified_deals,
+                COALESCE(COUNT(CASE WHEN d.status = 'OUT_OF_STOCK' THEN 1 END), 0) as out_of_stock,
+                COALESCE(COUNT(CASE WHEN d.status = 'FAILED_SCRAPE' THEN 1 END), 0) as failed_scrapes,
+                m.last_scanned_at as last_activity
+            FROM channel_monitors m
+            LEFT JOIN ingested_channel_deals d ON LOWER(d.source_channel) = LOWER(m.channel_name)
+            GROUP BY m.channel_name, m.status, m.last_scanned_at
+            ORDER BY total_picked_up DESC, m.channel_name ASC;
         """)
         return [dict(r) for r in rows]
     except Exception as e:

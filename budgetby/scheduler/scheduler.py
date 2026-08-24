@@ -503,7 +503,8 @@ def start_scheduler():
     _scheduler.add_job(paced_posting_loop, "interval", seconds=120, id="paced_posting", max_instances=1, misfire_grace_time=60)
 
         # Telegram Channel Deal Spy & Ingestion Monitor — every 2 minutes
-    _scheduler.add_job(channel_monitor_loop, "interval", seconds=120, id="channel_monitor", max_instances=1, misfire_grace_time=60)
+    # Telegram Channel Deal Spy & Ingestion Monitor — rapid 30-second interval
+    _scheduler.add_job(channel_monitor_loop, "interval", seconds=30, id="channel_monitor", max_instances=1, misfire_grace_time=30)
 
     _scheduler.start()
     logger.info("Scheduler started with all jobs configured")

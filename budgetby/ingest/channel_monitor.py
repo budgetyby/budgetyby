@@ -1,8 +1,8 @@
 """
-BudgetBy — Telegram Channel Deal Monitor & Ingestion Engine
-Monitors public deal channels (bypassing ISP blocks with DoH), sanitizes affiliate tags,
-verifies live product pricing locally, stores in local PostgreSQL database, and broadcasts legitimate deals.
-Strictly processes only new deals posted from the moment the monitor starts (ignores all past history).
+BudgetBy — Real-Time Telegram Channel Deal Monitor & Ingestion Engine
+Monitors public deal channels in parallel (bypassing ISP blocks with DoH),
+sanitizes affiliate tags, verifies live product pricing locally,
+stores in local PostgreSQL database, and immediately broadcasts verified deals.
 """
 
 import logging
@@ -31,14 +31,12 @@ TELEGRAM_WEB_IP = "149.154.167.99"
 
 # In-memory baseline tracker: {channel_name: max_seen_post_id}
 _channel_baseline_post_ids = {}
-_is_initialized = False
 
 async def unshorten_url(url: str, client: httpx.AsyncClient) -> str:
     """Follow HTTP redirects to unshorten shortened links."""
     if not url or not url.startswith("http"):
         return url or ""
     try:
-        # If it's already a clean direct store link, return early
         if any(store in url for store in ["amazon.in/dp/", "amazon.in/gp/product/", "flipkart.com/", "myntra.com/", "ajio.com/", "nykaa.com/"]):
             return url
 
@@ -111,7 +109,6 @@ async def scrape_channel_posts(channel: str, limit: int = 15) -> List[Dict[str, 
             resp = await client.get(f"https://{TELEGRAM_WEB_IP}/s/{channel_name}", headers={"Host": "t.me"})
             
             if resp.status_code != 200:
-                logger.warning(f"Could not fetch channel @{channel_name} (HTTP {resp.status_code})")
                 return []
 
             tree = HTMLParser(resp.text)
@@ -128,7 +125,6 @@ async def scrape_channel_posts(channel: str, limit: int = 15) -> List[Dict[str, 
                 text_node = node.css_first(".tgme_widget_message_text")
                 post_text = text_node.text(strip=True) if text_node else ""
 
-                # Extract all embedded URLs
                 link_nodes = node.css("a[href]")
                 raw_urls = []
                 for ln in link_nodes:
@@ -240,7 +236,9 @@ async def verify_and_ingest_single_deal(channel: str, post_id: int, raw_url: str
 
         # 5. Verify Deal Legitimacy
         discount_pct = round(((mrp - price) / mrp) * 100, 1) if mrp > price else 0.0
-        is_valid_deal = (mrp > price) and (discount_pct >= 10.0) and ((mrp - price) >= 30)
+        min_disc = getattr(config, "MIN_DEAL_DISCOUNT_PCT", 10.0)
+        min_sav = getattr(config, "MIN_DEAL_SAVINGS_INR", 30.0)
+        is_valid_deal = (mrp > price) and (discount_pct >= min_disc) and ((mrp - price) >= min_sav)
 
         status = "VERIFIED_DEAL" if is_valid_deal else "SAVED_TO_CATALOG"
         await database.execute("""
@@ -248,7 +246,7 @@ async def verify_and_ingest_single_deal(channel: str, post_id: int, raw_url: str
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
         """, channel, post_id, raw_url, clean_url, platform, pid, status, title, price, mrp, discount_pct)
 
-        # 6. If verified deal and not on cooldown, queue for Telegram broadcast
+        # 6. If verified deal, queue deal and trigger immediate posting!
         from budgetby.engine.cooldown import is_on_cooldown
         if is_valid_deal and not await is_on_cooldown(pid):
             from budgetby.engine.posting_queue import get_posting_queue
@@ -275,7 +273,7 @@ async def verify_and_ingest_single_deal(channel: str, post_id: int, raw_url: str
                 "source_channel": channel
             }
             await pq.queue_deal(deal_data)
-            logger.info(f"🎯 Ingested & Queued VERIFIED DEAL from {channel} [{platform.upper()}]: {title[:40]} ({discount_pct}% OFF)")
+            logger.info(f"🎯 Intercepted & Verified DEAL from {channel} [{platform.upper()}]: {title[:40]} ({discount_pct}% OFF)")
 
         return pid
 
@@ -284,21 +282,34 @@ async def verify_and_ingest_single_deal(channel: str, post_id: int, raw_url: str
         return None
 
 async def _process_single_channel(channel: str, client: httpx.AsyncClient):
-    """Processes a single channel, strictly filtering for posts created after initial baseline."""
+    """Processes a single channel, records live heartbeat in database, and processes incoming deals."""
     global _channel_baseline_post_ids
     ch_key = channel.lstrip("@").lower()
+    ch_tag = f"@{ch_key}"
 
     try:
+        # Record live scan heartbeat in database
+        await database.execute("""
+            INSERT INTO channel_monitors (channel_name, status, last_scanned_at)
+            VALUES ($1, 'ACTIVE', (NOW() AT TIME ZONE 'Asia/Kolkata'))
+            ON CONFLICT (channel_name) DO UPDATE SET
+                status = 'ACTIVE',
+                last_scanned_at = (NOW() AT TIME ZONE 'Asia/Kolkata');
+        """, ch_tag)
+
         posts = await scrape_channel_posts(channel, limit=15)
         if not posts:
             return
 
         max_id_on_page = max(p["post_id"] for p in posts)
 
-        # First boot for this channel: record baseline and skip historical deals
+        # Update last post id in database
+        await database.execute("UPDATE channel_monitors SET last_post_id = $2 WHERE channel_name = $1;", ch_tag, max_id_on_page)
+
+        # First boot for this channel: record baseline
         if ch_key not in _channel_baseline_post_ids:
             _channel_baseline_post_ids[ch_key] = max_id_on_page
-            logger.info(f"📍 Channel @{ch_key}: Initialized baseline at Post #{max_id_on_page}. (All prior history skipped, monitoring live from this moment forward!)")
+            logger.info(f"📍 Channel @{ch_key}: Initialized baseline at Post #{max_id_on_page}.")
             return
 
         baseline_id = _channel_baseline_post_ids[ch_key]
@@ -316,7 +327,6 @@ async def _process_single_channel(channel: str, client: httpx.AsyncClient):
                     )
                     await asyncio.sleep(0.3)
 
-            # Update baseline
             _channel_baseline_post_ids[ch_key] = max_id_on_page
 
     except Exception as e:
@@ -325,10 +335,7 @@ async def _process_single_channel(channel: str, client: httpx.AsyncClient):
 async def run_channel_monitor(channels: List[str] = None):
     """
     Main background job: Scrapes all monitored channels concurrently in parallel.
-    Strictly processes ONLY new deals posted from the moment of initialization.
     """
     target_channels = channels or DEFAULT_MONITORED_CHANNELS
-    logger.info(f"📡 Scanning {len(target_channels)} deal channels in parallel (from-this-moment filter active)...")
-
     async with httpx.AsyncClient(timeout=12, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}) as client:
         await asyncio.gather(*(_process_single_channel(ch, client) for ch in target_channels))
