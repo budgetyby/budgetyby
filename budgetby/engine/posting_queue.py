@@ -77,6 +77,11 @@ class PostingQueue:
 
                     deal_type = deal_data.get("type", "price_drop")
                     badge = deal_data.get("badge", "DEAL")
+                    score = float(deal_data.get("score") or 50)
+                    
+                    price = float(product.get("current_price") or 0)
+                    mrp = float(product.get("mrp") or price)
+                    
                     # Guaranteed URL resolution & verification
                     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
                     if not url and product.get("platform") == "amazon" and product.get("platform_id"):
@@ -117,13 +122,12 @@ class PostingQueue:
                     )
                     logger.info(f"Successfully posted deal #{pid} to Telegram (Msg ID: {msg.message_id}): {product.get('title')[:50]}")
                     
-                    # Enforce strict 24-hour cooldown immediately after post
+                    # Enforce strict cooldown immediately after post (7 days for evergreen to rotate all catalog items, 24h for price drops)
                     if pid:
-                        await set_cooldown(pid, config.PRICE_DROP_COOLDOWN_HOURS)
+                        cooldown_hours = 168.0 if deal_type == "evergreen" else config.PRICE_DROP_COOLDOWN_HOURS
+                        await set_cooldown(pid, cooldown_hours)
 
                     # Record deal in database
-                    price = float(product.get("current_price") or 0)
-                    mrp = float(product.get("mrp") or price)
                     savings_amt = max(0.0, mrp - price)
                     savings_pct = (savings_amt / mrp) if mrp > 0 else 0.0
 
