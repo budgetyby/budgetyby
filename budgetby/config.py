@@ -130,14 +130,23 @@ MIN_DEAL_SCORE = 35
 FAKE_DISCOUNT_PENALTY = 12
 
 # ════════════════════════════════════════════════════════════════════════
-# 7. POSTING RULES
+# 7. POSTING RULES & PER-PLATFORM MINIMUMS
 # ════════════════════════════════════════════════════════════════════════
+
+# Per-platform hourly minimum quotas for fresh deals (Amazon=3, Flipkart=3, Myntra=2, Ajio=2, Nykaa=1)
+PLATFORM_MIN_HOURLY_POSTS = {
+    "amazon": 3,
+    "flipkart": 3,
+    "myntra": 2,
+    "ajio": 2,
+    "nykaa": 1
+}
 
 # NO maximum limit — post every qualifying deal
 MAX_POSTS_PER_DAY = None  # None = unlimited
 
-# Hourly minimums (backfilled with evergreen deals)
-MIN_POSTS_PER_HOUR_DAY = 5      # 7:00 AM - 11:00 PM IST
+# Daytime total hourly minimum = 3 + 3 + 2 + 2 + 1 = 11 products
+MIN_POSTS_PER_HOUR_DAY = sum(PLATFORM_MIN_HOURLY_POSTS.values())  # 11 products
 MIN_POSTS_PER_HOUR_NIGHT = 2    # 11:00 PM - 7:00 AM IST
 DAYTIME_START_HOUR = 7          # IST
 DAYTIME_END_HOUR = 23           # IST
@@ -146,22 +155,24 @@ DAYTIME_END_HOUR = 23           # IST
 POST_DELAY_SECONDS = 20
 
 # ════════════════════════════════════════════════════════════════════════
-# 8. COOLDOWN SETTINGS
+# 8. COOLDOWN & DUPLICATE RULES
 # ════════════════════════════════════════════════════════════════════════
+
+# Minimum delay before sending a "Still in Stock" / Reminder message (2 days = 48 hours)
+MIN_REMINDER_DELAY_HOURS = 48
+
+# Duplicate expiry window (after 7 days = 168 hours, product history expires and is treated as fresh)
+DUPLICATE_EXPIRY_DAYS = 7
 
 # Anti-spam cooldown for price-drop & quick deals (minimum 24 hours)
 PRICE_DROP_COOLDOWN_HOURS = 24
 
-# Evergreen deal re-post cooldowns (days) by discount depth
-EVERGREEN_COOLDOWNS = {
-    0.60: 3,    # 60%+ OFF → re-post every 3 days
-    0.40: 5,    # 40-59% OFF → every 5 days
-    0.30: 7,    # 30-39% OFF → every 7 days
-}
+# Evergreen deal re-post cooldowns (days)
+EVERGREEN_COOLDOWN_DAYS = 7
 
 # Minimum MRP discount for evergreen deal qualification
-EVERGREEN_MIN_MRP_DISCOUNT = 0.30   # 30% below MRP
-EVERGREEN_MIN_SAVINGS_INR = 300     # ₹300 minimum savings
+EVERGREEN_MIN_MRP_DISCOUNT = 0.25   # 25% below MRP
+EVERGREEN_MIN_SAVINGS_INR = 200     # ₹200 minimum savings
 EVERGREEN_MIN_STABLE_HOURS = 24     # Price unchanged for 24+ hours
 
 # ════════════════════════════════════════════════════════════════════════

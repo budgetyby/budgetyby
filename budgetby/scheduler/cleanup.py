@@ -17,11 +17,10 @@ async def daily_cleanup():
         await database.finalize_expired_tracking()
         
         try:
-            from budgetby.features import cooldown
-            if hasattr(cooldown, 'cleanup_expired_cooldowns'):
-                await cooldown.cleanup_expired_cooldowns()
-        except ImportError:
-            pass
+            from budgetby.engine.cooldown import cleanup_expired_cooldowns
+            await cleanup_expired_cooldowns()
+        except Exception as e:
+            logger.warning(f"Could not cleanup expired cooldowns: {e}")
             
         # Archive OOS > DORMANT_THRESHOLD_DAYS
         await database.execute(f"UPDATE products SET status = '{config.STATUS_DORMANT}' WHERE status = '{config.STATUS_TEMP_OOS}' AND last_checked < NOW() - INTERVAL '{config.DORMANT_THRESHOLD_DAYS} days'")

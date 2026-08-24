@@ -282,48 +282,55 @@ async def movers_shakers_crawl():
 
 
 async def hourly_backfill():
-    """Check hourly posting minimum and backfill with evergreen deals if needed."""
+    """Check hourly posting minimum per platform and backfill with evergreen deals."""
     try:
         from budgetby.engine.evergreen import find_evergreen_deals
-        from budgetby.engine.cooldown import set_evergreen_cooldown
-
+        from budgetby.engine.posting_queue import get_posting_queue
         import pytz
         from datetime import datetime
 
         ist = pytz.timezone(config.TIMEZONE)
         now = datetime.now(ist)
         hour = now.hour
+        is_daytime = config.DAYTIME_START_HOUR <= hour < config.DAYTIME_END_HOUR
 
-        if config.DAYTIME_START_HOUR <= hour < config.DAYTIME_END_HOUR:
-            minimum = config.MIN_POSTS_PER_HOUR_DAY
-        else:
-            minimum = config.MIN_POSTS_PER_HOUR_NIGHT
+        # Platform minimum quotas: Amazon=3, Flipkart=3, Myntra=2, Ajio=2, Nykaa=1 (11 total)
+        platform_targets = config.PLATFORM_MIN_HOURLY_POSTS if is_daytime else {
+            "amazon": 1, "flipkart": 1, "myntra": 0, "ajio": 0, "nykaa": 0
+        }
 
-        # Count posts in the current hour
-        posts_this_hour = await database.fetchval("""
-            SELECT COUNT(*) FROM deals
-            WHERE posted_at >= date_trunc('hour', NOW())
-        """)
-
-        gap = minimum - (posts_this_hour or 0)
-        if gap <= 0:
-            logger.info(f"Hourly minimum met: {posts_this_hour} posts (min={minimum})")
-            return
-
-        logger.info(f"Need {gap} more posts to meet hourly minimum of {minimum}")
-        evergreen_deals = await find_evergreen_deals(limit=gap)
-        logger.info(f"Found {len(evergreen_deals)} evergreen deals for backfill")
-
-        from budgetby.engine.posting_queue import get_posting_queue
         pq = get_posting_queue()
-        for deal in evergreen_deals:
-            logger.info(f"Evergreen candidate: {deal['title'][:50]}...")
-            await pq.queue_deal({"product": dict(deal), "type": "evergreen", "badge": "EVERGREEN"})
-            
-        if _bot is not None:
-            await pq.process_queue(_bot)
-        else:
-            await pq.process_queue()
+        total_backfilled = 0
+
+        for platform, min_target in platform_targets.items():
+            if min_target <= 0:
+                continue
+
+            # Count unique fresh deals posted this hour for this platform (reminders excluded from fresh quota)
+            posts_for_plat = await database.fetchval("""
+                SELECT COUNT(DISTINCT d.product_id) FROM deals d
+                JOIN products p ON d.product_id = p.id
+                WHERE p.platform = $1 
+                  AND d.posted_at >= date_trunc('hour', NOW())
+                  AND d.deal_type != 'reminder'
+            """, platform) or 0
+
+            gap = min_target - posts_for_plat
+            if gap > 0:
+                logger.info(f"Platform [{platform.upper()}]: {posts_for_plat}/{min_target} posted this hour. Backfilling {gap} evergreen deals...")
+                deals = await find_evergreen_deals(limit=gap, platform=platform)
+                for deal in deals:
+                    logger.info(f"Evergreen candidate [{platform.upper()}]: {deal['title'][:50]}...")
+                    await pq.queue_deal({"product": dict(deal), "type": "evergreen", "badge": "EVERGREEN"})
+                    total_backfilled += 1
+            else:
+                logger.info(f"Platform [{platform.upper()}]: Hourly minimum of {min_target} already met ({posts_for_plat} posted).")
+
+        if total_backfilled > 0:
+            if _bot is not None:
+                await pq.process_queue(_bot)
+            else:
+                await pq.process_queue()
 
     except Exception as e:
         logger.error(f"Error in hourly_backfill: {e}")
