@@ -20,10 +20,41 @@ async def startup():
 @app.get("/api/stats")
 async def get_stats():
     try:
+        # Total catalog products
         total_prods = await database.fetchval("SELECT COUNT(*) FROM products;")
         by_plat = await database.fetch("SELECT platform, COUNT(*) as count FROM products GROUP BY platform ORDER BY count DESC;")
+        
+        # Deals posted today & last hour
         deals_today = await database.fetchval("SELECT COUNT(*) FROM deals WHERE posted_at >= CURRENT_DATE;")
         deals_1h = await database.fetchval("SELECT COUNT(*) FROM deals WHERE posted_at >= NOW() - INTERVAL '1 hour';")
+        
+        # Deals posted TODAY grouped by platform
+        posted_today_rows = await database.fetch("""
+            SELECT p.platform, COUNT(*) as count 
+            FROM deals d 
+            JOIN products p ON d.product_id = p.id 
+            WHERE d.posted_at >= CURRENT_DATE 
+            GROUP BY p.platform;
+        """)
+        posted_today_by_plat = {r["platform"].lower(): r["count"] for r in posted_today_rows}
+        
+        # Deals posted LIFETIME grouped by platform
+        posted_life_rows = await database.fetch("""
+            SELECT p.platform, COUNT(*) as count 
+            FROM deals d 
+            JOIN products p ON d.product_id = p.id 
+            GROUP BY p.platform;
+        """)
+        posted_life_by_plat = {r["platform"].lower(): r["count"] for r in posted_life_rows}
+        
+        # Ensure all 5 platforms exist in dicts
+        all_plats = ["amazon", "flipkart", "myntra", "ajio", "nykaa"]
+        for p in all_plats:
+            if p not in posted_today_by_plat:
+                posted_today_by_plat[p] = 0
+            if p not in posted_life_by_plat:
+                posted_life_by_plat[p] = 0
+                
         cooldowns = await database.fetchval("SELECT COUNT(*) FROM post_cooldowns WHERE expires_at > NOW();")
         daily_prices = await database.fetchval("SELECT COUNT(*) FROM daily_prices;")
         latest_deals = await database.fetchval("SELECT COUNT(*) FROM deals;")
@@ -36,6 +67,9 @@ async def get_stats():
             "by_platform": {r["platform"]: r["count"] for r in by_plat},
             "deals_today": deals_today or 0,
             "deals_last_hour": deals_1h or 0,
+            "posted_today_by_platform": posted_today_by_plat,
+            "posted_lifetime_by_platform": posted_life_by_plat,
+            "hourly_targets": config.PLATFORM_MIN_HOURLY_POSTS,
             "active_cooldowns": cooldowns or 0,
             "daily_prices_recorded": daily_prices or 0,
             "total_deals_lifetime": latest_deals or 0

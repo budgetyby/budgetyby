@@ -55,11 +55,28 @@
             </div>
         </div>
 
+        <!-- NEW: Platform Posting Quotas & Counts Section -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <span>📢</span> Platform Deals Posted & 24/7 Quotas
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Live breakdown of deals broadcasted to Telegram per platform</p>
+                </div>
+                <span class="text-xs font-semibold px-3 py-1 bg-slate-800 text-slate-300 rounded-full border border-slate-700">Quota: 11 deals/hour (24/7)</span>
+            </div>
+
+            <div id="platformPostCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+
         <!-- Middle Section: Chart & Quick Search -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Platform Distribution Chart -->
             <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 lg:col-span-1 flex flex-col justify-between">
-                <h3 class="text-base font-semibold text-white mb-4">🛍️ Platform Catalog Breakdown</h3>
+                <h3 class="text-base font-semibold text-white mb-4">🛍️ Catalog Storage Breakdown</h3>
                 <div class="h-56 relative flex items-center justify-center">
                     <canvas id="platformChart"></canvas>
                 </div>
@@ -107,6 +124,14 @@
             return '₹' + Number(val).toLocaleString('en-IN');
         }
 
+        const platformMeta = {
+            'amazon':   { name: 'Amazon',   color: '#f59e0b', icon: '🟠', target: '3 / hr' },
+            'flipkart': { name: 'Flipkart', color: '#3b82f6', icon: '🔵', target: '3 / hr' },
+            'myntra':   { name: 'Myntra',   color: '#ec4899', icon: '🔴', target: '2 / hr' },
+            'ajio':     { name: 'Ajio',     color: '#8b5cf6', icon: '🟣', target: '2 / hr' },
+            'nykaa':    { name: 'Nykaa',    color: '#10b981', icon: '🌸', target: '1 / hr' }
+        };
+
         async function fetchData() {
             try {
                 const res = await fetch('/api/stats');
@@ -118,10 +143,43 @@
                 document.getElementById('stat-snapshots').innerText = Number(data.daily_prices_recorded).toLocaleString('en-IN');
                 document.getElementById('stat-cooldowns').innerText = data.active_cooldowns;
 
+                // Render Platform Posting Cards
+                let postCardsHTML = '';
+                const todayPosts = data.posted_today_by_platform || {};
+                const lifePosts = data.posted_lifetime_by_platform || {};
+                const targets = data.hourly_targets || {};
+
+                Object.keys(platformMeta).forEach(p => {
+                    const meta = platformMeta[p];
+                    const tCount = todayPosts[p] || 0;
+                    const lCount = lifePosts[p] || 0;
+                    const target = targets[p] ? `${targets[p]}/hr` : meta.target;
+
+                    postCardsHTML += `
+                    <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="font-bold text-sm text-slate-200 flex items-center gap-1.5">
+                                <span>${meta.icon}</span> ${meta.name}
+                            </span>
+                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-400">${target}</span>
+                        </div>
+                        <div>
+                            <div class="flex items-baseline justify-between">
+                                <span class="text-2xl font-extrabold text-white">${tCount}</span>
+                                <span class="text-xs text-slate-400">today</span>
+                            </div>
+                            <div class="text-[11px] text-slate-500 mt-1 flex items-center justify-between border-t border-slate-900 pt-2">
+                                <span>All-Time:</span>
+                                <span class="font-semibold text-slate-300">${Number(lCount).toLocaleString('en-IN')} deals</span>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+                document.getElementById('platformPostCards').innerHTML = postCardsHTML;
+
                 // Update Chart
                 const labels = Object.keys(data.by_platform).map(k => k.toUpperCase());
                 const counts = Object.values(data.by_platform);
-                
                 const colors = ['#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#10b981'];
                 
                 if (chartInstance) chartInstance.destroy();
