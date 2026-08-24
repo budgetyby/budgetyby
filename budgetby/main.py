@@ -6,6 +6,7 @@ import logging
 import os
 import signal
 import sys
+import uvicorn
 from dotenv import load_dotenv
 from telegram.ext import Application
 from budgetby import database, config
@@ -21,37 +22,31 @@ logging.basicConfig(
 )
 logger = logging.getLogger("budgetby.main")
 
-async def handle_http(reader, writer):
-    """Simple HTTP healthcheck handler for cloud platforms like Render."""
-    try:
-        data = await reader.read(1024)
-        response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 22\r\n\r\nBudgetBy Bot is Active\n"
-        writer.write(response.encode())
-        await writer.drain()
-    except Exception:
-        pass
-    finally:
-        writer.close()
-        try:
-            await writer.wait_closed()
-        except Exception:
-            pass
-
 
 async def main():
     logger.info("Starting BudgetBy Bot...")
     
-    # Start HTTP server for Render/Cloud healthcheck
-    port = int(os.getenv("PORT", "8080"))
-    try:
-        server = await asyncio.start_server(handle_http, "0.0.0.0", port)
-        logger.info(f"Cloud healthcheck HTTP server listening on port {port}")
-    except Exception as e:
-        logger.warning(f"Could not start HTTP server on port {port}: {e}")
-        server = None
-
+    # 1. Initialize Database Pool
     await database.init_pool()
+
+    # 2. Start Local Web Dashboard on http://localhost:5000
+    try:
+        from budgetby.dashboard.app import app as dashboard_app
+        dash_port = int(os.getenv("DASHBOARD_PORT", "5000"))
+        config_server = uvicorn.Config(
+            dashboard_app,
+            host="127.0.0.1",
+            port=dash_port,
+            log_level="warning",
+            access_log=False
+        )
+        dash_server = uvicorn.Server(config_server)
+        asyncio.create_task(dash_server.serve())
+        logger.info(f"🚀 Local Web Dashboard running on http://localhost:{dash_port}")
+    except Exception as e:
+        logger.warning(f"Could not start dashboard on port 5000: {e}")
     
+    # 3. Configure Telegram Bot
     if config.TELEGRAM_BOT_TOKEN:
         application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
         register_handlers(application)
@@ -63,69 +58,63 @@ async def main():
             
         logger.info("Telegram application configured with all handlers.")
     else:
-        logger.warning("No TELEGRAM_BOT_TOKEN provided. Telegram features will be disabled.")
         application = None
+        logger.warning("TELEGRAM_BOT_TOKEN not found in environment!")
 
+    # 4. Catchup scan & title cleanup
     await cleanup.catchup_scan()
-    
     try:
         result = await database.execute("DELETE FROM products WHERE platform = 'flipkart' AND (title = 'Product' OR length(title) < 5);")
         logger.info(f"Cleaned up bad Flipkart titles: {result}")
     except Exception as e:
         logger.warning(f"Could not clean bad titles: {e}")
     
-    # Auto-seed all platforms in continuous bootstrap loop until 75,000 products reached
-    async def auto_seed_if_needed():
-        while True:
-            try:
-                from budgetby.discovery.seeder import ProductSeeder
-                seeder = ProductSeeder()
-                logger.info("Starting bootstrap seeder workers...")
-                await seeder.run_bootstrap_until_target(target_count=75000)
-                logger.info("Bootstrap target reached! Seeder workers done.")
-                break  # All targets met, exit cleanly
-            except Exception as e:
-                logger.error(f"Seeder crashed: {e}. Restarting in 60 seconds...", exc_info=True)
-                await asyncio.sleep(60)  # Brief pause then restart everything
-
-    asyncio.create_task(auto_seed_if_needed())
-
+    # 5. Start Scheduler
     scheduler.start_scheduler()
-    
-    stop_event = asyncio.Event()
-    
-    def handle_sigterm():
-        logger.info("Received termination signal.")
-        stop_event.set()
 
-    if sys.platform != 'win32':
-        loop = asyncio.get_running_loop()
-        loop.add_signal_handler(signal.SIGINT, handle_sigterm)
-        loop.add_signal_handler(signal.SIGTERM, handle_sigterm)
-    
-    if application:
-        await application.initialize()
-        await application.start()
-        await application.updater.start_polling()
-        logger.info("Bot is polling.")
-    
+    # 6. Start Seeder Background Workers
     try:
-        if sys.platform == 'win32':
-            while not stop_event.is_set():
-                await asyncio.sleep(1)
-        else:
+        from budgetby.discovery.seeder import ProductSeeder
+        logger.info("Starting bootstrap seeder workers...")
+        seeder = ProductSeeder()
+        asyncio.create_task(seeder.run_bootstrap_until_target())
+    except Exception as e:
+        logger.error(f"Error starting bootstrap workers: {e}")
+
+    # 7. Run Bot Polling
+    if application:
+        try:
+            await application.initialize()
+            await application.start()
+            await application.updater.start_polling(drop_pending_updates=True)
+            logger.info("Bot is polling.")
+            
+            # Keep main task alive
+            stop_event = asyncio.Event()
             await stop_event.wait()
-    except KeyboardInterrupt:
-        logger.info("Keyboard interrupt received.")
-    finally:
-        logger.info("Shutting down...")
-        if application:
-            await application.updater.stop()
+            
+        except (KeyboardInterrupt, SystemExit):
+            logger.info("Shutting down bot gracefully...")
+        finally:
+            scheduler.stop_scheduler()
+            if application.updater:
+                await application.updater.stop()
             await application.stop()
             await application.shutdown()
-        scheduler.stop_scheduler()
-        await database.close_pool()
-        logger.info("Shutdown complete.")
+            await database.close_pool()
+            logger.info("Bot shutdown complete.")
+    else:
+        try:
+            while True:
+                await asyncio.sleep(1)
+        except (KeyboardInterrupt, SystemExit):
+            pass
+        finally:
+            scheduler.stop_scheduler()
+            await database.close_pool()
 
-if __name__ == '__main__':
-    asyncio.run(main())
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        pass
