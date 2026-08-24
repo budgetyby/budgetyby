@@ -183,13 +183,26 @@
                 const res = await fetch('/api/stats');
                 const data = await res.json();
                 
-                // Top overview cards
-                document.getElementById('stat-deals-life').innerText = Number(data.deals_lifetime).toLocaleString('en-IN');
-                document.getElementById('stat-deals-month').innerText = Number(data.deals_this_month).toLocaleString('en-IN');
-                document.getElementById('stat-deals-last-month').innerText = Number(data.deals_last_month).toLocaleString('en-IN');
-                document.getElementById('stat-deals-today').innerText = data.deals_today;
-                document.getElementById('stat-deals-1h').innerText = data.deals_last_hour;
-                document.getElementById('stat-products').innerText = Number(data.total_products).toLocaleString('en-IN');
+                // Top overview cards with bulletproof fallbacks
+                const lifeCount = data.deals_lifetime !== undefined ? data.deals_lifetime : (data.total_deals_lifetime || 0);
+                const monthCount = data.deals_this_month !== undefined ? data.deals_this_month : (data.total_deals_lifetime || 0);
+                const lastMonthCount = data.deals_last_month || 0;
+                const todayCount = data.deals_today || 0;
+                const hourCount = data.deals_last_hour || 0;
+                const prodCount = data.total_products || 0;
+
+                if (document.getElementById('stat-deals-life'))
+                    document.getElementById('stat-deals-life').innerText = Number(lifeCount).toLocaleString('en-IN');
+                if (document.getElementById('stat-deals-month'))
+                    document.getElementById('stat-deals-month').innerText = Number(monthCount).toLocaleString('en-IN');
+                if (document.getElementById('stat-deals-last-month'))
+                    document.getElementById('stat-deals-last-month').innerText = Number(lastMonthCount).toLocaleString('en-IN');
+                if (document.getElementById('stat-deals-today'))
+                    document.getElementById('stat-deals-today').innerText = Number(todayCount).toLocaleString('en-IN');
+                if (document.getElementById('stat-deals-1h'))
+                    document.getElementById('stat-deals-1h').innerText = Number(hourCount).toLocaleString('en-IN');
+                if (document.getElementById('stat-products'))
+                    document.getElementById('stat-products').innerText = Number(prodCount).toLocaleString('en-IN');
 
                 // Render Platform Detailed Cards (Today • This Month • Lifetime)
                 let postCardsHTML = '';
