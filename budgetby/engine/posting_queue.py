@@ -11,6 +11,29 @@ logger = logging.getLogger("budgetby.engine.posting_queue")
 
 _global_posting_queue = None
 
+async def verify_product_url_live(url: str, platform: str = "") -> bool:
+    """Pre-post check to ensure product URL returns HTTP 200 and has active PDP data."""
+    try:
+        from curl_cffi.requests import AsyncSession
+        async with AsyncSession(impersonate="chrome", timeout=5) as session:
+            resp = await session.get(url, allow_redirects=True)
+            if resp.status_code != 200:
+                return False
+            text = resp.text
+            if platform == "myntra":
+                if '"pdpData":null' in text or '"pdpData": null' in text:
+                    return False
+            elif platform == "amazon":
+                if "page not found" in text.lower() or "looking for something?" in text.lower():
+                    return False
+            elif platform == "flipkart":
+                if "page not found" in text.lower() and len(text) < 10000:
+                    return False
+            return True
+    except Exception:
+        # On network timeout, do not block
+        return True
+
 def get_posting_queue() -> 'PostingQueue':
     global _global_posting_queue
     if _global_posting_queue is None:
@@ -91,6 +114,15 @@ class PostingQueue:
                     
                     if not url or not url.startswith("http"):
                         logger.warning(f"Skipping product #{pid} ({product.get('title')[:30]}...) — no valid URL available for posting.")
+                        self._queue.task_done()
+                        continue
+
+                    # Pre-post Live URL Verification Guard: Never post dead or 404 links
+                    is_live = await verify_product_url_live(url, product.get("platform", ""))
+                    if not is_live:
+                        logger.warning(f"Product #{pid} ({product.get('title')[:30]}...) failed live URL verification. Marking DORMANT and skipping.")
+                        if pid:
+                            await database.execute("UPDATE products SET status = 'DORMANT', in_stock = FALSE WHERE id = $1", pid)
                         self._queue.task_done()
                         continue
 
