@@ -181,20 +181,20 @@ async def update_price(product_id: int, new_price: float, in_stock: bool,
     await execute("""
         UPDATE products SET
             previous_price = current_price,
-            current_price = $2,
-            in_stock = $3,
-            title = CASE WHEN $4 IS NOT NULL AND $4 != '' THEN $4 ELSE title END,
-            mrp = COALESCE($5, mrp),
-            rating = COALESCE($6, rating),
-            review_count = COALESCE($7, review_count),
-            image_url = CASE WHEN $8 IS NOT NULL AND $8 != '' THEN $8 ELSE image_url END,
+            current_price = $2::numeric,
+            in_stock = $3::boolean,
+            title = CASE WHEN $4::text IS NOT NULL AND $4::text != '' THEN $4::text ELSE title END,
+            mrp = COALESCE($5::numeric, mrp),
+            rating = COALESCE($6::numeric, rating),
+            review_count = COALESCE($7::integer, review_count),
+            image_url = CASE WHEN $8::text IS NOT NULL AND $8 != '' THEN $8::text ELSE image_url END,
             last_checked = NOW(),
             last_price_change = CASE
-                WHEN current_price IS DISTINCT FROM $2 THEN NOW()
+                WHEN current_price IS DISTINCT FROM $2::numeric THEN NOW()
                 ELSE last_price_change
             END,
-            all_time_low = LEAST(all_time_low, $2)
-        WHERE id = $1
+            all_time_low = LEAST(all_time_low, $2::numeric)
+        WHERE id = $1::integer
     """, product_id, new_price, in_stock, title, mrp, rating,
          review_count, image_url)
 

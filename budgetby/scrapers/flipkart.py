@@ -12,7 +12,7 @@ from budgetby import config
 class FlipkartScraper(BaseScraper):
     async def _do_scrape_product(self, url: str) -> dict:
         async with AsyncSession(impersonate="chrome", timeout=config.SCRAPER_TIMEOUT) as client:
-            r = await client.get(url, follow_redirects=True)
+            r = await client.get(url, allow_redirects=True)
             
         tree = HTMLParser(r.text)
         title = ""

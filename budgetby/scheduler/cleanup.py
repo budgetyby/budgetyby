@@ -59,32 +59,19 @@ async def catchup_scan():
         await database.execute("UPDATE products SET next_check = NOW() WHERE priority_tier = 1 OR current_price IS NULL")
         
         # Autonomous title sanitizer for all platforms
-        offset = 0
-        limit = 500
-        total_sanitized = 0
+        rows = await database.fetch("""
+            SELECT id, product_url, platform 
+            FROM products 
+            WHERE title = 'Product' OR title = 'Flipkart Product' OR length(title) < 5
+            LIMIT 500;
+        """)
         import re
-        while True:
-            rows = await database.fetch(f"""
-                SELECT id, product_url, platform 
-                FROM products 
-                WHERE title ILIKE '%product%' OR title ILIKE '%editor%' OR length(title) < 5
-                LIMIT {limit} OFFSET {offset}
-            """)
-            if not rows:
-                break
-            
-            for r in rows:
-                p_url = r["product_url"] or ""
-                slug = re.sub(r'https?://[^/]+/', '', p_url).split('/p/')[0].split('?')[0].lstrip('/').replace('-', ' ').title()
-                if len(slug) >= 4:
-                    await database.execute("UPDATE products SET title = $2 WHERE id = $1", r["id"], slug)
-            
-            total_sanitized += len(rows)
-            offset += limit
-            
-        if total_sanitized > 0:
-            logger.info(f"Automatically sanitized {total_sanitized} product titles.")
-            
+        for r in rows:
+            p_url = r["product_url"] or ""
+            slug = re.sub(r'https?://[^/]+/', '', p_url).split('/p/')[0].split('?')[0].lstrip('/').replace('-', ' ').title()
+            if len(slug) >= 4:
+                await database.execute("UPDATE products SET title = $2 WHERE id = $1", r["id"], slug)
+        
         logger.info("Catchup scan completed.")
     except Exception as e:
         logger.error(f"Error during catchup scan: {e}")

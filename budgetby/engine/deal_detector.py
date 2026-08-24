@@ -18,20 +18,21 @@ async def detect_deal(product: Record, new_price: float) -> dict | None:
         if new_price <= 0:
             return None
 
-        current_price = product.get("current_price")
-        previous_price = product.get("previous_price")
+        new_price = float(new_price)
+        current_price = float(product.get("current_price")) if product.get("current_price") is not None else None
+        previous_price = float(product.get("previous_price")) if product.get("previous_price") is not None else None
         
         if not ((current_price and new_price < current_price) or (previous_price and new_price < previous_price)):
             return None
 
         margins = config.BENCHMARK_MARGINS
         
-        min_30d = product.get("min_30d")
-        min_60d = product.get("min_60d")
-        min_90d = product.get("min_90d")
-        all_time_low = product.get("all_time_low")
-        median_30d = product.get("median_30d_price")
-        mrp = product.get("mrp") or new_price
+        min_30d = float(product.get("min_30d")) if product.get("min_30d") is not None else None
+        min_60d = float(product.get("min_60d")) if product.get("min_60d") is not None else None
+        min_90d = float(product.get("min_90d")) if product.get("min_90d") is not None else None
+        all_time_low = float(product.get("all_time_low")) if product.get("all_time_low") is not None else None
+        median_30d = float(product.get("median_30d_price")) if product.get("median_30d_price") is not None else None
+        mrp = float(product.get("mrp")) if product.get("mrp") is not None else new_price
         
         category = product.get("category", "default")
         cat_min_drop_pct, cat_min_savings = config.CATEGORY_MIN_DROPS.get(

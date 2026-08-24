@@ -14,11 +14,11 @@ def is_admin(chat_id: int) -> bool:
     return str(chat_id) == str(config.ADMIN_CHAT_ID)
 
 PLATFORM_TARGETS = {
-    "amazon":   config.TARGET_AMAZON,
-    "flipkart": config.TARGET_FLIPKART,
-    "myntra":   config.TARGET_MYNTRA,
-    "ajio":     config.TARGET_AJIO,
-    "nykaa":    config.TARGET_NYKAA,
+    "amazon":   getattr(config, "TARGET_AMAZON", 23250),
+    "flipkart": getattr(config, "TARGET_FLIPKART", 18750),
+    "myntra":   getattr(config, "TARGET_MYNTRA", 15000),
+    "ajio":     getattr(config, "TARGET_AJIO", 11250),
+    "nykaa":    getattr(config, "TARGET_NYKAA", 6750),
 }
 
 async def catalog_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
