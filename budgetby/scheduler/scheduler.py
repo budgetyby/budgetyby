@@ -314,12 +314,16 @@ async def hourly_backfill():
         evergreen_deals = await find_evergreen_deals(limit=gap)
         logger.info(f"Found {len(evergreen_deals)} evergreen deals for backfill")
 
-        from budgetby.engine.posting_queue import PostingQueue
-        pq = PostingQueue()
+        from budgetby.engine.posting_queue import get_posting_queue
+        pq = get_posting_queue()
         for deal in evergreen_deals:
             logger.info(f"Evergreen candidate: {deal['title'][:50]}...")
-            await pq.queue_deal({"product": deal, "type": "evergreen", "badge": "EVERGREEN"})
-        await pq.process_queue(_bot)
+            await pq.queue_deal({"product": dict(deal), "type": "evergreen", "badge": "EVERGREEN"})
+            
+        if _bot is not None:
+            await pq.process_queue(_bot)
+        else:
+            await pq.process_queue()
 
     except Exception as e:
         logger.error(f"Error in hourly_backfill: {e}")
