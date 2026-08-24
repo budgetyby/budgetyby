@@ -90,9 +90,9 @@
                     <thead>
                         <tr class="border-b border-slate-800 text-slate-400 uppercase tracking-wider">
                             <th class="pb-3 font-semibold">📡 Channel</th>
-                            <th class="pb-3 font-semibold">📥 Deals Picked Up</th>
-                            <th class="pb-3 font-semibold">🎯 Verified Deals (Queued)</th>
-                            <th class="pb-3 font-semibold">💾 Saved to Catalog</th>
+                            <th class="pb-3 font-semibold">📥 Intercepted</th>
+                            <th class="pb-3 font-semibold">💾 Saved to Catalog (DB)</th>
+                            <th class="pb-3 font-semibold">🎯 Verified Deals (Queued to Post)</th>
                             <th class="pb-3 font-semibold">❌ Out of Stock / Expired</th>
                             <th class="pb-3 font-semibold">⏱️ Last Scanned</th>
                         </tr>
@@ -366,8 +366,8 @@
                             <span class="text-indigo-400">📡</span> ${ch.source_channel}
                         </td>
                         <td class="py-3.5 font-extrabold text-white">${Number(ch.total_picked_up).toLocaleString('en-IN')}</td>
+                        <td class="py-3.5 font-bold text-indigo-300">${Number(ch.saved_to_catalog || 0).toLocaleString('en-IN')}</td>
                         <td class="py-3.5 font-bold text-emerald-400">${Number(ch.verified_deals || 0).toLocaleString('en-IN')}</td>
-                        <td class="py-3.5 font-semibold text-indigo-300">${Number(ch.saved_to_catalog || 0).toLocaleString('en-IN')}</td>
                         <td class="py-3.5 font-medium text-slate-500">${Number(ch.out_of_stock || 0).toLocaleString('en-IN')}</td>
                         <td class="py-3.5 text-slate-400">${lastTime}</td>
                     </tr>`;

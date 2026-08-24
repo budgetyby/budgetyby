@@ -139,8 +139,8 @@ async def get_channel_stats():
             SELECT 
                 source_channel,
                 COUNT(*) as total_picked_up,
+                COUNT(CASE WHEN product_id IS NOT NULL THEN 1 END) as saved_to_catalog,
                 COUNT(CASE WHEN status = 'VERIFIED_DEAL' THEN 1 END) as verified_deals,
-                COUNT(CASE WHEN status = 'SAVED_TO_CATALOG' THEN 1 END) as saved_to_catalog,
                 COUNT(CASE WHEN status = 'OUT_OF_STOCK' THEN 1 END) as out_of_stock,
                 COUNT(CASE WHEN status = 'FAILED_SCRAPE' THEN 1 END) as failed_scrapes,
                 MAX(created_at) as last_activity
