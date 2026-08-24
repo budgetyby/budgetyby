@@ -335,3 +335,27 @@ async def finalize_expired_tracking():
         WHERE track_until < NOW() AND is_finalized = FALSE
     """)
     logger.info(f"Finalized expired deal tracking: {result}")
+
+
+async def insert_deal(data: dict) -> int:
+    """Insert a broadcasted deal record into the deals table."""
+    row = await fetchrow("""
+        INSERT INTO deals (
+            product_id, deal_type, posted_price,
+            posted_mrp, savings_amount, savings_pct, deal_score,
+            badge, source_channel, posted_at
+        ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, (NOW() AT TIME ZONE 'Asia/Kolkata')
+        ) RETURNING id;
+    """,
+        data.get("product_id"),
+        data.get("deal_type", "price_drop"),
+        data.get("posted_price"),
+        data.get("posted_mrp"),
+        data.get("savings_amount", 0.0),
+        data.get("savings_pct", 0.0),
+        data.get("deal_score", 50.0),
+        data.get("badge", "DEAL"),
+        data.get("source_channel", "local_scanner")
+    )
+    return row["id"] if row else None
