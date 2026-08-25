@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BudgetBy — Full Database Explorer & Visualizer</title>
+    <title>BudgetBy — Full Database Explorer & 30-Day Price Visualizer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -121,19 +121,34 @@
         </main>
     </div>
 
-    <!-- Row Details Inspector Modal -->
+    <!-- Row Details Inspector Modal (With 30-Day Price Timeline) -->
     <div id="detailModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 space-y-4 max-h-[85vh] flex flex-col shadow-2xl">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full p-6 space-y-4 max-h-[88vh] flex flex-col shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div class="flex items-center gap-2">
-                    <span class="text-xl">🔍</span>
-                    <h3 class="text-base font-bold text-white" id="modalTitle">Record Inspector</h3>
+                    <span class="text-xl">📅</span>
+                    <div>
+                        <h3 class="text-base font-bold text-white" id="modalTitle">Product & 30-Day Price Inspector</h3>
+                        <p id="modalSubtitle" class="text-xs text-slate-400 font-mono"></p>
+                    </div>
                 </div>
                 <button onclick="closeModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
             </div>
-            <div id="modalContent" class="flex-1 overflow-y-auto space-y-2 text-xs font-mono pr-1">
-                <!-- Populated via JS -->
+
+            <!-- Modal Body: Tabs between 30-Day Daily Prices vs Raw Row -->
+            <div class="flex items-center gap-2 border-b border-slate-800 pb-2">
+                <button onclick="switchModalTab('timeline')" id="btn-modal-timeline" class="px-3 py-1 text-xs font-semibold rounded-lg bg-indigo-600 text-white">📅 30-Day Daily Prices (Day 1 - Day 30)</button>
+                <button onclick="switchModalTab('raw')" id="btn-modal-raw" class="px-3 py-1 text-xs font-semibold rounded-lg text-slate-400 hover:text-white">📄 All Columns / Raw JSON</button>
             </div>
+
+            <div id="modalContentTimeline" class="flex-1 overflow-y-auto space-y-3 text-xs pr-1">
+                <!-- 30-day timeline populated via JS -->
+            </div>
+
+            <div id="modalContentRaw" class="flex-1 overflow-y-auto space-y-2 text-xs font-mono pr-1 hidden">
+                <!-- Raw columns populated via JS -->
+            </div>
+
             <div class="pt-3 border-t border-slate-800 flex justify-end">
                 <button onclick="closeModal()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition">Close</button>
             </div>
@@ -262,7 +277,7 @@
                 // Render Header Columns
                 const firstRow = data.rows[0];
                 const columns = Object.keys(firstRow);
-                let theadHtml = '<tr><th class="py-3 px-3">🔍 Inspect</th>';
+                let theadHtml = '<tr><th class="py-3 px-3">🔍 Day 1-30 & Details</th>';
                 columns.forEach(c => {
                     theadHtml += `<th class="py-3 px-3">${c}</th>`;
                 });
@@ -274,7 +289,9 @@
                 data.rows.forEach((row, rowIdx) => {
                     tbodyHtml += `<tr class="hover:bg-slate-800/40 transition">`;
                     tbodyHtml += `<td class="py-2.5 px-3">
-                        <button onclick='inspectRow(${JSON.stringify(row).replace(/'/g, "&apos;")})' class="px-2 py-0.5 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white rounded text-[10px] font-mono transition">View</button>
+                        <button onclick='inspectRow(${JSON.stringify(row).replace(/'/g, "&apos;")})' class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[11px] font-semibold transition flex items-center gap-1">
+                            <span>📅</span> 30-Day Timeline
+                        </button>
                     </td>`;
                     columns.forEach(c => {
                         let val = row[c];
@@ -283,7 +300,7 @@
                             formattedVal = `<span class="text-slate-600 italic">null</span>`;
                         } else if (typeof val === 'boolean') {
                             formattedVal = val ? `<span class="text-emerald-400 font-bold">TRUE</span>` : `<span class="text-rose-400 font-bold">FALSE</span>`;
-                        } else if (c.includes('price') || c.includes('mrp')) {
+                        } else if (c.includes('price') || c.includes('mrp') || c.includes('min_30d') || c.includes('median_30d') || c.includes('min_60d') || c.includes('min_90d') || c.includes('all_time_low')) {
                             formattedVal = `<span class="font-bold text-emerald-400 font-mono">₹${Number(val).toLocaleString('en-IN')}</span>`;
                         } else if (c === 'platform') {
                             formattedVal = `<span class="px-1.5 py-0.5 bg-slate-800 rounded font-semibold text-white uppercase text-[10px]">${val}</span>`;
@@ -314,9 +331,32 @@
             loadTableData();
         }
 
-        function inspectRow(rowObj) {
-            document.getElementById('modalTitle').textContent = `Record Detail (#${rowObj.id || rowObj.product_id || ''})`;
-            let html = '';
+        function switchModalTab(tab) {
+            const btnTimeline = document.getElementById('btn-modal-timeline');
+            const btnRaw = document.getElementById('btn-modal-raw');
+            const viewTimeline = document.getElementById('modalContentTimeline');
+            const viewRaw = document.getElementById('modalContentRaw');
+
+            if (tab === 'timeline') {
+                btnTimeline.className = "px-3 py-1 text-xs font-semibold rounded-lg bg-indigo-600 text-white";
+                btnRaw.className = "px-3 py-1 text-xs font-semibold rounded-lg text-slate-400 hover:text-white";
+                viewTimeline.classList.remove('hidden');
+                viewRaw.classList.add('hidden');
+            } else {
+                btnRaw.className = "px-3 py-1 text-xs font-semibold rounded-lg bg-indigo-600 text-white";
+                btnTimeline.className = "px-3 py-1 text-xs font-semibold rounded-lg text-slate-400 hover:text-white";
+                viewRaw.classList.remove('hidden');
+                viewTimeline.classList.add('hidden');
+            }
+        }
+
+        async function inspectRow(rowObj) {
+            const prodId = rowObj.id || rowObj.product_id;
+            document.getElementById('modalTitle').textContent = rowObj.title ? rowObj.title : `Record Detail (#${prodId || ''})`;
+            document.getElementById('modalSubtitle').textContent = `Product ID: #${prodId} • Store: ${(rowObj.platform || '').toUpperCase()} • Category: ${rowObj.category || 'General'}`;
+
+            // Populate Raw Tab
+            let rawHtml = '';
             for (const [k, v] of Object.entries(rowObj)) {
                 let displayVal = v;
                 if (typeof v === 'object' && v !== null) {
@@ -324,14 +364,92 @@
                 } else if (typeof v === 'string' && v.startsWith('http')) {
                     displayVal = `<a href="${v}" target="_blank" class="text-indigo-400 hover:underline break-all">${v} ↗</a>`;
                 }
-                html += `
+                rawHtml += `
                 <div class="p-2.5 bg-slate-950/60 rounded-xl border border-slate-800/80">
                     <div class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">${k}</div>
                     <div class="text-slate-200 mt-0.5 text-xs font-mono break-all">${displayVal}</div>
                 </div>`;
             }
-            document.getElementById('modalContent').innerHTML = html;
+            document.getElementById('modalContentRaw').innerHTML = rawHtml;
+
+            // Fetch and Populate 30-Day Timeline Tab
+            document.getElementById('modalContentTimeline').innerHTML = `<div class="py-8 text-center text-slate-400">Loading 30-Day Daily Prices for #${prodId}...</div>`;
+            switchModalTab('timeline');
             document.getElementById('detailModal').classList.remove('hidden');
+
+            try {
+                if (!prodId) {
+                    document.getElementById('modalContentTimeline').innerHTML = `<div class="py-6 text-center text-slate-500">No Product ID associated with this row.</div>`;
+                    return;
+                }
+
+                const res = await fetch(`/api/db/product_history/${prodId}`);
+                const hist = await res.json();
+
+                if (!hist.daily_prices || !hist.daily_prices.length) {
+                    document.getElementById('modalContentTimeline').innerHTML = `
+                        <div class="py-8 text-center text-slate-500">
+                            No daily price snapshots recorded yet for this product.
+                        </div>`;
+                    return;
+                }
+
+                let timelineHtml = `
+                <!-- Metrics Summary Cards -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <div class="text-[10px] text-slate-400 uppercase font-semibold">Live Price</div>
+                        <div class="text-base font-bold text-emerald-400 font-mono mt-0.5">₹${Number(rowObj.current_price || 0).toLocaleString('en-IN')}</div>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <div class="text-[10px] text-slate-400 uppercase font-semibold">30-Day Min</div>
+                        <div class="text-base font-bold text-blue-400 font-mono mt-0.5">${rowObj.min_30d ? '₹' + Number(rowObj.min_30d).toLocaleString('en-IN') : '₹' + Number(rowObj.current_price || 0).toLocaleString('en-IN')}</div>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <div class="text-[10px] text-slate-400 uppercase font-semibold">30-Day Median</div>
+                        <div class="text-base font-bold text-purple-400 font-mono mt-0.5">${rowObj.median_30d_price ? '₹' + Number(rowObj.median_30d_price).toLocaleString('en-IN') : '₹' + Number(rowObj.current_price || 0).toLocaleString('en-IN')}</div>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <div class="text-[10px] text-slate-400 uppercase font-semibold">All-Time Low</div>
+                        <div class="text-base font-bold text-amber-400 font-mono mt-0.5">${rowObj.all_time_low ? '₹' + Number(rowObj.all_time_low).toLocaleString('en-IN') : '₹' + Number(rowObj.current_price || 0).toLocaleString('en-IN')}</div>
+                    </div>
+                </div>
+
+                <!-- Daily Prices Table -->
+                <div class="border border-slate-800 rounded-xl overflow-hidden">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="bg-slate-950 text-slate-400 border-b border-slate-800">
+                            <tr>
+                                <th class="py-2.5 px-3">🗓️ Timeline Day</th>
+                                <th class="py-2.5 px-3">📅 Calendar Date</th>
+                                <th class="py-2.5 px-3">💰 Min Price of Day</th>
+                                <th class="py-2.5 px-3">📊 Close Price</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60 text-slate-300 bg-slate-950/40">`;
+
+                hist.daily_prices.forEach((dp, idx) => {
+                    const isToday = idx === 0;
+                    const dayBadge = isToday 
+                        ? `<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 font-bold rounded">Day 1 (Today)</span>`
+                        : `<span class="px-2 py-0.5 bg-slate-800 text-slate-300 font-semibold rounded">${dp.day_label}</span>`;
+                    
+                    timelineHtml += `
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="py-2 px-3">${dayBadge}</td>
+                            <td class="py-2 px-3 text-slate-400">${dp.date}</td>
+                            <td class="py-2 px-3 font-bold text-emerald-400">₹${Number(dp.min_price).toLocaleString('en-IN')}</td>
+                            <td class="py-2 px-3 text-slate-200">₹${Number(dp.close_price).toLocaleString('en-IN')}</td>
+                        </tr>`;
+                });
+
+                timelineHtml += `</tbody></table></div>`;
+                document.getElementById('modalContentTimeline').innerHTML = timelineHtml;
+
+            } catch (err) {
+                console.error("Error loading timeline:", err);
+                document.getElementById('modalContentTimeline').innerHTML = `<div class="py-6 text-center text-red-400">Error loading daily prices: ${err.message}</div>`;
+            }
         }
 
         function closeModal() {

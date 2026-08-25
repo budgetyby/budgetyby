@@ -298,6 +298,43 @@ async def get_db_overview():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@app.get("/api/db/product_history/{product_id}")
+async def get_product_history(product_id: int):
+    """Returns the full 30-day chronological daily price timeline (Day 1 to Day 30) for a product."""
+    try:
+        product = await database.fetchrow("SELECT * FROM products WHERE id = $1;", product_id)
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+
+        daily_rows = await database.fetch("""
+            SELECT 
+                date,
+                min_price,
+                close_price
+            FROM daily_prices
+            WHERE product_id = $1
+            ORDER BY date DESC
+            LIMIT 30;
+        """, product_id)
+
+        history = []
+        for idx, r in enumerate(daily_rows):
+            history.append({
+                "day_label": f"Day {idx + 1}" if idx > 0 else "Day 1 (Today)",
+                "date": str(r["date"]),
+                "min_price": float(r["min_price"]) if r["min_price"] is not None else None,
+                "close_price": float(r["close_price"]) if r["close_price"] is not None else None
+            })
+
+        return {
+            "product": dict(product),
+            "history_count": len(history),
+            "daily_prices": history
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/db/table_data")
 async def get_table_data(
     table: str = Query("products"),
