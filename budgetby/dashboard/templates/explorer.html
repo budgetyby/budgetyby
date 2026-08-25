@@ -441,22 +441,43 @@
                                 <th class="py-2.5 px-3">📅 Calendar Date</th>
                                 <th class="py-2.5 px-3">💰 Min Price of Day</th>
                                 <th class="py-2.5 px-3">📊 Close Price</th>
+                                <th class="py-2.5 px-3">📈 Price Trend</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-800/60 text-slate-300 bg-slate-950/40">`;
 
+                let prevPrice = null;
                 hist.daily_prices.forEach((dp, idx) => {
-                    const isToday = idx === 0;
-                    const dayBadge = isToday 
-                        ? `<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 font-bold rounded">Day 1 (Today)</span>`
-                        : `<span class="px-2 py-0.5 bg-slate-800 text-slate-300 font-semibold rounded">${dp.day_label}</span>`;
-                    
+                    let badgeClass = "bg-slate-800 text-slate-300";
+                    if (dp.day_number === 1) {
+                        badgeClass = "bg-blue-500/20 text-blue-400 border border-blue-500/30";
+                    } else if (dp.is_today) {
+                        badgeClass = "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold";
+                    }
+
+                    // Calculate price change vs previous day
+                    let changeTag = '<span class="text-slate-600">-</span>';
+                    if (prevPrice !== null && dp.close_price !== null) {
+                        const diff = dp.close_price - prevPrice;
+                        if (diff < 0) {
+                            changeTag = `<span class="text-emerald-400 font-bold">↓ ₹${Math.abs(diff).toLocaleString('en-IN')} drop</span>`;
+                        } else if (diff > 0) {
+                            changeTag = `<span class="text-rose-400 font-bold">↑ ₹${diff.toLocaleString('en-IN')} up</span>`;
+                        } else {
+                            changeTag = `<span class="text-slate-500">Unchanged</span>`;
+                        }
+                    }
+                    prevPrice = dp.close_price;
+
                     timelineHtml += `
-                        <tr class="hover:bg-slate-800/30">
-                            <td class="py-2 px-3">${dayBadge}</td>
-                            <td class="py-2 px-3 text-slate-400">${dp.date}</td>
-                            <td class="py-2 px-3 font-bold text-emerald-400">₹${Number(dp.min_price).toLocaleString('en-IN')}</td>
-                            <td class="py-2 px-3 text-slate-200">₹${Number(dp.close_price).toLocaleString('en-IN')}</td>
+                        <tr class="hover:bg-slate-800/30 transition">
+                            <td class="py-2.5 px-3">
+                                <span class="px-2.5 py-1 rounded-lg text-xs font-semibold ${badgeClass}">${dp.day_label}</span>
+                            </td>
+                            <td class="py-2.5 px-3 text-slate-400 font-mono">${dp.date}</td>
+                            <td class="py-2.5 px-3 font-bold text-emerald-400 font-mono">₹${Number(dp.min_price).toLocaleString('en-IN')}</td>
+                            <td class="py-2.5 px-3 text-white font-mono font-semibold">₹${Number(dp.close_price).toLocaleString('en-IN')}</td>
+                            <td class="py-2.5 px-3 font-mono text-[11px]">${changeTag}</td>
                         </tr>`;
                 });
 

@@ -307,6 +307,7 @@ async def get_product_history(product_id: int):
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
 
+        # Option 2: Chronological Age (Day 1 = First Discovered -> Day N = Today)
         daily_rows = await database.fetch("""
             SELECT 
                 date,
@@ -314,15 +315,28 @@ async def get_product_history(product_id: int):
                 close_price
             FROM daily_prices
             WHERE product_id = $1
-            ORDER BY date DESC
+            ORDER BY date ASC
             LIMIT 30;
         """, product_id)
 
+        today_str = str(await database.fetchval("SELECT (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE;"))
+        total_days = len(daily_rows)
         history = []
         for idx, r in enumerate(daily_rows):
+            d_str = str(r["date"])
+            day_num = idx + 1
+            if day_num == 1:
+                label = "Day 1 (First Tracked)"
+            elif d_str == today_str:
+                label = f"Day {day_num} (Today)"
+            else:
+                label = f"Day {day_num}"
+
             history.append({
-                "day_label": f"Day {idx + 1}" if idx > 0 else "Day 1 (Today)",
-                "date": str(r["date"]),
+                "day_number": day_num,
+                "day_label": label,
+                "date": d_str,
+                "is_today": d_str == today_str,
                 "min_price": float(r["min_price"]) if r["min_price"] is not None else None,
                 "close_price": float(r["close_price"]) if r["close_price"] is not None else None
             })
