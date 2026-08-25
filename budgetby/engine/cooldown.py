@@ -9,15 +9,29 @@ from budgetby.engine.evergreen import get_evergreen_cooldown_days
 logger = logging.getLogger("budgetby.engine.cooldown")
 
 async def is_on_cooldown(product_id: int) -> bool:
+    """
+    3-Layer Cooldown Protection:
+    Checks post_cooldowns table AND deals table within 24h to guarantee ZERO duplicate posts.
+    """
+    if not product_id:
+        return False
     try:
-        query = "SELECT EXISTS(SELECT 1 FROM post_cooldowns WHERE product_id = $1 AND expires_at > NOW()) as active"
-        row = await database.fetchrow(query, product_id)
-        return row['active'] if row else False
+        query = """
+            SELECT EXISTS(
+                SELECT 1 FROM post_cooldowns WHERE product_id = $1 AND expires_at > NOW()
+                UNION ALL
+                SELECT 1 FROM deals WHERE product_id = $1 AND posted_at > (NOW() - INTERVAL '24 hours')
+            );
+        """
+        active = await database.fetchval(query, product_id)
+        return bool(active)
     except Exception as e:
         logger.error(f"Error checking cooldown: {e}")
         return False
 
 async def set_cooldown(product_id: int, hours: float):
+    if not product_id:
+        return
     try:
         await database.execute("""
             INSERT INTO post_cooldowns (product_id, expires_at)

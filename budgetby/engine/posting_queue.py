@@ -61,6 +61,7 @@ class PostingQueue:
         self._queue = asyncio.Queue()
         self._lock = asyncio.Lock()
         self._draining = False
+        self._queued_pids = set()
         self._bot = None
         self._last_posted_platform = None
         self._rotation_index = 0
@@ -133,12 +134,26 @@ class PostingQueue:
 
     async def queue_deal(self, deal_data: dict):
         """
-        Enqueue an organic or intercepted deal.
-        If queue size exceeds 2, immediately initiates fast-drain background worker!
+        Enqueue an organic or intercepted deal with strict in-memory and database deduplication.
         """
-        await self._queue.put(deal_data)
         pid = deal_data.get('product', {}).get('id')
         plat = deal_data.get('product', {}).get('platform', 'unknown')
+
+        # Check in-memory queue set
+        if pid and pid in self._queued_pids:
+            logger.info(f"🛡️ Product #{pid} is already waiting in the posting queue. Skipping duplicate enqueue.")
+            return
+
+        # Check 24-hour database cooldown
+        from budgetby.engine.cooldown import is_on_cooldown
+        if pid and await is_on_cooldown(pid):
+            logger.info(f"🛡️ Product #{pid} is on 24h cooldown in DB. Skipping duplicate enqueue.")
+            return
+
+        if pid:
+            self._queued_pids.add(pid)
+
+        await self._queue.put(deal_data)
         qsize = self._queue.qsize()
         logger.info(f"📥 Queued deal #{pid} [{plat.upper()}] (Current Queue Size: {qsize})")
 
@@ -258,7 +273,8 @@ class PostingQueue:
 
                 # Anti-duplicate check
                 if pid and await is_on_cooldown(pid):
-                    logger.info(f"Skipping product #{pid} — on cooldown.")
+                    self._queued_pids.discard(pid)
+                    logger.info(f"🛡️ Skipping product #{pid} — strictly on 24h cooldown.")
                     return
 
                 deal_type = deal_data.get("type", "price_drop")
