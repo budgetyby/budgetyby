@@ -20,8 +20,9 @@ logger = logging.getLogger("budgetby.ingest.telegram_listener")
 # 2. https://t.me/+SHMJO014m9MxNDFl
 # 3. https://web.telegram.org/a/#-1002442523223 (-1002442523223)
 TARGET_CHAT_IDS = [
-    -1002442523223,
-    # Any other joined channel
+    -1002273009558,  # Discounts & Offers and More ✨ (+0GTLjgGo-DQ5YjE9)
+    -1002442523223,  # CHIRAG DEALS (-1002442523223)
+    -1001404064358,  # QUICK DEALS 2.0 (+SHMJO014m9MxNDFl)
 ]
 
 # Telethon Session path in local storage
