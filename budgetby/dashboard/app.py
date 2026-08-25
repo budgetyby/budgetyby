@@ -164,6 +164,84 @@ async def get_posting_queue_endpoint():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/category_platform_stats")
+async def get_category_platform_stats():
+    """Returns detailed cross-matrix of deals and catalog products by category and platform."""
+    try:
+        # 1. Lifetime Deals Posted by Category & Platform
+        lifetime_rows = await database.fetch("""
+            SELECT 
+                COALESCE(NULLIF(p.category, ''), 'general') as category,
+                COUNT(*) as total_deals,
+                COUNT(CASE WHEN p.platform = 'amazon' THEN 1 END) as amazon_count,
+                COUNT(CASE WHEN p.platform = 'flipkart' THEN 1 END) as flipkart_count,
+                COUNT(CASE WHEN p.platform = 'myntra' THEN 1 END) as myntra_count,
+                COUNT(CASE WHEN p.platform = 'ajio' THEN 1 END) as ajio_count,
+                COUNT(CASE WHEN p.platform = 'nykaa' THEN 1 END) as nykaa_count
+            FROM deals d
+            JOIN products p ON d.product_id = p.id
+            GROUP BY COALESCE(NULLIF(p.category, ''), 'general')
+            ORDER BY total_deals DESC;
+        """)
+
+        # 2. Today's Deals Posted by Category & Platform (IST)
+        today_rows = await database.fetch("""
+            SELECT 
+                COALESCE(NULLIF(p.category, ''), 'general') as category,
+                COUNT(*) as total_deals,
+                COUNT(CASE WHEN p.platform = 'amazon' THEN 1 END) as amazon_count,
+                COUNT(CASE WHEN p.platform = 'flipkart' THEN 1 END) as flipkart_count,
+                COUNT(CASE WHEN p.platform = 'myntra' THEN 1 END) as myntra_count,
+                COUNT(CASE WHEN p.platform = 'ajio' THEN 1 END) as ajio_count,
+                COUNT(CASE WHEN p.platform = 'nykaa' THEN 1 END) as nykaa_count
+            FROM deals d
+            JOIN products p ON d.product_id = p.id
+            WHERE d.posted_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE
+            GROUP BY COALESCE(NULLIF(p.category, ''), 'general')
+            ORDER BY total_deals DESC;
+        """)
+
+        # 3. This Month Deals Posted by Category & Platform
+        month_rows = await database.fetch("""
+            SELECT 
+                COALESCE(NULLIF(p.category, ''), 'general') as category,
+                COUNT(*) as total_deals,
+                COUNT(CASE WHEN p.platform = 'amazon' THEN 1 END) as amazon_count,
+                COUNT(CASE WHEN p.platform = 'flipkart' THEN 1 END) as flipkart_count,
+                COUNT(CASE WHEN p.platform = 'myntra' THEN 1 END) as myntra_count,
+                COUNT(CASE WHEN p.platform = 'ajio' THEN 1 END) as ajio_count,
+                COUNT(CASE WHEN p.platform = 'nykaa' THEN 1 END) as nykaa_count
+            FROM deals d
+            JOIN products p ON d.product_id = p.id
+            WHERE d.posted_at >= date_trunc('month', NOW() AT TIME ZONE 'Asia/Kolkata')
+            GROUP BY COALESCE(NULLIF(p.category, ''), 'general')
+            ORDER BY total_deals DESC;
+        """)
+
+        # 4. Catalog Products Available by Category & Platform
+        catalog_rows = await database.fetch("""
+            SELECT 
+                COALESCE(NULLIF(category, ''), 'general') as category,
+                COUNT(*) as total_prods,
+                COUNT(CASE WHEN platform = 'amazon' THEN 1 END) as amazon_count,
+                COUNT(CASE WHEN platform = 'flipkart' THEN 1 END) as flipkart_count,
+                COUNT(CASE WHEN platform = 'myntra' THEN 1 END) as myntra_count,
+                COUNT(CASE WHEN platform = 'ajio' THEN 1 END) as ajio_count,
+                COUNT(CASE WHEN platform = 'nykaa' THEN 1 END) as nykaa_count
+            FROM products
+            GROUP BY COALESCE(NULLIF(category, ''), 'general')
+            ORDER BY total_prods DESC;
+        """)
+
+        return {
+            "lifetime": [dict(r) for r in lifetime_rows],
+            "today": [dict(r) for r in today_rows],
+            "this_month": [dict(r) for r in month_rows],
+            "catalog": [dict(r) for r in catalog_rows]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/deals")
 async def get_deals(limit: int = 25):
     try:

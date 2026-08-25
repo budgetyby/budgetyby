@@ -158,6 +158,47 @@
             </div>
         </div>
 
+                <!-- Category & Platform Deal Matrix Section -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <span>🏷️</span> Category & Platform Deals Breakdown Matrix
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Posts published across every product category and e-commerce platform</p>
+                </div>
+                <div class="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 self-start sm:self-auto">
+                    <button onclick="setCategoryTab('lifetime')" id="tab-cat-lifetime" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition bg-indigo-600 text-white">🌟 Lifetime Posts</button>
+                    <button onclick="setCategoryTab('today')" id="tab-cat-today" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white">⚡ Today</button>
+                    <button onclick="setCategoryTab('this_month')" id="tab-cat-month" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white">📅 This Month</button>
+                    <button onclick="setCategoryTab('catalog')" id="tab-cat-catalog" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white">🛍️ Total Catalog</button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-slate-400 uppercase tracking-wider">
+                            <th class="pb-3 font-semibold">📁 Product Category</th>
+                            <th class="pb-3 font-semibold text-center">🟠 Amazon</th>
+                            <th class="pb-3 font-semibold text-center">🔵 Flipkart</th>
+                            <th class="pb-3 font-semibold text-center">🔴 Myntra</th>
+                            <th class="pb-3 font-semibold text-center">🟣 Ajio</th>
+                            <th class="pb-3 font-semibold text-center">🌸 Nykaa</th>
+                            <th class="pb-3 font-semibold text-right">📦 Total Posts</th>
+                            <th class="pb-3 font-semibold text-right">📊 Platform Share</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categoryTableBody" class="divide-y divide-slate-800/60 text-slate-300">
+                        <tr><td colspan="8" class="py-6 text-center text-slate-500">Loading category matrix...</td></tr>
+                    </tbody>
+                    <tfoot id="categoryTableFoot" class="border-t-2 border-slate-800 font-bold text-slate-200">
+                        <!-- Populated via JS -->
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
         <!-- Monthly History & Archives Section -->
         <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
             <div class="flex items-center justify-between mb-5">
@@ -515,7 +556,128 @@
             }
         }
 
+                let categoryStatsData = null;
+        let currentCategoryTab = 'lifetime';
+
+        const categoryIcons = {
+            'fashion': '👗 Fashion & Apparel',
+            'beauty': '💄 Beauty & Cosmetics',
+            'laptops': '💻 Laptops & Computers',
+            'smartphones': '📱 Smartphones & Mobiles',
+            'electronics': '🔌 Electronics & Gadgets',
+            'appliances': '🍳 Home Appliances',
+            'sports': '⚽ Sports & Fitness',
+            'toys': '🧸 Toys & Games',
+            'home': '🏠 Home & Kitchen',
+            'automotive': '🚗 Automotive & Accessories',
+            'baby': '👶 Baby Products',
+            'grocery': '🛒 Grocery & Essentials',
+            'books': '📚 Books & Stationery',
+            'health': '💊 Health & Wellness',
+            'pet': '🐶 Pet Supplies',
+            'deals': '🎯 Deal Hubs & Spies',
+            'general': '📦 General / Miscellaneous'
+        };
+
+        function setCategoryTab(tab) {
+            currentCategoryTab = tab;
+            ['lifetime', 'today', 'month', 'catalog'].forEach(t => {
+                const btn = document.getElementById(`tab-cat-${t}`);
+                if (btn) {
+                    if ((tab === 'this_month' && t === 'month') || tab === t) {
+                        btn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg transition bg-indigo-600 text-white";
+                    } else {
+                        btn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-white";
+                    }
+                }
+            });
+            renderCategoryMatrix();
+        }
+
+        async function fetchCategoryMatrix() {
+            try {
+                const res = await fetch('/api/category_platform_stats');
+                categoryStatsData = await res.json();
+                renderCategoryMatrix();
+            } catch (err) {
+                console.error("Error fetching category stats:", err);
+            }
+        }
+
+        function renderCategoryMatrix() {
+            if (!categoryStatsData) return;
+            const rows = categoryStatsData[currentCategoryTab] || [];
+            const tbody = document.getElementById('categoryTableBody');
+            const tfoot = document.getElementById('categoryTableFoot');
+            
+            if (!rows.length) {
+                tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-slate-500">No deal records recorded for this time range yet.</td></tr>`;
+                tfoot.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            let sumTotal = 0, sumAmz = 0, sumFkp = 0, sumMyn = 0, sumAji = 0, sumNyk = 0;
+
+            rows.forEach(r => {
+                const total = r.total_deals || r.total_prods || 0;
+                const amz = r.amazon_count || 0;
+                const fkp = r.flipkart_count || 0;
+                const myn = r.myntra_count || 0;
+                const aji = r.ajio_count || 0;
+                const nyk = r.nykaa_count || 0;
+
+                sumTotal += total;
+                sumAmz += amz;
+                sumFkp += fkp;
+                sumMyn += myn;
+                sumAji += aji;
+                sumNyk += nyk;
+
+                const catKey = (r.category || 'general').toLowerCase();
+                const catLabel = categoryIcons[catKey] || `🏷️ ${catKey.charAt(0).toUpperCase() + catKey.slice(1)}`;
+
+                // Calculate leading platform
+                const plats = [
+                    { name: 'Amazon', count: amz, color: 'text-amber-400' },
+                    { name: 'Flipkart', count: fkp, color: 'text-blue-400' },
+                    { name: 'Myntra', count: myn, color: 'text-pink-400' },
+                    { name: 'Ajio', count: aji, color: 'text-purple-400' },
+                    { name: 'Nykaa', count: nyk, color: 'text-rose-400' }
+                ];
+                plats.sort((a, b) => b.count - a.count);
+                const leader = plats[0].count > 0 ? `<span class="${plats[0].color} font-semibold">${plats[0].name} (${Math.round((plats[0].count / total) * 100)}%)</span>` : '<span class="text-slate-500">-</span>';
+
+                html += `
+                <tr class="hover:bg-slate-800/30 transition">
+                    <td class="py-3 font-medium text-slate-200">${catLabel}</td>
+                    <td class="py-3 text-center font-mono ${amz > 0 ? 'text-amber-400 font-semibold' : 'text-slate-600'}">${amz > 0 ? amz.toLocaleString() : '-'}</td>
+                    <td class="py-3 text-center font-mono ${fkp > 0 ? 'text-blue-400 font-semibold' : 'text-slate-600'}">${fkp > 0 ? fkp.toLocaleString() : '-'}</td>
+                    <td class="py-3 text-center font-mono ${myn > 0 ? 'text-pink-400 font-semibold' : 'text-slate-600'}">${myn > 0 ? myn.toLocaleString() : '-'}</td>
+                    <td class="py-3 text-center font-mono ${aji > 0 ? 'text-purple-400 font-semibold' : 'text-slate-600'}">${aji > 0 ? aji.toLocaleString() : '-'}</td>
+                    <td class="py-3 text-center font-mono ${nyk > 0 ? 'text-rose-400 font-semibold' : 'text-slate-600'}">${nyk > 0 ? nyk.toLocaleString() : '-'}</td>
+                    <td class="py-3 text-right font-bold text-white font-mono">${total.toLocaleString()}</td>
+                    <td class="py-3 text-right text-[11px]">${leader}</td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+
+            tfoot.innerHTML = `
+            <tr class="bg-slate-950/80">
+                <td class="py-3.5 text-white uppercase tracking-wider text-[11px]">🌟 TOTAL ALL CATEGORIES</td>
+                <td class="py-3.5 text-center text-amber-400 font-mono">${sumAmz.toLocaleString()}</td>
+                <td class="py-3.5 text-center text-blue-400 font-mono">${sumFkp.toLocaleString()}</td>
+                <td class="py-3.5 text-center text-pink-400 font-mono">${sumMyn.toLocaleString()}</td>
+                <td class="py-3.5 text-center text-purple-400 font-mono">${sumAji.toLocaleString()}</td>
+                <td class="py-3.5 text-center text-rose-400 font-mono">${sumNyk.toLocaleString()}</td>
+                <td class="py-3.5 text-right text-emerald-400 font-mono text-sm">${sumTotal.toLocaleString()}</td>
+                <td class="py-3.5 text-right text-slate-400 text-[11px]">100% Verified</td>
+            </tr>`;
+        }
+
         fetchData();
+        fetchCategoryMatrix();
+        setInterval(fetchCategoryMatrix, 15000);
         setInterval(fetchData, 15000);
         
         document.getElementById('searchInput').addEventListener('keypress', (e) => {
