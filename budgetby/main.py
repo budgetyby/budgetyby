@@ -46,9 +46,35 @@ async def main():
     except Exception as e:
         logger.warning(f"Could not start dashboard on port 5000: {e}")
     
-    # 3. Configure Telegram Bot
+    # 3. Configure Telegram Bot with robust HTTP connection pool & timeout handling
     if config.TELEGRAM_BOT_TOKEN:
-        application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
+        from telegram.request import HTTPXRequest
+        from telegram.error import NetworkError, TimedOut
+
+        request_config = HTTPXRequest(
+            connection_pool_size=20,
+            read_timeout=30.0,
+            write_timeout=20.0,
+            connect_timeout=15.0,
+            pool_timeout=20.0
+        )
+
+        application = (
+            Application.builder()
+            .token(config.TELEGRAM_BOT_TOKEN)
+            .request(request_config)
+            .get_updates_request(request_config)
+            .build()
+        )
+
+        async def handle_telegram_polling_error(update, context):
+            err = context.error
+            if isinstance(err, (NetworkError, TimedOut)) or "httpx" in str(err).lower() or "readerror" in str(err).lower():
+                logger.debug(f"Transient Telegram polling network blip (automatically recovered): {err}")
+            else:
+                logger.error(f"Telegram Bot Exception: {err}", exc_info=err)
+
+        application.add_error_handler(handle_telegram_polling_error)
         register_handlers(application)
         register_admin_handlers(application)
         
@@ -94,7 +120,12 @@ async def main():
         try:
             await application.initialize()
             await application.start()
-            await application.updater.start_polling(drop_pending_updates=True)
+            await application.updater.start_polling(
+                drop_pending_updates=True,
+                poll_interval=1.0,
+                timeout=20,
+                bootstrap_retries=-1
+            )
             logger.info("Bot is polling.")
             
             # Keep main task alive
