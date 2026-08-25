@@ -81,6 +81,41 @@ class PostingQueue:
             self.posts_this_hour = 0
             self.hour_started = cur_hour
 
+    def get_queue_snapshot(self) -> dict:
+        """Returns a snapshot of the current queue state and queued deals."""
+        items = list(self._queue._queue) if hasattr(self._queue, "_queue") else []
+        target_platform = self.ROTATION_SEQUENCE[self._rotation_index % len(self.ROTATION_SEQUENCE)]
+        formatted_items = []
+        for idx, it in enumerate(items):
+            prod = it.get("product", {})
+            price = float(prod.get("current_price") or 0)
+            mrp = float(prod.get("mrp") or price)
+            discount_pct = round(((mrp - price) / mrp) * 100, 1) if mrp > price else 0.0
+            formatted_items.append({
+                "queue_position": idx + 1,
+                "id": prod.get("id"),
+                "title": prod.get("title", "Product Deal"),
+                "platform": (prod.get("platform") or "store").lower(),
+                "price": price,
+                "mrp": mrp,
+                "discount_pct": discount_pct,
+                "badge": it.get("badge", "DEAL"),
+                "score": it.get("score", 50),
+                "deal_type": it.get("type", "price_drop"),
+                "source_channel": it.get("source_channel", "scanner"),
+                "image_url": prod.get("image_url") or "",
+                "affiliate_url": prod.get("affiliate_url") or prod.get("product_url") or ""
+            })
+
+        return {
+            "queue_size": len(formatted_items),
+            "is_draining_fast": self._draining,
+            "next_scheduled_platform": target_platform,
+            "last_posted_platform": self._last_posted_platform or "None yet",
+            "posts_this_hour": self.posts_this_hour,
+            "items": formatted_items
+        }
+
     async def process_queue(self, bot=None):
         """
         Non-blocking process_queue wrapper:

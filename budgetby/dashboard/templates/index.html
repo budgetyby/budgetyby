@@ -104,6 +104,43 @@
             </div>
         </div>
 
+                <!-- Live Posting Queue Section -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <span>📥</span> Live Posting Queue (Deals Waiting to Broadcast)
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Real-time pipeline of intercepted price drops & channel deals scheduled for Telegram</p>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span id="queueCountBadge" class="text-xs font-semibold px-3 py-1 bg-indigo-500/10 text-indigo-400 rounded-full border border-indigo-500/20">0 Deals in Queue</span>
+                    <span id="queueNextPlatformBadge" class="text-xs font-medium px-2.5 py-1 bg-slate-800 text-slate-300 rounded-lg border border-slate-700">Next Scheduled: Amazon</span>
+                    <button onclick="fetchQueueData()" class="text-xs px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition flex items-center gap-1">🔄 Refresh</button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-slate-400 uppercase tracking-wider">
+                            <th class="pb-3 font-semibold"># Pos</th>
+                            <th class="pb-3 font-semibold">🛍️ Product Deal</th>
+                            <th class="pb-3 font-semibold">🏪 Store</th>
+                            <th class="pb-3 font-semibold">💰 Live Price / MRP</th>
+                            <th class="pb-3 font-semibold">🔥 Discount</th>
+                            <th class="pb-3 font-semibold">🏷️ Badge & Score</th>
+                            <th class="pb-3 font-semibold">📡 Source Channel</th>
+                            <th class="pb-3 font-semibold text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="queueTableBody" class="divide-y divide-slate-800/60 text-slate-300">
+                        <tr><td colspan="8" class="py-6 text-center text-slate-500">Checking posting queue status...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Platform Posting Quotas & Detailed Breakdown Section -->
         <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
             <div class="flex items-center justify-between mb-5">

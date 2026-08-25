@@ -154,6 +154,16 @@ async def get_channel_stats():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/posting_queue")
+async def get_posting_queue_endpoint():
+    """Returns real-time deals in the posting queue waiting to be broadcasted."""
+    try:
+        from budgetby.engine.posting_queue import get_posting_queue
+        pq = get_posting_queue()
+        return pq.get_queue_snapshot()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/deals")
 async def get_deals(limit: int = 25):
     try:
