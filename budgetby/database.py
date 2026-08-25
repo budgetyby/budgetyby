@@ -376,9 +376,4 @@ async def insert_deal(data: dict) -> int:
         data.get("badge", "DEAL"),
         data.get("source_channel", "local_scanner")
     )
-    if cur_price and cur_price > 0:
-        try:
-            await upsert_daily_price(row["id"], cur_price)
-        except Exception:
-            pass
     return row["id"] if row else None
