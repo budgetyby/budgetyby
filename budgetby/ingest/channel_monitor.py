@@ -19,7 +19,6 @@ logger = logging.getLogger("budgetby.ingest.channel_monitor")
 DEFAULT_MONITORED_CHANNELS = [
     "flipkart_deals",       # 126K Subscribers (Dealshub)
     "desidime",             # 85K Subscribers (DesiDime Official)
-    "bobbyustaddeals",      # 67.8K Subscribers (Bobby Ustad Deals)
     "dealbeeofficial"       # 38.2K Subscribers (DealBee Deals)
 ]
 
