@@ -356,12 +356,28 @@ async def get_table_data(
         args = []
         arg_idx = 1
 
-        # Search filter
+        # Search filter with exact ID prioritization
+        order_override = None
         if search:
+            clean_search = search.strip().lstrip("#")
             if table == "products":
-                where_clauses.append(f"(title ILIKE ${arg_idx} OR platform_id ILIKE ${arg_idx} OR category ILIKE ${arg_idx})")
-                args.append(f"%{search}%")
-                arg_idx += 1
+                if clean_search.isdigit():
+                    exact_id = int(clean_search)
+                    where_clauses.append(f"(id = ${arg_idx} OR id::text LIKE ${arg_idx+1} OR title ILIKE ${arg_idx+2} OR platform_id ILIKE ${arg_idx+2})")
+                    args.extend([exact_id, f"{clean_search}%", f"%{clean_search}%"])
+                    arg_idx += 3
+                    order_override = f"ORDER BY CASE WHEN id = {exact_id} THEN 0 WHEN id::text LIKE '{clean_search}%' THEN 1 ELSE 2 END, id ASC"
+                else:
+                    where_clauses.append(f"(title ILIKE ${arg_idx} OR platform_id ILIKE ${arg_idx} OR category ILIKE ${arg_idx})")
+                    args.append(f"%{search}%")
+                    arg_idx += 1
+            elif table == "daily_prices":
+                if clean_search.isdigit():
+                    exact_id = int(clean_search)
+                    where_clauses.append(f"(product_id = ${arg_idx} OR id = ${arg_idx})")
+                    args.append(exact_id)
+                    arg_idx += 1
+                    order_override = "ORDER BY date DESC, id ASC"
             elif table == "ingested_channel_deals":
                 where_clauses.append(f"(title ILIKE ${arg_idx} OR source_channel ILIKE ${arg_idx} OR raw_url ILIKE ${arg_idx})")
                 args.append(f"%{search}%")
@@ -391,8 +407,11 @@ async def get_table_data(
         total_rows = await database.fetchval(count_sql, *args) or 0
 
         # Sort order
-        order_col = sort_by if sort_by else ("id" if table != "channel_monitors" else "channel_name")
-        order_sql = f"ORDER BY {order_col} {sort_order.upper()} NULLS LAST"
+        if order_override:
+            order_sql = order_override
+        else:
+            order_col = sort_by if sort_by else ("id" if table != "channel_monitors" else "channel_name")
+            order_sql = f"ORDER BY {order_col} {sort_order.upper()} NULLS LAST"
 
         # Data query
         data_sql = f"""

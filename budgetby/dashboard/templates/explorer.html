@@ -76,8 +76,8 @@
 
                     <!-- Search & Filter Controls -->
                     <div class="flex items-center gap-2 flex-wrap">
-                        <input type="text" id="dbSearchInput" placeholder="Search records (title, ID, category)..." 
-                               class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition w-56">
+                        <input type="text" id="dbSearchInput" placeholder="🔍 Search ID (e.g. 10), title, category..." 
+                               class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition w-64">
                         
                         <select id="platformFilter" onchange="onFilterChange()" class="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-indigo-500 transition">
                             <option value="">All Stores</option>
@@ -86,6 +86,14 @@
                             <option value="myntra">Myntra</option>
                             <option value="ajio">Ajio</option>
                             <option value="nykaa">Nykaa</option>
+                        </select>
+
+                        <select id="sortSelect" onchange="onFilterChange()" class="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-indigo-500 transition">
+                            <option value="id_asc">Sort: ID (1, 2, 3...)</option>
+                            <option value="id_desc">Sort: ID (Newest First)</option>
+                            <option value="price_desc">Sort: Price (High to Low)</option>
+                            <option value="price_asc">Sort: Price (Low to High)</option>
+                            <option value="min30_asc">Sort: 30-Day Min</option>
                         </select>
 
                         <select id="limitSelect" onchange="onFilterChange()" class="bg-slate-950 border border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-indigo-500 transition">
@@ -250,12 +258,21 @@
             document.getElementById('dataTbody').innerHTML = `<tr><td colspan="12" class="py-12 text-center text-slate-500">Querying PostgreSQL...</td></tr>`;
 
             try {
+                const sortVal = document.getElementById('sortSelect') ? document.getElementById('sortSelect').value : 'id_asc';
+                let sortBy = 'id', sortOrder = 'asc';
+                if (sortVal === 'id_desc') { sortBy = 'id'; sortOrder = 'desc'; }
+                else if (sortVal === 'price_desc') { sortBy = 'current_price'; sortOrder = 'desc'; }
+                else if (sortVal === 'price_asc') { sortBy = 'current_price'; sortOrder = 'asc'; }
+                else if (sortVal === 'min30_asc') { sortBy = 'min_30d'; sortOrder = 'asc'; }
+
                 const params = new URLSearchParams({
                     table: currentTable,
                     page: currentPage,
                     limit: limit,
                     search: search,
-                    platform: platform
+                    platform: platform,
+                    sort_by: sortBy,
+                    sort_order: sortOrder
                 });
 
                 const res = await fetch(`/api/db/table_data?${params.toString()}`);
