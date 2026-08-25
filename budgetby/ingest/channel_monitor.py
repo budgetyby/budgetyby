@@ -18,9 +18,10 @@ logger = logging.getLogger("budgetby.ingest.channel_monitor")
 # Configurable list of active high-velocity public deal channels to monitor in parallel
 DEFAULT_MONITORED_CHANNELS = [
     "flipkart_deals",       # 126K Subscribers (Dealshub)
-    "desidime",            # 85K Subscribers (DesiDime Official)
+    "desidime",             # 85K Subscribers (DesiDime Official)
+    "bobbyustaddeals",      # 67.8K Subscribers (Bobby Ustad Deals)
     "dealbeeofficial",      # 38.2K Subscribers (DealBee Deals)
-    "bestdeals"            # 26.3K Subscribers (Shop My Deals)
+    "bestdeals"             # 26.3K Subscribers (Shop My Deals)
 ]
 
 # Cloudflare DoH IP for Telegram Web
@@ -70,7 +71,7 @@ def clean_and_tag_url(resolved_url: str) -> tuple[Optional[str], Optional[str], 
             return "flipkart", clean_url, aff_url
 
     # 3. Myntra
-    elif "myntra.com" in resolved_url:
+    elif "myntra.com" in resolved_url or "myntr." in resolved_url:
         clean_url = resolved_url.split('?')[0]
         if "/buy" in clean_url or re.search(r'/\d+$', clean_url):
             from budgetby.affiliate.earnkaro_links import build_earnkaro_url_sync
