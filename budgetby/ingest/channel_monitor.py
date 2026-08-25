@@ -17,13 +17,10 @@ logger = logging.getLogger("budgetby.ingest.channel_monitor")
 
 # Configurable list of active high-velocity public deal channels to monitor in parallel
 DEFAULT_MONITORED_CHANNELS = [
-    "dealbeeofficial",
-    "dealsmagnet",
-    "loot_deal_zone",
-    "indian_loot_deals",
-    "dealpulse_india",
-    "deals_alert_india",
-    "loot_deals_and_offers"
+    "flipkart_deals",       # 126K Subscribers (Dealshub)
+    "desidime",            # 85K Subscribers (DesiDime Official)
+    "dealbeeofficial",      # 38.2K Subscribers (DealBee Deals)
+    "bestdeals"            # 26.3K Subscribers (Shop My Deals)
 ]
 
 # Cloudflare DoH IP for Telegram Web
