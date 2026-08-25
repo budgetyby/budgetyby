@@ -89,11 +89,27 @@ async def start_telegram_listener(api_id: int = None, api_hash: str = None):
                 source_tag = f"@{chat_username}" if chat_username else f"[{chat_title}]"
 
                 text = event.raw_text or ""
-                raw_urls = re.findall(r'https?://[^\s<>"]+|www\.[^\s<>"]+', text)
+                detected_urls = set(re.findall(r'https?://[^\s<>"]+|www\.[^\s<>"]+', text))
 
-                if raw_urls:
-                    logger.info(f"⚡ [REAL-TIME TELEGRAM] Intercepted new post from {chat_title} with {len(raw_urls)} link(s)")
-                    for url in raw_urls:
+                # 1. Extract hidden text-linked URLs (e.g. [Buy Now](https://...))
+                if hasattr(event.message, "entities") and event.message.entities:
+                    for ent in event.message.entities:
+                        if hasattr(ent, "url") and ent.url:
+                            detected_urls.add(ent.url)
+
+                # 2. Extract Inline Button URLs
+                if hasattr(event.message, "buttons") and event.message.buttons:
+                    for row in event.message.buttons:
+                        for btn in row:
+                            if hasattr(btn, "url") and btn.url:
+                                detected_urls.add(btn.url)
+
+                # Clean and filter non-Telegram external URLs
+                clean_urls = [u for u in detected_urls if u.startswith("http") and "t.me/" not in u and "telegram.org" not in u]
+
+                if clean_urls:
+                    logger.info(f"⚡ [REAL-TIME TELEGRAM] Intercepted multi-link post from {chat_title} with {len(clean_urls)} individual product deal(s)")
+                    for url in clean_urls:
                         await verify_and_ingest_single_deal(
                             channel=chat_title,
                             post_id=event.id,
