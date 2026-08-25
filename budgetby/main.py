@@ -81,7 +81,14 @@ async def main():
     except Exception as e:
         logger.error(f"Error starting bootstrap workers: {e}")
 
-    # 7. Run Bot Polling
+    # 7. Start Real-Time Private Channel Listener
+    try:
+        from budgetby.ingest.telegram_listener import start_telegram_listener
+        asyncio.create_task(start_telegram_listener())
+    except Exception as e:
+        logger.warning(f"Could not start telegram private listener: {e}")
+
+    # 8. Run Bot Polling
     if application:
         try:
             await application.initialize()
