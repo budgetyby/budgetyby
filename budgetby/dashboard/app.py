@@ -242,6 +242,142 @@ async def get_category_platform_stats():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# ── Full Database Explorer Endpoints ──────────────────────────────────────────
+
+ALLOWED_TABLES = [
+    "products",
+    "daily_prices",
+    "deals",
+    "ingested_channel_deals",
+    "post_cooldowns",
+    "channel_monitors",
+    "deal_tracking"
+]
+
+@app.get("/db-explorer", response_class=HTMLResponse)
+async def db_explorer_page():
+    """Renders the Full Database Explorer Web Interface."""
+    explorer_html_path = os.path.join(os.path.dirname(__file__), "templates", "explorer.html")
+    if os.path.exists(explorer_html_path):
+        with open(explorer_html_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(f.read())
+    return HTMLResponse("<h1>Database Explorer Loading...</h1>")
+
+@app.get("/api/db/overview")
+async def get_db_overview():
+    """Returns database size, table summaries, and column schemas for all tables."""
+    try:
+        total_db_size = await database.fetchval("SELECT pg_size_pretty(pg_database_size('budgetby'));")
+        
+        tables_stats = await database.fetch("""
+            SELECT
+                relname AS table_name,
+                n_live_tup AS row_count,
+                pg_size_pretty(pg_total_relation_size(relid)) AS total_size,
+                pg_total_relation_size(relid) AS total_bytes
+            FROM pg_stat_user_tables
+            ORDER BY total_bytes DESC;
+        """)
+        
+        table_schemas = {}
+        for t in ALLOWED_TABLES:
+            cols = await database.fetch("""
+                SELECT column_name, data_type, is_nullable
+                FROM information_schema.columns
+                WHERE table_name = $1
+                ORDER BY ordinal_position;
+            """, t)
+            table_schemas[t] = [dict(c) for c in cols]
+
+        return {
+            "total_size": total_db_size,
+            "tables": [dict(t) for t in tables_stats],
+            "schemas": table_schemas
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/db/table_data")
+async def get_table_data(
+    table: str = Query("products"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(25, ge=1, le=100),
+    search: str = Query("", max_length=100),
+    platform: str = Query("", max_length=50),
+    category: str = Query("", max_length=50),
+    sort_by: str = Query("", max_length=50),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$")
+):
+    """Universal paginated table explorer with dynamic filters and search."""
+    if table not in ALLOWED_TABLES:
+        raise HTTPException(status_code=400, detail="Invalid table name")
+
+    try:
+        offset = (page - 1) * limit
+        where_clauses = []
+        args = []
+        arg_idx = 1
+
+        # Search filter
+        if search:
+            if table == "products":
+                where_clauses.append(f"(title ILIKE ${arg_idx} OR platform_id ILIKE ${arg_idx} OR category ILIKE ${arg_idx})")
+                args.append(f"%{search}%")
+                arg_idx += 1
+            elif table == "ingested_channel_deals":
+                where_clauses.append(f"(title ILIKE ${arg_idx} OR source_channel ILIKE ${arg_idx} OR raw_url ILIKE ${arg_idx})")
+                args.append(f"%{search}%")
+                arg_idx += 1
+            elif table == "deals":
+                where_clauses.append(f"(badge ILIKE ${arg_idx} OR source_channel ILIKE ${arg_idx})")
+                args.append(f"%{search}%")
+                arg_idx += 1
+
+        # Platform filter
+        if platform:
+            if table in ["products", "ingested_channel_deals"]:
+                where_clauses.append(f"platform = ${arg_idx}")
+                args.append(platform.lower())
+                arg_idx += 1
+
+        # Category filter
+        if category and table == "products":
+            where_clauses.append(f"category = ${arg_idx}")
+            args.append(category.lower())
+            arg_idx += 1
+
+        where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+
+        # Total Count for pagination
+        count_sql = f"SELECT COUNT(*) FROM {table} {where_sql};"
+        total_rows = await database.fetchval(count_sql, *args) or 0
+
+        # Sort order
+        order_col = sort_by if sort_by else ("id" if table != "channel_monitors" else "channel_name")
+        order_sql = f"ORDER BY {order_col} {sort_order.upper()} NULLS LAST"
+
+        # Data query
+        data_sql = f"""
+            SELECT * FROM {table}
+            {where_sql}
+            {order_sql}
+            LIMIT ${arg_idx} OFFSET ${arg_idx + 1};
+        """
+        args.extend([limit, offset])
+        rows = await database.fetch(data_sql, *args)
+
+        return {
+            "table": table,
+            "page": page,
+            "limit": limit,
+            "total_rows": total_rows,
+            "total_pages": max(1, (total_rows + limit - 1) // limit),
+            "rows": [dict(r) for r in rows]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/deals")
 async def get_deals(limit: int = 25):
     try:
