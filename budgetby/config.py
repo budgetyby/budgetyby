@@ -16,6 +16,8 @@ load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHANNEL_ID = os.getenv("TELEGRAM_CHANNEL_ID", "")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "")
+TG_API_ID = int(os.getenv("TG_API_ID", "0")) if os.getenv("TG_API_ID") else None
+TG_API_HASH = os.getenv("TG_API_HASH", "")
 
 DB_HOST = os.getenv("DB_HOST", "localhost")
 _default_port = "6543" if "pooler.supabase.com" in DB_HOST else "5432"
