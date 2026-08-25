@@ -165,6 +165,11 @@ async def upsert_product(data: dict) -> int:
         data.get("status", config.STATUS_ACTIVE),
         data.get("priority_tier", 3),
     )
+    if cur_price and cur_price > 0:
+        try:
+            await upsert_daily_price(row["id"], cur_price)
+        except Exception:
+            pass
     return row["id"]
 
 
@@ -198,6 +203,19 @@ async def update_price(product_id: int, new_price: float, in_stock: bool,
     """, product_id, new_price, in_stock, title, mrp, rating,
          review_count, image_url)
 
+
+async def sync_daily_price_baselines():
+    """
+    Ensures 100% of all active products in the catalog have a daily_price snapshot for today.
+    Runs instantaneously at midnight and on startup.
+    """
+    await execute("""
+        INSERT INTO daily_prices (product_id, date, min_price, close_price)
+        SELECT id, (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE, current_price, current_price
+        FROM products
+        WHERE status = 'ACTIVE' AND current_price > 0
+        ON CONFLICT (product_id, date) DO NOTHING;
+    """)
 
 async def upsert_daily_price(product_id: int, price: float):
     """
@@ -358,4 +376,9 @@ async def insert_deal(data: dict) -> int:
         data.get("badge", "DEAL"),
         data.get("source_channel", "local_scanner")
     )
+    if cur_price and cur_price > 0:
+        try:
+            await upsert_daily_price(row["id"], cur_price)
+        except Exception:
+            pass
     return row["id"] if row else None

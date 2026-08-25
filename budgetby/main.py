@@ -63,6 +63,7 @@ async def main():
 
     # 4. Catchup scan & title cleanup
     await cleanup.catchup_scan()
+    await database.sync_daily_price_baselines()
     try:
         result = await database.execute("DELETE FROM products WHERE platform = 'flipkart' AND (title = 'Product' OR length(title) < 5);")
         logger.info(f"Cleaned up bad Flipkart titles: {result}")

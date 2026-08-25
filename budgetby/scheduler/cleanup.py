@@ -16,6 +16,7 @@ async def daily_cleanup():
     try:
         logger.info("Starting daily cleanup...")
         await database.cleanup_old_daily_prices()
+        await database.sync_daily_price_baselines()
         await database.refresh_30d_benchmarks()
         await database.finalize_expired_tracking()
         
