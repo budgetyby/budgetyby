@@ -34,46 +34,53 @@
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         <!-- Top Metrics Summary Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <!-- Lifetime -->
-            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
-                <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">🌐 Total Posts (Lifetime)</div>
-                <div id="stat-deals-life" class="text-3xl font-extrabold mt-2 text-white">---</div>
-                <div class="text-xs text-slate-500 mt-2">All-time broadcasted deals</div>
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 relative overflow-hidden">
+                <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">🌐 Lifetime Posts</div>
+                <div id="stat-deals-life" class="text-2xl lg:text-3xl font-extrabold mt-1 text-white">---</div>
+                <div class="text-[11px] text-slate-500 mt-1.5">All-time deals</div>
             </div>
 
             <!-- This Month -->
-            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
-                <div class="text-[11px] font-semibold text-indigo-400 uppercase tracking-wider">📅 Posted This Month</div>
-                <div id="stat-deals-month" class="text-3xl font-extrabold mt-2 text-indigo-400">---</div>
-                <div class="text-xs text-slate-500 mt-2">Current calendar month</div>
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 relative overflow-hidden">
+                <div class="text-[11px] font-semibold text-indigo-400 uppercase tracking-wider">📅 This Month</div>
+                <div id="stat-deals-month" class="text-2xl lg:text-3xl font-extrabold mt-1 text-indigo-400">---</div>
+                <div class="text-[11px] text-slate-500 mt-1.5">Current month</div>
             </div>
 
-            <!-- Last Month -->
-            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
-                <div class="text-[11px] font-semibold text-purple-400 uppercase tracking-wider">📆 Posted Last Month</div>
-                <div id="stat-deals-last-month" class="text-3xl font-extrabold mt-2 text-purple-400">---</div>
-                <div class="text-xs text-slate-500 mt-2">Previous calendar month</div>
-            </div>
-
-            <!-- Today -->
-            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+            <!-- Deals Posted Today -->
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 relative overflow-hidden">
                 <div class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">⚡ Posted Today</div>
-                <div id="stat-deals-today" class="text-3xl font-extrabold mt-2 text-emerald-400">---</div>
-                <div class="text-xs text-slate-400 mt-2"><span id="stat-deals-1h">-</span> in last 60 mins</div>
+                <div id="stat-deals-today" class="text-2xl lg:text-3xl font-extrabold mt-1 text-emerald-400">---</div>
+                <div class="text-[11px] text-slate-400 mt-1.5"><span id="stat-deals-1h">-</span> last 60m</div>
+            </div>
+
+            <!-- NEW: New Products Added Today -->
+            <div class="bg-slate-900/60 border border-cyan-500/30 bg-gradient-to-b from-cyan-950/20 to-slate-900/60 rounded-2xl p-4 relative overflow-hidden">
+                <div class="text-[11px] font-semibold text-cyan-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>🆕 Added Today</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">New</span>
+                </div>
+                <div id="stat-products-today" class="text-2xl lg:text-3xl font-extrabold mt-1 text-cyan-300">---</div>
+                <div class="text-[11px] text-cyan-400/80 mt-1.5 flex items-center gap-1 font-medium">📈 New Products Added</div>
             </div>
 
             <!-- Total Products in Database -->
-            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 relative overflow-hidden">
                 <div class="text-[11px] font-semibold text-amber-400 uppercase tracking-wider flex items-center justify-between">
-                    <span>🛍️ Total Products Added in DB</span>
-                    <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">Live Catalog</span>
+                    <span>🛍️ Total Catalog</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">DB</span>
                 </div>
-                <div id="stat-products" class="text-3xl font-extrabold mt-2 text-amber-400">84,960</div>
-                <div class="text-xs text-slate-400 mt-2 flex items-center justify-between">
-                    <span class="text-emerald-400 flex items-center gap-1">🟢 100% Deduplicated</span>
-                    <span class="text-slate-400 text-[11px]">5 Major Stores</span>
-                </div>
+                <div id="stat-products" class="text-2xl lg:text-3xl font-extrabold mt-1 text-amber-400">84,960</div>
+                <div class="text-[11px] text-emerald-400 mt-1.5 flex items-center gap-1">🟢 100% Unique</div>
+            </div>
+
+            <!-- Last Month -->
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 relative overflow-hidden">
+                <div class="text-[11px] font-semibold text-purple-400 uppercase tracking-wider">📆 Last Month</div>
+                <div id="stat-deals-last-month" class="text-2xl lg:text-3xl font-extrabold mt-1 text-purple-400">---</div>
+                <div class="text-[11px] text-slate-500 mt-1.5">Previous month</div>
             </div>
         </div>
 
@@ -324,6 +331,8 @@
                     document.getElementById('stat-deals-1h').innerText = Number(hourCount).toLocaleString('en-IN');
                 if (document.getElementById('stat-products'))
                     document.getElementById('stat-products').innerText = Number(prodCount).toLocaleString('en-IN');
+                if (document.getElementById('stat-products-today'))
+                    document.getElementById('stat-products-today').innerText = '+' + Number(data.products_added_today || 0).toLocaleString('en-IN');
 
                 // Render Platform Detailed Cards (Today • This Month • Lifetime)
                 let postCardsHTML = '';

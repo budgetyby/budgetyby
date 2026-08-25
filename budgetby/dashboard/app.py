@@ -89,6 +89,10 @@ async def get_stats():
         # Channel Ingestion Stats
         total_ingested = await database.fetchval("SELECT COUNT(*) FROM ingested_channel_deals;")
         ingested_today = await database.fetchval("SELECT COUNT(*) FROM ingested_channel_deals WHERE created_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE;")
+        products_added_today = await database.fetchval("""
+            SELECT COUNT(*) FROM products 
+            WHERE (created_at AT TIME ZONE 'Asia/Kolkata')::DATE = (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE;
+        """)
         
         # Monthly History Breakdown
         history_rows = await database.fetch("""
@@ -112,6 +116,7 @@ async def get_stats():
             "db_host": f"{config.DB_HOST}:{config.DB_PORT}",
             "db_name": config.DB_NAME,
             "total_products": total_prods or 0,
+            "products_added_today": products_added_today or 0,
             "by_platform": {r["platform"]: r["count"] for r in by_plat},
             "deals_today": deals_today or 0,
             "deals_last_hour": deals_1h or 0,
