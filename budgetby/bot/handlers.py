@@ -83,6 +83,41 @@ async def track_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     url = context.args[0]
     await update.message.reply_text(f"Thank you! Added to the tracking queue.\n{url}")
 
+
+async def channel_post_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Handles live incoming channel posts whenever @Deal_pulse_alert_bot is added to private channels.
+    Extracts deals, verifies live prices, and broadcasts to target channel.
+    """
+    try:
+        msg = update.channel_post or update.message
+        if not msg:
+            return
+
+        chat = msg.chat
+        chat_title = chat.title or str(chat.id)
+        chat_username = chat.username
+        source_tag = f"@{chat_username}" if chat_username else f"[{chat_title}]"
+
+        text = msg.text or msg.caption or ""
+        raw_urls = re.findall(r'https?://[^\s<>"]+|www\.[^\s<>"]+', text)
+
+        if raw_urls:
+            import httpx
+            from budgetby.ingest.channel_monitor import verify_and_ingest_single_deal
+            logger.info(f"⚡ [BOT CHANNEL LISTENER] Intercepted new post from {source_tag} with {len(raw_urls)} links")
+
+            async with httpx.AsyncClient(timeout=10, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0"}) as client:
+                for url in raw_urls:
+                    await verify_and_ingest_single_deal(
+                        channel=source_tag,
+                        post_id=msg.message_id,
+                        raw_url=url,
+                        client=client
+                    )
+    except Exception as e:
+        logger.error(f"Error in channel_post_handler: {e}")
+
 def register_handlers(app: Application):
     """Register all public command handlers."""
     app.add_handler(CommandHandler("start", start_command))
@@ -90,3 +125,6 @@ def register_handlers(app: Application):
     app.add_handler(CommandHandler("deals", deals_command))
     app.add_handler(CommandHandler("search", search_command))
     app.add_handler(CommandHandler("track", track_command))
+
+    from telegram.ext import MessageHandler, filters
+    app.add_handler(MessageHandler(filters.ChatType.CHANNEL, channel_post_handler))
