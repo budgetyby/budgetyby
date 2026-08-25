@@ -499,8 +499,8 @@ def start_scheduler():
     # Daily Evening Digest at 8:00 PM IST (20:00)
     _scheduler.add_job(evening_digest, "cron", hour=20, minute=0, timezone="Asia/Kolkata", id="evening_digest")
 
-        # Continuous 2-Minute Paced Broadcaster (30 posts/hour, 24/7 balanced rotation)
-    _scheduler.add_job(paced_posting_loop, "interval", seconds=120, id="paced_posting", max_instances=1, misfire_grace_time=60)
+        # High-Velocity 30-Second Paced Broadcaster (120 posts/hour, 2,880/day 24/7 balanced rotation)
+    _scheduler.add_job(paced_posting_loop, "interval", seconds=30, id="paced_posting", max_instances=1, misfire_grace_time=30)
 
         # Telegram Channel Deal Spy & Ingestion Monitor — every 2 minutes
     # Telegram Channel Deal Spy & Ingestion Monitor — rapid 30-second interval

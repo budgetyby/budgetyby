@@ -1,7 +1,7 @@
 """
 BudgetBy — High-Efficiency Paced & Dynamic Burst Deal Posting Engine
 Guarantees:
-1. Minimum Cadence: Exactly 1 post every 2 minutes (30 posts/hour) 24/7.
+1. Minimum Cadence: Exactly 1 post every 30 seconds (120 posts/hour • 2,880 posts/day) 24/7.
 2. Dynamic Burst Drain: If queue size > 2 deals, rapidly posts with 15s pacing until queue <= 2.
 3. Multi-Store Interleaving: Even during single-store surges (e.g., 5 Amazon deals), interleaves alternate stores to strictly preserve anti-clustering.
 4. Cooldown Accuracy: Cooldowns are applied only after successful delivery.
@@ -66,7 +66,7 @@ class PostingQueue:
         self.hour_started = self._get_ist_hour()
         self.ROTATION_SEQUENCE = ROTATION_SEQUENCE
         self._initialized = True
-        logger.info("PostingQueue initialized with 2-minute pacer, smart interleaving, and dynamic >2 burst drain.")
+        logger.info("PostingQueue initialized with 30-second high-velocity pacer, smart interleaving, and dynamic >2 burst drain.")
 
     def set_bot(self, bot):
         self._bot = bot
@@ -156,12 +156,12 @@ class PostingQueue:
         try:
             while self._queue.qsize() > 2:
                 await self.post_next_deal(self._bot)
-                await asyncio.sleep(15)  # Safe 15s rate-limit delay for Telegram
+                await asyncio.sleep(8)  # Rapid 8s delay for overflow drain
         except Exception as e:
             logger.error(f"Error in _drain_overflow_queue: {e}")
         finally:
             self._draining = False
-            logger.info(f"✅ Overflow drained. Remaining queue size: {self._queue.qsize()} (Returning to 2-minute baseline pacing)")
+            logger.info(f"✅ Overflow drained. Remaining queue size: {self._queue.qsize()} (Returning to 30-second baseline pacing)")
 
     async def post_next_deal(self, bot=None):
         """
