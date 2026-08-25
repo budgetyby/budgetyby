@@ -19,12 +19,14 @@ from budgetby.bot import templates
 logger = logging.getLogger("budgetby.engine.posting_queue")
 
 # 30-slot weighted, interleaved platform rotation sequence
+# Strict 11-slot proportional rotation cycle:
+# Amazon: 3, Flipkart: 3, Myntra: 2, Ajio: 2, Nykaa: 1 (Total = 11 parts)
 ROTATION_SEQUENCE = [
-    "amazon", "flipkart", "myntra", "amazon", "ajio", "flipkart", "nykaa",
-    "amazon", "myntra", "flipkart", "amazon", "ajio", "flipkart", "myntra",
-    "amazon", "nykaa", "flipkart", "amazon", "ajio", "myntra", "flipkart",
-    "amazon", "nykaa", "amazon", "flipkart", "myntra", "ajio", "amazon",
-    "flipkart", "myntra"
+    "amazon", "flipkart", "myntra",
+    "amazon", "ajio", "flipkart",
+    "nykaa",
+    "amazon", "myntra",
+    "flipkart", "ajio"
 ]
 
 def format_deal_message(deal_data: dict) -> str:

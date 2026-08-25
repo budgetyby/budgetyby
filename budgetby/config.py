@@ -137,12 +137,22 @@ FAKE_DISCOUNT_PENALTY = 12
 
 # Hourly minimum quotas per platform (24/7 identical, Day & Night):
 # Amazon: 3, Flipkart: 3, Myntra: 2, Ajio: 2, Nykaa: 1 (Total = 11 products / hour)
+# Strict Proportional Posting Quotas (Amazon: 3, Flipkart: 3, Myntra: 2, Ajio: 2, Nykaa: 1)
+# Total per cycle = 11 deals | Per hour at 30s cadence (~120 deals/hour):
+PLATFORM_RATIO = {
+    "amazon": 3,
+    "flipkart": 3,
+    "myntra": 2,
+    "ajio": 2,
+    "nykaa": 1
+}
+
 PLATFORM_MIN_HOURLY_POSTS = {
-    "amazon": 9,
-    "flipkart": 8,
-    "myntra": 6,
-    "ajio": 4,
-    "nykaa": 3
+    "amazon": 33,   # 3 parts (~27.3%)
+    "flipkart": 33, # 3 parts (~27.3%)
+    "myntra": 22,   # 2 parts (~18.2%)
+    "ajio": 22,     # 2 parts (~18.2%)
+    "nykaa": 10     # 1 part  (~9.1%)
 }
 
 # NO maximum limit — every genuine deal / price drop is posted immediately without cap

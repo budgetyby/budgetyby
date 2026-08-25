@@ -15,11 +15,11 @@ from budgetby.discovery import amazon_discover, flipkart_discover, myntra_discov
 logger = logging.getLogger("budgetby.discovery.seeder")
 
 TARGET_PROPORTIONS = {
-    "amazon": 23250,
-    "flipkart": 18750,
-    "myntra": 15000,
-    "ajio": 11250,
-    "nykaa": 6750,
+    "amazon": 22500,    # 3 parts (~27.3%)
+    "flipkart": 22500,  # 3 parts (~27.3%)
+    "myntra": 15000,    # 2 parts (~18.2%)
+    "ajio": 15000,      # 2 parts (~18.2%)
+    "nykaa": 7500,      # 1 part  (~9.1%)
 }
 
 class ProductSeeder:
