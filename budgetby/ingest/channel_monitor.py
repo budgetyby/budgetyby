@@ -20,8 +20,7 @@ DEFAULT_MONITORED_CHANNELS = [
     "flipkart_deals",       # 126K Subscribers (Dealshub)
     "desidime",             # 85K Subscribers (DesiDime Official)
     "bobbyustaddeals",      # 67.8K Subscribers (Bobby Ustad Deals)
-    "dealbeeofficial",      # 38.2K Subscribers (DealBee Deals)
-    "bestdeals"             # 26.3K Subscribers (Shop My Deals)
+    "dealbeeofficial"       # 38.2K Subscribers (DealBee Deals)
 ]
 
 # Cloudflare DoH IP for Telegram Web
