@@ -27,10 +27,10 @@ async def daily_cleanup():
             logger.warning(f"Could not cleanup expired cooldowns: {e}")
             
         # Archive OOS > DORMANT_THRESHOLD_DAYS
-        await database.execute(f"UPDATE products SET status = '{config.STATUS_DORMANT}' WHERE status = '{config.STATUS_TEMP_OOS}' AND last_checked < NOW() - INTERVAL '{config.DORMANT_THRESHOLD_DAYS} days'")
+        await database.execute(f"UPDATE products SET status = '{config.STATUS_DORMANT}' WHERE LOWER(status) = LOWER('{config.STATUS_TEMP_OOS}') AND last_checked < NOW() - INTERVAL '{config.DORMANT_THRESHOLD_DAYS} days'")
         
         # Delete OOS > DELETE_THRESHOLD_DAYS
-        await database.execute(f"DELETE FROM products WHERE status IN ('{config.STATUS_TEMP_OOS}', '{config.STATUS_DORMANT}') AND last_checked < NOW() - INTERVAL '{config.DELETE_THRESHOLD_DAYS} days'")
+        await database.execute(f"DELETE FROM products WHERE LOWER(status) IN (LOWER('{config.STATUS_TEMP_OOS}'), LOWER('{config.STATUS_DORMANT}')) AND last_checked < NOW() - INTERVAL '{config.DELETE_THRESHOLD_DAYS} days'")
         
                 # Decay stale Tier 1 products back to Tier 3 if no price change for 7 days
         decayed = await database.execute("""
@@ -38,7 +38,7 @@ async def daily_cleanup():
             SET priority_tier = 3 
             WHERE priority_tier = 1 
               AND (last_price_change < NOW() - INTERVAL '7 days' OR last_price_change IS NULL)
-              AND status = 'active';
+              AND LOWER(status) = 'active';
         """)
         logger.info(f"Decayed stale Tier 1 priority products to Tier 3: {decayed}")
 
