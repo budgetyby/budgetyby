@@ -53,11 +53,14 @@ async def _fetch_and_normalize_image(image_url: str, timeout: float = 6.0) -> io
         logger.debug(f"Image download note for {image_url[:50]}: {e}")
     return None
 
-# 10-slot perfectly balanced multi-store rotation sequence (20% equal share for each store)
-# Guarantees steady, continuous posting across all 5 stores without starving Ajio or Nykaa.
+# 11-slot proportional rotation cycle:
+# Amazon: 3, Flipkart: 3, Myntra: 2, Ajio: 2, Nykaa: 1 (Total = 11 parts)
 ROTATION_SEQUENCE = [
-    "amazon", "ajio", "flipkart", "nykaa", "myntra",
-    "amazon", "nykaa", "flipkart", "ajio", "myntra"
+    "amazon", "flipkart", "myntra",
+    "amazon", "ajio", "flipkart",
+    "nykaa",
+    "amazon", "myntra",
+    "flipkart", "ajio"
 ]
 
 def format_deal_message(deal_data: dict) -> str:
