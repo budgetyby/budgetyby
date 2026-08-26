@@ -24,8 +24,8 @@ def assign_priority(product: asyncpg.Record) -> int:
         return 1
 
     # 2. Tier 2 (High): Bestseller, high commission category, high reviews
-    category = product.get('category')
-    review_count = product.get('review_count', 0)
+    category = product.get('category') or ""
+    review_count = int(product.get('review_count') or 0)
     
     if category in ('fashion', 'beauty') or review_count > 5000 or product.get('is_bestseller'):
         return 2
