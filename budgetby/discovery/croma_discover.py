@@ -61,16 +61,12 @@ CROMA_CATEGORIES = {
     "trimmers-grooming":       {"url": "https://www.croma.com/grooming-personal-care/personal-grooming/trimmers/c/444", "category": "beauty", "pages": 8},
     "hair-dryers":             {"url": "https://www.croma.com/grooming-personal-care/hair-care-products/hair-dryers/c/442", "category": "beauty", "pages": 6},
     "cctv-security-cameras":   {"url": "https://www.croma.com/home-appliances/home-safety-security/cctv-video-security/c/379", "category": "appliances", "pages": 6},
-    "professional-cameras":    {"url": "https://www.croma.com/cameras/professional-cameras/c/548", "category": "electronics", "pages": 6},
-    
-    # ⚡ Flash Deals & Clearance Campaigns
-    "campaign-deals":          {"url": "https://www.croma.com/campaign/top-deals/c/1000", "category": "electronics", "pages": 5}
+    "professional-cameras":    {"url": "https://www.croma.com/cameras/professional-cameras/c/548", "category": "electronics", "pages": 6}
 }
 
-async def discover_category(cat_key: str, max_pages: int = 5, sort_mode: str = "popularity") -> List[Dict[str, Any]]:
+async def discover_category(cat_key: str, max_pages: int = 5) -> List[Dict[str, Any]]:
     """
-    Discovers deals for a specific Croma category across pages.
-    Supports sort_mode='discount' (highest discounts first) and 'popularity'.
+    Discovers deals for a specific Croma verified category across pages.
     """
     cat_info = CROMA_CATEGORIES.get(cat_key, {})
     base_url = cat_info.get("url", f"https://www.croma.com/{cat_key}")
@@ -81,10 +77,7 @@ async def discover_category(cat_key: str, max_pages: int = 5, sort_mode: str = "
 
     async with AsyncSession(impersonate="chrome124", timeout=config.SCRAPER_TIMEOUT) as session:
         for page in range(max_pages):
-            if sort_mode == "discount":
-                page_url = f"{base_url}?q=%3Adiscount-desc&page={page}"
-            else:
-                page_url = f"{base_url}?page={page}"
+            page_url = f"{base_url}?page={page}"
             try:
                 r = await session.get(page_url, timeout=12)
                 if r.status_code != 200 or not r.text:
@@ -194,25 +187,16 @@ async def discover_category(cat_key: str, max_pages: int = 5, sort_mode: str = "
 
 async def discover_deals_page() -> List[Dict[str, Any]]:
     """
-    Crawls Croma Flash Deals & High-Discount Deals across top categories.
-    Sorts by :discount-desc to pull live 40% to 80% OFF clearance items.
+    Crawls page 0 of top Croma electronics categories for newly added deals.
     """
     all_deals = []
-    top_deal_cats = ["laptops", "4k-smart-tvs", "mobile-phones", "bluetooth-headphones", "air-conditioners"]
+    top_deal_cats = ["windows-laptops", "gaming-laptops", "iphones", "android-phones", "oled-tvs", "4k-smart-tvs", "air-conditioners", "truly-wireless-earbuds"]
     
-    # 1. Crawl campaign deals hub
-    try:
-        camp_deals = await discover_category("campaign-deals", max_pages=3)
-        all_deals.extend(camp_deals)
-    except Exception as e:
-        logger.debug(f"Error crawling Croma campaign deals: {e}")
-
-    # 2. Crawl top categories sorted by highest discount
     for cat in top_deal_cats:
         try:
-            cat_deals = await discover_category(cat, max_pages=2, sort_mode="discount")
+            cat_deals = await discover_category(cat, max_pages=1)
             all_deals.extend(cat_deals)
         except Exception as e:
-            logger.debug(f"Error crawling Croma flash deals for {cat}: {e}")
+            logger.debug(f"Error crawling Croma deals for {cat}: {e}")
 
     return all_deals
