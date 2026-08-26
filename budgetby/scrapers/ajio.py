@@ -13,12 +13,6 @@ logger = logging.getLogger("budgetby.scrapers.ajio")
 
 class AjioScraper(BaseScraper):
     async def _do_scrape_product(self, url: str) -> dict:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
-            "Accept": "application/json"
-        }
-        
-        # Extract product code from URL (e.g. /p/441234567_black or 441234567)
         code_match = re.search(r'/p/([A-Za-z0-9_]+)', url)
         code = code_match.group(1) if code_match else ""
 
@@ -28,36 +22,79 @@ class AjioScraper(BaseScraper):
         mrp = 0.0
         image_url = ""
         in_stock = True
+        rating = 4.2
+        review_count = 50
 
-        async with AsyncSession(impersonate="safari17_0", headers=headers) as s:
-            if code:
-                api_url = f"https://www.ajio.com/api/p/{code}"
-                try:
-                    r = await s.get(api_url, timeout=config.SCRAPER_TIMEOUT)
-                    if r.status_code == 200:
-                        data = r.json()
-                        title = clean_title(data.get("name", "") or data.get("baseOptions", [{}])[0].get("title", ""))
-                        brand = data.get("brandName", "") or data.get("brickSubject", "")
-                        
-                        price_val = data.get("price", {}).get("value") or data.get("offerPrice", {}).get("value")
-                        if price_val:
-                            price = float(price_val)
-                            
-                        mrp_val = data.get("wasPriceData", {}).get("value") or data.get("mrp", {}).get("value")
-                        if mrp_val:
-                            mrp = float(mrp_val)
-                            
-                        in_stock = data.get("stock", {}).get("stockLevelStatus", "inStock") == "inStock"
-                        images = data.get("images", [])
-                        if images:
-                            image_url = images[0].get("url", "")
-                    else:
-                        return None
-                except Exception as e:
-                    logger.debug(f"Ajio API failed for {code}: {e}")
-                    return None
-            else:
-                return None
+        try:
+            from selectolax.parser import HTMLParser
+            import json
+
+            async with AsyncSession(impersonate="chrome124", timeout=config.SCRAPER_TIMEOUT) as s:
+                r = await s.get(url)
+
+            if r.status_code == 200:
+                tree = HTMLParser(r.text)
+
+                # 1. Primary: Extract window.__PRELOADED_STATE__
+                for script in tree.css("script"):
+                    txt = script.text() or ""
+                    if "window.__PRELOADED_STATE__" in txt:
+                        idx = txt.find("window.__PRELOADED_STATE__")
+                        json_start = txt.find("{", idx)
+                        if json_start != -1:
+                            try:
+                                decoder = json.JSONDecoder()
+                                data, _ = decoder.raw_decode(txt[json_start:])
+                                pdp = data.get("product", {}).get("productDetails", {})
+                                if pdp:
+                                    title = clean_title(pdp.get("name", "") or pdp.get("baseOptions", [{}])[0].get("title", ""))
+                                    brand = pdp.get("brandName", "") or pdp.get("brickSubject", "")
+                                    
+                                    price_val = pdp.get("price", {}).get("value") or pdp.get("offerPrice", {}).get("value")
+                                    if price_val:
+                                        price = float(price_val)
+                                        
+                                    mrp_val = pdp.get("wasPriceData", {}).get("value") or pdp.get("mrp", {}).get("value")
+                                    if mrp_val:
+                                        mrp = float(mrp_val)
+                                        
+                                    in_stock = pdp.get("stock", {}).get("stockLevelStatus", "inStock") == "inStock"
+                                    images = pdp.get("images", [])
+                                    if images:
+                                        image_url = images[0].get("url", "")
+                                    break
+                            except Exception:
+                                pass
+
+                # 2. Fallback: application/ld+json
+                if not title or price <= 0:
+                    for script in tree.css("script[type='application/ld+json']"):
+                        txt = script.text() or ""
+                        try:
+                            data = json.loads(txt)
+                            if isinstance(data, list):
+                                data = data[0]
+                            if data.get("@type") == "Product" or "offers" in data:
+                                if not title:
+                                    title = clean_title(data.get("name", ""))
+                                offers = data.get("offers", {})
+                                if isinstance(offers, dict) and price <= 0:
+                                    p_val = offers.get("price")
+                                    if p_val:
+                                        price = float(p_val)
+                                    avail = str(offers.get("availability", ""))
+                                    if "OutOfStock" in avail:
+                                        in_stock = False
+                                if not image_url and data.get("image"):
+                                    image_url = str(data.get("image"))
+                                break
+                        except Exception:
+                            pass
+        except Exception as e:
+            logger.debug(f"Ajio scraping failed for {url}: {e}")
+
+        if not title or price <= 0:
+            return None
 
         if not mrp or mrp < price:
             mrp = price
@@ -75,8 +112,8 @@ class AjioScraper(BaseScraper):
             "affiliate_url": affiliate_url,
             "image_url": image_url,
             "in_stock": in_stock,
-            "rating": 4.2,
-            "review_count": 50,
+            "rating": rating,
+            "review_count": review_count,
         }
 
     async def _do_scrape_listing(self, url: str) -> list[dict]:

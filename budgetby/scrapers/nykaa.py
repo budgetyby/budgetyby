@@ -14,52 +14,96 @@ logger = logging.getLogger("budgetby.scrapers.nykaa")
 
 class NykaaScraper(BaseScraper):
     async def _do_scrape_product(self, url: str) -> dict:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
-        }
-        
         pid_match = re.search(r'/p/(\d+)', url)
         pid = pid_match.group(1) if pid_match else re.sub(r'https?://[^/]+/', '', url).split('?')[0]
 
-        async with AsyncSession(impersonate="chrome", headers=headers) as s:
-            r = await s.get(url, timeout=config.SCRAPER_TIMEOUT)
-            
-        tree = HTMLParser(r.text)
-        
-        # Title
-        t_node = tree.css_first("h1.css-1gc4x7i, h1.title, h1")
-        raw_title = t_node.text() if t_node else ""
-        raw_title = re.sub(r'\.css-[^{]+\{[^}]+\}', '', raw_title)
-        raw_title = re.sub(r'@media[^{]+\{[^}]+\}', '', raw_title)
-        title = clean_title(raw_title)
-
-        # Price
+        title = ""
         price = 0.0
-        p_node = tree.css_first(".css-1jczs19, .post-discount-price, .css-1d0jf8e, .css-111z9ua")
-        if p_node:
-            price = extract_price(p_node.text())
-
-        # MRP
-        mrp = price
-        m_node = tree.css_first(".css-u05rr, .css-17x46n5, .css-t37sfa")
-        if m_node:
-            mrp = extract_price(m_node.text())
-
-        if not mrp or mrp < price:
-            mrp = price
-
-        # Rating
+        mrp = 0.0
         rating = 4.3
-        r_node = tree.css_first(".css-15vd5n, .css-1369vsm")
-        if r_node:
-            try:
-                rating = float(extract_price(r_node.text()))
-            except Exception:
-                pass
+        review_count = 100
+        image_url = ""
+        in_stock = True
 
-        # Image
-        img_node = tree.css_first("img.css-11q6006, img[alt]")
-        image_url = img_node.attributes.get("src", "") if img_node else ""
+        try:
+            import json
+            async with AsyncSession(impersonate="chrome124", timeout=config.SCRAPER_TIMEOUT) as s:
+                r = await s.get(url)
+
+            tree = HTMLParser(r.text)
+
+            # 1. Primary Strategy: application/ld+json
+            for script in tree.css("script[type='application/ld+json']"):
+                txt = script.text() or ""
+                try:
+                    data = json.loads(txt)
+                    if isinstance(data, list):
+                        data = data[0]
+                    if data.get("@type") == "Product" or "offers" in data:
+                        raw_t = data.get("name", "")
+                        if raw_t:
+                            raw_t = re.sub(r'@media[^{]+\{[^}]+\}', '', raw_t)
+                            raw_t = re.sub(r'\.css-[^{]+\{[^}]+\}', '', raw_t)
+                            title = clean_title(raw_t)
+
+                        offers = data.get("offers", {})
+                        if isinstance(offers, dict):
+                            p_val = offers.get("price")
+                            if p_val:
+                                price = float(p_val)
+                            avail = str(offers.get("availability", ""))
+                            if "OutOfStock" in avail:
+                                in_stock = False
+
+                        imgs = data.get("image")
+                        if isinstance(imgs, list) and imgs:
+                            image_url = imgs[0]
+                        elif isinstance(imgs, str):
+                            image_url = imgs
+
+                        agg = data.get("aggregateRating", {})
+                        if isinstance(agg, dict):
+                            r_val = agg.get("ratingValue")
+                            if r_val:
+                                rating = float(r_val)
+                        break
+                except Exception:
+                    pass
+
+            # 2. Fallback Title
+            if not title:
+                t_node = tree.css_first("h1.css-1gc4x7i, h1.title, h1")
+                raw_title = t_node.text() if t_node else ""
+                raw_title = re.sub(r'@media[^{]+\{[^}]+\}', '', raw_title)
+                raw_title = re.sub(r'\.css-[^{]+\{[^}]+\}', '', raw_title)
+                title = clean_title(raw_title)
+
+            # 3. Fallback Price
+            if not price:
+                p_node = tree.css_first(".css-1jczs19, .post-discount-price, .css-1d0jf8e, .css-111z9ua")
+                if p_node:
+                    price = extract_price(p_node.text())
+
+            # 4. MRP
+            m_node = tree.css_first(".css-u05rr, .css-17x46n5, .css-t37sfa, span[class*='mrp']")
+            if m_node:
+                mrp_cand = extract_price(m_node.text())
+                if mrp_cand > price:
+                    mrp = mrp_cand
+
+            if not mrp or mrp < price:
+                mrp = price
+
+            # 5. Image
+            if not image_url:
+                img_node = tree.css_first("img.css-11q6006, img[alt]")
+                if img_node:
+                    image_url = img_node.attributes.get("src", "")
+        except Exception as e:
+            logger.debug(f"Nykaa scraping error: {e}")
+
+        if not title or price <= 0:
+            return None
 
         affiliate_url = build_earnkaro_url_sync(url)
 
@@ -72,9 +116,9 @@ class NykaaScraper(BaseScraper):
             "product_url": url,
             "affiliate_url": affiliate_url,
             "image_url": image_url,
-            "in_stock": True,
+            "in_stock": in_stock,
             "rating": rating,
-            "review_count": 100,
+            "review_count": review_count,
         }
 
     async def _do_scrape_listing(self, url: str) -> list[dict]:
