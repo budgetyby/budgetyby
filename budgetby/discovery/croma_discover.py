@@ -16,44 +16,54 @@ from budgetby import config
 logger = logging.getLogger("budgetby.discovery.croma")
 
 CROMA_CATEGORIES = {
-    # High-Ticket Electronics & Computing
-    "laptops":                 {"url": "https://www.croma.com/computers-tablets/laptops/c/20", "category": "laptops", "pages": 12},
+    # 💻 Laptops & Computers
+    "macbooks":                {"url": "https://www.croma.com/computers-tablets/laptops/macbooks/c/906", "category": "laptops", "pages": 6},
     "gaming-laptops":          {"url": "https://www.croma.com/computers-tablets/laptops/gaming-laptops/c/806", "category": "laptops", "pages": 8},
-    "tablets-ipads":           {"url": "https://www.croma.com/computers-tablets/tablets-e-readers/tablets/c/92", "category": "electronics", "pages": 8},
-    "storage-ssds-hdds":       {"url": "https://www.croma.com/computers-tablets/storage-devices/external-hard-disk-drive-hdd-/c/229", "category": "electronics", "pages": 6},
-    "keyboards-mice":          {"url": "https://www.croma.com/computers-tablets/computer-accessories/keyboards-mouse/c/227", "category": "electronics", "pages": 6},
-    "printers":                {"url": "https://www.croma.com/computers-tablets/printers-scanners/printers/c/102", "category": "electronics", "pages": 6},
+    "windows-laptops":         {"url": "https://www.croma.com/computers-tablets/laptops/windows-laptops/c/855", "category": "laptops", "pages": 12},
+    "tablets-ipads":           {"url": "https://www.croma.com/computers-tablets/tablets-e-readers/c/22", "category": "electronics", "pages": 8},
+    "monitors":                {"url": "https://www.croma.com/computers-tablets/desktops-all-in-ones/monitors/c/32", "category": "electronics", "pages": 8},
+    "external-ssds":           {"url": "https://www.croma.com/computers-tablets/storage-devices/external-solid-state-drive-ssd-/c/103", "category": "electronics", "pages": 6},
+    "external-hdds":           {"url": "https://www.croma.com/computers-tablets/storage-devices/external-hard-disk-drive-hdd-/c/229", "category": "electronics", "pages": 6},
+    "keyboards-mice":          {"url": "https://www.croma.com/computers-tablets/computer-laptop-accessories/keyboards/c/579", "category": "electronics", "pages": 6},
+    "printers":                {"url": "https://www.croma.com/computers-tablets/printers/all-in-one-printers/c/240", "category": "electronics", "pages": 6},
     
-    # Smartphones & Smartwatches
-    "mobile-phones":           {"url": "https://www.croma.com/phones-wearables/mobile-phones/c/10", "category": "smartphones", "pages": 15},
-    "5g-smartphones":          {"url": "https://www.croma.com/phones-wearables/mobile-phones/5g-mobile-phones/c/95", "category": "smartphones", "pages": 10},
+    # 📱 Smartphones & Smartwatches
+    "iphones":                 {"url": "https://www.croma.com/phones-wearables/mobile-phones/iphones/c/97", "category": "smartphones", "pages": 8},
+    "android-phones":          {"url": "https://www.croma.com/phones-wearables/mobile-phones/android-phones/c/95", "category": "smartphones", "pages": 12},
     "smartwatches":            {"url": "https://www.croma.com/phones-wearables/wearables/smartwatches/c/931", "category": "electronics", "pages": 10},
     
-    # Audio & Entertainment
+    # 🎧 Audio & Home Theatre
+    "truly-wireless-earbuds":  {"url": "https://www.croma.com/audio-video/headphones-earphones/truly-wireless-earbuds/c/611", "category": "electronics", "pages": 10},
     "bluetooth-headphones":    {"url": "https://www.croma.com/audio-video/headphones-earphones/bluetooth-headphones/c/1014", "category": "electronics", "pages": 10},
-    "bluetooth-speakers":      {"url": "https://www.croma.com/audio-video/speakers-media-players/portable-bluetooth-speakers/c/279", "category": "electronics", "pages": 8},
+    "anc-headphones":          {"url": "https://www.croma.com/audio-video/headphones-earphones/noise-cancellation-earphones-headphones-earbuds/c/80", "category": "electronics", "pages": 6},
+    "portable-speakers":       {"url": "https://www.croma.com/audio-video/speakers-media-players/portable-bluetooth-speakers/c/279", "category": "electronics", "pages": 8},
+    "soundbars-home-theatre":  {"url": "https://www.croma.com/audio-video/home-theatres-sound-bars/c/44", "category": "electronics", "pages": 8},
+    "smart-speakers":          {"url": "https://www.croma.com/audio-video/speakers-media-players/smart-speakers/c/1008", "category": "electronics", "pages": 4},
     
-    # Televisions & Displays
-    "4k-smart-tvs":            {"url": "https://www.croma.com/televisions-accessories/led-tvs/4k-ultra-hd-tvs/c/998", "category": "electronics", "pages": 12},
+    # 📺 Televisions & Displays
     "oled-tvs":                {"url": "https://www.croma.com/televisions-accessories/led-tvs/oled-tvs/c/1000", "category": "electronics", "pages": 6},
-    "led-tvs":                 {"url": "https://www.croma.com/televisions-accessories/led-tvs/c/999", "category": "electronics", "pages": 10},
+    "4k-smart-tvs":            {"url": "https://www.croma.com/televisions-accessories/led-tvs/4k-ultra-hd-tvs/c/999", "category": "electronics", "pages": 12},
+    "qled-tvs":                {"url": "https://www.croma.com/televisions-accessories/led-tvs/qled-tvs/c/897", "category": "electronics", "pages": 6},
     
-    # Home & Large Appliances
+    # ❄️ Home & Large Appliances
     "air-conditioners":        {"url": "https://www.croma.com/home-appliances/air-conditioners/c/46", "category": "appliances", "pages": 12},
-    "refrigerators":           {"url": "https://www.croma.com/home-appliances/refrigerators/c/47", "category": "appliances", "pages": 12},
-    "washing-machines":        {"url": "https://www.croma.com/home-appliances/washing-machines-dryers/c/48", "category": "appliances", "pages": 12},
-    "dishwashers":             {"url": "https://www.croma.com/kitchen-appliances/dishwashers/c/53", "category": "appliances", "pages": 6},
+    "double-door-fridges":     {"url": "https://www.croma.com/home-appliances/refrigerators-freezers/double-door-refrigerators/c/397", "category": "appliances", "pages": 8},
+    "single-door-fridges":     {"url": "https://www.croma.com/home-appliances/refrigerators-freezers/single-door-refrigerators/c/741", "category": "appliances", "pages": 8},
+    "front-load-washing":      {"url": "https://www.croma.com/home-appliances/washing-machines-dryers/front-load-washing-machines/c/404", "category": "appliances", "pages": 8},
+    "top-load-washing":        {"url": "https://www.croma.com/home-appliances/washing-machines-dryers/top-load-washing-machines/c/405", "category": "appliances", "pages": 8},
     "storage-geysers":         {"url": "https://www.croma.com/home-appliances/geysers/storage-water-heaters/c/746", "category": "appliances", "pages": 8},
     "instant-geysers":         {"url": "https://www.croma.com/home-appliances/geysers/instant-water-heaters/c/745", "category": "appliances", "pages": 6},
-    "air-purifiers":           {"url": "https://www.croma.com/home-appliances/air-purifiers/c/492", "category": "appliances", "pages": 6},
     
-    # Kitchen & Grooming
+    # 🍳 Kitchen, Grooming & Cameras
     "convection-microwaves":   {"url": "https://www.croma.com/kitchen-appliances/microwave-ovens/convection-microwave-ovens/c/487", "category": "home", "pages": 8},
     "solo-microwaves":         {"url": "https://www.croma.com/kitchen-appliances/microwave-ovens/solo-microwave-ovens/c/489", "category": "home", "pages": 6},
+    "otg-ovens":               {"url": "https://www.croma.com/kitchen-appliances/microwave-ovens/oven-toaster-grills/c/468", "category": "home", "pages": 6},
     "trimmers-grooming":       {"url": "https://www.croma.com/grooming-personal-care/personal-grooming/trimmers/c/444", "category": "beauty", "pages": 8},
-    "hair-dryers":             {"url": "https://www.croma.com/grooming-personal-care/hair-care/hair-dryers/c/441", "category": "beauty", "pages": 6},
+    "hair-dryers":             {"url": "https://www.croma.com/grooming-personal-care/hair-care-products/hair-dryers/c/442", "category": "beauty", "pages": 6},
+    "cctv-security-cameras":   {"url": "https://www.croma.com/home-appliances/home-safety-security/cctv-video-security/c/379", "category": "appliances", "pages": 6},
+    "professional-cameras":    {"url": "https://www.croma.com/cameras/professional-cameras/c/548", "category": "electronics", "pages": 6},
     
-    # Flash Deals Campaigns
+    # ⚡ Flash Deals & Clearance Campaigns
     "campaign-deals":          {"url": "https://www.croma.com/campaign/top-deals/c/1000", "category": "electronics", "pages": 5}
 }
 
