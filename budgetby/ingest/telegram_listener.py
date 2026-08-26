@@ -64,7 +64,26 @@ async def start_telegram_listener(api_id: int = None, api_hash: str = None):
     try:
         logger.info("🚀 Connecting Real-Time Telegram MTProto Channel Listener...")
         client = TelegramClient(SESSION_PATH, api_id, api_hash)
-        await client.start()
+
+        # Retry connecting in case the previous process still holds the SQLite
+        # session file lock (common during auto-restart within the first 10s)
+        for attempt in range(1, 7):
+            try:
+                await client.start()
+                break
+            except Exception as e:
+                if "database is locked" in str(e).lower():
+                    wait = attempt * 3
+                    logger.warning(
+                        f"Telethon session locked by previous process "
+                        f"(attempt {attempt}/6). Retrying in {wait}s..."
+                    )
+                    await asyncio.sleep(wait)
+                else:
+                    raise
+        else:
+            logger.error("Telethon session still locked after 6 retries. Listener skipped this boot.")
+            return
 
         if not await client.is_user_authorized():
             logger.warning("Telegram user session is not authorized. Please run python login_telegram_listener.py once.")

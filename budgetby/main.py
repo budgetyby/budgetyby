@@ -94,8 +94,14 @@ async def main():
 
         async def handle_telegram_polling_error(update, context):
             err = context.error
-            if isinstance(err, (NetworkError, TimedOut)) or "httpx" in str(err).lower() or "readerror" in str(err).lower():
-                logger.debug(f"Transient Telegram polling network blip (automatically recovered): {err}")
+            err_str = str(err).lower()
+            # Transient errors during auto-restart overlap — suppress noisy tracebacks
+            if (isinstance(err, (NetworkError, TimedOut))
+                    or "httpx" in err_str
+                    or "readerror" in err_str
+                    or "conflict" in err_str          # 409: two instances briefly overlap on restart
+                    or "terminated by other" in err_str):
+                logger.debug(f"Transient Telegram polling blip (auto-recovered): {err}")
             else:
                 logger.error(f"Telegram Bot Exception: {err}", exc_info=err)
 
