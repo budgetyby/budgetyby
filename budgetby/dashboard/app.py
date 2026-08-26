@@ -264,7 +264,13 @@ async def get_price_changes_24h(
     """
     try:
         offset = (page - 1) * limit
-        where_clauses = ["dp_today.close_price != dp_yest.close_price"]
+        where_clauses = [
+            "dp_today.close_price != dp_yest.close_price",
+            "dp_today.close_price > 0",
+            "dp_yest.close_price > 0",
+            "(p.mrp = 0 OR (dp_today.close_price <= (p.mrp * 1.15) AND dp_yest.close_price <= (p.mrp * 1.15)))",
+            "(dp_today.close_price <= (dp_yest.close_price * 4.0) AND dp_today.close_price >= (dp_yest.close_price * 0.15))"
+        ]
         args = []
         arg_idx = 1
 

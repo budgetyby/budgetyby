@@ -180,16 +180,23 @@ async def update_price(product_id: int, new_price: float, in_stock: bool,
     Update a product's live price snapshot and product details (title, mrp, rating, etc.).
     Also updates min benchmarks and all_time_low.
     """
-    if new_price and mrp and new_price > 0:
-        if mrp > 4.0 * new_price or (mrp > 100000 and new_price < 10000):
-            mrp = round((new_price * 1.35) / 10) * 10
+    if new_price and new_price > 0:
+        if mrp:
+            if new_price > mrp:
+                mrp = new_price
+            elif mrp > 4.0 * new_price or (mrp > 100000 and new_price < 10000):
+                mrp = round((new_price * 1.35) / 10) * 10
     await execute("""
         UPDATE products SET
             previous_price = current_price,
             current_price = $2::numeric,
             in_stock = $3::boolean,
             title = CASE WHEN $4::text IS NOT NULL AND $4::text != '' THEN $4::text ELSE title END,
-            mrp = COALESCE($5::numeric, mrp),
+            mrp = CASE 
+                WHEN $5::numeric IS NOT NULL THEN $5::numeric
+                WHEN mrp < $2::numeric THEN $2::numeric
+                ELSE mrp 
+            END,
             rating = COALESCE($6::numeric, rating),
             review_count = COALESCE($7::integer, review_count),
             image_url = CASE WHEN $8::text IS NOT NULL AND $8 != '' THEN $8::text ELSE image_url END,
@@ -223,6 +230,8 @@ async def upsert_daily_price(product_id: int, price: float):
     If row exists for today: update min_price (LEAST) and close_price.
     If no row: insert new.
     """
+    if not price or price <= 0:
+        return
     await execute("""
         INSERT INTO daily_prices (product_id, date, min_price, close_price)
         VALUES ($1, (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE, $2, $2)

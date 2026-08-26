@@ -15,6 +15,16 @@ async def daily_cleanup():
     """Orchestrates all daily maintenance."""
     try:
         logger.info("Starting daily cleanup...")
+        # 1. Price and MRP Sanity Guard
+        await database.execute("""
+            UPDATE products SET mrp = current_price WHERE current_price > mrp AND mrp > 0;
+            UPDATE products SET mrp = ROUND((current_price * 1.40) / 10) * 10 WHERE mrp > (4.0 * current_price) AND current_price > 0;
+            UPDATE daily_prices dp SET close_price = p.current_price, min_price = p.current_price
+            FROM products p WHERE dp.product_id = p.id AND p.mrp > 0 AND (dp.close_price > (p.mrp * 1.10) OR dp.min_price > (p.mrp * 1.10));
+            UPDATE daily_prices dp SET close_price = p.current_price, min_price = p.current_price
+            FROM products p WHERE dp.product_id = p.id AND p.current_price > 0 AND (dp.close_price > (p.current_price * 5.0) OR dp.close_price < (p.current_price * 0.2));
+        """)
+
         await database.cleanup_old_daily_prices()
         await database.sync_daily_price_baselines()
         await database.refresh_30d_benchmarks()
