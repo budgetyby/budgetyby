@@ -373,6 +373,13 @@ class PostingQueue:
                                 if live_check.get("image_url"):
                                     product["image_url"] = live_check["image_url"]
                                     deal_data["product"]["image_url"] = live_check["image_url"]
+
+                                if "rating" in live_check:
+                                    product["rating"] = live_check["rating"]
+                                    deal_data["product"]["rating"] = live_check["rating"]
+                                if "review_count" in live_check:
+                                    product["review_count"] = live_check["review_count"]
+                                    deal_data["product"]["review_count"] = live_check["review_count"]
                     except Exception as pe:
                         logger.debug(f"Pre-flight live check note: {pe}")
 

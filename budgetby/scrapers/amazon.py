@@ -16,8 +16,8 @@ class AmazonScraper(BaseScraper):
             
         affiliate_url = f"{url}?tag={config.AMAZON_ASSOCIATE_TAG}"
         
-        async with AsyncSession(impersonate="chrome", headers={"User-Agent": get_random_ua()}) as s:
-            r = await s.get(url, timeout=config.SCRAPER_TIMEOUT)
+        async with AsyncSession(impersonate="chrome124", timeout=config.SCRAPER_TIMEOUT) as s:
+            r = await s.get(url)
             
         tree = HTMLParser(r.text)
         
@@ -57,19 +57,38 @@ class AmazonScraper(BaseScraper):
         if not mrp or mrp < (price or 0):
             mrp = price
             
-        # Rating
-        rating_node = tree.css_first(".a-icon-alt")
+        # Rating & Review Count (Strictly inside true product review container)
         rating = 0.0
-        if rating_node:
-            rating_match = re.search(r'([\d.]+)\s*out of', rating_node.text())
-            if rating_match:
-                rating = float(rating_match.group(1))
-                
-        # Review count
-        rc_node = tree.css_first("#acrCustomerReviewText")
         review_count = 0
-        if rc_node:
-            review_count = int(extract_price(rc_node.text()))
+        
+        acr = tree.css_first("#averageCustomerReviews, #acrPopover, #acrCustomerReviewLink")
+        if acr:
+            r_node = acr.css_first("span.a-icon-alt, i.a-icon-star span.a-icon-alt, span.a-size-base.a-color-base")
+            if r_node:
+                r_match = re.search(r'([\d.]+)', r_node.text(strip=True))
+                if r_match:
+                    try:
+                        rating = float(r_match.group(1))
+                    except Exception:
+                        pass
+            rc_node = acr.css_first("#acrCustomerReviewText, span[data-hook='total-review-count']")
+            if rc_node:
+                rc_match = re.search(r'([\d,]+)', rc_node.text(strip=True))
+                if rc_match:
+                    try:
+                        review_count = int(rc_match.group(1).replace(',', ''))
+                    except Exception:
+                        pass
+        else:
+            # Check bottom review summary
+            r_bottom = tree.css_first("span[data-hook='rating-out-of-text']")
+            if r_bottom:
+                r_match = re.search(r'([\d.]+)', r_bottom.text(strip=True))
+                if r_match:
+                    try:
+                        rating = float(r_match.group(1))
+                    except Exception:
+                        pass
             
         # Image
         img_node = tree.css_first("#landingImage") or tree.css_first("#imgBlkFront")
