@@ -23,76 +23,103 @@ class FlipkartScraper(BaseScraper):
         image_url = ""
         in_stock = True
         
-        # Try JSON first
-        script_node = None
-        for script in tree.css("script"):
-            if script.text() and "window.__INITIAL_STATE__" in script.text():
-                script_node = script
-                break
-                
-        if script_node:
+        # 1. Primary Strategy: application/ld+json (Flipkart official structured schema)
+        for script in tree.css("script[type='application/ld+json']"):
+            txt = script.text() or ""
             try:
-                json_str = re.search(r'window\.__INITIAL_STATE__\s*=\s*({.*?});', script_node.text(), re.DOTALL)
-                if json_str:
-                    data = json.loads(json_str.group(1))
-                    # Basic fallback JSON extraction could go here if needed.
+                data = json.loads(txt)
+                if isinstance(data, list):
+                    data = data[0]
+                if data.get("@type") == "Product" or "offers" in data:
+                    t_val = data.get("name")
+                    if t_val:
+                        title = clean_title(t_val)
+                    
+                    # Extract Offers & Availability
+                    offers = data.get("offers")
+                    if isinstance(offers, dict):
+                        price = float(offers.get("price") or 0)
+                        avail = str(offers.get("availability", ""))
+                        if "OutOfStock" in avail:
+                            in_stock = False
+                    elif isinstance(offers, list) and offers:
+                        price = float(offers[0].get("price") or 0)
+                        avail = str(offers[0].get("availability", ""))
+                        if "OutOfStock" in avail:
+                            in_stock = False
+
+                    # Extract Ratings & Reviews
+                    agg = data.get("aggregateRating", {})
+                    if isinstance(agg, dict):
+                        rating = float(agg.get("ratingValue") or 0)
+                        review_count = int(agg.get("ratingCount") or agg.get("reviewCount") or 0)
+
+                    # Extract Image
+                    imgs = data.get("image")
+                    if isinstance(imgs, list) and imgs:
+                        image_url = imgs[0]
+                    elif isinstance(imgs, str):
+                        image_url = imgs
+                    break
             except Exception:
                 pass
                 
-        # Fallback to HTML
+        # 2. Fallback Title
         if not title:
             brand_node = tree.css_first("div._2WkVRV, span.mEh187")
             brand = brand_node.text(strip=True) if brand_node else ""
-            
             t_node = tree.css_first("h1.VU-Tz5, span.VU-Tz5, .VU-Tz5, .B_NuCI, h1._6EBuvT, h1")
             desc = t_node.text(strip=True) if t_node else ""
-            
             if brand and desc and not desc.lower().startswith(brand.lower()):
                 title = f"{brand} {desc}"
             elif desc:
                 title = desc
             elif brand:
                 title = brand
-                
             title = clean_title(title)
                 
+        # 3. Fallback Price & MRP via modern CSS selectors
         if not price:
-            p_node = tree.css_first(".Nx9bqj.CxhGGd")
-            if not p_node:
-                p_node = tree.css_first("._30jeq3._16Jk6d")
-            if p_node:
-                price = extract_price(p_node.text())
+            for p_sel in [".Nx9bqj.CxhGGd", "._30jeq3._16Jk6d", ".css-g5y9jx", "div.v1zwn20", ".v1zwn21m.v1zwn20"]:
+                p_node = tree.css_first(p_sel)
+                if p_node and extract_price(p_node.text()) > 0:
+                    price = extract_price(p_node.text())
+                    break
                 
-        if not mrp:
-            m_node = tree.css_first(".yRaY8j.A6rEoz")
-            if not m_node:
-                m_node = tree.css_first("._3I9_wc._2p6lqe")
-            if m_node:
-                mrp = extract_price(m_node.text())
+        for m_sel in [".yRaY8j.A6rEoz", "._3I9_wc._2p6lqe", "div.v1zwn21n", ".v1zwn28", "div.v1zwn21n.v1zwn28"]:
+            m_node = tree.css_first(m_sel)
+            if m_node and extract_price(m_node.text()) > 0:
+                extracted_mrp = extract_price(m_node.text())
+                if extracted_mrp > price:
+                    mrp = extracted_mrp
+                    break
+
         if not mrp or mrp < price:
             mrp = price
             
-        # Rating
-        r_node = tree.css_first(".XQDdHH")
-        if r_node:
-            rating = extract_price(r_node.text())
+        # 4. Fallback Rating & Review count
+        if not rating:
+            for r_sel in [".XQDdHH", "div._3LWZlK"]:
+                r_node = tree.css_first(r_sel)
+                if r_node and extract_price(r_node.text()) > 0:
+                    rating = extract_price(r_node.text())
+                    break
             
-        # Review count
-        rc_node = tree.css_first(".Wphh3N")
-        if rc_node:
-            rc_match = re.search(r'([\d,]+)\s*Reviews', rc_node.text())
-            if rc_match:
-                review_count = int(extract_price(rc_match.group(1)))
+        if not review_count:
+            rc_node = tree.css_first(".Wphh3N")
+            if rc_node:
+                rc_match = re.search(r'([\d,]+)\s*Reviews', rc_node.text())
+                if rc_match:
+                    review_count = int(extract_price(rc_match.group(1)))
                 
-        # Image
-        img_node = tree.css_first(".v2VVsD .jBwCF_")
-        if not img_node:
-            img_node = tree.css_first("._396cs4._2amPTt")
-        if img_node:
-            image_url = img_node.attributes.get("src", "")
+        # 5. Fallback Image
+        if not image_url:
+            img_node = tree.css_first(".v2VVsD .jBwCF_, ._396cs4._2amPTt, img.DByuf4")
+            if img_node:
+                image_url = img_node.attributes.get("src", "")
             
-        out_node = tree.css_first(".Z8NC81")
-        if out_node and "Sold Out" in out_node.text():
+        out_node = tree.css_first(".Z8NC81, div._16FRp0")
+        if out_node and ("Sold Out" in out_node.text() or "Currently Unavailable" in out_node.text()):
             in_stock = False
             
         return {
