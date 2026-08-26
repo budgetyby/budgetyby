@@ -133,6 +133,44 @@ async def upsert_product(data: dict) -> int:
         if mrp_val > 4.0 * cur_price or (mrp_val > 100000 and cur_price < 10000):
             mrp_val = round((cur_price * 1.35) / 10) * 10
 
+    platform = data.get("platform")
+    platform_id = str(data.get("platform_id") or "")
+
+    # Strict Deduplication Check: Look for existing product by platform_id, URL, or normalized Title
+    existing = await fetchrow("""
+        SELECT id, current_price, mrp, all_time_low 
+        FROM products 
+        WHERE platform = $1 
+          AND (platform_id = $2 OR product_url = $3 OR LOWER(TRIM(title)) = LOWER(TRIM($4)))
+        LIMIT 1;
+    """, platform, platform_id, p_url, title)
+
+    if existing:
+        existing_id = existing["id"]
+        # Update existing record instead of creating duplicate
+        await execute("""
+            UPDATE products SET
+                current_price = COALESCE($2, current_price),
+                mrp = COALESCE($3, mrp),
+                rating = COALESCE($4, rating),
+                review_count = COALESCE($5, review_count),
+                image_url = COALESCE($6, image_url),
+                affiliate_url = COALESCE($7, affiliate_url),
+                in_stock = COALESCE($8, in_stock),
+                last_checked = NOW(),
+                all_time_low = LEAST(COALESCE($2, all_time_low), all_time_low)
+            WHERE id = $1;
+        """, existing_id, cur_price, mrp_val, data.get("rating"), data.get("review_count"), 
+             data.get("image_url"), data.get("affiliate_url"), data.get("in_stock", True))
+        
+        if cur_price and cur_price > 0:
+            try:
+                await upsert_daily_price(existing_id, cur_price)
+            except Exception:
+                pass
+        return existing_id
+
+    # If product does not exist, insert cleanly
     row = await fetchrow("""
         INSERT INTO products (platform, platform_id, title, category,
                               product_url, affiliate_url, image_url,
@@ -149,11 +187,11 @@ async def upsert_product(data: dict) -> int:
             last_checked = NOW()
         RETURNING id
     """,
-        data.get("platform"),
-        data.get("platform_id"),
+        platform,
+        platform_id,
         title,
         data.get("category"),
-        data.get("product_url"),
+        p_url,
         data.get("affiliate_url"),
         data.get("image_url"),
         cur_price,
