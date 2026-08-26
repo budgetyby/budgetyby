@@ -31,6 +31,7 @@ async def price_check_loop():
         from budgetby.scrapers.myntra import MyntraScraper
         from budgetby.scrapers.ajio import AjioScraper
         from budgetby.scrapers.nykaa import NykaaScraper
+        from budgetby.scrapers.croma import CromaScraper
         from budgetby.engine.deal_detector import detect_deal
         from budgetby.engine.deal_scorer import score_deal
         from budgetby.engine.fake_discount import is_fake_discount
@@ -43,6 +44,7 @@ async def price_check_loop():
             "flipkart": FlipkartScraper(),
             "myntra": MyntraScraper(),
             "ajio": AjioScraper(),
+            "croma": CromaScraper(),
             "nykaa": NykaaScraper(),
         }
 
@@ -164,17 +166,19 @@ async def deals_page_crawl():
         from budgetby.discovery.myntra_discover import discover_deals_page as myntra_deals_hub
         from budgetby.discovery.ajio_discover import discover_deals_page as ajio_deals_hub
         from budgetby.discovery.nykaa_discover import discover_deals_page as nykaa_deals_hub
+        from budgetby.discovery.croma_discover import discover_deals_page as croma_deals_hub
         from budgetby.engine.deal_scorer import score_deal
         from budgetby.engine.cooldown import is_on_cooldown, set_cooldown
         from budgetby.engine.posting_queue import get_posting_queue
 
-        logger.info("Starting concurrent crawl of Today's Deals hubs across all 5 platforms...")
+        logger.info("Starting concurrent crawl of Today's Deals hubs across all 6 platforms...")
 
         results = await asyncio.gather(
             amazon_deals_hub(pages=2),
             flipkart_deals_hub(pages=2),
             myntra_deals_hub(pages=2),
             ajio_deals_hub(pages=2),
+            croma_deals_hub(),
             nykaa_deals_hub(pages=2),
             return_exceptions=True
         )

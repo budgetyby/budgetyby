@@ -53,14 +53,13 @@ async def _fetch_and_normalize_image(image_url: str, timeout: float = 6.0) -> io
         logger.debug(f"Image download note for {image_url[:50]}: {e}")
     return None
 
-# 11-slot proportional rotation cycle:
-# Amazon: 3, Flipkart: 3, Myntra: 2, Ajio: 2, Nykaa: 1 (Total = 11 parts)
+# 12-slot proportional rotation cycle:
+# Amazon: 3, Flipkart: 3, Myntra: 2, Ajio: 2, Croma: 1, Nykaa: 1 (Total = 12 parts)
 ROTATION_SEQUENCE = [
     "amazon", "flipkart", "myntra",
     "amazon", "ajio", "flipkart",
-    "nykaa",
-    "amazon", "myntra",
-    "flipkart", "ajio"
+    "croma", "myntra", "nykaa",
+    "amazon", "flipkart", "ajio"
 ]
 
 def format_deal_message(deal_data: dict) -> str:
@@ -262,12 +261,14 @@ class PostingQueue:
                 from budgetby.scrapers.myntra import MyntraScraper
                 from budgetby.scrapers.ajio import AjioScraper
                 from budgetby.scrapers.nykaa import NykaaScraper
+                from budgetby.scrapers.croma import CromaScraper
 
                 scrapers_map = {
                     "amazon": AmazonScraper,
                     "flipkart": FlipkartScraper,
                     "myntra": MyntraScraper,
                     "ajio": AjioScraper,
+                    "croma": CromaScraper,
                     "nykaa": NykaaScraper,
                 }
                 min_discount = getattr(config, "MIN_DEAL_DISCOUNT_PCT", 10.0) / 100.0
@@ -277,7 +278,7 @@ class PostingQueue:
                 
                 # If target platform has no candidates, find from alternate platform
                 if not candidates:
-                    for alt_plat in ["amazon", "flipkart", "myntra", "ajio", "nykaa"]:
+                    for alt_plat in ["amazon", "flipkart", "myntra", "ajio", "croma", "nykaa"]:
                         if alt_plat != self._last_posted_platform and alt_plat != target_platform:
                             alt_candidates = await find_evergreen_deals(limit=5, platform=alt_plat)
                             if alt_candidates:
@@ -387,8 +388,8 @@ class PostingQueue:
                     url = f"https://www.amazon.in/dp/{product.get('platform_id')}?tag={config.AMAZON_ASSOCIATE_TAG}"
                     product["affiliate_url"] = url
 
-                # Automatic Live EarnKaro Short Link Conversion via @ekconverter9bot for all 4 non-Amazon stores
-                if platform in ("flipkart", "myntra", "ajio", "nykaa") and url:
+                # Automatic Live EarnKaro Short Link Conversion via @ekconverter9bot for all non-Amazon stores
+                if platform in ("flipkart", "myntra", "ajio", "nykaa", "croma") and url:
                     try:
                         from budgetby.ingest.telegram_listener import convert_url_via_ek_bot
                         converted_ek = await convert_url_via_ek_bot(url, timeout=4.0)

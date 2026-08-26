@@ -77,7 +77,7 @@ async def get_stats():
         """)
         posted_life_by_plat = {r["platform"].lower(): r["count"] for r in posted_life_rows}
         
-        all_plats = ["amazon", "flipkart", "myntra", "ajio", "nykaa"]
+        all_plats = ["amazon", "flipkart", "myntra", "ajio", "croma", "nykaa"]
         for p in all_plats:
             posted_today_by_plat.setdefault(p, 0)
             posted_month_by_plat.setdefault(p, 0)
@@ -104,6 +104,7 @@ async def get_stats():
                 COUNT(CASE WHEN p.platform = 'flipkart' THEN 1 END) as flipkart_deals,
                 COUNT(CASE WHEN p.platform = 'myntra' THEN 1 END) as myntra_deals,
                 COUNT(CASE WHEN p.platform = 'ajio' THEN 1 END) as ajio_deals,
+                COUNT(CASE WHEN p.platform = 'croma' THEN 1 END) as croma_deals,
                 COUNT(CASE WHEN p.platform = 'nykaa' THEN 1 END) as nykaa_deals
             FROM deals d
             LEFT JOIN products p ON d.product_id = p.id
@@ -182,6 +183,7 @@ async def get_category_platform_stats():
                 COUNT(CASE WHEN p.platform = 'flipkart' THEN 1 END) as flipkart_count,
                 COUNT(CASE WHEN p.platform = 'myntra' THEN 1 END) as myntra_count,
                 COUNT(CASE WHEN p.platform = 'ajio' THEN 1 END) as ajio_count,
+                COUNT(CASE WHEN p.platform = 'croma' THEN 1 END) as croma_count,
                 COUNT(CASE WHEN p.platform = 'nykaa' THEN 1 END) as nykaa_count
             FROM deals d
             JOIN products p ON d.product_id = p.id
@@ -198,6 +200,7 @@ async def get_category_platform_stats():
                 COUNT(CASE WHEN p.platform = 'flipkart' THEN 1 END) as flipkart_count,
                 COUNT(CASE WHEN p.platform = 'myntra' THEN 1 END) as myntra_count,
                 COUNT(CASE WHEN p.platform = 'ajio' THEN 1 END) as ajio_count,
+                COUNT(CASE WHEN p.platform = 'croma' THEN 1 END) as croma_count,
                 COUNT(CASE WHEN p.platform = 'nykaa' THEN 1 END) as nykaa_count
             FROM deals d
             JOIN products p ON d.product_id = p.id
@@ -215,6 +218,7 @@ async def get_category_platform_stats():
                 COUNT(CASE WHEN p.platform = 'flipkart' THEN 1 END) as flipkart_count,
                 COUNT(CASE WHEN p.platform = 'myntra' THEN 1 END) as myntra_count,
                 COUNT(CASE WHEN p.platform = 'ajio' THEN 1 END) as ajio_count,
+                COUNT(CASE WHEN p.platform = 'croma' THEN 1 END) as croma_count,
                 COUNT(CASE WHEN p.platform = 'nykaa' THEN 1 END) as nykaa_count
             FROM deals d
             JOIN products p ON d.product_id = p.id
@@ -232,6 +236,7 @@ async def get_category_platform_stats():
                 COUNT(CASE WHEN platform = 'flipkart' THEN 1 END) as flipkart_count,
                 COUNT(CASE WHEN platform = 'myntra' THEN 1 END) as myntra_count,
                 COUNT(CASE WHEN platform = 'ajio' THEN 1 END) as ajio_count,
+                COUNT(CASE WHEN platform = 'croma' THEN 1 END) as croma_count,
                 COUNT(CASE WHEN platform = 'nykaa' THEN 1 END) as nykaa_count
             FROM products
             GROUP BY COALESCE(NULLIF(category, ''), 'general')

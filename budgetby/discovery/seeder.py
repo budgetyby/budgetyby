@@ -10,16 +10,17 @@ import logging
 import asyncio
 from budgetby import config
 from budgetby import database
-from budgetby.discovery import amazon_discover, flipkart_discover, myntra_discover, ajio_discover, nykaa_discover
+from budgetby.discovery import amazon_discover, flipkart_discover, myntra_discover, ajio_discover, nykaa_discover, croma_discover
 
 logger = logging.getLogger("budgetby.discovery.seeder")
 
 TARGET_PROPORTIONS = {
-    "amazon": 22500,    # 3 parts (~27.3%)
-    "flipkart": 22500,  # 3 parts (~27.3%)
-    "myntra": 15000,    # 2 parts (~18.2%)
-    "ajio": 15000,      # 2 parts (~18.2%)
-    "nykaa": 7500,      # 1 part  (~9.1%)
+    "amazon": 22500,    # 3 parts (~25.0%)
+    "flipkart": 22500,  # 3 parts (~25.0%)
+    "myntra": 15000,    # 2 parts (~16.7%)
+    "ajio": 15000,      # 2 parts (~16.7%)
+    "croma": 3500,      # 1 part  (~8.3%)
+    "nykaa": 7500,      # 1 part  (~8.3%)
 }
 
 class ProductSeeder:
@@ -196,6 +197,29 @@ class ProductSeeder:
         tasks = [process_category(cat, info) for cat, info in getattr(config, "NYKAA_DISCOVERY_TARGETS", {}).items()]
         await asyncio.gather(*tasks, return_exceptions=True)
 
+    async def seed_croma(self):
+        current_count = await self.get_platform_count("croma")
+        target = TARGET_PROPORTIONS.get("croma", 3500)
+        if current_count >= target:
+            logger.info(f"Croma target reached ({current_count}/{target}). Skipping discovery.")
+            return
+
+        logger.info(f"Starting Croma electronics discovery ({current_count}/{target} target)...")
+        for cat_key, info in croma_discover.CROMA_CATEGORIES.items():
+            current_count = await self.get_platform_count("croma")
+            if current_count >= target:
+                break
+            try:
+                pages = info.get("pages", 6)
+                products = await croma_discover.discover_category(cat_key, max_pages=pages)
+                for p in products:
+                    await self._upsert(p)
+                logger.info(f"Croma {cat_key}: Added {len(products)} products (Total: {current_count})")
+                await asyncio.sleep(1.5)
+            except Exception as e:
+                logger.error(f"Error seeding Croma {cat_key}: {e}")
+                self.stats["errors"] += 1
+
     async def _upsert(self, product_data: dict):
         try:
             if not product_data.get("product_url"):
@@ -235,12 +259,23 @@ class ProductSeeder:
 
     async def run_bootstrap_until_target(self, target_count: int = 75000):
         """
-        Runs targeted bootstrap only for platforms below quota (specifically Nykaa until 7,500).
-        All other platforms (Amazon, Flipkart, Myntra, Ajio) are complete and rely on dynamic
-        live deal ingestion (Channel Spy, Flash Sales) to add new products continuously as they arrive.
+        Runs targeted bootstrap for platforms below quota (Nykaa & Croma).
         """
         logger.info("Initializing bootstrap discovery...")
 
+        # 1. Croma Bootstrap
+        croma_count = await self.get_platform_count("croma")
+        croma_target = TARGET_PROPORTIONS.get("croma", 3500)
+        if croma_count < croma_target:
+            logger.info(f"🎯 Seeding Croma until {croma_target} target (Current: {croma_count}/{croma_target})...")
+            try:
+                await self.seed_croma()
+            except Exception as e:
+                logger.error(f"Croma bootstrap worker error: {e}")
+        else:
+            logger.info(f"✅ Croma target already reached ({croma_count}/{croma_target}).")
+
+        # 2. Nykaa Bootstrap
         nykaa_count = await self.get_platform_count("nykaa")
         nykaa_target = TARGET_PROPORTIONS.get("nykaa", 7500)
 
@@ -261,12 +296,13 @@ class ProductSeeder:
 
 
     async def run_full_discovery(self) -> dict:
-        """Runs standard multi-platform discovery pass."""
-        logger.info("Running routine multi-platform discovery pass across Amazon, Flipkart, Myntra, Ajio, Nykaa...")
+        """Runs standard multi-platform discovery pass across all 6 platforms."""
+        logger.info("Running routine multi-platform discovery pass across Amazon, Flipkart, Myntra, Ajio, Croma, Nykaa...")
         results = await asyncio.gather(
             self.seed_flipkart(),
             self.seed_myntra(),
             self.seed_ajio(),
+            self.seed_croma(),
             self.seed_nykaa(),
             self.seed_amazon(),
             return_exceptions=True
