@@ -19,6 +19,10 @@ CROMA_CATEGORIES = {
     # High-Ticket Electronics & Computing
     "laptops":                 {"url": "https://www.croma.com/computers-tablets/laptops/c/20", "category": "laptops", "pages": 12},
     "gaming-laptops":          {"url": "https://www.croma.com/computers-tablets/laptops/gaming-laptops/c/806", "category": "laptops", "pages": 8},
+    "tablets-ipads":           {"url": "https://www.croma.com/computers-tablets/tablets-e-readers/tablets/c/92", "category": "electronics", "pages": 8},
+    "storage-ssds-hdds":       {"url": "https://www.croma.com/computers-tablets/storage-devices/external-hard-disk-drive-hdd-/c/229", "category": "electronics", "pages": 6},
+    "keyboards-mice":          {"url": "https://www.croma.com/computers-tablets/computer-accessories/keyboards-mouse/c/227", "category": "electronics", "pages": 6},
+    "printers":                {"url": "https://www.croma.com/computers-tablets/printers-scanners/printers/c/102", "category": "electronics", "pages": 6},
     
     # Smartphones & Smartwatches
     "mobile-phones":           {"url": "https://www.croma.com/phones-wearables/mobile-phones/c/10", "category": "smartphones", "pages": 15},
@@ -38,19 +42,25 @@ CROMA_CATEGORIES = {
     "air-conditioners":        {"url": "https://www.croma.com/home-appliances/air-conditioners/c/46", "category": "appliances", "pages": 12},
     "refrigerators":           {"url": "https://www.croma.com/home-appliances/refrigerators/c/47", "category": "appliances", "pages": 12},
     "washing-machines":        {"url": "https://www.croma.com/home-appliances/washing-machines-dryers/c/48", "category": "appliances", "pages": 12},
+    "dishwashers":             {"url": "https://www.croma.com/kitchen-appliances/dishwashers/c/53", "category": "appliances", "pages": 6},
     "storage-geysers":         {"url": "https://www.croma.com/home-appliances/geysers/storage-water-heaters/c/746", "category": "appliances", "pages": 8},
     "instant-geysers":         {"url": "https://www.croma.com/home-appliances/geysers/instant-water-heaters/c/745", "category": "appliances", "pages": 6},
+    "air-purifiers":           {"url": "https://www.croma.com/home-appliances/air-purifiers/c/492", "category": "appliances", "pages": 6},
     
     # Kitchen & Grooming
     "convection-microwaves":   {"url": "https://www.croma.com/kitchen-appliances/microwave-ovens/convection-microwave-ovens/c/487", "category": "home", "pages": 8},
     "solo-microwaves":         {"url": "https://www.croma.com/kitchen-appliances/microwave-ovens/solo-microwave-ovens/c/489", "category": "home", "pages": 6},
     "trimmers-grooming":       {"url": "https://www.croma.com/grooming-personal-care/personal-grooming/trimmers/c/444", "category": "beauty", "pages": 8},
-    "hair-dryers":             {"url": "https://www.croma.com/grooming-personal-care/hair-care/hair-dryers/c/441", "category": "beauty", "pages": 6}
+    "hair-dryers":             {"url": "https://www.croma.com/grooming-personal-care/hair-care/hair-dryers/c/441", "category": "beauty", "pages": 6},
+    
+    # Flash Deals Campaigns
+    "campaign-deals":          {"url": "https://www.croma.com/campaign/top-deals/c/1000", "category": "electronics", "pages": 5}
 }
 
-async def discover_category(cat_key: str, max_pages: int = 5) -> List[Dict[str, Any]]:
+async def discover_category(cat_key: str, max_pages: int = 5, sort_mode: str = "popularity") -> List[Dict[str, Any]]:
     """
     Discovers deals for a specific Croma category across pages.
+    Supports sort_mode='discount' (highest discounts first) and 'popularity'.
     """
     cat_info = CROMA_CATEGORIES.get(cat_key, {})
     base_url = cat_info.get("url", f"https://www.croma.com/{cat_key}")
@@ -61,7 +71,10 @@ async def discover_category(cat_key: str, max_pages: int = 5) -> List[Dict[str, 
 
     async with AsyncSession(impersonate="chrome124", timeout=config.SCRAPER_TIMEOUT) as session:
         for page in range(max_pages):
-            page_url = f"{base_url}?page={page}"
+            if sort_mode == "discount":
+                page_url = f"{base_url}?q=%3Adiscount-desc&page={page}"
+            else:
+                page_url = f"{base_url}?page={page}"
             try:
                 r = await session.get(page_url, timeout=12)
                 if r.status_code != 200 or not r.text:
@@ -170,5 +183,26 @@ async def discover_category(cat_key: str, max_pages: int = 5) -> List[Dict[str, 
     return results
 
 async def discover_deals_page() -> List[Dict[str, Any]]:
-    """Crawls Croma Deals of the Day hub."""
-    return await discover_category("deals-of-the-day", max_pages=3)
+    """
+    Crawls Croma Flash Deals & High-Discount Deals across top categories.
+    Sorts by :discount-desc to pull live 40% to 80% OFF clearance items.
+    """
+    all_deals = []
+    top_deal_cats = ["laptops", "4k-smart-tvs", "mobile-phones", "bluetooth-headphones", "air-conditioners"]
+    
+    # 1. Crawl campaign deals hub
+    try:
+        camp_deals = await discover_category("campaign-deals", max_pages=3)
+        all_deals.extend(camp_deals)
+    except Exception as e:
+        logger.debug(f"Error crawling Croma campaign deals: {e}")
+
+    # 2. Crawl top categories sorted by highest discount
+    for cat in top_deal_cats:
+        try:
+            cat_deals = await discover_category(cat, max_pages=2, sort_mode="discount")
+            all_deals.extend(cat_deals)
+        except Exception as e:
+            logger.debug(f"Error crawling Croma flash deals for {cat}: {e}")
+
+    return all_deals
