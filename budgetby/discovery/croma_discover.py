@@ -17,34 +17,35 @@ logger = logging.getLogger("budgetby.discovery.croma")
 
 CROMA_CATEGORIES = {
     # High-Ticket Electronics & Computing
-    "laptops":                 {"url": "https://www.croma.com/computers-tablets/laptops/c/20", "category": "laptops", "pages": 10},
-    "desktops-all-in-ones":    {"url": "https://www.croma.com/computers-tablets/desktops-all-in-ones/c/22", "category": "electronics", "pages": 8},
-    "tablets":                 {"url": "https://www.croma.com/computers-tablets/tablets-e-readers/c/21", "category": "electronics", "pages": 5},
+    "laptops":                 {"url": "https://www.croma.com/computers-tablets/laptops/c/20", "category": "laptops", "pages": 12},
+    "gaming-laptops":          {"url": "https://www.croma.com/computers-tablets/laptops/gaming-laptops/c/806", "category": "laptops", "pages": 8},
     
-    # Smartphones & Wearables
-    "smartphones":             {"url": "https://www.croma.com/phones-wearables/mobile-phones/c/10", "category": "smartphones", "pages": 15},
-    "smartwatches":            {"url": "https://www.croma.com/phones-wearables/wearables/smart-watches/c/516", "category": "electronics", "pages": 8},
+    # Smartphones & Smartwatches
+    "mobile-phones":           {"url": "https://www.croma.com/phones-wearables/mobile-phones/c/10", "category": "smartphones", "pages": 15},
+    "5g-smartphones":          {"url": "https://www.croma.com/phones-wearables/mobile-phones/5g-mobile-phones/c/95", "category": "smartphones", "pages": 10},
+    "smartwatches":            {"url": "https://www.croma.com/phones-wearables/wearables/smartwatches/c/931", "category": "electronics", "pages": 10},
     
     # Audio & Entertainment
-    "headphones-earphones":    {"url": "https://www.croma.com/audio-video/headphones-earphones/c/40", "category": "electronics", "pages": 10},
-    "bluetooth-speakers":      {"url": "https://www.croma.com/audio-video/speakers-media-players/bluetooth-speakers/c/408", "category": "electronics", "pages": 6},
-    "soundbars-theatres":      {"url": "https://www.croma.com/audio-video/speakers-media-players/home-theatres-soundbars/c/409", "category": "electronics", "pages": 6},
+    "bluetooth-headphones":    {"url": "https://www.croma.com/audio-video/headphones-earphones/bluetooth-headphones/c/1014", "category": "electronics", "pages": 10},
+    "bluetooth-speakers":      {"url": "https://www.croma.com/audio-video/speakers-media-players/portable-bluetooth-speakers/c/279", "category": "electronics", "pages": 8},
     
     # Televisions & Displays
-    "smart-tvs":               {"url": "https://www.croma.com/televisions-accessories/led-tvs/c/999", "category": "electronics", "pages": 12},
+    "4k-smart-tvs":            {"url": "https://www.croma.com/televisions-accessories/led-tvs/4k-ultra-hd-tvs/c/998", "category": "electronics", "pages": 12},
+    "oled-tvs":                {"url": "https://www.croma.com/televisions-accessories/led-tvs/oled-tvs/c/1000", "category": "electronics", "pages": 6},
+    "led-tvs":                 {"url": "https://www.croma.com/televisions-accessories/led-tvs/c/999", "category": "electronics", "pages": 10},
     
     # Home & Large Appliances
-    "air-conditioners":        {"url": "https://www.croma.com/home-appliances/air-conditioners/c/46", "category": "appliances", "pages": 10},
-    "refrigerators":           {"url": "https://www.croma.com/home-appliances/refrigerators/c/47", "category": "appliances", "pages": 10},
-    "washing-machines":        {"url": "https://www.croma.com/home-appliances/washing-machines-dryers/c/48", "category": "appliances", "pages": 10},
-    "water-heaters":           {"url": "https://www.croma.com/home-appliances/geysers-water-heaters/c/50", "category": "appliances", "pages": 5},
+    "air-conditioners":        {"url": "https://www.croma.com/home-appliances/air-conditioners/c/46", "category": "appliances", "pages": 12},
+    "refrigerators":           {"url": "https://www.croma.com/home-appliances/refrigerators/c/47", "category": "appliances", "pages": 12},
+    "washing-machines":        {"url": "https://www.croma.com/home-appliances/washing-machines-dryers/c/48", "category": "appliances", "pages": 12},
+    "storage-geysers":         {"url": "https://www.croma.com/home-appliances/geysers/storage-water-heaters/c/746", "category": "appliances", "pages": 8},
+    "instant-geysers":         {"url": "https://www.croma.com/home-appliances/geysers/instant-water-heaters/c/745", "category": "appliances", "pages": 6},
     
     # Kitchen & Grooming
-    "kitchen-appliances":      {"url": "https://www.croma.com/kitchen-appliances/microwaves-ovens/c/51", "category": "home", "pages": 8},
-    "personal-grooming":       {"url": "https://www.croma.com/grooming-personal-care/hair-care/c/60", "category": "beauty", "pages": 6},
-    
-    # Deals & Flash Sales Hub
-    "deals-of-the-day":        {"url": "https://www.croma.com/deals-of-the-day/c/1000", "category": "electronics", "pages": 5}
+    "convection-microwaves":   {"url": "https://www.croma.com/kitchen-appliances/microwave-ovens/convection-microwave-ovens/c/487", "category": "home", "pages": 8},
+    "solo-microwaves":         {"url": "https://www.croma.com/kitchen-appliances/microwave-ovens/solo-microwave-ovens/c/489", "category": "home", "pages": 6},
+    "trimmers-grooming":       {"url": "https://www.croma.com/grooming-personal-care/personal-grooming/trimmers/c/444", "category": "beauty", "pages": 8},
+    "hair-dryers":             {"url": "https://www.croma.com/grooming-personal-care/hair-care/hair-dryers/c/441", "category": "beauty", "pages": 6}
 }
 
 async def discover_category(cat_key: str, max_pages: int = 5) -> List[Dict[str, Any]]:
