@@ -78,21 +78,40 @@ class FlipkartScraper(BaseScraper):
                 title = brand
             title = clean_title(title)
                 
-        # 3. Fallback Price & MRP via modern CSS selectors
+        # 3. Fallback Price via modern CSS selectors
         if not price:
             for p_sel in [".Nx9bqj.CxhGGd", "._30jeq3._16Jk6d", ".css-g5y9jx", "div.v1zwn20", ".v1zwn21m.v1zwn20"]:
                 p_node = tree.css_first(p_sel)
                 if p_node and extract_price(p_node.text()) > 0:
                     price = extract_price(p_node.text())
                     break
-                
-        for m_sel in [".yRaY8j.A6rEoz", "._3I9_wc._2p6lqe", "div.v1zwn21n", ".v1zwn28", "div.v1zwn21n.v1zwn28"]:
-            m_node = tree.css_first(m_sel)
-            if m_node and extract_price(m_node.text()) > 0:
-                extracted_mrp = extract_price(m_node.text())
-                if extracted_mrp > price:
-                    mrp = extracted_mrp
-                    break
+
+        # 4. Accurate Hero Strike-Through MRP Extraction (Strictly for this SKU, ignoring other storage variant pills)
+        if price > 0:
+            price_int = int(price)
+            price_str = f"{price_int:,}"
+            price_digits = str(price_int)
+            page_text = r.text
+            patterns = [
+                rf'(?:↓|\b)(\d+%\s*)?([0-9,]{{4,7}})\s*₹?\s*{re.escape(price_str)}',
+                rf'(?:↓|\b)(\d+%\s*)?([0-9,]{{4,7}})\s*₹?\s*{price_digits}'
+            ]
+            for pat in patterns:
+                m = re.search(pat, page_text)
+                if m:
+                    cand = float(m.group(2).replace(',', ''))
+                    if cand > price:
+                        mrp = cand
+                        break
+
+        if not mrp or mrp < price:
+            for m_sel in ["div.v1zwn21n.v1zwn21", ".yRaY8j.A6rEoz", "._3I9_wc._2p6lqe", "div.Nx9bqj ~ div.yRaY8j"]:
+                m_node = tree.css_first(m_sel)
+                if m_node and extract_price(m_node.text()) > 0:
+                    extracted_mrp = extract_price(m_node.text())
+                    if extracted_mrp > price:
+                        mrp = extracted_mrp
+                        break
 
         if not mrp or mrp < price:
             mrp = price
