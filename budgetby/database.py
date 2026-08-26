@@ -170,6 +170,8 @@ async def upsert_product(data: dict) -> int:
                 pass
         return existing_id
 
+    aff_url = data.get("affiliate_url") or p_url
+
     # If product does not exist, insert cleanly
     row = await fetchrow("""
         INSERT INTO products (platform, platform_id, title, category,
@@ -192,7 +194,7 @@ async def upsert_product(data: dict) -> int:
         title,
         data.get("category"),
         p_url,
-        data.get("affiliate_url"),
+        aff_url,
         data.get("image_url"),
         cur_price,
         mrp_val,
