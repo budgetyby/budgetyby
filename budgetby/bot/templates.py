@@ -2,6 +2,18 @@ import html
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from budgetby.scrapers.utils import clean_title
 
+def format_rating(rating: float | int | str | None) -> str:
+    """Format star rating cleanly to 1 decimal place (e.g. 3.8 ★, 4.2 ★)."""
+    if rating is None or rating == "":
+        return ""
+    try:
+        val = float(rating)
+        if val <= 0:
+            return ""
+        return f"{val:.1f}"
+    except (ValueError, TypeError):
+        return str(rating).strip()
+
 def format_price(amount: float | int | None) -> str:
     """Format amount as ₹1,23,456"""
     if amount is None:
@@ -118,8 +130,9 @@ def format_mega_deal(product: dict, deal_result: dict = None) -> str:
     else:
         text += f"💸 <b>Deal Price:</b> <b>{format_price(current_price)}</b>\n"
         
-    if rating:
-        text += f"⭐ <b>Rating:</b> {rating} ★\n"
+    rating_str = format_rating(rating)
+    if rating_str:
+        text += f"⭐ <b>Rating:</b> {rating_str} ★\n"
         
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
@@ -153,8 +166,9 @@ def format_today_deal(product: dict, deal_result: dict = None) -> str:
     else:
         text += f"💸 <b>Deal Price:</b> <b>{format_price(current_price)}</b>\n"
 
-    if rating:
-        text += f"⭐ <b>Rating:</b> {rating} ★\n"
+    rating_str = format_rating(rating)
+    if rating_str:
+        text += f"⭐ <b>Rating:</b> {rating_str} ★\n"
 
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
@@ -188,8 +202,9 @@ def format_hot_deal(product: dict, deal_result: dict = None) -> str:
     else:
         text += f"💸 <b>Offer Price:</b> <b>{format_price(current_price)}</b>\n"
         
-    if rating:
-        text += f"⭐ <b>Rating:</b> {rating} ★\n"
+    rating_str = format_rating(rating)
+    if rating_str:
+        text += f"⭐ <b>Rating:</b> {rating_str} ★\n"
         
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
@@ -250,8 +265,9 @@ def format_evergreen_deal(product: dict, post_count: int = 1) -> str:
     else:
         text += f"💸 <b>Offer Price:</b> <b>{format_price(current_price)}</b>\n"
         
-    if rating:
-        text += f"⭐ <b>Rating:</b> {rating} ★\n"
+    rating_str = format_rating(rating)
+    if rating_str:
+        text += f"⭐ <b>Rating:</b> {rating_str} ★\n"
         
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
@@ -281,7 +297,8 @@ def format_daily_digest(top_deals: list[dict], digest_type: str = "Morning") -> 
             pct = round(((mrp - price) / mrp) * 100)
             
         pct_str = f" (<b>{pct}% OFF</b>)" if pct > 0 else ""
-        rating_str = f" ⭐ {d.get('rating')}★" if d.get('rating') else ""
+        r_val = format_rating(d.get('rating'))
+        rating_str = f" ⭐ {r_val}★" if r_val else ""
         
         text += f"{num} <b>{title}</b>\n"
         text += f"   💰 <b>{format_price(price)}</b>{pct_str}{rating_str}\n"
@@ -356,8 +373,9 @@ def format_back_in_stock(product: dict, days_oos: int = 0) -> str:
         text += f"🏷️ <b>Discount:</b> <b>{pct}% OFF</b>\n"
     else:
         text += f"💸 <b>Current Price:</b> <b>{format_price(current_price)}</b>\n"
-    if rating:
-        text += f"⭐ <b>Rating:</b> {rating} ★\n"
+    rating_str = format_rating(rating)
+    if rating_str:
+        text += f"⭐ <b>Rating:</b> {rating_str} ★\n"
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
