@@ -15,11 +15,23 @@ class MyntraScraper(BaseScraper):
             r = await s.get(url, timeout=config.SCRAPER_TIMEOUT)
             
         tree = HTMLParser(r.text)
-        script_node = None
+        pdp_data = None
+        
         for script in tree.css("script"):
-            if script.text() and "window.__myx_data__" in script.text():
-                script_node = script
-                break
+            txt = script.text() or ""
+            if "pdpData" in txt:
+                idx = txt.find("window.__myx")
+                if idx != -1:
+                    json_start = txt.find("{", idx)
+                    if json_start != -1:
+                        try:
+                            decoder = json.JSONDecoder()
+                            data, _ = decoder.raw_decode(txt[json_start:])
+                            pdp_data = data.get("pdpData")
+                            if pdp_data is not None:
+                                break
+                        except Exception:
+                            pass
                 
         title = ""
         price = 0.0
@@ -27,27 +39,28 @@ class MyntraScraper(BaseScraper):
         rating = 0.0
         review_count = 0
         image_url = ""
-        in_stock = True
+        in_stock = False
         
-        if script_node:
+        if pdp_data:
             try:
-                json_str = re.search(r'window\.__myx_data__\s*=\s*({.*?});', script_node.text(), re.DOTALL)
-                if json_str:
-                    data = json.loads(json_str.group(1))
-                    pdp_data = data.get("pdpData", {})
-                    title = pdp_data.get("name", "")
-                    price = float(pdp_data.get("price", {}).get("discounted", 0))
-                    mrp = float(pdp_data.get("price", {}).get("mrp", 0))
+                title = pdp_data.get("name", "")
+                price = float(pdp_data.get("price", {}).get("discounted", 0) or 0)
+                mrp = float(pdp_data.get("price", {}).get("mrp", 0) or price)
+                
+                media = pdp_data.get("media", {}).get("albums", [])
+                if media and media[0].get("images"):
+                    image_url = media[0]["images"][0].get("src", "")
                     
-                    media = pdp_data.get("media", {}).get("albums", [])
-                    if media and media[0].get("images"):
-                        image_url = media[0]["images"][0].get("src", "")
-                        
-                    rating = float(pdp_data.get("ratings", {}).get("averageRating", 0))
-                    review_count = int(pdp_data.get("ratings", {}).get("totalReviewsCount", 0))
-                    in_stock = not pdp_data.get("flags", {}).get("outOfStock", False)
+                rating = float(pdp_data.get("ratings", {}).get("averageRating", 0) or 0)
+                review_count = int(pdp_data.get("ratings", {}).get("totalReviewsCount", 0) or 0)
+                
+                # Check Out-of-Stock flags
+                is_oos = pdp_data.get("flags", {}).get("outOfStock", False)
+                in_stock = (not is_oos) and (price > 0)
             except Exception:
-                pass
+                in_stock = False
+        else:
+            in_stock = False
                 
         return {
             "title": title,
@@ -70,23 +83,26 @@ class MyntraScraper(BaseScraper):
         products = []
         
         for script in tree.css("script"):
-            if script.text() and "window.__myx_data__" in script.text():
-                try:
-                    json_str = re.search(r'window\.__myx_data__\s*=\s*({.*?});', script.text(), re.DOTALL)
-                    if json_str:
-                        data = json.loads(json_str.group(1))
-                        items = data.get("searchData", {}).get("results", {}).get("products", [])
-                        for item in items:
-                            pid = str(item.get("productId", ""))
-                            p_url = f"https://www.myntra.com/{item.get('landingPageUrl', '')}"
-                            title = clean_title(item.get("productName", ""))
-                            if pid:
-                                products.append({
-                                    "platform_id": pid,
-                                    "product_url": p_url,
-                                    "title": title
-                                })
-                except Exception:
-                    pass
-                break
+            txt = script.text() or ""
+            if "searchData" in txt:
+                idx = txt.find("window.__myx")
+                if idx != -1:
+                    json_start = txt.find("{", idx)
+                    if json_start != -1:
+                        try:
+                            decoder = json.JSONDecoder()
+                            data, _ = decoder.raw_decode(txt[json_start:])
+                            items = data.get("searchData", {}).get("results", {}).get("products", [])
+                            for item in items:
+                                pid = str(item.get("productId", ""))
+                                p_url = f"https://www.myntra.com/{item.get('landingPageUrl', '')}"
+                                title = clean_title(item.get("productName", ""))
+                                if pid:
+                                    products.append({
+                                        "platform_id": pid,
+                                        "product_url": p_url,
+                                        "title": title
+                                    })
+                        except Exception:
+                            pass
         return products
