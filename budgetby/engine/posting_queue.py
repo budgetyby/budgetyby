@@ -296,14 +296,15 @@ class PostingQueue:
                     url = f"https://www.amazon.in/dp/{product.get('platform_id')}?tag={config.AMAZON_ASSOCIATE_TAG}"
                     product["affiliate_url"] = url
 
-                # Automatic Live EarnKaro Short Link Conversion via @ekconverter9bot
+                # Automatic Live EarnKaro Short Link Conversion via @ekconverter9bot for all 4 non-Amazon stores
                 if platform in ("flipkart", "myntra", "ajio", "nykaa") and url:
                     try:
                         from budgetby.ingest.telegram_listener import convert_url_via_ek_bot
-                        converted_ek = await convert_url_via_ek_bot(url, timeout=3.5)
-                        if converted_ek and ("fktr.in" in converted_ek or "ekaro.in" in converted_ek):
+                        converted_ek = await convert_url_via_ek_bot(url, timeout=4.0)
+                        if converted_ek and converted_ek != url:
                             product["affiliate_url"] = converted_ek
                             deal_data["product"]["affiliate_url"] = converted_ek
+                            logger.info(f"🔗 [POST LINK] [{platform.upper()}] Replaced with live converted URL: {converted_ek}")
                     except Exception as e:
                         logger.debug(f"Auto EK conversion check: {e}")
 

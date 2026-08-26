@@ -40,9 +40,13 @@ async def convert_url_via_ek_bot(raw_url: str, timeout: float = 3.5) -> str:
             await conv.send_message(clean_target)
             resp = await conv.get_response()
             if resp and resp.text:
-                urls = re.findall(r'https?://(?:fktr\.in|ekaro\.in)[^\s\)\>]+', resp.text)
-                if urls:
-                    real_ek_link = urls[0].strip()
+                urls = re.findall(r'https?://[^\s\)\>]+', resp.text)
+                valid_links = [
+                    u.strip() for u in urls 
+                    if not any(x in u.lower() for x in ['t.me', 'telegram.org', 'affiliaters.in/help', 'support', 'help'])
+                ]
+                if valid_links:
+                    real_ek_link = valid_links[0]
                     _ek_cache[clean_target] = real_ek_link
                     logger.info(f"✨ [EARNKARO AUTO-CONVERTED] {clean_target[:45]}... ➔ {real_ek_link}")
                     return real_ek_link
