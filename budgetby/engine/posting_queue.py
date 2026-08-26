@@ -269,27 +269,98 @@ class PostingQueue:
                             }
                             break
 
-            # 3. If queue was empty, fetch standard rotation deal
+            # 3. If queue was empty, fetch and verify candidates with instant same-platform fallback
             if not deal_data:
                 from budgetby.engine.evergreen import find_evergreen_deals
-                candidates = await find_evergreen_deals(limit=1, platform=target_platform)
+                from budgetby.engine.cooldown import is_on_cooldown
+                from budgetby.scrapers.amazon import AmazonScraper
+                from budgetby.scrapers.flipkart import FlipkartScraper
+                from budgetby.scrapers.myntra import MyntraScraper
+                from budgetby.scrapers.ajio import AjioScraper
+                from budgetby.scrapers.nykaa import NykaaScraper
+
+                scrapers_map = {
+                    "amazon": AmazonScraper,
+                    "flipkart": FlipkartScraper,
+                    "myntra": MyntraScraper,
+                    "ajio": AjioScraper,
+                    "nykaa": NykaaScraper,
+                }
+                min_discount = getattr(config, "MIN_DEAL_DISCOUNT_PCT", 10.0) / 100.0
+
+                # Search up to 5 candidates for target platform
+                candidates = await find_evergreen_deals(limit=5, platform=target_platform)
                 
-                # Fallback to alternate platform if target platform has no candidate
+                # If target platform has no candidates, find from alternate platform
                 if not candidates:
                     for alt_plat in ["amazon", "flipkart", "myntra", "ajio", "nykaa"]:
                         if alt_plat != self._last_posted_platform and alt_plat != target_platform:
-                            candidates = await find_evergreen_deals(limit=1, platform=alt_plat)
-                            if candidates:
+                            alt_candidates = await find_evergreen_deals(limit=5, platform=alt_plat)
+                            if alt_candidates:
+                                candidates = alt_candidates
                                 target_platform = alt_plat
                                 break
 
-                if candidates:
-                    deal_data = {
-                        "product": dict(candidates[0]),
-                        "type": "evergreen",
-                        "badge": "EVERGREEN",
-                        "score": 75
-                    }
+                # Iterate through candidates on target platform and pre-flight check them!
+                for cand in candidates:
+                    p_dict = dict(cand)
+                    pid = p_dict.get("id")
+                    plat = (p_dict.get("platform") or target_platform).lower()
+                    
+                    if pid and await is_on_cooldown(pid):
+                        continue
+
+                    c_url = p_dict.get("product_url") or p_dict.get("affiliate_url") or p_dict.get("url", "")
+                    scr_cls = scrapers_map.get(plat)
+                    
+                    if scr_cls and c_url:
+                        try:
+                            live_check = await scr_cls()._do_scrape_product(c_url)
+                            if not live_check:
+                                logger.info(f"🚫 [PRE-FLIGHT REJECT] #{pid} ({plat.upper()}) live check returned None. Trying next candidate from same store...")
+                                continue
+                            
+                            is_in_stock = bool(live_check.get("in_stock", True))
+                            live_p = float(live_check.get("current_price") or 0)
+                            live_m = float(live_check.get("mrp") or live_p)
+
+                            if not is_in_stock:
+                                logger.info(f"🚫 [PRE-FLIGHT REJECT] #{pid} ({plat.upper()}) is OUT OF STOCK. Trying next candidate from same store...")
+                                if pid:
+                                    await database.execute("UPDATE products SET in_stock = FALSE WHERE id = $1;", pid)
+                                continue
+
+                            if live_p <= 0 or live_m <= live_p or ((live_m - live_p) / live_m) < min_discount:
+                                logger.info(f"🚫 [PRE-FLIGHT REJECT] #{pid} ({plat.upper()}) has no valid discount (₹{live_p} / ₹{live_m}). Trying next candidate from same store...")
+                                continue
+
+                            # Live check passed! Sync fresh live price, mrp, image, rating
+                            p_dict["current_price"] = live_p
+                            p_dict["mrp"] = live_m
+                            if live_check.get("image_url"):
+                                p_dict["image_url"] = live_check["image_url"]
+                            if "rating" in live_check:
+                                p_dict["rating"] = live_check["rating"]
+                            if "review_count" in live_check:
+                                p_dict["review_count"] = live_check["review_count"]
+
+                            deal_data = {
+                                "product": p_dict,
+                                "type": "evergreen",
+                                "badge": "EVERGREEN",
+                                "score": 75
+                            }
+                            break
+                        except Exception as pe:
+                            logger.debug(f"Candidate check error: {pe}")
+                    else:
+                        deal_data = {
+                            "product": p_dict,
+                            "type": "evergreen",
+                            "badge": "EVERGREEN",
+                            "score": 75
+                        }
+                        break
 
             if not deal_data:
                 logger.info("No qualifying deal available to post this tick.")
@@ -329,62 +400,6 @@ class PostingQueue:
                 if not url and platform == "amazon" and product.get("platform_id"):
                     url = f"https://www.amazon.in/dp/{product.get('platform_id')}?tag={config.AMAZON_ASSOCIATE_TAG}"
                     product["affiliate_url"] = url
-
-                # Pre-Flight Live Stock & Price Verification (Guarantees zero out-of-stock and zero 0% discount posts)
-                clean_target_url = product.get("product_url") or url
-                if clean_target_url and platform in ("myntra", "ajio", "flipkart", "amazon", "nykaa"):
-                    try:
-                        from budgetby.scrapers.amazon import AmazonScraper
-                        from budgetby.scrapers.flipkart import FlipkartScraper
-                        from budgetby.scrapers.myntra import MyntraScraper
-                        from budgetby.scrapers.ajio import AjioScraper
-                        from budgetby.scrapers.nykaa import NykaaScraper
-
-                        scrapers_map = {
-                            "amazon": AmazonScraper,
-                            "flipkart": FlipkartScraper,
-                            "myntra": MyntraScraper,
-                            "ajio": AjioScraper,
-                            "nykaa": NykaaScraper,
-                        }
-                        scr_cls = scrapers_map.get(platform)
-                        if scr_cls:
-                            live_check = await scr_cls()._do_scrape_product(clean_target_url)
-                            if live_check:
-                                is_live_in_stock = bool(live_check.get("in_stock", True))
-                                live_p = float(live_check.get("current_price") or 0)
-                                live_m = float(live_check.get("mrp") or live_p)
-                                
-                                if not is_live_in_stock:
-                                    logger.info(f"🚫 [PRE-FLIGHT REJECT] #{pid} ({platform.upper()}) is OUT OF STOCK live. Aborting broadcast.")
-                                    if pid:
-                                        await database.execute("UPDATE products SET in_stock = FALSE WHERE id = $1;", pid)
-                                    return
-                                    
-                                if live_p > 0:
-                                    product["current_price"] = live_p
-                                    product["mrp"] = live_m
-                                    deal_data["product"]["current_price"] = live_p
-                                    deal_data["product"]["mrp"] = live_m
-                                    price = live_p
-                                    mrp = live_m
-                                    
-                                if live_check.get("image_url"):
-                                    product["image_url"] = live_check["image_url"]
-                                    deal_data["product"]["image_url"] = live_check["image_url"]
-
-                                if "rating" in live_check:
-                                    product["rating"] = live_check["rating"]
-                                    deal_data["product"]["rating"] = live_check["rating"]
-                                if "review_count" in live_check:
-                                    product["review_count"] = live_check["review_count"]
-                                    deal_data["product"]["review_count"] = live_check["review_count"]
-                    except Exception as pe:
-                        logger.debug(f"Pre-flight live check note: {pe}")
-
-                if price <= 0 or mrp <= price or (mrp > 0 and ((mrp - price) / mrp) < min_discount):
-                    logger.info(f"🚫 [PRE-FLIGHT REJECT] #{pid} ({platform.upper()}) has no valid discount (₹{price} / ₹{mrp}). Aborting broadcast.")
-                    return
 
                 # Automatic Live EarnKaro Short Link Conversion via @ekconverter9bot for all 4 non-Amazon stores
                 if platform in ("flipkart", "myntra", "ajio", "nykaa") and url:
