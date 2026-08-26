@@ -9,6 +9,7 @@ import signal
 import subprocess
 import logging
 import ctypes
+import psutil
 
 BASE_DIR = r"c:\Users\jaysi\.gemini\antigravity\scratch\budget-by"
 LOG_FILE = os.path.join(BASE_DIR, "bot_runner.log")
@@ -38,16 +39,39 @@ def prevent_windows_sleep():
             logging.warning(f"Could not set Windows execution state: {e}")
 
 
+def cleanup_orphaned_instances():
+    """
+    Kills any duplicate or orphaned budgetby processes to guarantee
+    that exactly ONE bot instance runs at any time (prevents Telegram 409 Conflict,
+    SQLite session locks, and Port 5000 bind errors).
+    """
+    current_pid = os.getpid()
+    killed = 0
+    for p in psutil.process_iter(['pid', 'name', 'cmdline']):
+        try:
+            if p.info['pid'] == current_pid:
+                continue
+            cmdline = " ".join(p.info['cmdline'] or [])
+            if "budgetby.main" in cmdline or ("run_local_daemon.py" in cmdline and p.info['pid'] != current_pid):
+                logging.warning(f"🧹 Terminating old/duplicate instance (PID {p.info['pid']})...")
+                p.kill()
+                killed += 1
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+    if killed > 0:
+        logging.info(f"✨ Cleaned up {killed} duplicate process(es). Waiting 2s for OS release...")
+        time.sleep(2)
+
+
 def terminate_process(proc: subprocess.Popen, timeout: int = 8):
     """
     Gracefully terminate the subprocess: SIGTERM first, then SIGKILL after timeout.
     Also kills the entire process tree on Windows to prevent zombie child procs.
     """
     if proc is None or proc.poll() is not None:
-        return  # Already dead
+        return
     try:
         if sys.platform == "win32":
-            # taskkill /F /T kills the process AND all its children
             subprocess.call(
                 ["taskkill", "/F", "/T", "/PID", str(proc.pid)],
                 stdout=subprocess.DEVNULL,
@@ -68,12 +92,18 @@ def main():
     logging.info("🚀 Starting BudgetBy Local Daemon Service...")
     prevent_windows_sleep()
 
+    # Pre-boot: Kill any leftover duplicate instances
+    cleanup_orphaned_instances()
+
     python_exe = sys.executable
     cmd = [python_exe, "-m", "budgetby.main"]
     proc = None
 
     while True:
         try:
+            # Ensure no stray process before launching
+            cleanup_orphaned_instances()
+
             logging.info(f"▶️ Launching BudgetBy Engine: {' '.join(cmd)}")
             proc = subprocess.Popen(
                 cmd,
@@ -95,24 +125,21 @@ def main():
             ret_code = proc.returncode
 
             if ret_code == 0:
-                # Clean exit (Ctrl+C or graceful shutdown)
-                logging.info("✅ BudgetBy stopped cleanly (code 0). Restarting in 10 seconds...")
+                logging.info("✅ BudgetBy stopped cleanly (code 0). Restarting in 5 seconds...")
             else:
                 logging.warning(f"⚠️ BudgetBy process exited with code {ret_code}. Auto-restarting...")
 
-            # CRITICAL: Wait long enough for OS to release port 5000 and
-            # Telethon SQLite session lock before the new process starts.
-            logging.info("⏳ Waiting 15 seconds for OS to release port and session locks...")
-            time.sleep(15)
+            logging.info("⏳ Waiting 5 seconds before restart...")
+            time.sleep(5)
 
         except KeyboardInterrupt:
             logging.info("🛑 Keyboard interrupt received. Stopping daemon.")
             terminate_process(proc)
             break
         except Exception as e:
-            logging.error(f"❌ Daemon unexpected error: {e}. Restarting in 15 seconds...", exc_info=True)
+            logging.error(f"❌ Daemon unexpected error: {e}. Restarting in 10 seconds...", exc_info=True)
             terminate_process(proc)
-            time.sleep(15)
+            time.sleep(10)
 
 
 if __name__ == "__main__":
