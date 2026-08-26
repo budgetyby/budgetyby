@@ -207,7 +207,7 @@ class ProductSeeder:
             self.stats["errors"] += 1
 
     async def _platform_worker(self, platform: str, seed_func, sort_modes: list = None):
-        """Runs continuous multi-sort discovery for a single platform until its target is reached."""
+        """Runs discovery for a single platform until its configured target is reached, then cleanly exits."""
         target = TARGET_PROPORTIONS.get(platform, 15000)
         sort_modes = sort_modes or ["popularity"]
         mode_idx = 0
@@ -216,9 +216,8 @@ class ProductSeeder:
             try:
                 current_count = await self.get_platform_count(platform)
                 if current_count >= target:
-                    logger.info(f"[{platform.upper()}] Target reached ({current_count}/{target}). Worker sleeping for 1 hour.")
-                    await asyncio.sleep(3600)
-                    continue
+                    logger.info(f"[{platform.upper()}] Target reached ({current_count}/{target}). Worker completed cleanly.")
+                    return  # Target reached, exit worker!
 
                 active_sort = sort_modes[mode_idx % len(sort_modes)]
                 mode_idx += 1
@@ -235,27 +234,30 @@ class ProductSeeder:
                 await asyncio.sleep(30)
 
     async def run_bootstrap_until_target(self, target_count: int = 75000):
-        """Runs continuous independent multi-platform workers until custom targets are reached."""
-        logger.info(f"Starting independent multi-platform workers until {target_count} total products...")
+        """
+        Runs targeted bootstrap only for platforms below quota (specifically Nykaa until 7,500).
+        All other platforms (Amazon, Flipkart, Myntra, Ajio) are complete and rely on dynamic
+        live deal ingestion (Channel Spy, Flash Sales) to add new products continuously as they arrive.
+        """
+        logger.info("Initializing bootstrap discovery...")
 
-        async def guarded_worker(platform, seed_func, sort_modes):
-            """Wraps _platform_worker with outer crash recovery so the worker NEVER permanently dies."""
-            while True:
-                try:
-                    await self._platform_worker(platform, seed_func, sort_modes)
-                    break  # Worker exited cleanly (target reached)
-                except Exception as e:
-                    logger.error(f"[{platform.upper()}] Worker crashed unexpectedly: {e}. Restarting in 30s...", exc_info=True)
-                    await asyncio.sleep(30)
+        nykaa_count = await self.get_platform_count("nykaa")
+        nykaa_target = TARGET_PROPORTIONS.get("nykaa", 7500)
 
-        tasks = [
-            asyncio.create_task(guarded_worker("myntra", self.seed_myntra, ["popularity", "discount", "new"])),
-            asyncio.create_task(guarded_worker("nykaa", self.seed_nykaa, ["popularity", "discount", "new_arrival", "customer_top_rated"])),
-            asyncio.create_task(guarded_worker("flipkart", self.seed_flipkart, ["popularity", "discount", "recency_desc", "relevance"])),
-            asyncio.create_task(guarded_worker("ajio", self.seed_ajio, None)),
-            asyncio.create_task(guarded_worker("amazon", self.seed_amazon, None)),
-        ]
-        await asyncio.gather(*tasks, return_exceptions=True)
+        if nykaa_count < nykaa_target:
+            logger.info(f"🎯 Seeding Nykaa until {nykaa_target} target (Current: {nykaa_count}/{nykaa_target})...")
+            try:
+                await self._platform_worker(
+                    "nykaa", 
+                    self.seed_nykaa, 
+                    ["popularity", "discount", "new_arrival", "customer_top_rated"]
+                )
+            except Exception as e:
+                logger.error(f"Nykaa bootstrap worker error: {e}")
+        else:
+            logger.info(f"✅ Nykaa target already reached ({nykaa_count}/{nykaa_target}).")
+
+        logger.info("✨ Bootstrap seeder finished! New products will be dynamically ingested and saved to DB whenever deals arrive.")
 
 
     async def run_full_discovery(self) -> dict:
