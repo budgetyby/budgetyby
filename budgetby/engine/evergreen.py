@@ -33,8 +33,8 @@ async def find_evergreen_deals(limit: int = 10, platform: str = None) -> list[Re
                     AND d.posted_at >= NOW() - make_interval(days => {config.DUPLICATE_EXPIRY_DAYS})
               )
             ORDER BY 
+                ((p.mrp - p.current_price) / p.mrp) DESC,
                 p.rating DESC NULLS LAST,
-                (((p.mrp - p.current_price) / p.mrp) * p.current_price) DESC,
                 RANDOM()
             LIMIT ${4 if platform else 3}
         """

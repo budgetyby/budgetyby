@@ -316,6 +316,8 @@ class PostingQueue:
 
                             if live_p <= 0 or live_m <= live_p or ((live_m - live_p) / live_m) < min_discount:
                                 logger.info(f"🚫 [PRE-FLIGHT REJECT] #{pid} ({plat.upper()}) has no valid discount (₹{live_p} / ₹{live_m}). Trying next candidate from same store...")
+                                if pid and live_p > 0:
+                                    await database.execute("UPDATE products SET current_price = $1, mrp = $2, in_stock = $3 WHERE id = $4;", live_p, live_m, is_in_stock, pid)
                                 continue
 
                             # Live check passed! Sync fresh live price, mrp, image, rating
