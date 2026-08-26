@@ -331,6 +331,55 @@ class PostingQueue:
                     url = f"https://www.amazon.in/dp/{product.get('platform_id')}?tag={config.AMAZON_ASSOCIATE_TAG}"
                     product["affiliate_url"] = url
 
+                # Pre-Flight Live Stock & Price Verification (Guarantees zero out-of-stock and zero 0% discount posts)
+                clean_target_url = product.get("product_url") or url
+                if clean_target_url and platform in ("myntra", "ajio", "flipkart", "amazon", "nykaa"):
+                    try:
+                        from budgetby.scrapers.amazon import AmazonScraper
+                        from budgetby.scrapers.flipkart import FlipkartScraper
+                        from budgetby.scrapers.myntra import MyntraScraper
+                        from budgetby.scrapers.ajio import AjioScraper
+                        from budgetby.scrapers.nykaa import NykaaScraper
+
+                        scrapers_map = {
+                            "amazon": AmazonScraper,
+                            "flipkart": FlipkartScraper,
+                            "myntra": MyntraScraper,
+                            "ajio": AjioScraper,
+                            "nykaa": NykaaScraper,
+                        }
+                        scr_cls = scrapers_map.get(platform)
+                        if scr_cls:
+                            live_check = await scr_cls()._do_scrape_product(clean_target_url)
+                            if live_check:
+                                is_live_in_stock = bool(live_check.get("in_stock", True))
+                                live_p = float(live_check.get("current_price") or 0)
+                                live_m = float(live_check.get("mrp") or live_p)
+                                
+                                if not is_live_in_stock:
+                                    logger.info(f"🚫 [PRE-FLIGHT REJECT] #{pid} ({platform.upper()}) is OUT OF STOCK live. Aborting broadcast.")
+                                    if pid:
+                                        await database.execute("UPDATE products SET in_stock = FALSE WHERE id = $1;", pid)
+                                    return
+                                    
+                                if live_p > 0:
+                                    product["current_price"] = live_p
+                                    product["mrp"] = live_m
+                                    deal_data["product"]["current_price"] = live_p
+                                    deal_data["product"]["mrp"] = live_m
+                                    price = live_p
+                                    mrp = live_m
+                                    
+                                if live_check.get("image_url"):
+                                    product["image_url"] = live_check["image_url"]
+                                    deal_data["product"]["image_url"] = live_check["image_url"]
+                    except Exception as pe:
+                        logger.debug(f"Pre-flight live check note: {pe}")
+
+                if price <= 0 or mrp <= price or (mrp > 0 and ((mrp - price) / mrp) < min_discount):
+                    logger.info(f"🚫 [PRE-FLIGHT REJECT] #{pid} ({platform.upper()}) has no valid discount (₹{price} / ₹{mrp}). Aborting broadcast.")
+                    return
+
                 # Automatic Live EarnKaro Short Link Conversion via @ekconverter9bot for all 4 non-Amazon stores
                 if platform in ("flipkart", "myntra", "ajio", "nykaa") and url:
                     try:

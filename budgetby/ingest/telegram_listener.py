@@ -17,12 +17,14 @@ logger = logging.getLogger("budgetby.ingest.telegram_listener")
 
 _client = None
 _ek_cache = {}
+_ek_lock = asyncio.Lock()
 
-async def convert_url_via_ek_bot(raw_url: str, timeout: float = 3.5) -> str:
+async def convert_url_via_ek_bot(raw_url: str, timeout: float = 4.0) -> str:
     """
     Automatically converts raw Flipkart/Myntra/Ajio/Nykaa URLs to real
     fktr.in / ekaro.in profit tracking links via @ekconverter9bot.
     Guarantees that 100% of clicks are recorded live on earnkaro.com!
+    Protected by _ek_lock to eliminate link-swapping concurrency bugs.
     """
     global _client
     if not raw_url:
@@ -36,20 +38,22 @@ async def convert_url_via_ek_bot(raw_url: str, timeout: float = 3.5) -> str:
         return raw_url
 
     try:
-        async with _client.conversation("ekconverter9bot", timeout=timeout) as conv:
-            await conv.send_message(clean_target)
-            resp = await conv.get_response()
-            if resp and resp.text:
-                urls = re.findall(r'https?://[^\s\)\>]+', resp.text)
-                valid_links = [
-                    u.strip() for u in urls 
-                    if not any(x in u.lower() for x in ['t.me', 'telegram.org', 'affiliaters.in/help', 'support', 'help'])
-                ]
-                if valid_links:
-                    real_ek_link = valid_links[0]
-                    _ek_cache[clean_target] = real_ek_link
-                    logger.info(f"✨ [EARNKARO AUTO-CONVERTED] {clean_target[:45]}... ➔ {real_ek_link}")
-                    return real_ek_link
+        async with _ek_lock:
+            # Serialized conversion: 1 URL at a time eliminates any possibility of link mismatch!
+            async with _client.conversation("ekconverter9bot", timeout=timeout) as conv:
+                await conv.send_message(clean_target)
+                resp = await conv.get_response()
+                if resp and resp.text:
+                    urls = re.findall(r'https?://[^\s\)\>]+', resp.text)
+                    valid_links = [
+                        u.strip() for u in urls 
+                        if not any(x in u.lower() for x in ['t.me', 'telegram.org', 'affiliaters.in/help', 'support', 'help'])
+                    ]
+                    if valid_links:
+                        real_ek_link = valid_links[0]
+                        _ek_cache[clean_target] = real_ek_link
+                        logger.info(f"✨ [EARNKARO AUTO-CONVERTED] {clean_target[:45]}... ➔ {real_ek_link}")
+                        return real_ek_link
     except Exception as e:
         logger.debug(f"EK converter fallback for {clean_target[:40]}: {e}")
 
