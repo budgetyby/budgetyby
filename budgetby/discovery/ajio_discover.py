@@ -52,6 +52,9 @@ async def discover_category(category_code: str, pages: int = 2) -> List[Dict[str
                             if not title or not price or price <= 0:
                                 continue
 
+                            r_val = float(p.get("averageRating") or p.get("rating") or 0.0)
+                            rc_val = int(p.get("ratingsCount") or p.get("reviewCount") or 0)
+
                             products.append({
                                 "platform": "ajio",
                                 "platform_id": str(code),
@@ -62,8 +65,8 @@ async def discover_category(category_code: str, pages: int = 2) -> List[Dict[str
                                 "image_url": image_url,
                                 "current_price": price,
                                 "mrp": mrp or price,
-                                "rating": 4.1,
-                                "review_count": 25,
+                                "rating": r_val,
+                                "review_count": rc_val,
                             })
                     except Exception as e:
                         logger.error(f"Error parsing Ajio preloaded state: {e}")
@@ -88,6 +91,9 @@ async def discover_category(category_code: str, pages: int = 2) -> List[Dict[str
                             images = p.get("images", [])
                             image_url = images[0].get("url", "") if images else ""
 
+                            r_val = float(p.get("averageRating") or p.get("rating") or 0.0)
+                            rc_val = int(p.get("ratingsCount") or p.get("reviewCount") or 0)
+
                             products.append({
                                 "platform": "ajio",
                                 "platform_id": code,
@@ -98,8 +104,8 @@ async def discover_category(category_code: str, pages: int = 2) -> List[Dict[str
                                 "image_url": image_url,
                                 "current_price": price,
                                 "mrp": mrp or price,
-                                "rating": 4.1,
-                                "review_count": 25,
+                                "rating": r_val,
+                                "review_count": rc_val,
                             })
                     except Exception as e:
                         logger.error(f"Error parsing Ajio JSON response: {e}")

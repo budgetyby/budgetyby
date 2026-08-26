@@ -62,6 +62,25 @@ class AjioScraper(BaseScraper):
                                     images = pdp.get("images", [])
                                     if images:
                                         image_url = images[0].get("url", "")
+                                    
+                                    # Extract Genuine Live Customer Star Rating
+                                    ratings_resp = pdp.get("ratingsResponse", {})
+                                    agg_rating = ratings_resp.get("aggregateRating", {})
+                                    if agg_rating.get("averageRating"):
+                                        try:
+                                            rating = float(agg_rating["averageRating"])
+                                        except Exception:
+                                            pass
+                                    else:
+                                        rating = 0.0
+
+                                    if agg_rating.get("numUserRatings"):
+                                        try:
+                                            review_count = int(agg_rating["numUserRatings"])
+                                        except Exception:
+                                            pass
+                                    else:
+                                        review_count = 0
                                     break
                             except Exception:
                                 pass
