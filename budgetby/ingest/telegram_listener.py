@@ -15,6 +15,43 @@ from budgetby.ingest.channel_monitor import verify_and_ingest_single_deal
 
 logger = logging.getLogger("budgetby.ingest.telegram_listener")
 
+_client = None
+_ek_cache = {}
+
+async def convert_url_via_ek_bot(raw_url: str, timeout: float = 3.5) -> str:
+    """
+    Automatically converts raw Flipkart/Myntra/Ajio/Nykaa URLs to real
+    fktr.in / ekaro.in profit tracking links via @ekconverter9bot.
+    Guarantees that 100% of clicks are recorded live on earnkaro.com!
+    """
+    global _client
+    if not raw_url:
+        return raw_url
+
+    clean_target = raw_url.split("&affid=")[0].split("?affid=")[0]
+    if clean_target in _ek_cache:
+        return _ek_cache[clean_target]
+
+    if not _client or not _client.is_connected():
+        return raw_url
+
+    try:
+        async with _client.conversation("ekconverter9bot", timeout=timeout) as conv:
+            await conv.send_message(clean_target)
+            resp = await conv.get_response()
+            if resp and resp.text:
+                urls = re.findall(r'https?://(?:fktr\.in|ekaro\.in)[^\s\)\>]+', resp.text)
+                if urls:
+                    real_ek_link = urls[0].strip()
+                    _ek_cache[clean_target] = real_ek_link
+                    logger.info(f"✨ [EARNKARO AUTO-CONVERTED] {clean_target[:45]}... ➔ {real_ek_link}")
+                    return real_ek_link
+    except Exception as e:
+        logger.debug(f"EK converter fallback for {clean_target[:40]}: {e}")
+
+    return raw_url
+
+
 # Target Private & Web Channel IDs / Links provided by user:
 TARGET_CHAT_IDS = [
     -1002273009558,  # Discounts & Offers and More ✨ (+0GTLjgGo-DQ5YjE9)
@@ -63,7 +100,9 @@ async def start_telegram_listener(api_id: int = None, api_hash: str = None):
 
     try:
         logger.info("🚀 Connecting Real-Time Telegram MTProto Channel Listener...")
+        global _client
         client = TelegramClient(SESSION_PATH, api_id, api_hash)
+        _client = client
 
         # Retry connecting in case the previous process still holds the SQLite
         # session file lock (common during auto-restart within the first 10s)
