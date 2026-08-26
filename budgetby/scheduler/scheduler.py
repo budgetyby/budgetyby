@@ -461,7 +461,8 @@ def start_scheduler():
     logger.info("Starting scheduler...")
 
     # Core catalog price checking — every 30 seconds
-    _scheduler.add_job(price_check_loop, "interval", seconds=30, id="price_check", max_instances=1, misfire_grace_time=30)
+    _scheduler.add_job(price_check_loop, "interval", seconds=30, id="price_check",
+                       max_instances=1, coalesce=True, misfire_grace_time=60)
 
     # Quick Deals & Flash Sale Crawler — automatically every 30 minutes
     _scheduler.add_job(deals_page_crawl, "interval", minutes=30, id="deals_crawl", max_instances=1, misfire_grace_time=30)
@@ -500,11 +501,11 @@ def start_scheduler():
     _scheduler.add_job(evening_digest, "cron", hour=20, minute=0, timezone="Asia/Kolkata", id="evening_digest")
 
         # High-Velocity 30-Second Paced Broadcaster (120 posts/hour, 2,880/day 24/7 balanced rotation)
-    _scheduler.add_job(paced_posting_loop, "interval", seconds=30, id="paced_posting", max_instances=1, misfire_grace_time=30)
+    _scheduler.add_job(paced_posting_loop, "interval", seconds=30, id="paced_posting", max_instances=1, coalesce=True, misfire_grace_time=60)
 
         # Telegram Channel Deal Spy & Ingestion Monitor — every 2 minutes
     # Telegram Channel Deal Spy & Ingestion Monitor — rapid 30-second interval
-    _scheduler.add_job(channel_monitor_loop, "interval", seconds=30, id="channel_monitor", max_instances=1, misfire_grace_time=30)
+    _scheduler.add_job(channel_monitor_loop, "interval", seconds=30, id="channel_monitor", max_instances=1, coalesce=True, misfire_grace_time=60)
 
     _scheduler.start()
     logger.info("Scheduler started with all jobs configured")

@@ -20,6 +20,10 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO
 )
+# Suppress noisy repetitive scheduler execution skips
+logging.getLogger("apscheduler.scheduler").setLevel(logging.ERROR)
+logging.getLogger("apscheduler.executors.default").setLevel(logging.ERROR)
+
 logger = logging.getLogger("budgetby.main")
 
 
