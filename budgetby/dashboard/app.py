@@ -597,16 +597,25 @@ async def get_table_data(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/deals")
-async def get_deals(limit: int = 25):
+async def get_deals(limit: int = 36, platform: str = ""):
     try:
-        rows = await database.fetch(f"""
+        where_clause = ""
+        args = []
+        if platform and platform.lower() != "all":
+            where_clause = "WHERE LOWER(p.platform) = $1"
+            args.append(platform.lower())
+            
+        limit_val = min(max(1, limit), 200)
+        query = f"""
             SELECT d.id, d.posted_price, d.posted_mrp, d.savings_pct, d.badge, d.deal_score, d.posted_at, d.source_channel,
                    p.title, p.platform, p.category, p.product_url, p.affiliate_url, p.image_url, p.rating
             FROM deals d
             JOIN products p ON d.product_id = p.id
+            {where_clause}
             ORDER BY d.posted_at DESC
-            LIMIT {limit};
-        """)
+            LIMIT {limit_val};
+        """
+        rows = await database.fetch(query, *args) if args else await database.fetch(query)
         return [dict(r) for r in rows]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

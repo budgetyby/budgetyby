@@ -236,15 +236,15 @@ class PostingQueue:
             target_platform = self.ROTATION_SEQUENCE[self._rotation_index % len(self.ROTATION_SEQUENCE)]
             deal_data = None
             
-            # 1. Search Queue for an Anti-Clustering Compatible Deal
+            # 1. Search Queue for a Deal matching the scheduled target_platform
             if not self._queue.empty():
                 pending_items = []
                 while not self._queue.empty():
                     item = self._queue.get_nowait()
                     plat = item.get("product", {}).get("platform", "").lower()
                     
-                    # Ideal: Platform is different from last post
-                    if not deal_data and plat != self._last_posted_platform:
+                    # Prioritize the scheduled platform in the rotation cycle
+                    if not deal_data and plat == target_platform:
                         deal_data = item
                     else:
                         pending_items.append(item)
@@ -253,23 +253,7 @@ class PostingQueue:
                 for item in pending_items:
                     await self._queue.put(item)
 
-            # 2. If all queued items were same platform as last post, interleave 1 alternate store catalog deal!
-            if not deal_data and not self._queue.empty():
-                logger.info(f"Interleaving alternate platform deal to maintain anti-clustering...")
-                from budgetby.engine.evergreen import find_evergreen_deals
-                for alt_plat in ["flipkart", "amazon", "myntra", "ajio", "nykaa"]:
-                    if alt_plat != self._last_posted_platform:
-                        candidates = await find_evergreen_deals(limit=1, platform=alt_plat)
-                        if candidates:
-                            deal_data = {
-                                "product": dict(candidates[0]),
-                                "type": "evergreen",
-                                "badge": "EVERGREEN",
-                                "score": 75
-                            }
-                            break
-
-            # 3. If queue was empty, fetch and verify candidates with instant same-platform fallback
+            # 2. If no queued deal for target_platform, fetch verified candidates from PostgreSQL for target_platform with instant same-platform fallback
             if not deal_data:
                 from budgetby.engine.evergreen import find_evergreen_deals
                 from budgetby.engine.cooldown import is_on_cooldown

@@ -810,12 +810,36 @@
 
         <!-- Recent Deals Feed -->
         <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
-            <div class="flex items-center justify-between mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
-                    <h3 class="text-lg font-bold text-white">📢 Real-Time Deals Posted to Telegram</h3>
-                    <p class="text-xs text-slate-400 mt-1">Live broadcasted stream sent to @deal_pulse_alerts</p>
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <span>📢</span> Real-Time Deals Posted to Telegram
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Live broadcasted stream sent to @deal_pulse_alerts</p>
                 </div>
-                <span class="px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-semibold rounded-full">Channel: @deal_pulse_alerts</span>
+                <div class="flex items-center gap-2.5 flex-wrap">
+                    <!-- Store Filter -->
+                    <select id="dealsStoreFilter" onchange="onDealsFilterChange()" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition">
+                        <option value="">All Stores 🏪</option>
+                        <option value="amazon">🟠 Amazon</option>
+                        <option value="flipkart">🔵 Flipkart</option>
+                        <option value="myntra">🔴 Myntra</option>
+                        <option value="ajio">🟣 Ajio</option>
+                        <option value="nykaa">🌸 Nykaa</option>
+                    </select>
+
+                    <!-- Limit Window Selector -->
+                    <select id="dealsLimitSelect" onchange="onDealsFilterChange()" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition">
+                        <option value="12">Show 12 Deals</option>
+                        <option value="24">Show 24 Deals</option>
+                        <option value="36" selected>Show 36 Deals (Default)</option>
+                        <option value="50">Show 50 Deals</option>
+                        <option value="100">Show 100 Deals</option>
+                    </select>
+
+                    <button onclick="onDealsFilterChange()" class="text-xs px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition flex items-center gap-1">🔄 Refresh</button>
+                    <span class="px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-semibold rounded-full hidden md:inline">@deal_pulse_alerts</span>
+                </div>
             </div>
             
             <div id="dealsFeed" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1009,13 +1033,27 @@
             }
         }
 
+        function onDealsFilterChange() {
+            fetchDeals();
+        }
+
         async function fetchDeals() {
             try {
-                const res = await fetch('/api/deals?limit=12');
+                const limitEl = document.getElementById('dealsLimitSelect');
+                const storeEl = document.getElementById('dealsStoreFilter');
+                const limit = limitEl ? limitEl.value : 36;
+                const platform = storeEl ? storeEl.value : '';
+
+                let url = `/api/deals?limit=${limit}`;
+                if (platform) {
+                    url += `&platform=${encodeURIComponent(platform)}`;
+                }
+
+                const res = await fetch(url);
                 const deals = await res.json();
                 
                 if (!deals.length) {
-                    document.getElementById('dealsFeed').innerHTML = '<div class="text-center py-8 text-slate-500 col-span-full">No deals logged yet today.</div>';
+                    document.getElementById('dealsFeed').innerHTML = `<div class="text-center py-12 text-slate-500 col-span-full">No ${platform ? platform.toUpperCase() : ''} deals found.</div>`;
                     return;
                 }
 
