@@ -31,20 +31,45 @@ async def main():
 
     # 2. Start Local Web Dashboard on http://localhost:5000
     try:
+        import socket
         from budgetby.dashboard.app import app as dashboard_app
         dash_port = int(os.getenv("DASHBOARD_PORT", "5000"))
-        config_server = uvicorn.Config(
-            dashboard_app,
-            host="127.0.0.1",
-            port=dash_port,
-            log_level="warning",
-            access_log=False
-        )
-        dash_server = uvicorn.Server(config_server)
-        asyncio.create_task(dash_server.serve())
-        logger.info(f"🚀 Local Web Dashboard running on http://localhost:{dash_port}")
+
+        # Check if port is already in use before attempting to bind
+        def _port_free(port: int) -> bool:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                try:
+                    s.bind(("127.0.0.1", port))
+                    return True
+                except OSError:
+                    return False
+
+        if not _port_free(dash_port):
+            logger.warning(
+                f"⚠️  Port {dash_port} already in use — dashboard already running, skipping re-bind."
+            )
+        else:
+            config_server = uvicorn.Config(
+                dashboard_app,
+                host="127.0.0.1",
+                port=dash_port,
+                log_level="warning",
+                access_log=False
+            )
+            dash_server = uvicorn.Server(config_server)
+
+            async def _safe_serve():
+                """Wrap uvicorn.serve so SystemExit never propagates to main loop."""
+                try:
+                    await dash_server.serve()
+                except (SystemExit, OSError) as exc:
+                    logger.warning(f"Dashboard server stopped: {exc}")
+
+            asyncio.create_task(_safe_serve())
+            logger.info(f"🚀 Local Web Dashboard running on http://localhost:{dash_port}")
     except Exception as e:
-        logger.warning(f"Could not start dashboard on port 5000: {e}")
+        logger.warning(f"Could not start dashboard: {e}")
     
     # 3. Configure Telegram Bot with robust HTTP connection pool & timeout handling
     if config.TELEGRAM_BOT_TOKEN:
