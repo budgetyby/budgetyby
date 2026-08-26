@@ -119,8 +119,7 @@ def format_mega_deal(product: dict, deal_result: dict = None) -> str:
         text += f"💸 <b>Deal Price:</b> <b>{format_price(current_price)}</b>\n"
         
     if rating:
-        rc_str = f" ({rc:,}+ reviews)" if rc and rc > 10 else ""
-        text += f"⭐ <b>Rating:</b> {rating} ★{rc_str}\n"
+        text += f"⭐ <b>Rating:</b> {rating} ★\n"
         
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
@@ -155,8 +154,7 @@ def format_today_deal(product: dict, deal_result: dict = None) -> str:
         text += f"💸 <b>Deal Price:</b> <b>{format_price(current_price)}</b>\n"
 
     if rating:
-        rc_str = f" ({rc:,}+ reviews)" if rc and rc > 10 else ""
-        text += f"⭐ <b>Rating:</b> {rating} ★{rc_str}\n"
+        text += f"⭐ <b>Rating:</b> {rating} ★\n"
 
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
@@ -191,8 +189,7 @@ def format_hot_deal(product: dict, deal_result: dict = None) -> str:
         text += f"💸 <b>Offer Price:</b> <b>{format_price(current_price)}</b>\n"
         
     if rating:
-        rc_str = f" ({rc:,}+ reviews)" if rc and rc > 10 else ""
-        text += f"⭐ <b>Rating:</b> {rating} ★{rc_str}\n"
+        text += f"⭐ <b>Rating:</b> {rating} ★\n"
         
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
@@ -254,8 +251,7 @@ def format_evergreen_deal(product: dict, post_count: int = 1) -> str:
         text += f"💸 <b>Offer Price:</b> <b>{format_price(current_price)}</b>\n"
         
     if rating:
-        rc_str = f" ({rc:,}+ reviews)" if rc and rc > 10 else ""
-        text += f"⭐ <b>Rating:</b> {rating} ★{rc_str}\n"
+        text += f"⭐ <b>Rating:</b> {rating} ★\n"
         
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
@@ -361,8 +357,7 @@ def format_back_in_stock(product: dict, days_oos: int = 0) -> str:
     else:
         text += f"💸 <b>Current Price:</b> <b>{format_price(current_price)}</b>\n"
     if rating:
-        rc_str = f" ({rc:,}+ reviews)" if rc and rc > 10 else ""
-        text += f"⭐ <b>Rating:</b> {rating} ★{rc_str}\n"
+        text += f"⭐ <b>Rating:</b> {rating} ★\n"
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
