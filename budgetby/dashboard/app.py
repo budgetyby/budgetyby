@@ -248,6 +248,149 @@ async def get_category_platform_stats():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/price_changes_24h")
+async def get_price_changes_24h(
+    direction: str = Query("all", pattern="^(all|drops|hikes)$"),
+    platform: str = Query("", max_length=50),
+    search: str = Query("", max_length=100),
+    sort_by: str = Query("diff_desc", max_length=50),
+    page: int = Query(1, ge=1),
+    limit: int = Query(25, ge=1, le=100)
+):
+    """
+    Dedicated 24-Hour Price Movements Tracker.
+    Returns all products whose prices changed in the last 24 hours.
+    Products automatically drop off once they pass 24 hours without new changes.
+    """
+    try:
+        offset = (page - 1) * limit
+        where_clauses = ["dp_today.close_price != dp_yest.close_price"]
+        args = []
+        arg_idx = 1
+
+        if platform:
+            where_clauses.append(f"LOWER(p.platform) = ${arg_idx}")
+            args.append(platform.lower())
+            arg_idx += 1
+
+        if direction == "drops":
+            where_clauses.append("dp_today.close_price < dp_yest.close_price")
+        elif direction == "hikes":
+            where_clauses.append("dp_today.close_price > dp_yest.close_price")
+
+        clean_search = search.strip().lstrip("#")
+        if clean_search:
+            if clean_search.isdigit():
+                where_clauses.append(f"(p.id = ${arg_idx} OR p.title ILIKE ${arg_idx+1})")
+                args.extend([int(clean_search), f"%{clean_search}%"])
+                arg_idx += 2
+            else:
+                where_clauses.append(f"p.title ILIKE ${arg_idx}")
+                args.append(f"%{clean_search}%")
+                arg_idx += 1
+
+        where_sql = " AND ".join(where_clauses)
+
+        # Sorting logic
+        if sort_by == "pct_desc":
+            order_sql = "ORDER BY ABS(change_pct) DESC, id ASC"
+        elif sort_by == "drop_largest":
+            order_sql = "ORDER BY price_diff ASC, id ASC"
+        elif sort_by == "hike_largest":
+            order_sql = "ORDER BY price_diff DESC, id ASC"
+        elif sort_by == "price_asc":
+            order_sql = "ORDER BY new_price ASC, id ASC"
+        else: # diff_desc default
+            order_sql = "ORDER BY ABS(price_diff) DESC, id ASC"
+
+        query = f"""
+            WITH changed_prods AS (
+                SELECT 
+                    p.id,
+                    p.platform,
+                    p.platform_id,
+                    p.title,
+                    p.category,
+                    p.image_url,
+                    p.product_url,
+                    p.affiliate_url,
+                    p.mrp,
+                    COALESCE(dp_yest.close_price, p.previous_price, p.current_price) as old_price,
+                    dp_today.close_price as new_price,
+                    dp_today.min_price as today_min_price,
+                    (dp_today.close_price - COALESCE(dp_yest.close_price, p.previous_price, p.current_price)) as price_diff,
+                    ROUND(((dp_today.close_price - COALESCE(dp_yest.close_price, p.previous_price, p.current_price)) / NULLIF(COALESCE(dp_yest.close_price, p.previous_price, p.current_price), 0)) * 100, 1) as change_pct,
+                    COALESCE(p.last_price_change, NOW()) as changed_at
+                FROM products p
+                JOIN daily_prices dp_today ON p.id = dp_today.product_id AND dp_today.date = (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE
+                JOIN daily_prices dp_yest ON p.id = dp_yest.product_id AND dp_yest.date = ((NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - 1)
+                WHERE {where_sql}
+            )
+            SELECT *, 
+                   COUNT(*) OVER() as total_matches,
+                   COUNT(CASE WHEN price_diff < 0 THEN 1 END) OVER() as count_drops,
+                   COUNT(CASE WHEN price_diff > 0 THEN 1 END) OVER() as count_hikes
+            FROM changed_prods
+            {order_sql}
+            LIMIT ${arg_idx} OFFSET ${arg_idx + 1};
+        """
+        args.extend([limit, offset])
+
+        rows = await database.fetch(query, *args)
+        
+        total_matches = rows[0]["total_matches"] if rows else 0
+        count_drops = rows[0]["count_drops"] if rows else 0
+        count_hikes = rows[0]["count_hikes"] if rows else 0
+
+        # Global stats across entire 24h window
+        global_stats = await database.fetchrow("""
+            SELECT 
+                COUNT(*) as global_total,
+                COUNT(CASE WHEN dp_today.close_price < dp_yest.close_price THEN 1 END) as global_drops,
+                COUNT(CASE WHEN dp_today.close_price > dp_yest.close_price THEN 1 END) as global_hikes
+            FROM products p
+            JOIN daily_prices dp_today ON p.id = dp_today.product_id AND dp_today.date = (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE
+            JOIN daily_prices dp_yest ON p.id = dp_yest.product_id AND dp_yest.date = ((NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - 1)
+            WHERE dp_today.close_price != dp_yest.close_price;
+        """)
+
+        results = []
+        for r in rows:
+            results.append({
+                "id": r["id"],
+                "platform": r["platform"],
+                "platform_id": r["platform_id"],
+                "title": r["title"],
+                "category": r["category"],
+                "image_url": r["image_url"],
+                "product_url": r["product_url"],
+                "affiliate_url": r["affiliate_url"] or r["product_url"],
+                "old_price": float(r["old_price"]) if r["old_price"] else None,
+                "new_price": float(r["new_price"]) if r["new_price"] else None,
+                "today_min_price": float(r["today_min_price"]) if r["today_min_price"] else None,
+                "mrp": float(r["mrp"]) if r["mrp"] else None,
+                "price_diff": float(r["price_diff"]) if r["price_diff"] else 0.0,
+                "change_pct": float(r["change_pct"]) if r["change_pct"] else 0.0,
+                "is_drop": bool(r["price_diff"] < 0),
+                "changed_at": str(r["changed_at"])
+            })
+
+        return {
+            "page": page,
+            "limit": limit,
+            "total_matches": total_matches,
+            "total_pages": (total_matches + limit - 1) // limit if total_matches > 0 else 1,
+            "global_stats": {
+                "total": global_stats["global_total"] if global_stats else 0,
+                "drops": global_stats["global_drops"] if global_stats else 0,
+                "hikes": global_stats["global_hikes"] if global_stats else 0
+            },
+            "products": results
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ── Full Database Explorer Endpoints ──────────────────────────────────────────
 
 ALLOWED_TABLES = [
