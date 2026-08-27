@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BudgetBy DealPulse — 100% Local Dashboard</title>
-    <script src="https://cdn.tailwindcss.com">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
         // ── 24-Hour Price Movements Logic ─────────────────────────────
         let currentMovDirection = 'all';
         let currentMovPage = 1;
@@ -42,7 +44,7 @@
             if (!tbody) return;
 
             const platform = document.getElementById('movementPlatformSelect') ? document.getElementById('movementPlatformSelect').value : '';
-            const sortBy = document.getElementById('movementSortSelect') ? document.getElementById('movementSortSelect').value : 'diff_desc';
+            const sortBy = document.getElementById('movementSortSelect') ? document.getElementById('movementSortSelect').value : 'latest';
             const search = document.getElementById('movementSearchInput') ? document.getElementById('movementSearchInput').value : '';
 
             try {
@@ -84,7 +86,7 @@
                     document.getElementById('movNextBtn').disabled = data.page >= data.total_pages;
 
                 if (!data.products || data.products.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-slate-500">No price movements found for current filters.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-slate-500">No price movements found for current filters (older than 24h items are auto-pruned).</td></tr>';
                     return;
                 }
 
@@ -141,7 +143,7 @@
             }
         }
 
-        // Search debouncer
+        // Search debouncer & 15-Minute Continuous Auto-Refresh
         document.addEventListener("DOMContentLoaded", () => {
             const searchInp = document.getElementById('movementSearchInput');
             if (searchInp) {
@@ -154,235 +156,11 @@
                 });
             }
             fetch24hMovements();
-        });
 
-        // ── Timeline Modal Functions ──────────────────────────────────
-        async function openProductTimeline(productId) {
-            const modal = document.getElementById('timelineModal');
-            if (!modal) return;
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-
-            const tbody = document.getElementById('modalTimelineBody');
-            tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-500">Loading daily prices...</td></tr>';
-
-            try {
-                const res = await fetch(`/api/db/product_history/${productId}`);
-                if (!res.ok) throw new Error("History fetch error");
-                const hist = await res.json();
-
-                const p = hist.product || {};
-                document.getElementById('modalProdTitle').innerText = p.title || `Product #${productId}`;
-                document.getElementById('modalStore').innerText = (p.platform || 'Store').toUpperCase();
-                document.getElementById('modalMin30').innerText = p.min_30d ? `₹${Number(p.min_30d).toLocaleString('en-IN')}` : '---';
-                document.getElementById('modalATL').innerText = p.all_time_low ? `₹${Number(p.all_time_low).toLocaleString('en-IN')}` : '---';
-
-                if (!hist.daily_prices || hist.daily_prices.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-500">No daily price records found for this product yet.</td></tr>';
-                    return;
-                }
-
-                let timelineHtml = '';
-                let prevPrice = null;
-                hist.daily_prices.forEach((dp, idx) => {
-                    let badgeClass = "bg-slate-800 text-slate-300";
-                    if (dp.day_number === 1) {
-                        badgeClass = "bg-blue-500/20 text-blue-400 border border-blue-500/30";
-                    } else if (dp.is_today) {
-                        badgeClass = "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold";
-                    }
-
-                    let changeTag = '<span class="text-slate-600">-</span>';
-                    if (prevPrice !== null && dp.close_price !== null) {
-                        const diff = dp.close_price - prevPrice;
-                        if (diff < 0) {
-                            changeTag = `<span class="text-emerald-400 font-bold">↓ ₹${Math.abs(diff).toLocaleString('en-IN')} drop</span>`;
-                        } else if (diff > 0) {
-                            changeTag = `<span class="text-rose-400 font-bold">↑ ₹${diff.toLocaleString('en-IN')} up</span>`;
-                        } else {
-                            changeTag = `<span class="text-slate-500">Unchanged</span>`;
-                        }
-                    }
-                    prevPrice = dp.close_price;
-
-                    timelineHtml += `
-                        <tr class="hover:bg-slate-800/30 transition">
-                            <td class="py-2.5 px-3">
-                                <span class="px-2.5 py-1 rounded-lg text-xs font-semibold ${badgeClass}">${dp.day_label}</span>
-                            </td>
-                            <td class="py-2.5 px-3 text-slate-400 font-mono">${dp.date}</td>
-                            <td class="py-2.5 px-3 font-bold text-emerald-400 font-mono">₹${Number(dp.min_price).toLocaleString('en-IN')}</td>
-                            <td class="py-2.5 px-3 text-white font-mono font-semibold">₹${Number(dp.close_price).toLocaleString('en-IN')}</td>
-                            <td class="py-2.5 px-3 font-mono text-[11px]">${changeTag}</td>
-                        </tr>`;
-                });
-                tbody.innerHTML = timelineHtml;
-
-            } catch (err) {
-                console.error("Timeline modal error:", err);
-                tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-rose-500">Failed to load price history.</td></tr>';
-            }
-        }
-
-        function closeTimelineModal() {
-            const modal = document.getElementById('timelineModal');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-        }
-
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js">
-        // ── 24-Hour Price Movements Logic ─────────────────────────────
-        let currentMovDirection = 'all';
-        let currentMovPage = 1;
-        const movLimit = 15;
-        let movSearchTimeout = null;
-
-        function setMovementDirection(dir) {
-            currentMovDirection = dir;
-            currentMovPage = 1;
-            ['all', 'drops', 'hikes'].forEach(d => {
-                const btn = document.getElementById(`tab-mov-${d}`);
-                if (btn) {
-                    if (d === dir) {
-                        btn.className = 'px-3 py-1 text-xs font-bold rounded-md bg-indigo-600 text-white transition';
-                    } else {
-                        btn.className = 'px-3 py-1 text-xs font-semibold rounded-md text-slate-400 hover:text-white transition';
-                    }
-                }
-            });
-            fetch24hMovements();
-        }
-
-        function onMovementFilterChange() {
-            currentMovPage = 1;
-            fetch24hMovements();
-        }
-
-        function changeMovementPage(delta) {
-            currentMovPage += delta;
-            fetch24hMovements();
-        }
-
-        async function fetch24hMovements() {
-            const tbody = document.getElementById('movementsTableBody');
-            if (!tbody) return;
-
-            const platform = document.getElementById('movementPlatformSelect') ? document.getElementById('movementPlatformSelect').value : '';
-            const sortBy = document.getElementById('movementSortSelect') ? document.getElementById('movementSortSelect').value : 'diff_desc';
-            const search = document.getElementById('movementSearchInput') ? document.getElementById('movementSearchInput').value : '';
-
-            try {
-                const params = new URLSearchParams({
-                    direction: currentMovDirection,
-                    platform: platform,
-                    search: search,
-                    sort_by: sortBy,
-                    page: currentMovPage,
-                    limit: movLimit
-                });
-
-                const res = await fetch(`/api/price_changes_24h?${params}`);
-                if (!res.ok) throw new Error("API error");
-                const data = await res.json();
-
-                // Update Badges
-                const g = data.global_stats || {total: 0, drops: 0, hikes: 0};
-                if (document.getElementById('movementsTotalBadge'))
-                    document.getElementById('movementsTotalBadge').innerText = `${g.total} Changes (24h)`;
-                if (document.getElementById('movementsDropsBadge'))
-                    document.getElementById('movementsDropsBadge').innerText = `🟢 ${g.drops} Drops`;
-                if (document.getElementById('movementsHikesBadge'))
-                    document.getElementById('movementsHikesBadge').innerText = `🔴 ${g.hikes} Hikes`;
-
-                // Update Tab Counters
-                if (document.getElementById('tab-mov-all')) document.getElementById('tab-mov-all').innerText = `🔥 All (${g.total})`;
-                if (document.getElementById('tab-mov-drops')) document.getElementById('tab-mov-drops').innerText = `🟢 Price Drops (${g.drops})`;
-                if (document.getElementById('tab-mov-hikes')) document.getElementById('tab-mov-hikes').innerText = `🔴 Price Hikes (${g.hikes})`;
-
-                // Update Pagination
-                if (document.getElementById('movementPaginationInfo'))
-                    document.getElementById('movementPaginationInfo').innerText = `Showing page ${data.page} of ${data.total_pages} (${data.total_matches} items)`;
-                if (document.getElementById('movPageNum'))
-                    document.getElementById('movPageNum').innerText = data.page;
-                if (document.getElementById('movPrevBtn'))
-                    document.getElementById('movPrevBtn').disabled = data.page <= 1;
-                if (document.getElementById('movNextBtn'))
-                    document.getElementById('movNextBtn').disabled = data.page >= data.total_pages;
-
-                if (!data.products || data.products.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-slate-500">No price movements found for current filters.</td></tr>';
-                    return;
-                }
-
-                let html = '';
-                data.products.forEach(p => {
-                    const storeColors = {
-                        amazon: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-                        flipkart: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-                        myntra: 'bg-pink-500/10 text-pink-400 border-pink-500/20',
-                        ajio: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-                        croma: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-                        nykaa: 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                    };
-                    const sBadge = storeColors[p.platform] || 'bg-slate-800 text-slate-300';
-                    const isDrop = p.is_drop;
-                    const movBadge = isDrop 
-                        ? `<span class="px-2.5 py-1 bg-emerald-500/15 text-emerald-400 font-bold rounded-lg border border-emerald-500/20 font-mono text-xs">↓ ₹${Math.abs(p.price_diff).toLocaleString('en-IN')} (${p.change_pct}%)</span>`
-                        : `<span class="px-2.5 py-1 bg-rose-500/15 text-rose-400 font-bold rounded-lg border border-rose-500/20 font-mono text-xs">↑ ₹${p.price_diff.toLocaleString('en-IN')} (+${p.change_pct}%)</span>`;
-
-                    const imgTag = p.image_url 
-                        ? `<img src="${p.image_url}" class="w-8 h-8 object-contain rounded bg-slate-950 p-0.5 shrink-0 border border-slate-800" onerror="this.style.display='none'">` 
-                        : `<div class="w-8 h-8 rounded bg-slate-800 flex items-center justify-center text-slate-400 text-[10px] shrink-0 font-bold">#${p.id}</div>`;
-
-                    html += `
-                        <tr class="hover:bg-slate-800/40 transition">
-                            <td class="py-3 px-2 flex items-center gap-2.5 max-w-xs">
-                                ${imgTag}
-                                <div class="min-w-0">
-                                    <div class="font-medium text-slate-200 truncate max-w-[200px]" title="${p.title}">${p.title}</div>
-                                    <div class="text-[10px] text-slate-500 font-mono">ID #${p.id} • SKU: ${p.platform_id}</div>
-                                </div>
-                            </td>
-                            <td class="py-3 px-2">
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${sBadge}">${p.platform}</span>
-                            </td>
-                            <td class="py-3 px-2 text-slate-400 line-through font-mono text-xs">₹${Number(p.old_price).toLocaleString('en-IN')}</td>
-                            <td class="py-3 px-2 text-white font-bold font-mono text-xs">₹${Number(p.new_price).toLocaleString('en-IN')}</td>
-                            <td class="py-3 px-2">${movBadge}</td>
-                            <td class="py-3 px-2 text-emerald-400/80 font-mono text-xs">₹${Number(p.today_min_price || p.new_price).toLocaleString('en-IN')}</td>
-                            <td class="py-3 px-2 text-right">
-                                <div class="flex items-center justify-end gap-1.5">
-                                    <button onclick="openProductTimeline(${p.id})" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 font-semibold rounded text-[11px] border border-slate-700 transition">📅 Timeline</button>
-                                    <a href="${p.affiliate_url}" target="_blank" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded text-[11px] transition">🛒 Buy</a>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                });
-                tbody.innerHTML = html;
-
-            } catch (err) {
-                console.error("Error loading 24h movements:", err);
-                tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-rose-500">Error loading price movements.</td></tr>';
-            }
-        }
-
-        // Search debouncer
-        document.addEventListener("DOMContentLoaded", () => {
-            const searchInp = document.getElementById('movementSearchInput');
-            if (searchInp) {
-                searchInp.addEventListener('input', () => {
-                    clearTimeout(movSearchTimeout);
-                    movSearchTimeout = setTimeout(() => {
-                        currentMovPage = 1;
-                        fetch24hMovements();
-                    }, 400);
-                });
-            }
-            fetch24hMovements();
+            // Continuous auto-refresh every 15 minutes (900,000 ms)
+            setInterval(() => {
+                fetch24hMovements();
+            }, 15 * 60 * 1000);
         });
 
         // ── Timeline Modal Functions ──────────────────────────────────
@@ -622,9 +400,12 @@
                     <p class="text-xs text-slate-400 mt-0.5">Real-time stream of all products whose prices changed in the last 24 hours (auto-updates & auto-prunes)</p>
                 </div>
                 <div class="flex items-center gap-2 flex-wrap">
-                    <span id="movementsTotalBadge" class="text-xs font-semibold px-3 py-1 bg-cyan-500/10 text-cyan-400 rounded-full border border-cyan-500/20">880 Changes (24h)</span>
-                    <span id="movementsDropsBadge" class="text-xs font-semibold px-2.5 py-1 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20">🟢 295 Drops</span>
-                    <span id="movementsHikesBadge" class="text-xs font-semibold px-2.5 py-1 bg-rose-500/10 text-rose-400 rounded-full border border-rose-500/20">🔴 585 Hikes</span>
+                    <span id="movementsAutoRefreshBadge" class="text-xs font-semibold px-2.5 py-1 bg-indigo-500/10 text-indigo-400 rounded-full border border-indigo-500/20 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span> ⏱️ Auto-updates: 15m
+                    </span>
+                    <span id="movementsTotalBadge" class="text-xs font-semibold px-3 py-1 bg-cyan-500/10 text-cyan-400 rounded-full border border-cyan-500/20">0 Changes (24h)</span>
+                    <span id="movementsDropsBadge" class="text-xs font-semibold px-2.5 py-1 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20">🟢 0 Drops</span>
+                    <span id="movementsHikesBadge" class="text-xs font-semibold px-2.5 py-1 bg-rose-500/10 text-rose-400 rounded-full border border-rose-500/20">🔴 0 Hikes</span>
                     <button onclick="fetch24hMovements()" class="text-xs px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition flex items-center gap-1">🔄 Refresh</button>
                 </div>
             </div>
@@ -633,9 +414,9 @@
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
                 <!-- Direction Tabs -->
                 <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
-                    <button onclick="setMovementDirection('all')" id="tab-mov-all" class="px-3 py-1 text-xs font-bold rounded-md bg-indigo-600 text-white transition">🔥 All (880)</button>
-                    <button onclick="setMovementDirection('drops')" id="tab-mov-drops" class="px-3 py-1 text-xs font-semibold rounded-md text-slate-400 hover:text-white transition">🟢 Price Drops (295)</button>
-                    <button onclick="setMovementDirection('hikes')" id="tab-mov-hikes" class="px-3 py-1 text-xs font-semibold rounded-md text-slate-400 hover:text-white transition">🔴 Price Hikes (585)</button>
+                    <button onclick="setMovementDirection('all')" id="tab-mov-all" class="px-3 py-1 text-xs font-bold rounded-md bg-indigo-600 text-white transition">🔥 All</button>
+                    <button onclick="setMovementDirection('drops')" id="tab-mov-drops" class="px-3 py-1 text-xs font-semibold rounded-md text-slate-400 hover:text-white transition">🟢 Price Drops</button>
+                    <button onclick="setMovementDirection('hikes')" id="tab-mov-hikes" class="px-3 py-1 text-xs font-semibold rounded-md text-slate-400 hover:text-white transition">🔴 Price Hikes</button>
                 </div>
 
                 <!-- Filters: Store & Search & Sort -->
@@ -651,6 +432,7 @@
                     </select>
 
                     <select id="movementSortSelect" onchange="onMovementFilterChange()" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition">
+                        <option value="latest" selected>⚡ Sort: Latest Movements First</option>
                         <option value="diff_desc">Sort: Largest Change (₹)</option>
                         <option value="pct_desc">Sort: Highest % Change</option>
                         <option value="drop_largest">Sort: Lowest Drop First</option>
@@ -1285,234 +1067,6 @@
         document.getElementById('searchInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') runSearch();
         });
-    
-        // ── 24-Hour Price Movements Logic ─────────────────────────────
-        let currentMovDirection = 'all';
-        let currentMovPage = 1;
-        const movLimit = 15;
-        let movSearchTimeout = null;
-
-        function setMovementDirection(dir) {
-            currentMovDirection = dir;
-            currentMovPage = 1;
-            ['all', 'drops', 'hikes'].forEach(d => {
-                const btn = document.getElementById(`tab-mov-${d}`);
-                if (btn) {
-                    if (d === dir) {
-                        btn.className = 'px-3 py-1 text-xs font-bold rounded-md bg-indigo-600 text-white transition';
-                    } else {
-                        btn.className = 'px-3 py-1 text-xs font-semibold rounded-md text-slate-400 hover:text-white transition';
-                    }
-                }
-            });
-            fetch24hMovements();
-        }
-
-        function onMovementFilterChange() {
-            currentMovPage = 1;
-            fetch24hMovements();
-        }
-
-        function changeMovementPage(delta) {
-            currentMovPage += delta;
-            fetch24hMovements();
-        }
-
-        async function fetch24hMovements() {
-            const tbody = document.getElementById('movementsTableBody');
-            if (!tbody) return;
-
-            const platform = document.getElementById('movementPlatformSelect') ? document.getElementById('movementPlatformSelect').value : '';
-            const sortBy = document.getElementById('movementSortSelect') ? document.getElementById('movementSortSelect').value : 'diff_desc';
-            const search = document.getElementById('movementSearchInput') ? document.getElementById('movementSearchInput').value : '';
-
-            try {
-                const params = new URLSearchParams({
-                    direction: currentMovDirection,
-                    platform: platform,
-                    search: search,
-                    sort_by: sortBy,
-                    page: currentMovPage,
-                    limit: movLimit
-                });
-
-                const res = await fetch(`/api/price_changes_24h?${params}`);
-                if (!res.ok) throw new Error("API error");
-                const data = await res.json();
-
-                // Update Badges
-                const g = data.global_stats || {total: 0, drops: 0, hikes: 0};
-                if (document.getElementById('movementsTotalBadge'))
-                    document.getElementById('movementsTotalBadge').innerText = `${g.total} Changes (24h)`;
-                if (document.getElementById('movementsDropsBadge'))
-                    document.getElementById('movementsDropsBadge').innerText = `🟢 ${g.drops} Drops`;
-                if (document.getElementById('movementsHikesBadge'))
-                    document.getElementById('movementsHikesBadge').innerText = `🔴 ${g.hikes} Hikes`;
-
-                // Update Tab Counters
-                if (document.getElementById('tab-mov-all')) document.getElementById('tab-mov-all').innerText = `🔥 All (${g.total})`;
-                if (document.getElementById('tab-mov-drops')) document.getElementById('tab-mov-drops').innerText = `🟢 Price Drops (${g.drops})`;
-                if (document.getElementById('tab-mov-hikes')) document.getElementById('tab-mov-hikes').innerText = `🔴 Price Hikes (${g.hikes})`;
-
-                // Update Pagination
-                if (document.getElementById('movementPaginationInfo'))
-                    document.getElementById('movementPaginationInfo').innerText = `Showing page ${data.page} of ${data.total_pages} (${data.total_matches} items)`;
-                if (document.getElementById('movPageNum'))
-                    document.getElementById('movPageNum').innerText = data.page;
-                if (document.getElementById('movPrevBtn'))
-                    document.getElementById('movPrevBtn').disabled = data.page <= 1;
-                if (document.getElementById('movNextBtn'))
-                    document.getElementById('movNextBtn').disabled = data.page >= data.total_pages;
-
-                if (!data.products || data.products.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-slate-500">No price movements found for current filters.</td></tr>';
-                    return;
-                }
-
-                let html = '';
-                data.products.forEach(p => {
-                    const storeColors = {
-                        amazon: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-                        flipkart: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-                        myntra: 'bg-pink-500/10 text-pink-400 border-pink-500/20',
-                        ajio: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-                        croma: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-                        nykaa: 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                    };
-                    const sBadge = storeColors[p.platform] || 'bg-slate-800 text-slate-300';
-                    const isDrop = p.is_drop;
-                    const movBadge = isDrop 
-                        ? `<span class="px-2.5 py-1 bg-emerald-500/15 text-emerald-400 font-bold rounded-lg border border-emerald-500/20 font-mono text-xs">↓ ₹${Math.abs(p.price_diff).toLocaleString('en-IN')} (${p.change_pct}%)</span>`
-                        : `<span class="px-2.5 py-1 bg-rose-500/15 text-rose-400 font-bold rounded-lg border border-rose-500/20 font-mono text-xs">↑ ₹${p.price_diff.toLocaleString('en-IN')} (+${p.change_pct}%)</span>`;
-
-                    const imgTag = p.image_url 
-                        ? `<img src="${p.image_url}" class="w-8 h-8 object-contain rounded bg-slate-950 p-0.5 shrink-0 border border-slate-800" onerror="this.style.display='none'">` 
-                        : `<div class="w-8 h-8 rounded bg-slate-800 flex items-center justify-center text-slate-400 text-[10px] shrink-0 font-bold">#${p.id}</div>`;
-
-                    html += `
-                        <tr class="hover:bg-slate-800/40 transition">
-                            <td class="py-3 px-2 flex items-center gap-2.5 max-w-xs">
-                                ${imgTag}
-                                <div class="min-w-0">
-                                    <div class="font-medium text-slate-200 truncate max-w-[200px]" title="${p.title}">${p.title}</div>
-                                    <div class="text-[10px] text-slate-500 font-mono">ID #${p.id} • SKU: ${p.platform_id}</div>
-                                </div>
-                            </td>
-                            <td class="py-3 px-2">
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${sBadge}">${p.platform}</span>
-                            </td>
-                            <td class="py-3 px-2 text-slate-400 line-through font-mono text-xs">₹${Number(p.old_price).toLocaleString('en-IN')}</td>
-                            <td class="py-3 px-2 text-white font-bold font-mono text-xs">₹${Number(p.new_price).toLocaleString('en-IN')}</td>
-                            <td class="py-3 px-2">${movBadge}</td>
-                            <td class="py-3 px-2 text-emerald-400/80 font-mono text-xs">₹${Number(p.today_min_price || p.new_price).toLocaleString('en-IN')}</td>
-                            <td class="py-3 px-2 text-right">
-                                <div class="flex items-center justify-end gap-1.5">
-                                    <button onclick="openProductTimeline(${p.id})" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 font-semibold rounded text-[11px] border border-slate-700 transition">📅 Timeline</button>
-                                    <a href="${p.affiliate_url}" target="_blank" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded text-[11px] transition">🛒 Buy</a>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                });
-                tbody.innerHTML = html;
-
-            } catch (err) {
-                console.error("Error loading 24h movements:", err);
-                tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-rose-500">Error loading price movements.</td></tr>';
-            }
-        }
-
-        // Search debouncer
-        document.addEventListener("DOMContentLoaded", () => {
-            const searchInp = document.getElementById('movementSearchInput');
-            if (searchInp) {
-                searchInp.addEventListener('input', () => {
-                    clearTimeout(movSearchTimeout);
-                    movSearchTimeout = setTimeout(() => {
-                        currentMovPage = 1;
-                        fetch24hMovements();
-                    }, 400);
-                });
-            }
-            fetch24hMovements();
-        });
-
-        // ── Timeline Modal Functions ──────────────────────────────────
-        async function openProductTimeline(productId) {
-            const modal = document.getElementById('timelineModal');
-            if (!modal) return;
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-
-            const tbody = document.getElementById('modalTimelineBody');
-            tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-500">Loading daily prices...</td></tr>';
-
-            try {
-                const res = await fetch(`/api/db/product_history/${productId}`);
-                if (!res.ok) throw new Error("History fetch error");
-                const hist = await res.json();
-
-                const p = hist.product || {};
-                document.getElementById('modalProdTitle').innerText = p.title || `Product #${productId}`;
-                document.getElementById('modalStore').innerText = (p.platform || 'Store').toUpperCase();
-                document.getElementById('modalMin30').innerText = p.min_30d ? `₹${Number(p.min_30d).toLocaleString('en-IN')}` : '---';
-                document.getElementById('modalATL').innerText = p.all_time_low ? `₹${Number(p.all_time_low).toLocaleString('en-IN')}` : '---';
-
-                if (!hist.daily_prices || hist.daily_prices.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-500">No daily price records found for this product yet.</td></tr>';
-                    return;
-                }
-
-                let timelineHtml = '';
-                let prevPrice = null;
-                hist.daily_prices.forEach((dp, idx) => {
-                    let badgeClass = "bg-slate-800 text-slate-300";
-                    if (dp.day_number === 1) {
-                        badgeClass = "bg-blue-500/20 text-blue-400 border border-blue-500/30";
-                    } else if (dp.is_today) {
-                        badgeClass = "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold";
-                    }
-
-                    let changeTag = '<span class="text-slate-600">-</span>';
-                    if (prevPrice !== null && dp.close_price !== null) {
-                        const diff = dp.close_price - prevPrice;
-                        if (diff < 0) {
-                            changeTag = `<span class="text-emerald-400 font-bold">↓ ₹${Math.abs(diff).toLocaleString('en-IN')} drop</span>`;
-                        } else if (diff > 0) {
-                            changeTag = `<span class="text-rose-400 font-bold">↑ ₹${diff.toLocaleString('en-IN')} up</span>`;
-                        } else {
-                            changeTag = `<span class="text-slate-500">Unchanged</span>`;
-                        }
-                    }
-                    prevPrice = dp.close_price;
-
-                    timelineHtml += `
-                        <tr class="hover:bg-slate-800/30 transition">
-                            <td class="py-2.5 px-3">
-                                <span class="px-2.5 py-1 rounded-lg text-xs font-semibold ${badgeClass}">${dp.day_label}</span>
-                            </td>
-                            <td class="py-2.5 px-3 text-slate-400 font-mono">${dp.date}</td>
-                            <td class="py-2.5 px-3 font-bold text-emerald-400 font-mono">₹${Number(dp.min_price).toLocaleString('en-IN')}</td>
-                            <td class="py-2.5 px-3 text-white font-mono font-semibold">₹${Number(dp.close_price).toLocaleString('en-IN')}</td>
-                            <td class="py-2.5 px-3 font-mono text-[11px]">${changeTag}</td>
-                        </tr>`;
-                });
-                tbody.innerHTML = timelineHtml;
-
-            } catch (err) {
-                console.error("Timeline modal error:", err);
-                tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-rose-500">Failed to load price history.</td></tr>';
-            }
-        }
-
-        function closeTimelineModal() {
-            const modal = document.getElementById('timelineModal');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-        }
-
     </script>
 
     <!-- 30-Day Chronological Price History Modal -->

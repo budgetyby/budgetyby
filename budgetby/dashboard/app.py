@@ -258,7 +258,7 @@ async def get_price_changes_24h(
     direction: str = Query("all", pattern="^(all|drops|hikes)$"),
     platform: str = Query("", max_length=50),
     search: str = Query("", max_length=100),
-    sort_by: str = Query("diff_desc", max_length=50),
+    sort_by: str = Query("latest", max_length=50),
     page: int = Query(1, ge=1),
     limit: int = Query(25, ge=1, le=100)
 ):
@@ -274,7 +274,8 @@ async def get_price_changes_24h(
             "dp_today.close_price > 0",
             "dp_yest.close_price > 0",
             "(p.mrp = 0 OR (dp_today.close_price <= (p.mrp * 1.15) AND dp_yest.close_price <= (p.mrp * 1.15)))",
-            "(dp_today.close_price <= (dp_yest.close_price * 3.0) AND (dp_yest.close_price <= 1500 OR dp_today.close_price >= (dp_yest.close_price * 0.40)))"
+            "(dp_today.close_price <= (dp_yest.close_price * 3.0) AND (dp_yest.close_price <= 1500 OR dp_today.close_price >= (dp_yest.close_price * 0.40)))",
+            "COALESCE(p.last_price_change, NOW()) >= (NOW() - INTERVAL '24 hours')"
         ]
         args = []
         arg_idx = 1
@@ -302,8 +303,10 @@ async def get_price_changes_24h(
 
         where_sql = " AND ".join(where_clauses)
 
-        # Sorting logic
-        if sort_by == "pct_desc":
+        # Sorting logic: Latest arrivals first by default
+        if sort_by == "latest":
+            order_sql = "ORDER BY changed_at DESC, id DESC"
+        elif sort_by == "pct_desc":
             order_sql = "ORDER BY ABS(change_pct) DESC, id ASC"
         elif sort_by == "drop_largest":
             order_sql = "ORDER BY price_diff ASC, id ASC"
@@ -311,8 +314,10 @@ async def get_price_changes_24h(
             order_sql = "ORDER BY price_diff DESC, id ASC"
         elif sort_by == "price_asc":
             order_sql = "ORDER BY new_price ASC, id ASC"
-        else: # diff_desc default
+        elif sort_by == "diff_desc":
             order_sql = "ORDER BY ABS(price_diff) DESC, id ASC"
+        else: # Default latest
+            order_sql = "ORDER BY changed_at DESC, id DESC"
 
         query = f"""
             WITH changed_prods AS (
