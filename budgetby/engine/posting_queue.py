@@ -388,17 +388,29 @@ class PostingQueue:
                     url = f"https://www.amazon.in/dp/{product.get('platform_id')}?tag={config.AMAZON_ASSOCIATE_TAG}"
                     product["affiliate_url"] = url
 
-                # Automatic Live EarnKaro Short Link Conversion via @ekconverter9bot for all non-Amazon stores
-                if platform in ("flipkart", "myntra", "ajio", "nykaa", "croma") and url:
+                # Automatic Live EarnKaro Short Link Conversion via @ekconverter9bot for Flipkart, Myntra, Ajio, Croma
+                if platform in ("flipkart", "myntra", "ajio", "croma") and url:
                     try:
                         from budgetby.ingest.telegram_listener import convert_url_via_ek_bot
                         converted_ek = await convert_url_via_ek_bot(url, timeout=4.0)
                         if converted_ek and converted_ek != url:
                             product["affiliate_url"] = converted_ek
                             deal_data["product"]["affiliate_url"] = converted_ek
-                            logger.info(f"🔗 [POST LINK] [{platform.upper()}] Replaced with live converted URL: {converted_ek}")
+                            logger.info(f"🔗 [POST LINK] [{platform.upper()}] Replaced with live EarnKaro URL: {converted_ek}")
                     except Exception as e:
                         logger.debug(f"Auto EK conversion check: {e}")
+
+                # Automatic Live Cuelinks Short Link Conversion via @CuelinksBot for Nykaa
+                elif platform == "nykaa" and url:
+                    try:
+                        from budgetby.ingest.telegram_listener import convert_url_via_cuelinks_bot
+                        converted_cl = await convert_url_via_cuelinks_bot(url, timeout=6.0)
+                        if converted_cl and converted_cl != url:
+                            product["affiliate_url"] = converted_cl
+                            deal_data["product"]["affiliate_url"] = converted_cl
+                            logger.info(f"🔗 [POST LINK] [NYKAA] Replaced with live Cuelinks URL: {converted_cl}")
+                    except Exception as e:
+                        logger.debug(f"Auto Cuelinks conversion check: {e}")
 
                 # Generate clean formatted message
                 message_text = format_deal_message(deal_data)

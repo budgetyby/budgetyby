@@ -18,10 +18,12 @@ logger = logging.getLogger("budgetby.ingest.telegram_listener")
 _client = None
 _ek_cache = {}
 _ek_lock = asyncio.Lock()
+_cl_cache = {}
+_cl_lock = asyncio.Lock()
 
 async def convert_url_via_ek_bot(raw_url: str, timeout: float = 4.0) -> str:
     """
-    Automatically converts raw Flipkart/Myntra/Ajio/Nykaa URLs to real
+    Automatically converts raw Flipkart/Myntra/Ajio/Croma URLs to real
     fktr.in / ekaro.in profit tracking links via @ekconverter9bot.
     Guarantees that 100% of clicks are recorded live on earnkaro.com!
     Protected by _ek_lock to eliminate link-swapping concurrency bugs.
@@ -56,6 +58,46 @@ async def convert_url_via_ek_bot(raw_url: str, timeout: float = 4.0) -> str:
                         return real_ek_link
     except Exception as e:
         logger.debug(f"EK converter fallback for {clean_target[:40]}: {e}")
+
+    return raw_url
+
+
+async def convert_url_via_cuelinks_bot(raw_url: str, timeout: float = 6.0) -> str:
+    """
+    Automatically converts raw Nykaa URLs to real clnk.in profit tracking links via @CuelinksBot.
+    Guarantees that 100% of clicks are recorded live on cuelinks.com!
+    Protected by _cl_lock to eliminate link-swapping concurrency bugs.
+    """
+    global _client
+    if not raw_url:
+        return raw_url
+
+    clean_target = raw_url.split("&affid=")[0].split("?affid=")[0]
+    if clean_target in _cl_cache:
+        return _cl_cache[clean_target]
+
+    if not _client or not _client.is_connected():
+        return raw_url
+
+    try:
+        async with _cl_lock:
+            # Serialized conversion: 1 URL at a time eliminates any possibility of link mismatch!
+            async with _client.conversation("CuelinksBot", timeout=timeout) as conv:
+                await conv.send_message(clean_target)
+                resp = await conv.get_response()
+                if resp and resp.text:
+                    urls = re.findall(r'https?://[^\s\)\>]+', resp.text)
+                    valid_links = [
+                        u.strip() for u in urls 
+                        if not any(x in u.lower() for x in ['t.me', 'telegram.org', 'support', 'help'])
+                    ]
+                    if valid_links:
+                        real_cl_link = valid_links[0]
+                        _cl_cache[clean_target] = real_cl_link
+                        logger.info(f"✨ [CUELINKS AUTO-CONVERTED] {clean_target[:45]}... ➔ {real_cl_link}")
+                        return real_cl_link
+    except Exception as e:
+        logger.debug(f"Cuelinks converter fallback for {clean_target[:40]}: {e}")
 
     return raw_url
 

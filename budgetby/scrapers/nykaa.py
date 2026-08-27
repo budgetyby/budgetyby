@@ -7,7 +7,7 @@ from curl_cffi.requests import AsyncSession
 from selectolax.parser import HTMLParser
 from budgetby.scrapers.base import BaseScraper
 from budgetby.scrapers.utils import extract_price, clean_title
-from budgetby.affiliate.earnkaro_links import build_earnkaro_url_sync
+from budgetby.affiliate.cuelinks_links import build_cuelinks_url_sync
 from budgetby import config
 
 logger = logging.getLogger("budgetby.scrapers.nykaa")
@@ -107,7 +107,7 @@ class NykaaScraper(BaseScraper):
         if not title or price <= 0:
             return None
 
-        affiliate_url = build_earnkaro_url_sync(url)
+        affiliate_url = build_cuelinks_url_sync(url)
 
         return {
             "platform": "nykaa",
