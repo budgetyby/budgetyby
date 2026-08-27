@@ -86,7 +86,7 @@
                     document.getElementById('movNextBtn').disabled = data.page >= data.total_pages;
 
                 if (!data.products || data.products.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-slate-500">No price movements found for current filters (older than 24h items are auto-pruned).</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-slate-500">No price movements found for current filters (older than 24h items are auto-pruned).</td></tr>';
                     return;
                 }
 
@@ -110,6 +110,11 @@
                         ? `<img src="${p.image_url}" class="w-8 h-8 object-contain rounded bg-slate-950 p-0.5 shrink-0 border border-slate-800" onerror="this.style.display='none'">` 
                         : `<div class="w-8 h-8 rounded bg-slate-800 flex items-center justify-center text-slate-400 text-[10px] shrink-0 font-bold">#${p.id}</div>`;
 
+                    const mrpVal = Number(p.mrp || p.old_price || p.new_price);
+                    const newPriceVal = Number(p.new_price);
+                    const hasDiscount = mrpVal > newPriceVal;
+                    const discountPct = hasDiscount ? Math.round(((mrpVal - newPriceVal) / mrpVal) * 100) : 0;
+
                     html += `
                         <tr class="hover:bg-slate-800/40 transition">
                             <td class="py-3 px-2 flex items-center gap-2.5 max-w-xs">
@@ -122,8 +127,14 @@
                             <td class="py-3 px-2">
                                 <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${sBadge}">${p.platform}</span>
                             </td>
+                            <td class="py-3 px-2 font-mono text-xs">
+                                <span class="text-slate-300 font-bold font-mono">₹${mrpVal.toLocaleString('en-IN')}</span>
+                                ${hasDiscount ? `<div class="text-[10px] text-emerald-400 font-bold font-sans">${discountPct}% OFF</div>` : ''}
+                            </td>
                             <td class="py-3 px-2 text-slate-400 line-through font-mono text-xs">₹${Number(p.old_price).toLocaleString('en-IN')}</td>
-                            <td class="py-3 px-2 text-white font-bold font-mono text-xs">₹${Number(p.new_price).toLocaleString('en-IN')}</td>
+                            <td class="py-3 px-2">
+                                <div class="text-white font-bold font-mono text-xs">₹${newPriceVal.toLocaleString('en-IN')}</div>
+                            </td>
                             <td class="py-3 px-2">${movBadge}</td>
                             <td class="py-3 px-2 text-emerald-400/80 font-mono text-xs">₹${Number(p.today_min_price || p.new_price).toLocaleString('en-IN')}</td>
                             <td class="py-3 px-2 text-right">
@@ -139,7 +150,7 @@
 
             } catch (err) {
                 console.error("Error loading 24h movements:", err);
-                tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-rose-500">Error loading price movements.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-rose-500">Error loading price movements.</td></tr>';
             }
         }
 
@@ -451,15 +462,16 @@
                         <tr class="border-b border-slate-800 text-slate-400 uppercase tracking-wider">
                             <th class="pb-3 font-semibold">🛍️ Product</th>
                             <th class="pb-3 font-semibold">🏪 Store</th>
-                            <th class="pb-3 font-semibold">🏷️ Prev Price</th>
-                            <th class="pb-3 font-semibold">💰 Live Price</th>
+                            <th class="pb-3 font-semibold">🏷️ Without Discount (MRP)</th>
+                            <th class="pb-3 font-semibold">⏳ Prev Price</th>
+                            <th class="pb-3 font-semibold">💰 Live Deal Price</th>
                             <th class="pb-3 font-semibold">📈 24h Movement</th>
                             <th class="pb-3 font-semibold">📉 24h Min</th>
                             <th class="pb-3 font-semibold text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="movementsTableBody" class="divide-y divide-slate-800/60 text-slate-300">
-                        <tr><td colspan="7" class="py-8 text-center text-slate-500">Loading 24-hour price movements...</td></tr>
+                        <tr><td colspan="8" class="py-8 text-center text-slate-500">Loading 24-hour price movements...</td></tr>
                     </tbody>
                 </table>
             </div>
