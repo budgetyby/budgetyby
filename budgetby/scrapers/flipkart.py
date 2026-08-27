@@ -35,18 +35,12 @@ class FlipkartScraper(BaseScraper):
                     if t_val:
                         title = clean_title(t_val)
                     
-                    # Extract Offers & Availability
+                    # Extract Offers Price
                     offers = data.get("offers")
                     if isinstance(offers, dict):
                         price = float(offers.get("price") or 0)
-                        avail = str(offers.get("availability", ""))
-                        if "OutOfStock" in avail:
-                            in_stock = False
                     elif isinstance(offers, list) and offers:
                         price = float(offers[0].get("price") or 0)
-                        avail = str(offers[0].get("availability", ""))
-                        if "OutOfStock" in avail:
-                            in_stock = False
 
                     # Extract Ratings & Reviews
                     agg = data.get("aggregateRating", {})
@@ -136,8 +130,10 @@ class FlipkartScraper(BaseScraper):
             if img_node:
                 image_url = img_node.attributes.get("src", "")
             
-        out_node = tree.css_first(".Z8NC81, div._16FRp0")
-        if out_node and ("Sold Out" in out_node.text() or "Currently Unavailable" in out_node.text()):
+        out_node = tree.css_first(".Z8NC81, div._16FRp0, ._16FRp0")
+        if out_node and any(s in out_node.text().lower() for s in ["sold out", "currently unavailable", "item is out of stock"]):
+            in_stock = False
+        elif price <= 0:
             in_stock = False
             
         return {
