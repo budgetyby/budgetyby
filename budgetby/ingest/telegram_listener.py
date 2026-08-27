@@ -191,10 +191,20 @@ async def start_telegram_listener(api_id: int = None, api_hash: str = None):
                 chat = await event.get_chat()
                 chat_id = event.chat_id
                 
-                # Check if this chat matches any target channel or is joined
                 chat_title = PRIVATE_CHANNEL_NAMES.get(chat_id) or getattr(chat, 'title', str(chat_id))
                 chat_username = getattr(chat, 'username', None)
                 source_tag = f"@{chat_username}" if chat_username else f"[{chat_title}]"
+
+                # 1. Strictly ignore our own destination channel to prevent feedback loop
+                own_channel_id = str(config.TELEGRAM_CHANNEL_ID).strip()
+                if str(chat_id) == own_channel_id or (chat_username and chat_username.lower() in ("deal_pulse_alerts", "dealpulse")):
+                    return
+                if chat_title and "dealpulse" in chat_title.lower():
+                    return
+
+                # 2. Strictly filter: Only process messages from whitelisted target spy channels
+                if chat_id not in TARGET_CHAT_IDS and chat_id not in PRIVATE_CHANNEL_NAMES:
+                    return
 
                 text = event.raw_text or ""
                 detected_urls = set(re.findall(r'https?://[^\s<>"]+|www\.[^\s<>"]+', text))
