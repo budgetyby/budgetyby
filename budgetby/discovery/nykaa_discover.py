@@ -75,12 +75,12 @@ async def discover_category(category_path: str, pages: int = 3, sort: str = "pop
                     image_url = img_node.attributes.get("src", "") if img_node else ""
 
                     price = None
-                    p_node = item.css_first(".css-111z9ua, .post-discount-price, .css-1d0jf8e, .css-17x46n5")
+                    p_node = item.css_first(".css-111z9ua, .post-discount-price, span.css-111z9ua, .css-1jczs19")
                     if p_node:
                         price = extract_price(p_node.text())
 
                     mrp = None
-                    m_node = item.css_first(".css-u05rr, .css-t37sfa, span[class*='u05rr'], .strike-price, span.css-1kfl14w")
+                    m_node = item.css_first(".css-u05rr, .css-t37sfa, span[class*='u05rr'], .strike-price, span.css-1kfl14w, .css-17x46n5")
                     if m_node:
                         mrp_cand = extract_price(m_node.text())
                         if mrp_cand and mrp_cand > (price or 0):

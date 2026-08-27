@@ -49,6 +49,12 @@ async def detect_deal(product: Record, new_price: float) -> dict | None:
         if not has_dropped:
             return None
 
+        # 3. Variant Mismatch Anomaly Guard:
+        # Extreme drops (>75% drop on items > ₹2,000) are almost always SKU variant switches (e.g. 10ml mini vs 60ml jar)
+        if baseline and baseline > 2000 and new_price < (baseline * 0.25):
+            logger.warning(f"Rejecting deal candidate due to extreme variant switch divergence: {product.get('title')} (₹{baseline} -> ₹{new_price})")
+            return None
+
         margins = config.BENCHMARK_MARGINS
         
         min_30d = float(product.get("min_30d")) if product.get("min_30d") is not None else None

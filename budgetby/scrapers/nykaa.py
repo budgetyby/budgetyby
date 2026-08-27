@@ -32,7 +32,28 @@ class NykaaScraper(BaseScraper):
 
             tree = HTMLParser(r.text)
 
-            # 1. Primary Strategy: application/ld+json
+            # 1. Primary Strategy: Direct DOM Active Variant Price & MRP
+            p_node = tree.css_first(".css-1jczs19, .post-discount-price, .css-111z9ua")
+            if p_node and p_node.text():
+                cand_p = extract_price(p_node.text())
+                if cand_p and cand_p > 0:
+                    price = cand_p
+
+            m_node = tree.css_first(".css-u05rr, .css-17x46n5, .css-t37sfa, span[class*='mrp']")
+            if m_node and m_node.text():
+                cand_m = extract_price(m_node.text())
+                if cand_m and cand_m >= price:
+                    mrp = cand_m
+
+            # 2. Extract Title from H1
+            t_node = tree.css_first("h1.css-1gc4x7i, h1.title, h1")
+            if t_node and t_node.text():
+                raw_title = t_node.text()
+                raw_title = re.sub(r'@media[^{]+\{[^}]+\}', '', raw_title)
+                raw_title = re.sub(r'\.css-[^{]+\{[^}]+\}', '', raw_title)
+                title = clean_title(raw_title)
+
+            # 3. Fallback to application/ld+json for missing title/price/image/rating
             for script in tree.css("script[type='application/ld+json']"):
                 txt = script.text() or ""
                 try:
@@ -40,17 +61,19 @@ class NykaaScraper(BaseScraper):
                     if isinstance(data, list):
                         data = data[0]
                     if data.get("@type") == "Product" or "offers" in data:
-                        raw_t = data.get("name", "")
-                        if raw_t:
-                            raw_t = re.sub(r'@media[^{]+\{[^}]+\}', '', raw_t)
-                            raw_t = re.sub(r'\.css-[^{]+\{[^}]+\}', '', raw_t)
-                            title = clean_title(raw_t)
+                        if not title:
+                            raw_t = data.get("name", "")
+                            if raw_t:
+                                raw_t = re.sub(r'@media[^{]+\{[^}]+\}', '', raw_t)
+                                raw_t = re.sub(r'\.css-[^{]+\{[^}]+\}', '', raw_t)
+                                title = clean_title(raw_t)
 
                         offers = data.get("offers", {})
                         if isinstance(offers, dict):
-                            p_val = offers.get("price")
-                            if p_val:
-                                price = float(p_val)
+                            if not price:
+                                p_val = offers.get("price")
+                                if p_val:
+                                    price = float(p_val)
                             avail = str(offers.get("availability", ""))
                             if "OutOfStock" in avail:
                                 in_stock = False
@@ -69,27 +92,6 @@ class NykaaScraper(BaseScraper):
                         break
                 except Exception:
                     pass
-
-            # 2. Fallback Title
-            if not title:
-                t_node = tree.css_first("h1.css-1gc4x7i, h1.title, h1")
-                raw_title = t_node.text() if t_node else ""
-                raw_title = re.sub(r'@media[^{]+\{[^}]+\}', '', raw_title)
-                raw_title = re.sub(r'\.css-[^{]+\{[^}]+\}', '', raw_title)
-                title = clean_title(raw_title)
-
-            # 3. Fallback Price
-            if not price:
-                p_node = tree.css_first(".css-1jczs19, .post-discount-price, .css-1d0jf8e, .css-111z9ua")
-                if p_node:
-                    price = extract_price(p_node.text())
-
-            # 4. MRP
-            m_node = tree.css_first(".css-u05rr, .css-17x46n5, .css-t37sfa, span[class*='mrp']")
-            if m_node:
-                mrp_cand = extract_price(m_node.text())
-                if mrp_cand > price:
-                    mrp = mrp_cand
 
             if not mrp or mrp < price:
                 mrp = price
