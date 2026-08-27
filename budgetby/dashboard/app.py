@@ -268,7 +268,14 @@ async def get_price_changes_24h(
     Products automatically drop off once they pass 24 hours without new changes.
     """
     try:
-        offset = (page - 1) * limit
+        direction_str = direction if isinstance(direction, str) else "all"
+        platform_str = (platform if isinstance(platform, str) else "").strip().lower()
+        search_str = (search if isinstance(search, str) else "").strip()
+        sort_by_str = sort_by if isinstance(sort_by, str) else "latest"
+        page_int = int(page) if isinstance(page, (int, str)) and str(page).isdigit() else 1
+        limit_int = int(limit) if isinstance(limit, (int, str)) and str(limit).isdigit() else 25
+
+        offset = (page_int - 1) * limit_int
         where_clauses = [
             "dp_today.close_price != dp_yest.close_price",
             "dp_today.close_price > 0",
@@ -280,17 +287,17 @@ async def get_price_changes_24h(
         args = []
         arg_idx = 1
 
-        if platform:
+        if platform_str:
             where_clauses.append(f"LOWER(p.platform) = ${arg_idx}")
-            args.append(platform.lower())
+            args.append(platform_str)
             arg_idx += 1
 
-        if direction == "drops":
+        if direction_str == "drops":
             where_clauses.append("dp_today.close_price < dp_yest.close_price")
-        elif direction == "hikes":
+        elif direction_str == "hikes":
             where_clauses.append("dp_today.close_price > dp_yest.close_price")
 
-        clean_search = search.strip().lstrip("#")
+        clean_search = search_str.lstrip("#")
         if clean_search:
             if clean_search.isdigit():
                 where_clauses.append(f"(p.id = ${arg_idx} OR p.title ILIKE ${arg_idx+1})")
@@ -304,17 +311,17 @@ async def get_price_changes_24h(
         where_sql = " AND ".join(where_clauses)
 
         # Sorting logic: Latest arrivals first by default
-        if sort_by == "latest":
+        if sort_by_str == "latest":
             order_sql = "ORDER BY changed_at DESC, id DESC"
-        elif sort_by == "pct_desc":
+        elif sort_by_str == "pct_desc":
             order_sql = "ORDER BY ABS(change_pct) DESC, id ASC"
-        elif sort_by == "drop_largest":
+        elif sort_by_str == "drop_largest":
             order_sql = "ORDER BY price_diff ASC, id ASC"
-        elif sort_by == "hike_largest":
+        elif sort_by_str == "hike_largest":
             order_sql = "ORDER BY price_diff DESC, id ASC"
-        elif sort_by == "price_asc":
+        elif sort_by_str == "price_asc":
             order_sql = "ORDER BY new_price ASC, id ASC"
-        elif sort_by == "diff_desc":
+        elif sort_by_str == "diff_desc":
             order_sql = "ORDER BY ABS(price_diff) DESC, id ASC"
         else: # Default latest
             order_sql = "ORDER BY changed_at DESC, id DESC"
