@@ -263,17 +263,8 @@ class ProductSeeder:
         """
         logger.info("Initializing bootstrap discovery...")
 
-        # 1. Croma Bootstrap
-        croma_count = await self.get_platform_count("croma")
-        croma_target = TARGET_PROPORTIONS.get("croma", 3500)
-        if croma_count < croma_target:
-            logger.info(f"🎯 Seeding Croma until {croma_target} target (Current: {croma_count}/{croma_target})...")
-            try:
-                await self.seed_croma()
-            except Exception as e:
-                logger.error(f"Croma bootstrap worker error: {e}")
-        else:
-            logger.info(f"✅ Croma target already reached ({croma_count}/{croma_target}).")
+        # 1. Croma Bootstrap (Temporarily paused)
+        # croma_count = await self.get_platform_count("croma")
 
         # 2. Nykaa Bootstrap
         nykaa_count = await self.get_platform_count("nykaa")
@@ -296,13 +287,12 @@ class ProductSeeder:
 
 
     async def run_full_discovery(self) -> dict:
-        """Runs standard multi-platform discovery pass across all 6 platforms."""
-        logger.info("Running routine multi-platform discovery pass across Amazon, Flipkart, Myntra, Ajio, Croma, Nykaa...")
+        """Runs standard multi-platform discovery pass across active platforms (Amazon, Flipkart, Myntra, Ajio, Nykaa)."""
+        logger.info("Running routine multi-platform discovery pass across Amazon, Flipkart, Myntra, Ajio, Nykaa...")
         results = await asyncio.gather(
             self.seed_flipkart(),
             self.seed_myntra(),
             self.seed_ajio(),
-            self.seed_croma(),
             self.seed_nykaa(),
             self.seed_amazon(),
             return_exceptions=True

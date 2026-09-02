@@ -44,7 +44,6 @@ async def price_check_loop():
             "flipkart": FlipkartScraper(),
             "myntra": MyntraScraper(),
             "ajio": AjioScraper(),
-            "croma": CromaScraper(),
             "nykaa": NykaaScraper(),
         }
 
