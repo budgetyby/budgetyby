@@ -112,31 +112,8 @@ class ProductSeeder:
         await asyncio.gather(*tasks, return_exceptions=True)
 
     async def seed_myntra(self, sort_mode: str = "popularity"):
-        current_count = await self.get_platform_count("myntra")
-        target = TARGET_PROPORTIONS["myntra"]
-        if current_count >= target:
-            logger.info(f"Myntra target reached ({current_count}/{target}). Skipping deep wave.")
-            return
-
-        logger.info(f"Starting concurrent Myntra discovery [sort={sort_mode}] ({current_count}/{target} target)...")
-        sem = asyncio.Semaphore(4)
-
-        async def process_category(category, info):
-            cnt = await self.get_platform_count("myntra")
-            if cnt >= target:
-                return
-            async with sem:
-                try:
-                    cat_type = info.get("category", "fashion")
-                    products = await myntra_discover.discover_category(category, pages=12, sort=sort_mode)
-                    for p in products:
-                        p["category"] = cat_type
-                        await self._upsert(p)
-                    logger.info(f"Myntra {category} ({sort_mode}): Added {len(products)} products")
-                    await asyncio.sleep(0.3)
-                except Exception as e:
-                    logger.error(f"Error seeding Myntra {category}: {e}")
-                    self.stats["errors"] += 1
+        logger.info("🛑 Myntra seeding is disabled.")
+        return
 
         tasks = [process_category(cat, info) for cat, info in config.MYNTRA_DISCOVERY_TARGETS.items()]
         await asyncio.gather(*tasks, return_exceptions=True)
@@ -287,11 +264,10 @@ class ProductSeeder:
 
 
     async def run_full_discovery(self) -> dict:
-        """Runs standard multi-platform discovery pass across active platforms (Amazon, Flipkart, Myntra, Ajio, Nykaa)."""
-        logger.info("Running routine multi-platform discovery pass across Amazon, Flipkart, Myntra, Ajio, Nykaa...")
+        """Runs standard multi-platform discovery pass across active platforms (Amazon, Flipkart, Ajio, Nykaa)."""
+        logger.info("Running routine multi-platform discovery pass across Amazon, Flipkart, Ajio, Nykaa...")
         results = await asyncio.gather(
             self.seed_flipkart(),
-            self.seed_myntra(),
             self.seed_ajio(),
             self.seed_nykaa(),
             self.seed_amazon(),
