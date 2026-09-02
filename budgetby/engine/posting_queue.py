@@ -273,14 +273,14 @@ class PostingQueue:
                 }
                 min_discount = getattr(config, "MIN_DEAL_DISCOUNT_PCT", 10.0) / 100.0
 
-                # Search up to 25 candidates for target platform
-                candidates = await find_evergreen_deals(limit=25, platform=target_platform)
+                # Search up to 60 candidates for target platform
+                candidates = await find_evergreen_deals(limit=60, platform=target_platform)
                 
                 # If target platform has no candidates, find from alternate platform
                 if not candidates:
                     for alt_plat in ["amazon", "flipkart", "myntra", "ajio", "croma", "nykaa"]:
                         if alt_plat != self._last_posted_platform and alt_plat != target_platform:
-                            alt_candidates = await find_evergreen_deals(limit=25, platform=alt_plat)
+                            alt_candidates = await find_evergreen_deals(limit=60, platform=alt_plat)
                             if alt_candidates:
                                 candidates = alt_candidates
                                 target_platform = alt_plat
