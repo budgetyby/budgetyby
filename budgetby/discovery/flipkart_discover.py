@@ -9,7 +9,7 @@ from curl_cffi.requests import AsyncSession
 from selectolax.parser import HTMLParser
 from budgetby import config
 from budgetby.affiliate.earnkaro_links import build_earnkaro_url, build_earnkaro_url_sync
-from budgetby.scrapers.utils import extract_price
+from budgetby.scrapers.utils import extract_price, clean_title
 
 logger = logging.getLogger("budgetby.discovery.flipkart")
 
