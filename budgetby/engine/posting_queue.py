@@ -252,7 +252,17 @@ class PostingQueue:
                 for item in pending_items:
                     await self._queue.put(item)
 
-            # 2. If no queued deal for target_platform, fetch verified candidates from PostgreSQL for target_platform with instant same-platform fallback
+            # 2. Live Store Flash Hunt: Hunt fresh high-discount deals live from the store API
+            if not deal_data:
+                try:
+                    from budgetby.engine.live_hunter import hunt_live_store_deal
+                    live_hunt_deal = await hunt_live_store_deal(target_platform)
+                    if live_hunt_deal:
+                        deal_data = live_hunt_deal
+                except Exception as he:
+                    logger.debug(f"Live hunter fallback note: {he}")
+
+            # 3. If no live hunt deal, fetch verified candidates from PostgreSQL catalog
             if not deal_data:
                 from budgetby.engine.evergreen import find_evergreen_deals
                 from budgetby.engine.cooldown import is_on_cooldown
@@ -261,7 +271,6 @@ class PostingQueue:
                 from budgetby.scrapers.myntra import MyntraScraper
                 from budgetby.scrapers.ajio import AjioScraper
                 from budgetby.scrapers.nykaa import NykaaScraper
-                from budgetby.scrapers.croma import CromaScraper
 
                 scrapers_map = {
                     "amazon": AmazonScraper,
