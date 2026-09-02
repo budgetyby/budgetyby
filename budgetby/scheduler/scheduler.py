@@ -55,10 +55,11 @@ async def price_check_loop():
         logger.info(f"Checking {len(products)} products")
 
         import asyncio
-        sem = asyncio.Semaphore(10)
+        sem = asyncio.Semaphore(getattr(config, "SCRAPER_WORKERS", 5))
 
         async def process_product(product):
             async with sem:
+                await asyncio.sleep(0.05)  # 50ms micro-pause smooths out CPU frequency bursts
                 try:
                     platform = product["platform"]
                     scraper = scrapers.get(platform)
