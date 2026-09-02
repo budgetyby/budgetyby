@@ -54,11 +54,11 @@ async def _fetch_and_normalize_image(image_url: str, timeout: float = 6.0) -> io
     return None
 
 # 12-slot proportional rotation cycle (Croma paused):
-# Amazon: 3, Flipkart: 3, Myntra: 3, Ajio: 2, Nykaa: 1 (Total = 12 parts)
+# Amazon: 3, Flipkart: 3, Myntra: 2, Ajio: 2, Nykaa: 2 (Total = 12 parts)
 ROTATION_SEQUENCE = [
     "amazon", "flipkart", "myntra",
     "amazon", "ajio", "flipkart",
-    "myntra", "myntra", "nykaa",
+    "nykaa", "myntra", "nykaa",
     "amazon", "flipkart", "ajio"
 ]
 
