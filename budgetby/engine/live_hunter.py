@@ -1,7 +1,13 @@
 """
-BudgetBy — Live Smart Deal Hunter
-Fetches live high-discount deals directly from store APIs on each rotation tick,
-upserts them into PostgreSQL (adding if new or updating if existing),
+BudgetBy — Live Smart Deal Hunter (All Platforms)
+Dynamically scans live store high-discount APIs and deals feeds on each rotation tick:
+- Amazon: Lightning Deals (/deals & /gp/goldbox) & Top Category Deals
+- Flipkart: Top Category Deals & Flash Discounts
+- Myntra: Live Gateway Search API (sort=discount)
+- Ajio: Top Fashion & Clearance Deals
+- Nykaa: Live Beauty, Skincare & Fragrance (sort=discount)
+
+Upserts qualifying loot into PostgreSQL (expanding product count organically)
 and returns the deal for immediate Telegram broadcasting.
 """
 
@@ -28,24 +34,44 @@ HUNT_CATEGORIES = {
         ("shoes", "osp,cil"),
         ("casual-shirts", "2oq,s1a,w04,e83"),
         ("jeans", "2oq,s1a,w04,qda"),
-        ("watches", "r18,f1m")
+        ("watches", "r18,f1m"),
+        ("headphones-earphones", "0pm,fcn")
     ],
     "ajio": [
         "men-tshirts", "women-kurtas", "men-casual-shoes", "women-westernwear", "men-jeans"
+    ],
+    "amazon": [
+        "deals_hub",
+        "wireless earbuds", "smart watch", "running shoes men", "men t-shirt cotton",
+        "women kurti set with dupatta", "bluetooth speaker", "perfumes for men"
     ]
 }
 
 async def hunt_live_store_deal(platform: str) -> Optional[Dict[str, Any]]:
     """
-    Hunts for a single fresh, high-discount deal live from the store API.
+    Hunts for a single fresh, high-discount deal live from any store's live API / deals feed.
     Upserts it into the DB (expanding product count organically) and returns it.
     """
     platform = platform.lower()
-    min_disc = 0.40  # 40% minimum discount for live hunted flash deals
+    min_disc = 0.35  # 35% minimum discount for live hunted flash deals
 
     try:
         products = []
-        if platform == "myntra":
+        
+        # 1. AMAZON LIVE HUNT
+        if platform == "amazon":
+            from budgetby.discovery import amazon_discover
+            kw = random.choice(HUNT_CATEGORIES["amazon"])
+            if kw == "deals_hub":
+                products = await amazon_discover.discover_deals_page(pages=1)
+            else:
+                products = await amazon_discover.discover_search_keywords(kw, pages=1)
+            for p in products:
+                p["platform"] = "amazon"
+                p["category"] = p.get("category", "electronics")
+
+        # 2. MYNTRA LIVE HUNT
+        elif platform == "myntra":
             from budgetby.discovery import myntra_discover
             cat = random.choice(HUNT_CATEGORIES["myntra"])
             products = await myntra_discover.discover_category(cat, pages=1, sort="discount")
@@ -53,6 +79,7 @@ async def hunt_live_store_deal(platform: str) -> Optional[Dict[str, Any]]:
                 p["platform"] = "myntra"
                 p["category"] = "fashion"
             
+        # 3. NYKAA LIVE HUNT
         elif platform == "nykaa":
             from budgetby.discovery import nykaa_discover
             cat = random.choice(HUNT_CATEGORIES["nykaa"])
@@ -61,6 +88,7 @@ async def hunt_live_store_deal(platform: str) -> Optional[Dict[str, Any]]:
                 p["platform"] = "nykaa"
                 p["category"] = "beauty"
 
+        # 4. FLIPKART LIVE HUNT
         elif platform == "flipkart":
             from budgetby.discovery import flipkart_discover
             cat, sid = random.choice(HUNT_CATEGORIES["flipkart"])
@@ -69,6 +97,7 @@ async def hunt_live_store_deal(platform: str) -> Optional[Dict[str, Any]]:
                 p["platform"] = "flipkart"
                 p["category"] = "fashion"
 
+        # 5. AJIO LIVE HUNT
         elif platform == "ajio":
             from budgetby.discovery import ajio_discover
             cat = random.choice(HUNT_CATEGORIES["ajio"])
@@ -108,7 +137,7 @@ async def hunt_live_store_deal(platform: str) -> Optional[Dict[str, Any]]:
 
                 logger.info(f"🎯 [LIVE HUNT SUCCESS] [{platform.upper()}] Found fresh deal #{pid}: {title[:40]} | ₹{price} ({round(disc*100)}% OFF)")
 
-                badge = "LOOT" if disc >= 0.70 else "HOT_DEAL"
+                badge = "LOOT" if disc >= 0.70 else ("ATL" if disc >= 0.50 else "HOT_DEAL")
                 return {
                     "product": p,
                     "type": "flash_hunt",
@@ -116,7 +145,7 @@ async def hunt_live_store_deal(platform: str) -> Optional[Dict[str, Any]]:
                     "score": 85.0
                 }
             except Exception as ue:
-                logger.debug(f"Live hunt upsert note: {ue}")
+                logger.debug(f"Live hunt upsert note for {platform}: {ue}")
 
     except Exception as e:
         logger.debug(f"Live hunt exception for {platform}: {e}")
