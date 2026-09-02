@@ -208,35 +208,8 @@ async def discover_new_releases(category_slug: str, pages: int = 2) -> List[Dict
                 logger.error(f"Error scraping Amazon new releases {category_slug}: {e}")
     return results
 
-async def discover_most_wished_for(category_slug: str) -> List[Dict[str, Any]]:
-    results = []
-    async with AsyncSession(impersonate="chrome", timeout=config.SCRAPER_TIMEOUT) as session:
-        url = f"https://www.amazon.in/gp/most-wished-for/{category_slug}"
-        try:
-            await asyncio.sleep(config.SCRAPER_DELAY_MIN)
-            response = await session.get(url)
-            if response.status_code == 200:
-                tree = HTMLParser(response.text)
-                items = await _parse_amazon_listing(tree)
-                results.extend(items)
-        except Exception as e:
-            logger.error(f"Error scraping Amazon most wished {category_slug}: {e}")
-    return results
 
-async def discover_movers_and_shakers(category_slug: str) -> List[Dict[str, Any]]:
-    results = []
-    async with AsyncSession(impersonate="chrome", timeout=config.SCRAPER_TIMEOUT) as session:
-        url = f"https://www.amazon.in/gp/movers-and-shakers/{category_slug}"
-        try:
-            await asyncio.sleep(config.SCRAPER_DELAY_MIN)
-            response = await session.get(url)
-            if response.status_code == 200:
-                tree = HTMLParser(response.text)
-                items = await _parse_amazon_listing(tree)
-                results.extend(items)
-        except Exception as e:
-            logger.error(f"Error scraping Amazon movers {category_slug}: {e}")
-    return results
+
 
 async def discover_deals_page(pages: int = 3) -> List[Dict[str, Any]]:
     """Scrapes Amazon India Today's Deals and Goldbox Lightning Deals hub."""

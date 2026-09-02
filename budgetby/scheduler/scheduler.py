@@ -31,7 +31,6 @@ async def price_check_loop():
         from budgetby.scrapers.myntra import MyntraScraper
         from budgetby.scrapers.ajio import AjioScraper
         from budgetby.scrapers.nykaa import NykaaScraper
-        from budgetby.scrapers.croma import CromaScraper
         from budgetby.engine.deal_detector import detect_deal
         from budgetby.engine.deal_scorer import score_deal
         from budgetby.engine.fake_discount import is_fake_discount
@@ -158,215 +157,9 @@ async def discovery_job():
         logger.error(f"Error in discovery_job: {e}")
 
 
-async def deals_page_crawl():
-    """Crawl Amazon, Flipkart, Myntra, Ajio, and Nykaa 'Today's Deals' hubs and post top deals."""
-    try:
-        from budgetby.discovery.amazon_discover import discover_deals_page as amazon_deals_hub
-        from budgetby.discovery.flipkart_discover import discover_offers_store as flipkart_deals_hub
-        from budgetby.discovery.myntra_discover import discover_deals_page as myntra_deals_hub
-        from budgetby.discovery.ajio_discover import discover_deals_page as ajio_deals_hub
-        from budgetby.discovery.nykaa_discover import discover_deals_page as nykaa_deals_hub
-        from budgetby.discovery.croma_discover import discover_deals_page as croma_deals_hub
-        from budgetby.engine.deal_scorer import score_deal
-        from budgetby.engine.cooldown import is_on_cooldown, set_cooldown
-        from budgetby.engine.posting_queue import get_posting_queue
-
-        logger.info("Starting concurrent crawl of Today's Deals hubs across all 6 platforms...")
-
-        results = await asyncio.gather(
-            amazon_deals_hub(pages=2),
-            flipkart_deals_hub(pages=2),
-            myntra_deals_hub(pages=2),
-            ajio_deals_hub(pages=2),
-            croma_deals_hub(),
-            nykaa_deals_hub(pages=2),
-            return_exceptions=True
-        )
-
-        all_deals = []
-        for r in results:
-            if isinstance(r, list):
-                all_deals.extend(r)
-            elif isinstance(r, Exception):
-                logger.error(f"Error in deal hub crawl: {r}")
-
-        logger.info(f"Discovered {len(all_deals)} live deals from Today's Deals hubs")
-        
-        # Sort and select top qualifying deals (highest savings percentage)
-        valid_candidates = []
-        for item in all_deals:
-            price = float(item.get("current_price") or 0)
-            mrp = float(item.get("mrp") or price)
-            if price > 0 and mrp > price:
-                savings_pct = (mrp - price) / mrp
-                if savings_pct >= 0.25:  # At least 25% OFF
-                    valid_candidates.append((savings_pct, item))
-
-        valid_candidates.sort(key=lambda x: x[0], reverse=True)
-        top_deals = [item for _, item in valid_candidates[:150]]  # Pick top 150 highest-discount deals
-
-        pq = get_posting_queue()
-
-        queued_count = 0
-        for item in top_deals:
-            try:
-                pid = await database.upsert_product(item)
-                if not pid:
-                    continue
-
-                if await is_on_cooldown(pid):
-                    continue
-
-                price = float(item.get("current_price") or 0)
-                mrp = float(item.get("mrp") or price)
-                savings_pct = (mrp - price) / mrp
-
-                deal_dict = {
-                    "product": {
-                        "id": pid,
-                        "title": item.get("title"),
-                        "current_price": price,
-                        "mrp": mrp,
-                        "rating": item.get("rating") or 4.2,
-                        "review_count": item.get("review_count") or 100,
-                        "affiliate_url": item.get("affiliate_url") or item.get("product_url"),
-                        "product_url": item.get("product_url"),
-                        "image_url": item.get("image_url"),
-                        "platform": item.get("platform"),
-                    },
-                    "type": "today_deal",
-                    "badge": "TODAY_DEAL",
-                    "score": round(savings_pct * 100),
-                }
-
-                await pq.queue_deal(deal_dict)
-                queued_count += 1
-
-            except Exception as e:
-                logger.error(f"Error processing deal hub item: {e}")
-
-        # Dispatch background worker to post smoothly at 20-30s intervals
-        if _bot is not None:
-            asyncio.create_task(pq.process_queue(_bot))
-        else:
-            # Fallback to local background task
-            asyncio.create_task(pq.process_queue())
-
-        logger.info(f"Completed Today's Deals hub crawl & queued {queued_count} top deals for smooth continuous posting")
-
-    except Exception as e:
-        logger.error(f"Error in deals_page_crawl: {e}")
 
 
 
-async def movers_shakers_crawl():
-    """Crawl Amazon Movers & Shakers pages."""
-    try:
-        from budgetby.discovery.amazon_discover import discover_movers_and_shakers
-
-        logger.info("Crawling Movers & Shakers...")
-        total = 0
-        for cat_name, cat_info in config.AMAZON_DISCOVERY_TARGETS.items():
-            try:
-                products = await discover_movers_and_shakers(cat_info["slug"])
-                for product_data in products:
-                    product_data["category"] = cat_info.get("category", cat_name)
-                    await database.upsert_product(product_data)
-                total += len(products)
-            except Exception as e:
-                logger.warning(f"M&S crawl failed for {cat_name}: {e}")
-
-        logger.info(f"Movers & Shakers: {total} products discovered")
-    except Exception as e:
-        logger.error(f"Error in movers_shakers_crawl: {e}")
-
-
-async def hourly_backfill():
-    """Check hourly posting minimum per platform and backfill with evergreen deals."""
-    try:
-        from budgetby.engine.evergreen import find_evergreen_deals
-        from budgetby.engine.posting_queue import get_posting_queue
-        import pytz
-        from datetime import datetime
-
-        # 24/7 Platform minimum quotas: Amazon=3, Flipkart=3, Myntra=2, Ajio=2, Nykaa=1 (11 total per hour always)
-        platform_targets = config.PLATFORM_MIN_HOURLY_POSTS
-
-        pq = get_posting_queue()
-        total_backfilled = 0
-
-        for platform, min_target in platform_targets.items():
-            if min_target <= 0:
-                continue
-
-            # Count unique fresh deals posted this hour for this platform (reminders excluded from fresh quota)
-            posts_for_plat = await database.fetchval("""
-                SELECT COUNT(DISTINCT d.product_id) FROM deals d
-                JOIN products p ON d.product_id = p.id
-                WHERE p.platform = $1 
-                  AND d.posted_at >= date_trunc('hour', NOW())
-                  AND d.deal_type != 'reminder'
-            """, platform) or 0
-
-            gap = min_target - posts_for_plat
-            if gap > 0:
-                logger.info(f"Platform [{platform.upper()}]: {posts_for_plat}/{min_target} posted this hour. Backfilling {gap} evergreen deals...")
-                deals = await find_evergreen_deals(limit=gap, platform=platform)
-                for deal in deals:
-                    logger.info(f"Evergreen candidate [{platform.upper()}]: {deal['title'][:50]}...")
-                    await pq.queue_deal({"product": dict(deal), "type": "evergreen", "badge": "EVERGREEN"})
-                    total_backfilled += 1
-            else:
-                logger.info(f"Platform [{platform.upper()}]: Hourly minimum of {min_target} already met ({posts_for_plat} posted).")
-
-        if total_backfilled > 0:
-            if _bot is not None:
-                await pq.process_queue(_bot)
-            else:
-                await pq.process_queue()
-
-    except Exception as e:
-        logger.error(f"Error in hourly_backfill: {e}")
-
-
-async def deal_tracking_check():
-    """Check active deal tracking records and edit messages if price changed."""
-    try:
-        active_tracking = await database.get_active_deal_tracking()
-        if not active_tracking:
-            return
-
-        logger.info(f"Checking {len(active_tracking)} tracked deals for price changes")
-
-        for track in active_tracking:
-            try:
-                posted_price = float(track["posted_price"])
-                current_price = float(track["current_price"]) if track["current_price"] else None
-                is_oos = not track["in_stock"]
-
-                if current_price and abs(current_price - posted_price) < 1 and not is_oos:
-                    continue  # No change
-
-                # Price changed or went OOS — needs edit
-                logger.info(
-                    f"Deal {track['message_id']} needs update: "
-                    f"posted={posted_price}, current={current_price}, oos={is_oos}"
-                )
-
-                # The actual message editing would be done by the bot
-                # Mark as edited in DB
-                await database.execute("""
-                    UPDATE deal_tracking SET last_edited = NOW() WHERE id = $1
-                """, track["id"])
-
-            except Exception as e:
-                logger.warning(f"Error checking tracked deal {track['id']}: {e}")
-
-        # Finalize expired records
-        await database.finalize_expired_tracking()
-
-    except Exception as e:
-        logger.error(f"Error in deal_tracking_check: {e}")
 
 
 
@@ -431,12 +224,12 @@ async def _post_digest(digest_type: str, hours_lookback: int = 12):
         logger.error(f"Error posting {digest_type} deals digest: {e}")
 
 
-
 async def paced_posting_loop():
     """
-    Continuous 2-Minute Deal Broadcaster:
-    Fires every 120 seconds (30 posts/hr) to post the next deal from the weighted rotation schedule.
-    Guarantees no 2 consecutive posts from the same platform and matches catalog proportions.
+    Continuous 30-Second Deal Broadcaster:
+    Fires every 30 seconds to post the next deal from the weighted rotation schedule.
+    Live Deal Hunter runs first (fetches fresh loot live from store APIs, upserts to DB),
+    then falls back to evergreen catalog if no live deal passes filters.
     """
     try:
         from budgetby.engine.posting_queue import get_posting_queue
@@ -444,20 +237,6 @@ async def paced_posting_loop():
         await pq.post_next_deal(_bot)
     except Exception as e:
         logger.error(f"Error in paced_posting_loop: {e}")
-
-
-
-async def channel_monitor_loop():
-    """
-    Channel Spy & Deal Ingestor:
-    Polls monitored public Telegram channels every 2 minutes, extracts deals,
-    verifies live price & stock, and queues legitimate deals into local catalog.
-    """
-    try:
-        from budgetby.ingest.channel_monitor import run_channel_monitor
-        await run_channel_monitor()
-    except Exception as e:
-        logger.error(f"Error in channel_monitor_loop: {e}")
 
 
 def start_scheduler():
@@ -468,23 +247,9 @@ def start_scheduler():
     _scheduler.add_job(price_check_loop, "interval", seconds=30, id="price_check",
                        max_instances=1, coalesce=True, misfire_grace_time=60)
 
-    # Quick Deals & Flash Sale Crawler — automatically every 30 minutes
-    _scheduler.add_job(deals_page_crawl, "interval", minutes=30, id="deals_crawl", max_instances=1, misfire_grace_time=30)
-
-    # Discovery — every 6 hours
+    # Discovery — every 6 hours (Croma & Myntra seeding disabled; Amazon/Flipkart/Ajio/Nykaa only)
     _scheduler.add_job(discovery_job, "interval",
                        hours=config.DISCOVERY_INTERVAL_HOURS, id="discovery", max_instances=1, misfire_grace_time=30)
-
-    # Movers & Shakers — every 3 hours
-    _scheduler.add_job(movers_shakers_crawl, "interval",
-                       hours=config.MOVERS_AND_SHAKERS_INTERVAL_HOURS, id="movers_shakers", max_instances=1, misfire_grace_time=30)
-
-    # Hourly backfill check
-    # Hourly backfill replaced by continuous 2-minute paced posting loop
-    # _scheduler.add_job(hourly_backfill, ...)
-
-    # Deal tracking check — every 10 minutes
-    _scheduler.add_job(deal_tracking_check, "interval", minutes=10, id="deal_tracking", max_instances=1, misfire_grace_time=30)
 
     # Daily cleanup at midnight IST
     _scheduler.add_job(cleanup.daily_cleanup, "cron", hour=0, minute=0, id="daily_cleanup")
@@ -498,18 +263,15 @@ def start_scheduler():
         _scheduler.add_job(cleanup.run_backup, "cron",
                            hour=config.BACKUP_HOUR, minute=0, id="daily_backup")
 
-        # Daily Morning Digest at 9:00 AM IST
+    # Daily Morning Digest at 9:00 AM IST
     _scheduler.add_job(morning_digest, "cron", hour=9, minute=0, timezone="Asia/Kolkata", id="morning_digest")
 
-    # Daily Evening Digest at 8:00 PM IST (20:00)
+    # Daily Evening Digest at 8:00 PM IST
     _scheduler.add_job(evening_digest, "cron", hour=20, minute=0, timezone="Asia/Kolkata", id="evening_digest")
 
-        # High-Velocity 30-Second Paced Broadcaster (120 posts/hour, 2,880/day 24/7 balanced rotation)
-    _scheduler.add_job(paced_posting_loop, "interval", seconds=30, id="paced_posting", max_instances=1, coalesce=True, misfire_grace_time=60)
-
-        # Telegram Channel Deal Spy & Ingestion Monitor — every 2 minutes
-    # Telegram Channel Deal Spy & Ingestion Monitor — rapid 30-second interval
-    _scheduler.add_job(channel_monitor_loop, "interval", seconds=30, id="channel_monitor", max_instances=1, coalesce=True, misfire_grace_time=60)
+    # High-Velocity 30-Second Paced Broadcaster with Live Deal Hunter (2,880 posts/day)
+    _scheduler.add_job(paced_posting_loop, "interval", seconds=30, id="paced_posting",
+                       max_instances=1, coalesce=True, misfire_grace_time=60)
 
     _scheduler.start()
     logger.info("Scheduler started with all jobs configured")
@@ -520,3 +282,4 @@ def stop_scheduler():
     logger.info("Stopping scheduler...")
     _scheduler.shutdown(wait=False)
     logger.info("Scheduler stopped.")
+

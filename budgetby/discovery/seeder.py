@@ -10,7 +10,7 @@ import logging
 import asyncio
 from budgetby import config
 from budgetby import database
-from budgetby.discovery import amazon_discover, flipkart_discover, myntra_discover, ajio_discover, nykaa_discover, croma_discover
+from budgetby.discovery import amazon_discover, flipkart_discover, myntra_discover, ajio_discover, nykaa_discover
 
 logger = logging.getLogger("budgetby.discovery.seeder")
 
