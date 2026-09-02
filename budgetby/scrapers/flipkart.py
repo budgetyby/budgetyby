@@ -87,10 +87,10 @@ class FlipkartScraper(BaseScraper):
             price_digits = str(price_int)
 
             # Search in DOM text blocks where HTML tags are stripped
-            for el in tree.css("div.OmE16y, div.asbjxx, div._1psv1zeb9, div[class*='price'], div, span"):
+            for el in tree.css("div.OmE16y, div.asbjxx, div[class*='_1psv1ze'], div[class*='price'], div, span"):
                 txt = el.text(strip=True)
                 if price_str in txt or price_digits in txt:
-                    m = re.search(rf'(\d+%)?\s*([0-9,]{{4,8}})\s*₹?\s*(?:{re.escape(price_str)}|{price_digits})', txt)
+                    m = re.search(rf'(\d+%)?\s*([0-9,]{{2,8}})\s*₹?\s*(?:{re.escape(price_str)}|{price_digits})', txt)
                     if m:
                         cand = float(m.group(2).replace(',', ''))
                         if cand > price:
