@@ -903,7 +903,9 @@ async def search_products(
             FROM products
             WHERE LOWER(platform) != 'croma'
               AND (title ILIKE $1 OR platform_id ILIKE $1)
-            ORDER BY current_price ASC NULLS LAST
+            ORDER BY 
+              (CASE WHEN affiliate_url ILIKE '%fktr.in%' OR affiliate_url ILIKE '%myntr.it%' OR affiliate_url ILIKE '%ajiio.in%' OR affiliate_url ILIKE '%clnk.in%' OR LOWER(platform) = 'amazon' THEN 1 ELSE 0 END) DESC,
+              current_price ASC NULLS LAST
             LIMIT $2;
         """, f"%{clean_q}%", limit)
         res = []
@@ -1375,13 +1377,14 @@ async def get_public_price_drops(
             args.append(f"%{cat_clean}%")
             arg_idx += 1
 
-        order_by = "drop_pct DESC, drop_amount DESC"
+        aff_priority = "(CASE WHEN p.affiliate_url ILIKE '%fktr.in%' OR p.affiliate_url ILIKE '%myntr.it%' OR p.affiliate_url ILIKE '%ajiio.in%' OR p.affiliate_url ILIKE '%clnk.in%' OR LOWER(p.platform) = 'amazon' THEN 1 ELSE 0 END) DESC"
+        order_by = f"{aff_priority}, drop_pct DESC, drop_amount DESC"
         if sort_by == "price_asc":
-            order_by = "p.current_price ASC, drop_pct DESC"
+            order_by = f"{aff_priority}, p.current_price ASC, drop_pct DESC"
         elif sort_by == "discount":
-            order_by = "drop_amount DESC, drop_pct DESC"
+            order_by = f"{aff_priority}, drop_amount DESC, drop_pct DESC"
         elif sort_by == "latest":
-            order_by = "p.last_price_change DESC NULLS LAST, drop_pct DESC"
+            order_by = f"{aff_priority}, p.last_price_change DESC NULLS LAST, drop_pct DESC"
 
         args.extend([limit, offset])
 
@@ -1467,6 +1470,7 @@ async def get_public_price_drops(
                 "badge": r["badge"],
                 "image_url": r["image_url"],
                 "product_url": r["product_url"],
+                "affiliate_url": aff_url,
                 "rating": round(float(r["rating"]), 1) if r["rating"] is not None and 1.0 <= float(r["rating"]) <= 5.0 else None,
                 "review_count": int(r["review_count"]) if r.get("review_count") and int(r["review_count"]) > 0 else None,
                 "last_price_change": r["last_price_change"].isoformat() if hasattr(r["last_price_change"], "isoformat") else str(r["last_price_change"]) if r["last_price_change"] else None
@@ -1726,6 +1730,8 @@ async def get_public_deals(
             and tab_clean not in ("drops", "atl")
         )
 
+        aff_priority = "(CASE WHEN p.affiliate_url ILIKE '%fktr.in%' OR p.affiliate_url ILIKE '%myntr.it%' OR p.affiliate_url ILIKE '%ajiio.in%' OR p.affiliate_url ILIKE '%clnk.in%' OR LOWER(p.platform) = 'amazon' THEN 1 ELSE 0 END) DESC"
+
         if use_fast_deals_path:
             if tab_clean == "under499":
                 where_clauses.append("p.current_price <= 499")
@@ -1735,15 +1741,15 @@ async def get_public_deals(
                 where_clauses.append("(p.mrp IS NULL OR ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) >= 0.30)")
 
             if sort_by == "discount_desc":
-                order_sql = "ORDER BY ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) DESC NULLS LAST, d.posted_at DESC"
+                order_sql = f"ORDER BY {aff_priority}, ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) DESC NULLS LAST, d.posted_at DESC"
             elif sort_by == "price_asc":
-                order_sql = "ORDER BY p.current_price ASC, d.posted_at DESC"
+                order_sql = f"ORDER BY {aff_priority}, p.current_price ASC, d.posted_at DESC"
             elif sort_by == "price_desc":
-                order_sql = "ORDER BY p.current_price DESC, d.posted_at DESC"
+                order_sql = f"ORDER BY {aff_priority}, p.current_price DESC, d.posted_at DESC"
             elif sort_by == "score_desc":
-                order_sql = "ORDER BY COALESCE(d.deal_score, 50.0) DESC, d.posted_at DESC"
+                order_sql = f"ORDER BY {aff_priority}, COALESCE(d.deal_score, 50.0) DESC, d.posted_at DESC"
             else:
-                order_sql = "ORDER BY d.posted_at DESC"
+                order_sql = f"ORDER BY {aff_priority}, d.posted_at DESC"
 
             args.extend([limit, offset])
             where_sql = f"WHERE {' AND '.join(where_clauses)}"
@@ -1797,20 +1803,20 @@ async def get_public_deals(
                 where_clauses.append("(d.id IS NOT NULL OR ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) >= 0.50)")
 
             if sort_by == "discount_desc":
-                order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) DESC NULLS LAST, p.id DESC"
+                order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) DESC NULLS LAST, p.id DESC"
             elif sort_by == "price_asc":
-                order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, p.current_price ASC, p.id DESC"
+                order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, p.current_price ASC, p.id DESC"
             elif sort_by == "price_desc":
-                order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, p.current_price DESC, p.id DESC"
+                order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, p.current_price DESC, p.id DESC"
             elif sort_by == "score_desc":
-                order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, COALESCE(d.deal_score, 50.0) DESC, p.id DESC"
+                order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, COALESCE(d.deal_score, 50.0) DESC, p.id DESC"
             elif search_clean:
-                order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, relevance_score DESC, COALESCE(d.posted_at, p.last_price_change, p.created_at) DESC"
+                order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, relevance_score DESC, COALESCE(d.posted_at, p.last_price_change, p.created_at) DESC"
             else:
                 if tab_clean == "drops":
-                    order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, (((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0))) DESC NULLS LAST, p.last_price_change DESC NULLS LAST, p.id DESC"
+                    order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, (((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0))) DESC NULLS LAST, p.last_price_change DESC NULLS LAST, p.id DESC"
                 else:
-                    order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, COALESCE(d.posted_at, p.last_price_change, p.created_at) DESC, p.id DESC"
+                    order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, COALESCE(d.posted_at, p.last_price_change, p.created_at) DESC, p.id DESC"
 
             args.extend([limit, offset])
             where_sql = f"WHERE {' AND '.join(where_clauses)}"

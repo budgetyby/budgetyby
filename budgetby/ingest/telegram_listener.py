@@ -26,7 +26,7 @@ def is_telethon_connected() -> bool:
     global _client
     return bool(_client and _client.is_connected())
 
-async def convert_url_via_ek_bot(raw_url: str, platform: str = None, timeout: float = 6.0) -> str:
+async def convert_url_via_ek_bot(raw_url: str, platform: str = None, timeout: float = 10.0) -> str:
     """
     Automatically converts raw Flipkart/Myntra/Ajio URLs to real
     fktr.in / myntr.it / ajiio.in / ekaro.in profit tracking links via @ekconverter9bot.
@@ -52,44 +52,61 @@ async def convert_url_via_ek_bot(raw_url: str, platform: str = None, timeout: fl
         async with _ek_lock:
             # Serialized conversion: Strictly 1 URL at a time eliminates any possibility of link mismatch!
             async with _client.conversation("ekconverter9bot", timeout=timeout) as conv:
+                # 1. Send clean product target URL
                 sent_msg = await conv.send_message(clean_target)
-                resp = await conv.get_response()
-                if resp and resp.text and getattr(resp, "id", 0) >= getattr(sent_msg, "id", 0):
+                
+                # 2. Poll responses until a message with converted link arrives
+                loop_start = asyncio.get_event_loop().time()
+                while (asyncio.get_event_loop().time() - loop_start) < timeout:
+                    rem_time = max(0.5, timeout - (asyncio.get_event_loop().time() - loop_start))
+                    try:
+                        resp = await conv.get_response()
+                    except (asyncio.TimeoutError, TimeoutError):
+                        break
+
+                    if not resp or not resp.text:
+                        continue
+                    if getattr(resp, "id", 0) < getattr(sent_msg, "id", 0):
+                        continue
+
                     urls = re.findall(r'https?://[^\s\)\>]+', resp.text)
                     valid_links = [
                         u.strip() for u in urls 
                         if not any(x in u.lower() for x in ['t.me', 'telegram.org', 'affiliaters.in', 'support', 'help', 'faq'])
                     ]
-                    if valid_links:
-                        cand = valid_links[0].rstrip(".,;!?")
-                        cand_lower = cand.lower()
+                    if not valid_links:
+                        # Interim bot response (e.g., "Converting..."), wait for next message
+                        continue
 
-                        # Strict Platform Domain Safeguard:
-                        # Prevent cross-assigning a link from one store to another!
-                        is_valid_store = False
-                        if plat == "flipkart" and ("fktr.in" in cand_lower or "ekaro.in" in cand_lower):
-                            is_valid_store = True
-                        elif plat == "myntra" and ("myntr.it" in cand_lower or "ekaro.in" in cand_lower):
-                            is_valid_store = True
-                        elif plat == "ajio" and ("ajiio.in" in cand_lower or "ekaro.in" in cand_lower):
-                            is_valid_store = True
-                        elif not plat and any(d in cand_lower for d in ("fktr.in", "myntr.it", "ajiio.in", "ekaro.in")):
-                            is_valid_store = True
+                    cand = valid_links[0].rstrip(".,;!?")
+                    cand_lower = cand.lower()
 
-                        if is_valid_store:
-                            _ek_cache[cache_key] = cand
-                            logger.info(f"✨ [EARNKARO AUTO-CONVERTED] [{plat.upper()}] {clean_target[:45]}... ➔ {cand}")
-                            return cand
-                        else:
-                            logger.warning(f"⚠️ [EARNKARO MISMATCH REJECTED] Platform '{plat}' rejected mismatched link: {cand}")
-                            return raw_url
+                    # Strict Platform Domain Safeguard:
+                    # Prevent cross-assigning a link from one store to another!
+                    is_valid_store = False
+                    if plat == "flipkart" and ("fktr.in" in cand_lower or "ekaro.in" in cand_lower):
+                        is_valid_store = True
+                    elif plat == "myntra" and ("myntr.it" in cand_lower or "ekaro.in" in cand_lower):
+                        is_valid_store = True
+                    elif plat == "ajio" and ("ajiio.in" in cand_lower or "ekaro.in" in cand_lower):
+                        is_valid_store = True
+                    elif not plat and any(d in cand_lower for d in ("fktr.in", "myntr.it", "ajiio.in", "ekaro.in")):
+                        is_valid_store = True
+
+                    if is_valid_store:
+                        _ek_cache[cache_key] = cand
+                        logger.info(f"✨ [EARNKARO AUTO-CONVERTED] [{plat.upper()}] {clean_target[:45]}... ➔ {cand}")
+                        return cand
+                    else:
+                        logger.warning(f"⚠️ [EARNKARO MISMATCH REJECTED] Platform '{plat}' rejected mismatched link: {cand}")
+                        return raw_url
     except Exception as e:
-        logger.debug(f"EK converter notice for {clean_target[:40]}: {e}")
+        logger.warning(f"EK converter exception for {clean_target[:45]}: {e}")
 
     return raw_url
 
 
-async def convert_url_via_cuelinks_bot(raw_url: str, platform: str = "nykaa", timeout: float = 8.0) -> str:
+async def convert_url_via_cuelinks_bot(raw_url: str, platform: str = "nykaa", timeout: float = 10.0) -> str:
     """
     Automatically converts raw Nykaa URLs to real clnk.in profit tracking links via @CuelinksBot.
     Guarantees that 100% of clicks are recorded live on cuelinks.com!
@@ -112,25 +129,41 @@ async def convert_url_via_cuelinks_bot(raw_url: str, platform: str = "nykaa", ti
         async with _cl_lock:
             # Serialized conversion: Strictly 1 URL at a time eliminates any possibility of link mismatch!
             async with _client.conversation("CuelinksBot", timeout=timeout) as conv:
+                # 1. Send clean product target URL
                 sent_msg = await conv.send_message(clean_target)
-                resp = await conv.get_response()
-                if resp and resp.text and getattr(resp, "id", 0) >= getattr(sent_msg, "id", 0):
+
+                # 2. Poll responses until a message with converted link arrives
+                loop_start = asyncio.get_event_loop().time()
+                while (asyncio.get_event_loop().time() - loop_start) < timeout:
+                    rem_time = max(0.5, timeout - (asyncio.get_event_loop().time() - loop_start))
+                    try:
+                        resp = await conv.get_response()
+                    except (asyncio.TimeoutError, TimeoutError):
+                        break
+
+                    if not resp or not resp.text:
+                        continue
+                    if getattr(resp, "id", 0) < getattr(sent_msg, "id", 0):
+                        continue
+
                     urls = re.findall(r'https?://[^\s\)\>]+', resp.text)
                     valid_links = [
                         u.strip() for u in urls 
                         if not any(x in u.lower() for x in ['t.me', 'telegram.org', 'support', 'help', 'faq'])
                     ]
-                    if valid_links:
-                        cand = valid_links[0].rstrip(".,;!?")
-                        if "clnk.in" in cand.lower():
-                            _cl_cache[cache_key] = cand
-                            logger.info(f"✨ [CUELINKS AUTO-CONVERTED] [NYKAA] {clean_target[:45]}... ➔ {cand}")
-                            return cand
-                        else:
-                            logger.warning(f"⚠️ [CUELINKS MISMATCH REJECTED] Nykaa rejected non-clnk link: {cand}")
-                            return raw_url
+                    if not valid_links:
+                        continue
+
+                    cand = valid_links[0].rstrip(".,;!?")
+                    if "clnk.in" in cand.lower():
+                        _cl_cache[cache_key] = cand
+                        logger.info(f"✨ [CUELINKS AUTO-CONVERTED] [NYKAA] {clean_target[:45]}... ➔ {cand}")
+                        return cand
+                    else:
+                        logger.warning(f"⚠️ [CUELINKS MISMATCH REJECTED] Nykaa rejected non-clnk link: {cand}")
+                        return raw_url
     except Exception as e:
-        logger.debug(f"Cuelinks converter notice for {clean_target[:40]}: {e}")
+        logger.warning(f"Cuelinks converter exception for {clean_target[:45]}: {e}")
 
     return raw_url
 

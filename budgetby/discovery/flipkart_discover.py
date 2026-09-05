@@ -60,7 +60,7 @@ async def discover_category(name: str, sid: str, pages: int = 5, sort: str = "po
                         if href and not href.startswith("http"):
                             product_url = "https://www.flipkart.com" + href
                         elif not href:
-                            product_url = f"https://www.flipkart.com/product/p/itme?pid={pid}"
+                            product_url = f"https://www.flipkart.com/product/p/itm?pid={pid}"
                         else:
                             product_url = href
 

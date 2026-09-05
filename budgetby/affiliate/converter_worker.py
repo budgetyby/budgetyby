@@ -85,10 +85,10 @@ async def run_affiliate_converter_worker():
                                   OR p.affiliate_url ILIKE '%clnk.in%'
                               )
                           )
-                          AND (p.last_checked IS NULL OR p.last_checked < NOW() - INTERVAL '2 hours')
+                          AND (p.last_checked IS NULL OR p.last_checked < NOW() - INTERVAL '30 minutes')
                         ORDER BY d.product_id, d.posted_at DESC
                     ) sub
-                    ORDER BY posted_at DESC
+                    ORDER BY (posted_at) DESC
                     LIMIT 10;
                 """, store)
                 deals.extend(store_deals)
@@ -119,7 +119,7 @@ async def run_affiliate_converter_worker():
                                   OR p.affiliate_url ILIKE '%clnk.in%'
                               )
                           )
-                          AND (p.last_checked IS NULL OR p.last_checked < NOW() - INTERVAL '2 hours')
+                          AND (p.last_checked IS NULL OR p.last_checked < NOW() - INTERVAL '30 minutes')
                         ORDER BY p.id DESC
                         LIMIT 10;
                     """, store)
@@ -147,9 +147,9 @@ async def run_affiliate_converter_worker():
 
                 new_aff_url = None
                 if plat in ("flipkart", "myntra", "ajio"):
-                    new_aff_url = await convert_url_via_ek_bot(clean_url, platform=plat, timeout=6.0)
+                    new_aff_url = await convert_url_via_ek_bot(clean_url, platform=plat, timeout=10.0)
                 elif plat == "nykaa":
-                    new_aff_url = await convert_url_via_cuelinks_bot(clean_url, platform="nykaa", timeout=8.0)
+                    new_aff_url = await convert_url_via_cuelinks_bot(clean_url, platform="nykaa", timeout=10.0)
 
                 # Strict Verification: Guarantee that link genuinely belongs to this product's platform
                 is_valid = False
@@ -176,10 +176,10 @@ async def run_affiliate_converter_worker():
                     CONVERTER_STATS["last_converted_url"] = new_aff_url
                     logger.info(f"🎯 [AFFILIATE LINK ASSIGNED] Prod {pid} [{plat.upper()}] ➔ {new_aff_url}")
                 else:
-                    # Mark last_checked so unconvertible items don't stall the loop
+                    # Mark last_checked with 15-min backoff so unconvertible items don't stall the loop
                     await database.execute("""
                         UPDATE products 
-                        SET last_checked = NOW() 
+                        SET last_checked = NOW() - INTERVAL '15 minutes' 
                         WHERE id = $1 AND LOWER(platform) = $2;
                     """, pid, plat)
                     if new_aff_url:
