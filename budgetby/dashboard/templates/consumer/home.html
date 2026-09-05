@@ -1,0 +1,467 @@
+{% extends "consumer/layout.html" %}
+
+{% block title %}BudgetBy — Discover Verified Historical Lows & Daily Price Drops{% endblock %}
+
+{% block content %}
+<main class="w-full">
+    <!-- ── Hero Banner with Live Metrics ─────────────────────────────────── -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-8 sm:pt-12 pb-6">
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-b from-indigo-950/40 via-slate-900/80 to-slate-950 border border-slate-800/80 p-6 sm:p-10 shadow-2xl">
+            <div class="max-w-3xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 font-extrabold text-[11px] tracking-wider uppercase border border-indigo-500/30 mb-4 shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
+                    VERIFIED REAL-TIME DEAL HUNTER
+                </div>
+
+                <h1 class="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
+                    Stop Overpaying. <br/>
+                    <span class="bg-gradient-to-r from-emerald-400 via-teal-300 to-indigo-400 bg-clip-text text-transparent">
+                        Discover Verified Historical Lows.
+                    </span>
+                </h1>
+
+                <p class="mt-3.5 text-sm sm:text-base text-slate-400 leading-relaxed max-w-2xl">
+                    We track <span class="text-white font-semibold" id="heroProductCount">100,000+</span> products 24/7 across Amazon, Flipkart, Myntra, Ajio, and Nykaa. Spot real price drops and verified loot deals before they sell out.
+                </p>
+
+                <!-- Quick Action Buttons -->
+                <div class="mt-6 flex flex-wrap items-center gap-3">
+                    <a href="/drops" class="px-5 py-3 rounded-2xl text-xs font-extrabold bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-2 shadow-lg shadow-rose-600/30 hover:scale-[1.02] active:scale-[0.98] transition">
+                        <span>🔥 Today's Price Drops</span>
+                        <span id="heroDropsBtnBadge" class="px-2 py-0.5 rounded-full bg-white/20 text-white font-mono text-[10px]">--</span>
+                    </a>
+                    <a href="/deals" class="px-5 py-3 rounded-2xl text-xs font-extrabold bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-2 shadow-lg shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98] transition">
+                        <span>🎯 Browse All Deals</span>
+                    </a>
+                    <a href="/all-time-lows" class="px-5 py-3 rounded-2xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 flex items-center gap-2 transition">
+                        <span>👑 All-Time Lows</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Live Metrics Counter Strip -->
+            <div class="mt-8 pt-6 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="bg-slate-950/60 border border-slate-800/60 rounded-2xl p-4">
+                    <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">📦 Catalog Tracked</div>
+                    <div id="statHeroTotalProds" class="text-xl sm:text-2xl font-black text-white font-mono mt-1">--</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">Updated in real-time</div>
+                </div>
+                <a href="/deals?tab=verified" class="block bg-slate-950/60 hover:bg-slate-900/90 border border-slate-800/60 hover:border-indigo-500/50 rounded-2xl p-4 transition group">
+                    <div class="flex items-center justify-between">
+                        <div class="text-[11px] font-semibold text-indigo-400 uppercase tracking-wider group-hover:text-indigo-300 transition">🎯 Active Verified Deals</div>
+                        <span class="text-[10px] text-indigo-400/80 font-bold group-hover:translate-x-0.5 transition-transform">View →</span>
+                    </div>
+                    <div id="statHeroTotalDeals" class="text-xl sm:text-2xl font-black text-indigo-400 font-mono mt-1">--</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">In-stock & verified vs 30d baseline</div>
+                </a>
+                <div class="bg-slate-950/60 border border-slate-800/60 rounded-2xl p-4">
+                    <div class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">⚡ Drops Today</div>
+                    <div id="statHeroDropsToday" class="text-xl sm:text-2xl font-black text-emerald-400 font-mono mt-1">--</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">Price cuts in last 24h</div>
+                </div>
+                <div class="bg-slate-950/60 border border-slate-800/60 rounded-2xl p-4">
+                    <div class="text-[11px] font-semibold text-cyan-400 uppercase tracking-wider">🏪 Top Stores</div>
+                    <div class="text-xl sm:text-2xl font-black text-cyan-400 font-mono mt-1">5 Stores</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">Amazon, Flipkart & More</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── 24-Hour Massive Price Drops Spotlight ────────────────────────── -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full mt-4 mb-8">
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-rose-950/35 via-slate-900/90 to-amber-950/25 border border-rose-500/30 p-5 sm:p-6 shadow-2xl shadow-rose-950/30">
+            <!-- Header Row -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-400 font-extrabold text-[10px] tracking-wider uppercase border border-rose-500/30 flex items-center gap-1.5 shadow-sm">
+                            <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                            🔥 TODAY'S SPECIALS • 24H PRICE DROPS
+                        </span>
+                        <span id="dropsCountPill" class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700">
+                            -- Drops Today
+                        </span>
+                    </div>
+                    <h2 class="text-lg sm:text-2xl font-black text-white mt-1.5 tracking-tight flex items-center gap-2">
+                        Steepest 24-Hour Price Drops
+                        <span id="homeDropsMaxPill" class="text-xs font-semibold text-rose-300 bg-rose-950/80 px-2 py-0.5 rounded-lg border border-rose-800/60 hidden md:inline">Live 24h Drops</span>
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Real price cuts detected in the last 24 hours against verified store baseline prices.</p>
+                </div>
+
+                <!-- Carousel Controls & View All Hub Link -->
+                <div class="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                    <button onclick="scrollHomeDrops(-1)" class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80 transition shadow-sm" title="Previous Drops">
+                        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="scrollHomeDrops(1)" class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80 transition shadow-sm" title="Next Drops">
+                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                    <a href="/drops" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-1.5 shadow-lg shadow-rose-600/30 transition hover:scale-[1.02] active:scale-[0.98]">
+                        <span>View All Drops Hub (<span id="dropsTotalHeaderCount">--</span>)</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Horizontal Carousel Strip -->
+            <div id="homeDropsStrip" class="mt-4 flex gap-4 overflow-x-auto no-scrollbar py-2 scroll-smooth">
+                <div class="flex items-center justify-center p-8 text-xs text-slate-500 w-full">Loading today's price drops...</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Top Stores Spotlight Directory ────────────────────────────────── -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full my-10">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+                    <span>🏪</span> Shop Verified Deals by Store
+                </h2>
+                <p class="text-xs text-slate-400 mt-0.5">Explore deals and real-time discounts across India's top 5 online retailers.</p>
+            </div>
+            <a href="/stores" class="text-xs text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1 transition">
+                <span>View All Stores</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+            <!-- Amazon -->
+            <a href="/stores/amazon" class="bg-slate-900/80 hover:bg-slate-800/90 border border-amber-500/30 hover:border-amber-400/80 rounded-2xl p-4 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-500/10 group">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+                    <span class="text-[10px] font-mono font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/20">LIVE</span>
+                </div>
+                <h3 class="text-sm font-black text-white group-hover:text-amber-300 transition">Amazon India</h3>
+                <p class="text-[11px] text-slate-400 mt-1">Electronics, Mobiles, Fashion & Daily Needs</p>
+                <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-semibold text-amber-400">
+                    <span>Browse Deals</span>
+                    <i data-lucide="arrow-right" class="w-3 h-3 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
+
+            <!-- Flipkart -->
+            <a href="/stores/flipkart" class="bg-slate-900/80 hover:bg-slate-800/90 border border-blue-500/30 hover:border-blue-400/80 rounded-2xl p-4 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/10 group">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                    <span class="text-[10px] font-mono font-bold text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-md border border-blue-400/20">LIVE</span>
+                </div>
+                <h3 class="text-sm font-black text-white group-hover:text-blue-300 transition">Flipkart</h3>
+                <p class="text-[11px] text-slate-400 mt-1">Appliances, TVs, Fashion & Big Billion Loot</p>
+                <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-semibold text-blue-400">
+                    <span>Browse Deals</span>
+                    <i data-lucide="arrow-right" class="w-3 h-3 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
+
+            <!-- Myntra -->
+            <a href="/stores/myntra" class="bg-slate-900/80 hover:bg-slate-800/90 border border-pink-500/30 hover:border-pink-400/80 rounded-2xl p-4 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-pink-500/10 group">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="w-3 h-3 rounded-full bg-pink-500"></span>
+                    <span class="text-[10px] font-mono font-bold text-pink-400 bg-pink-400/10 px-2 py-0.5 rounded-md border border-pink-400/20">LIVE</span>
+                </div>
+                <h3 class="text-sm font-black text-white group-hover:text-pink-300 transition">Myntra</h3>
+                <p class="text-[11px] text-slate-400 mt-1">Fashion, Footwear, Watches & Accessories</p>
+                <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-semibold text-pink-400">
+                    <span>Browse Deals</span>
+                    <i data-lucide="arrow-right" class="w-3 h-3 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
+
+            <!-- Ajio -->
+            <a href="/stores/ajio" class="bg-slate-900/80 hover:bg-slate-800/90 border border-yellow-500/30 hover:border-yellow-400/80 rounded-2xl p-4 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-yellow-500/10 group">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="w-3 h-3 rounded-full bg-yellow-400"></span>
+                    <span class="text-[10px] font-mono font-bold text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded-md border border-yellow-400/20">LIVE</span>
+                </div>
+                <h3 class="text-sm font-black text-white group-hover:text-yellow-300 transition">Ajio</h3>
+                <p class="text-[11px] text-slate-400 mt-1">Trends, Premium Clothing & Footwear</p>
+                <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-semibold text-yellow-400">
+                    <span>Browse Deals</span>
+                    <i data-lucide="arrow-right" class="w-3 h-3 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
+
+            <!-- Nykaa -->
+            <a href="/stores/nykaa" class="bg-slate-900/80 hover:bg-slate-800/90 border border-rose-500/30 hover:border-rose-400/80 rounded-2xl p-4 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-rose-500/10 group col-span-2 sm:col-span-1">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="w-3 h-3 rounded-full bg-rose-400"></span>
+                    <span class="text-[10px] font-mono font-bold text-rose-400 bg-rose-400/10 px-2 py-0.5 rounded-md border border-rose-400/20">LIVE</span>
+                </div>
+                <h3 class="text-sm font-black text-white group-hover:text-rose-300 transition">Nykaa</h3>
+                <p class="text-[11px] text-slate-400 mt-1">Beauty, Fragrances, Skincare & Wellness</p>
+                <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-semibold text-rose-400">
+                    <span>Browse Deals</span>
+                    <i data-lucide="arrow-right" class="w-3 h-3 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
+        </div>
+    </section>
+
+    <!-- ── Featured Discounted Deals Spotlight ───────────────────────────── -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full my-10">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+                    <span>👑</span> Discounted Deals
+                </h2>
+                <p class="text-xs text-slate-400 mt-0.5">Top verified price cuts checked against historical averages.</p>
+            </div>
+            <a href="/deals?tab=featured" class="text-xs text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1 transition">
+                <span>See All Discounted Deals</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+            </a>
+        </div>
+
+        <div id="homeFeaturedGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4.5">
+            <!-- Populated via JS -->
+            <div class="col-span-full py-12 text-center text-xs text-slate-500">Loading discounted deals...</div>
+        </div>
+    </section>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // ── Home Page Logic ────────────────────────────────────────────────
+    let homeDrops = [];
+
+    async function loadHomeMetrics() {
+        try {
+            const res = await fetch('/api/public/stats');
+            if (!res.ok) return;
+            const data = await res.json();
+            const prods = data.total_products ? Number(data.total_products).toLocaleString('en-IN') : '--';
+            const deals = data.total_deals ? Number(data.total_deals).toLocaleString('en-IN') : '--';
+            const drops = data.drops_today !== undefined ? Number(data.drops_today).toLocaleString('en-IN') : '--';
+
+            document.getElementById('statHeroTotalProds').innerText = prods;
+            document.getElementById('statHeroTotalDeals').innerText = deals;
+            document.getElementById('statHeroDropsToday').innerText = drops;
+            document.getElementById('heroDropsBtnBadge').innerText = `${drops}`;
+            document.getElementById('heroProductCount').innerText = `${prods}`;
+        } catch (e) {
+            console.warn('Home metrics note:', e);
+        }
+    }
+
+    async function loadHomeDrops() {
+        const strip = document.getElementById('homeDropsStrip');
+        if (!strip) return;
+        try {
+            const res = await fetch('/api/public/price-drops?limit=14&min_drop_pct=5');
+            if (!res.ok) return;
+            const data = await res.json();
+            homeDrops = data.drops || [];
+            const total = data.total_drops_24h || homeDrops.length;
+            document.getElementById('dropsCountPill').innerText = `${total} Drops Today`;
+            document.getElementById('dropsTotalHeaderCount').innerText = `${total}`;
+
+            if (homeDrops.length > 0) {
+                const maxDrop = Math.max(...homeDrops.map(d => d.drop_pct || 0));
+                const pill = document.getElementById('homeDropsMaxPill');
+                if (pill && maxDrop > 0) pill.innerText = `Up to ${Math.round(maxDrop)}% Off`;
+            }
+
+            if (homeDrops.length === 0) {
+                strip.innerHTML = '<div class="p-6 text-xs text-slate-400">No price drops recorded right now. Check back shortly!</div>';
+                return;
+            }
+
+            let html = '';
+            homeDrops.forEach(d => {
+                const store = STORE_CONFIG[d.platform] || { name: d.platform, pill: 'bg-slate-800 text-slate-300 border-slate-700', btn: 'bg-indigo-600 hover:bg-indigo-500 text-white' };
+                const productImg = d.image_url || `https://placehold.co/400x400/0f172a/94a3b8?text=${encodeURIComponent(store.name)}`;
+                const dropPct = Math.round(d.drop_pct || 0);
+                const dropAmt = Math.round(d.drop_amount || 0);
+                const isSaved = isProductInWatchlist(d.product_id);
+                const safeTitle = escapeHtml(d.title || 'Product Deal');
+                const buyUrl = d.affiliate_url || d.product_url || '#';
+                const dealJsonStr = encodeURIComponent(JSON.stringify({ id: d.product_id, title: d.title, deal_price: d.current_price, mrp: d.mrp, platform: d.platform, image_url: d.image_url, affiliate_url: buyUrl }));
+
+                html += `
+                    <div class="w-64 sm:w-72 shrink-0 snap-start bg-slate-900/90 hover:bg-slate-900 border border-rose-500/30 hover:border-rose-400/80 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-rose-950/40 group relative">
+                        <div>
+                            <!-- Image & Badges -->
+                            <div class="relative w-full aspect-square bg-white rounded-xl overflow-hidden p-3 mb-3 flex items-center justify-center">
+                                <img src="${productImg}" alt="${safeTitle}" class="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                                <div class="absolute top-2 left-2 flex items-center gap-1">
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-lg border ${store.pill}">${store.name}</span>
+                                </div>
+                                <div class="absolute top-2 right-2">
+                                    <span class="px-2 py-0.5 rounded-full text-[11px] font-black bg-rose-500 text-slate-950 shadow-lg shadow-rose-500/40">-${dropPct}% DROP</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1.5 flex-wrap mb-1.5">
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider bg-rose-500/15 text-rose-300 border border-rose-500/30">24H DROP</span>
+                                <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold capitalize truncate max-w-[100px]">${d.category || 'General'}</span>
+                            </div>
+                            <h3 class="text-xs font-bold text-slate-100 line-clamp-2 leading-relaxed group-hover:text-rose-300 transition" title="${safeTitle}">${safeTitle}</h3>
+                        </div>
+                        <div class="mt-3 pt-2.5 border-t border-slate-800/80">
+                            <div class="flex items-baseline justify-between mb-1">
+                                <div class="flex items-baseline gap-2">
+                                    <span class="text-lg font-black text-white font-mono">₹${Number(d.current_price).toLocaleString('en-IN')}</span>
+                                    <span class="text-xs text-slate-500 line-through font-mono">₹${Number(d.previous_price).toLocaleString('en-IN')}</span>
+                                </div>
+                            </div>
+                            <div class="text-[11px] text-emerald-400 font-bold mb-3">💥 Save ₹${dropAmt.toLocaleString('en-IN')} today</div>
+                            <div class="flex items-center gap-2">
+                                <a href="${buyUrl}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold ${store.btn} flex items-center justify-center gap-1.5 shadow-md transition hover:scale-[1.02] active:scale-[0.98]">
+                                    <span>Grab Deal</span>
+                                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                                </a>
+                                <button onclick="toggleWatchlistDeal('${dealJsonStr}')" data-watchlist-id="${d.product_id}" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition ${isSaved ? 'text-rose-500' : ''}" title="Save to Watchlist">
+                                    ${isSaved ? '❤️' : '🤍'}
+                                </button>
+                                <button onclick="openPriceHistoryModal(${d.product_id})" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Price History">
+                                    <i data-lucide="line-chart" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            strip.innerHTML = html;
+            lucide.createIcons();
+        } catch (e) {
+            console.warn('Home drops load error:', e);
+        }
+    }
+
+    async function loadHomeFeaturedDeals() {
+        const grid = document.getElementById('homeFeaturedGrid');
+        if (!grid) return;
+        try {
+            let res = await fetch('/api/public/deals?tab=featured&min_discount=50&limit=8');
+            if (!res.ok) return;
+            let data = await res.json();
+            let deals = data.deals || [];
+            if (deals.length === 0) {
+                // Fallback to latest deals without strict 50% threshold
+                res = await fetch('/api/public/deals?limit=8');
+                if (res.ok) {
+                    data = await res.json();
+                    deals = data.deals || [];
+                }
+            }
+            if (deals.length === 0) {
+                grid.innerHTML = '<div class="col-span-full py-8 text-center text-xs text-slate-400">No discounted deals available right now.</div>';
+                return;
+            }
+
+            let html = '';
+            const seenPids = new Set();
+            const seenUrls = new Set();
+            deals.forEach(d => {
+                const pid = d.product_id || d.id;
+                const link = (d.affiliate_url || d.product_url || '').split('?')[0].toLowerCase();
+                if (seenPids.has(pid) || (link && seenUrls.has(link))) {
+                    return;
+                }
+                seenPids.add(pid);
+                if (link) seenUrls.add(link);
+
+                const store = STORE_CONFIG[d.platform] || { name: d.platform, pill: 'bg-slate-800 text-slate-300 border-slate-700', btn: 'bg-indigo-600 hover:bg-indigo-500 text-white' };
+                const productImg = d.image_url || `https://placehold.co/400x400/0f172a/94a3b8?text=${encodeURIComponent(store.name)}`;
+                const isSaved = isProductInWatchlist(d.product_id);
+                const safeTitle = escapeHtml(d.title || 'Product Deal');
+                const buyUrl = d.affiliate_url || d.product_url || '#';
+                const hasValidRating = d.rating && typeof d.rating === 'number' && d.rating >= 1.0 && d.rating <= 5.0;
+                const ratingHtml = hasValidRating ? `
+                    <div class="flex items-center gap-1.5 mt-1.5">
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold font-mono">
+                            <span class="text-amber-400">★</span> ${d.rating.toFixed(1)}
+                        </span>
+                        ${d.review_count && d.review_count > 0 ? `
+                            <span class="text-[10px] text-slate-400 font-mono">(${Number(d.review_count).toLocaleString('en-IN')})</span>
+                        ` : ''}
+                    </div>
+                ` : '';
+                const dealJsonStr = encodeURIComponent(JSON.stringify({ id: d.product_id, title: d.title, deal_price: d.deal_price, mrp: d.mrp, platform: d.platform, image_url: d.image_url, affiliate_url: buyUrl }));
+
+                html += `
+                    <div class="bg-slate-900/70 hover:bg-slate-900 border border-slate-800/90 hover:border-slate-700/90 rounded-2xl p-4 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/5 group relative">
+                        <div>
+                            <div class="relative w-full aspect-square bg-white rounded-xl overflow-hidden p-3 mb-3 flex items-center justify-center">
+                                <img src="${productImg}" alt="${safeTitle}" class="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                                <div class="absolute top-2 left-2">
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-lg border ${store.pill}">${store.name}</span>
+                                </div>
+                                <div class="absolute top-2 right-2">
+                                    <span class="px-2 py-0.5 rounded-full text-[11px] font-black bg-rose-500 text-slate-950">-${d.discount_pct}%</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1.5 flex-wrap mb-1.5">
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">DISCOUNTED DEAL</span>
+                                <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold capitalize truncate max-w-[100px]">${d.category || 'General'}</span>
+                            </div>
+                            <h3 class="text-xs font-bold text-slate-100 line-clamp-2 leading-relaxed group-hover:text-indigo-300 transition" title="${safeTitle}">${safeTitle}</h3>
+                            ${ratingHtml}
+                        </div>
+                        <div class="mt-3 pt-2.5 border-t border-slate-800/80">
+                            <div class="flex items-baseline justify-between mb-2">
+                                <div class="flex items-baseline gap-2 font-mono">
+                                    <span class="text-lg font-black text-white">₹${Number(d.deal_price).toLocaleString('en-IN')}</span>
+                                    ${d.mrp ? `<span class="text-xs text-slate-500 line-through">₹${Number(d.mrp).toLocaleString('en-IN')}</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <a href="${buyUrl}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold ${store.btn} flex items-center justify-center gap-1.5 shadow-md transition hover:scale-[1.02]">
+                                    <span>Grab Deal</span>
+                                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                                </a>
+                                <button onclick="toggleWatchlistDeal('${dealJsonStr}')" data-watchlist-id="${d.product_id}" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition ${isSaved ? 'text-rose-500' : ''}" title="Save to Watchlist">
+                                    ${isSaved ? '❤️' : '🤍'}
+                                </button>
+                                <button onclick="openShareModal('${dealJsonStr}')" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Share Deal">
+                                    <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            grid.innerHTML = html;
+            lucide.createIcons();
+        } catch (e) {
+            console.warn('Home featured load error:', e);
+        }
+    }
+
+    function scrollHomeDrops(direction) {
+        const strip = document.getElementById('homeDropsStrip');
+        if (!strip) return;
+        const scrollAmt = direction * (strip.clientWidth * 0.75);
+        strip.scrollBy({ left: scrollAmt, behavior: 'smooth' });
+    }
+
+    let homeAutoRefreshTimer = null;
+    function startHomeAutoRefresh() {
+        if (homeAutoRefreshTimer) clearInterval(homeAutoRefreshTimer);
+        const settings = window.getUserSettings ? window.getUserSettings() : null;
+        const intervalSec = (settings && settings.syncInterval !== undefined) ? settings.syncInterval : 30;
+        if (intervalSec <= 0) return;
+        homeAutoRefreshTimer = setInterval(() => {
+            if (!document.hidden) {
+                loadHomeMetrics();
+                loadHomeDrops();
+                loadHomeFeaturedDeals();
+            }
+        }, intervalSec * 1000);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadHomeMetrics();
+        loadHomeDrops();
+        loadHomeFeaturedDeals();
+        startHomeAutoRefresh();
+    });
+
+    window.addEventListener('budgetby:syncRateChanged', () => {
+        startHomeAutoRefresh();
+    });
+</script>
+{% endblock %}

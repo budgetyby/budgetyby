@@ -339,6 +339,20 @@ class PostingQueue:
                             if "review_count" in live_check:
                                 p_dict["review_count"] = live_check["review_count"]
 
+                            # Permanently update product in database with live verification timestamp
+                            if pid:
+                                try:
+                                    await database.execute("""
+                                        UPDATE products 
+                                        SET current_price = $1, 
+                                            mrp = $2, 
+                                            in_stock = TRUE, 
+                                            last_checked = (NOW() AT TIME ZONE 'Asia/Kolkata')
+                                        WHERE id = $3;
+                                    """, live_p, live_m, pid)
+                                except Exception as dbe:
+                                    logger.debug(f"DB update note on preflight: {dbe}")
+
                             deal_data = {
                                 "product": p_dict,
                                 "type": "evergreen",
@@ -347,15 +361,12 @@ class PostingQueue:
                             }
                             break
                         except Exception as pe:
-                            logger.debug(f"Candidate check error: {pe}")
+                            logger.debug(f"Candidate check error for #{pid}: {pe}")
+                            continue
                     else:
-                        deal_data = {
-                            "product": p_dict,
-                            "type": "evergreen",
-                            "badge": "EVERGREEN",
-                            "score": 75
-                        }
-                        break
+                        # Cannot live verify candidate -> do NOT post unverified deal!
+                        logger.info(f"🚫 [PRE-FLIGHT REJECT] #{pid} ({plat.upper()}) missing scraper or URL. Skipping...")
+                        continue
 
             if not deal_data:
                 logger.info("No qualifying deal available to post this tick.")
@@ -391,13 +402,29 @@ class PostingQueue:
                     return
 
                 # URL Resolution
+                import re
                 url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
-                if not url and platform == "amazon" and product.get("platform_id"):
-                    url = f"https://www.amazon.in/dp/{product.get('platform_id')}?tag={config.AMAZON_ASSOCIATE_TAG}"
+                if platform == "amazon":
+                    tag = getattr(config, "AMAZON_ASSOCIATE_TAG", "dealpulse21-21")
+                    target = product.get("product_url") or url
+                    asin_m = re.search(r'/(?:dp|gp/product|product)/([A-Z0-9]{10})', target)
+                    if asin_m:
+                        url = f"https://www.amazon.in/dp/{asin_m.group(1)}?tag={tag}"
+                    elif product.get("platform_id"):
+                        url = f"https://www.amazon.in/dp/{product.get('platform_id')}?tag={tag}"
+                    elif target:
+                        clean = re.sub(r'([?&])tag=[^&]*', '', target)
+                        sep = "&" if "?" in clean else "?"
+                        url = f"{clean}{sep}tag={tag}"
                     product["affiliate_url"] = url
+                    if pid:
+                        try:
+                            await database.execute("UPDATE products SET affiliate_url = $1 WHERE id = $2;", url, pid)
+                        except Exception as e:
+                            logger.debug(f"Amazon affiliate_url db update note: {e}")
 
                 # Automatic Live EarnKaro Short Link Conversion via @ekconverter9bot for Flipkart, Myntra, Ajio
-                if platform in ("flipkart", "myntra", "ajio") and url:
+                elif platform in ("flipkart", "myntra", "ajio") and url:
                     try:
                         from budgetby.ingest.telegram_listener import convert_url_via_ek_bot
                         converted_ek = await convert_url_via_ek_bot(url, timeout=4.0)
@@ -405,6 +432,8 @@ class PostingQueue:
                             product["affiliate_url"] = converted_ek
                             deal_data["product"]["affiliate_url"] = converted_ek
                             logger.info(f"🔗 [POST LINK] [{platform.upper()}] Replaced with live EarnKaro URL: {converted_ek}")
+                            if pid:
+                                await database.execute("UPDATE products SET affiliate_url = $1 WHERE id = $2;", converted_ek, pid)
                     except Exception as e:
                         logger.debug(f"Auto EK conversion check: {e}")
 
@@ -417,6 +446,8 @@ class PostingQueue:
                             product["affiliate_url"] = converted_cl
                             deal_data["product"]["affiliate_url"] = converted_cl
                             logger.info(f"🔗 [POST LINK] [NYKAA] Replaced with live Cuelinks URL: {converted_cl}")
+                            if pid:
+                                await database.execute("UPDATE products SET affiliate_url = $1 WHERE id = $2;", converted_cl, pid)
                     except Exception as e:
                         logger.debug(f"Auto Cuelinks conversion check: {e}")
 

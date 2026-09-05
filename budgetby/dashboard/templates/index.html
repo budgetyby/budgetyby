@@ -97,7 +97,6 @@
                         flipkart: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
                         myntra: 'bg-pink-500/10 text-pink-400 border-pink-500/20',
                         ajio: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-                        croma: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
                         nykaa: 'bg-rose-500/10 text-rose-400 border-rose-500/20'
                     };
                     const sBadge = storeColors[p.platform] || 'bg-slate-800 text-slate-300';
@@ -268,8 +267,9 @@
                 </span>
             </div>
             <div class="flex items-center space-x-3">
-                <a href="/db-explorer" target="_blank" class="px-3.5 py-1.5 text-xs font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg transition shadow-sm flex items-center gap-1.5">🗄️ Database Studio ↗</a>
-                <button onclick="triggerChannelScan()" class="px-3.5 py-1.5 text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition shadow-sm flex items-center gap-1">📡 Spy Scan Channels</button>
+                <a href="/" class="px-3.5 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition shadow-sm flex items-center gap-1.5">🛍️ Deals Website ↗</a>
+                <a href="/pnther/db-explorer" target="_blank" class="px-3.5 py-1.5 text-xs font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg transition shadow-sm flex items-center gap-1.5">🗄️ Database Studio ↗</a>
+                <button onclick="triggerChannelScan()" class="px-3.5 py-1.5 text-xs font-medium bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg transition shadow-sm flex items-center gap-1">📡 Spy Scan</button>
                 <button onclick="triggerBackfill()" class="px-3.5 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition shadow-sm">🚀 Post Next Deal</button>
                 <button onclick="triggerBackup()" class="px-3.5 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition">💾 Backup DB</button>
                 <button onclick="fetchData()" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition">🔄</button>
@@ -317,7 +317,7 @@
                     <span>🛍️ Total Catalog</span>
                     <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">DB</span>
                 </div>
-                <div id="stat-products" class="text-2xl lg:text-3xl font-extrabold mt-1 text-amber-400">84,960</div>
+                <div id="stat-products" class="text-2xl lg:text-3xl font-extrabold mt-1 text-amber-400">--</div>
                 <div class="text-[11px] text-emerald-400 mt-1.5 flex items-center gap-1">🟢 100% Unique</div>
             </div>
 
@@ -340,7 +340,7 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <span id="channelIngestedTotalBadge" class="text-xs font-semibold px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20">Ingestion Active</span>
-                    <a href="/db-explorer" target="_blank" class="px-3.5 py-1.5 text-xs font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg transition shadow-sm flex items-center gap-1.5">🗄️ Database Studio ↗</a>
+                    <a href="/pnther/db-explorer" target="_blank" class="px-3.5 py-1.5 text-xs font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg transition shadow-sm flex items-center gap-1.5">🗄️ Database Studio ↗</a>
                 <button onclick="triggerChannelScan()" class="text-xs px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition">Scan Now ⚡</button>
                 </div>
             </div>
@@ -438,7 +438,6 @@
                         <option value="flipkart">Flipkart</option>
                         <option value="myntra">Myntra</option>
                         <option value="ajio">Ajio</option>
-                        <option value="croma">Croma</option>
                         <option value="nykaa">Nykaa</option>
                     </select>
 
@@ -530,14 +529,13 @@
                             <th class="pb-3 font-semibold text-center">🔵 Flipkart</th>
                             <th class="pb-3 font-semibold text-center">🔴 Myntra</th>
                             <th class="pb-3 font-semibold text-center">🟣 Ajio</th>
-                            <th class="pb-3 font-semibold text-center">⚡ Croma</th>
                             <th class="pb-3 font-semibold text-center">🌸 Nykaa</th>
                             <th class="pb-3 font-semibold text-right">📦 Total Posts</th>
                             <th class="pb-3 font-semibold text-right">📊 Platform Share</th>
                         </tr>
                     </thead>
                     <tbody id="categoryTableBody" class="divide-y divide-slate-800/60 text-slate-300">
-                        <tr><td colspan="9" class="py-6 text-center text-slate-500">Loading category matrix...</td></tr>
+                        <tr><td colspan="8" class="py-6 text-center text-slate-500">Loading category matrix...</td></tr>
                     </tbody>
                     <tfoot id="categoryTableFoot" class="border-t-2 border-slate-800 font-bold text-slate-200">
                         <!-- Populated via JS -->
@@ -568,12 +566,11 @@
                             <th class="pb-3 font-semibold">🔵 Flipkart</th>
                             <th class="pb-3 font-semibold">🔴 Myntra</th>
                             <th class="pb-3 font-semibold">🟣 Ajio</th>
-                            <th class="pb-3 font-semibold">⚡ Croma</th>
                             <th class="pb-3 font-semibold">🌸 Nykaa</th>
                         </tr>
                     </thead>
                     <tbody id="historyTableBody" class="divide-y divide-slate-800/60 text-slate-300">
-                        <tr><td colspan="8" class="py-6 text-center text-slate-500">Loading posting history...</td></tr>
+                        <tr><td colspan="7" class="py-6 text-center text-slate-500">Loading posting history...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -624,7 +621,6 @@
                         <option value="flipkart">🔵 Flipkart</option>
                         <option value="myntra">🔴 Myntra</option>
                         <option value="ajio">🟣 Ajio</option>
-                        <option value="croma">⚡ Croma</option>
                         <option value="nykaa">🌸 Nykaa</option>
                     </select>
 
@@ -661,7 +657,6 @@
             'flipkart': { name: 'Flipkart', color: '#3b82f6', icon: '🔵', target: '30 / hr' },
             'myntra':   { name: 'Myntra',   color: '#ec4899', icon: '🔴', target: '20 / hr' },
             'ajio':     { name: 'Ajio',     color: '#8b5cf6', icon: '🟣', target: '20 / hr' },
-            'croma':    { name: 'Croma',    color: '#06b6d4', icon: '⚡', target: '10 / hr' },
             'nykaa':    { name: 'Nykaa',    color: '#10b981', icon: '🌸', target: '10 / hr' }
         };
 
@@ -750,7 +745,6 @@
                             <td class="py-3.5 font-semibold text-blue-400">${h.flipkart_deals || 0}</td>
                             <td class="py-3.5 font-semibold text-pink-400">${h.myntra_deals || 0}</td>
                             <td class="py-3.5 font-semibold text-purple-400">${h.ajio_deals || 0}</td>
-                            <td class="py-3.5 font-semibold text-cyan-400">${h.croma_deals || 0}</td>
                             <td class="py-3.5 font-semibold text-emerald-400">${h.nykaa_deals || 0}</td>
                         </tr>`;
                     });
@@ -1008,7 +1002,7 @@
             }
 
             let html = '';
-            let sumTotal = 0, sumAmz = 0, sumFkp = 0, sumMyn = 0, sumAji = 0, sumCro = 0, sumNyk = 0;
+            let sumTotal = 0, sumAmz = 0, sumFkp = 0, sumMyn = 0, sumAji = 0, sumNyk = 0;
 
             rows.forEach(r => {
                 const total = r.total_deals || r.total_prods || 0;
@@ -1016,7 +1010,6 @@
                 const fkp = r.flipkart_count || 0;
                 const myn = r.myntra_count || 0;
                 const aji = r.ajio_count || 0;
-                const cro = r.croma_count || 0;
                 const nyk = r.nykaa_count || 0;
 
                 sumTotal += total;
@@ -1024,7 +1017,6 @@
                 sumFkp += fkp;
                 sumMyn += myn;
                 sumAji += aji;
-                sumCro += cro;
                 sumNyk += nyk;
 
                 const catKey = (r.category || 'general').toLowerCase();
@@ -1036,7 +1028,6 @@
                     { name: 'Flipkart', count: fkp, color: 'text-blue-400' },
                     { name: 'Myntra', count: myn, color: 'text-pink-400' },
                     { name: 'Ajio', count: aji, color: 'text-purple-400' },
-                    { name: 'Croma', count: cro, color: 'text-cyan-400' },
                     { name: 'Nykaa', count: nyk, color: 'text-rose-400' }
                 ];
                 plats.sort((a, b) => b.count - a.count);
@@ -1049,7 +1040,6 @@
                     <td class="py-3 text-center font-mono ${fkp > 0 ? 'text-blue-400 font-semibold' : 'text-slate-600'}">${fkp > 0 ? fkp.toLocaleString() : '-'}</td>
                     <td class="py-3 text-center font-mono ${myn > 0 ? 'text-pink-400 font-semibold' : 'text-slate-600'}">${myn > 0 ? myn.toLocaleString() : '-'}</td>
                     <td class="py-3 text-center font-mono ${aji > 0 ? 'text-purple-400 font-semibold' : 'text-slate-600'}">${aji > 0 ? aji.toLocaleString() : '-'}</td>
-                    <td class="py-3 text-center font-mono ${cro > 0 ? 'text-cyan-400 font-semibold' : 'text-slate-600'}">${cro > 0 ? cro.toLocaleString() : '-'}</td>
                     <td class="py-3 text-center font-mono ${nyk > 0 ? 'text-rose-400 font-semibold' : 'text-slate-600'}">${nyk > 0 ? nyk.toLocaleString() : '-'}</td>
                     <td class="py-3 text-right font-bold text-white font-mono">${total.toLocaleString()}</td>
                     <td class="py-3 text-right text-[11px]">${leader}</td>
@@ -1064,7 +1054,6 @@
                 <td class="py-3.5 text-center text-blue-400 font-mono">${sumFkp.toLocaleString()}</td>
                 <td class="py-3.5 text-center text-pink-400 font-mono">${sumMyn.toLocaleString()}</td>
                 <td class="py-3.5 text-center text-purple-400 font-mono">${sumAji.toLocaleString()}</td>
-                <td class="py-3.5 text-center text-cyan-400 font-mono">${sumCro.toLocaleString()}</td>
                 <td class="py-3.5 text-center text-rose-400 font-mono">${sumNyk.toLocaleString()}</td>
                 <td class="py-3.5 text-right text-emerald-400 font-mono text-sm">${sumTotal.toLocaleString()}</td>
                 <td class="py-3.5 text-right text-slate-400 text-[11px]">100% Verified</td>

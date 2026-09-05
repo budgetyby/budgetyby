@@ -3,3 +3,10 @@ __pycache__/
 *.pyc
 venv/
 .venv/
+*.session
+*.session-journal
+*.log
+*.sql
+*.sql.gz
+backups/
+budgetby.db

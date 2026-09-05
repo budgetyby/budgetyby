@@ -94,9 +94,22 @@ class AmazonScraper(BaseScraper):
         img_node = tree.css_first("#landingImage") or tree.css_first("#imgBlkFront")
         image_url = img_node.attributes.get("src") if img_node else ""
         
-        # In stock
-        out_of_stock_node = tree.css_first("#outOfStock")
-        in_stock = not bool(out_of_stock_node)
+        # In stock: Check availability block, outOfStock block, and price validity
+        in_stock = True
+        avail_node = tree.css_first("#availability, #outOfStock, #buybox, #deliveryBlockMessage")
+        avail_text = avail_node.text().lower() if avail_node else ""
+        if any(msg in avail_text for msg in [
+            "currently unavailable",
+            "we don't know when or if this item will be back in stock",
+            "temporarily out of stock",
+            "out of stock",
+            "item is unavailable"
+        ]):
+            in_stock = False
+        elif tree.css_first("#outOfStock"):
+            in_stock = False
+        elif price <= 0:
+            in_stock = False
         
         # Renewed
         is_renewed = "Renewed" in title or "Refurbished" in title or "renewed" in r.text.lower()

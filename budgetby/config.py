@@ -16,21 +16,47 @@ load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHANNEL_ID = os.getenv("TELEGRAM_CHANNEL_ID", "")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "")
+ADMIN_SECRET_KEY = os.getenv("ADMIN_SECRET_KEY", "bb_sec_9e72f8a14b30c5e7d82f091a384b62d1")
 TG_API_ID = int(os.getenv("TG_API_ID", "0")) if os.getenv("TG_API_ID") else None
 TG_API_HASH = os.getenv("TG_API_HASH", "")
 
-DB_HOST = os.getenv("DB_HOST", "localhost")
-_default_port = "6543" if "pooler.supabase.com" in DB_HOST else "5432"
-DB_PORT = int(os.getenv("DB_PORT", _default_port))
-DB_NAME = os.getenv("DB_NAME", "budgetby")
-DB_USER = os.getenv("DB_USER", "budgetby")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "")
-DB_SSL = os.getenv("DB_SSL", "require" if os.getenv("DB_HOST", "localhost") != "localhost" else None)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL:
+    from urllib.parse import urlparse, unquote
+    parsed = urlparse(DATABASE_URL)
+    DB_HOST = parsed.hostname or "localhost"
+    _default_port = 6543 if "pooler.supabase.com" in DB_HOST else 5432
+    DB_PORT = parsed.port or _default_port
+    DB_NAME = parsed.path.lstrip("/") or "postgres"
+    DB_USER = unquote(parsed.username or "postgres")
+    DB_PASSWORD = unquote(parsed.password or "")
+    DB_SSL = "require"
+else:
+    DB_HOST = os.getenv("DB_HOST", "localhost")
+    _default_port = "6543" if "pooler.supabase.com" in DB_HOST else "5432"
+    DB_PORT = int(os.getenv("DB_PORT", _default_port))
+    DB_NAME = os.getenv("DB_NAME", "budgetby")
+    DB_USER = os.getenv("DB_USER", "budgetby")
+    DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+    DB_SSL = os.getenv("DB_SSL", "require" if os.getenv("DB_HOST", "localhost") != "localhost" else None)
 
 AMAZON_ASSOCIATE_TAG = os.getenv("AMAZON_ASSOCIATE_TAG", "dealpulse21-21")
 EARNKARO_API_KEY = os.getenv("EARNKARO_API_KEY", "5549565")
 CUELINKS_CHANNEL_ID = os.getenv("CUELINKS_CHANNEL_ID", "314807")
 CUELINKS_API_KEY = os.getenv("CUELINKS_API_KEY", "")
+
+# ════════════════════════════════════════════════════════════════════════
+# 1.5 DATABASE RETENTION & STORAGE PROTECTION (500 MB Free Cloud Quota)
+# ════════════════════════════════════════════════════════════════════════
+
+STATUS_ACTIVE = "ACTIVE"
+STATUS_TEMP_OOS = "TEMP_OOS"
+STATUS_DORMANT = "DORMANT"
+
+# Prune daily prices older than 90 days and permanently delete dead OOS products
+DAILY_PRICE_RETENTION_DAYS = 90
+DORMANT_THRESHOLD_DAYS = 14
+DELETE_THRESHOLD_DAYS = 30
 
 # ════════════════════════════════════════════════════════════════════════
 # 2. SCRAPER SETTINGS

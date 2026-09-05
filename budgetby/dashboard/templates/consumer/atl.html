@@ -1,0 +1,452 @@
+{% extends "consumer/layout.html" %}
+
+{% block title %}All-Time Lows (ATL) Showcase — BudgetBy{% endblock %}
+{% block description %}Discover products currently selling at their lowest price ever recorded in our history. Verified rock-bottom discounts across Amazon, Flipkart, Myntra, Ajio, and Nykaa.{% endblock %}
+
+{% block content %}
+<main class="w-full">
+    <!-- ── Page Header & Stats Banner ───────────────────────────────────── -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-6 pb-4">
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-2 text-xs text-slate-400 mb-3" aria-label="Breadcrumb">
+            <a href="/" class="hover:text-white transition flex items-center gap-1">
+                <span>🏠</span> Home
+            </a>
+            <span class="text-slate-600">/</span>
+            <span class="text-amber-400 font-semibold flex items-center gap-1">
+                <span>👑</span> All-Time Lows
+            </span>
+        </nav>
+
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-950/40 via-slate-900/90 to-indigo-950/30 border border-amber-500/30 p-6 sm:p-8 shadow-2xl">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                <div class="max-w-2xl">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 text-amber-400 font-extrabold text-[11px] tracking-wider uppercase border border-amber-500/30 mb-3">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                        HISTORICAL ROCK-BOTTOM PRICING
+                    </div>
+                    <h1 class="text-2xl sm:text-4xl font-black tracking-tight text-white leading-tight">
+                        All-Time Low Deals
+                    </h1>
+                    <p class="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                        Every single item featured below is currently selling at or below its lowest recorded price in our database history. Beat seasonal sales with mathematically verified rock-bottom pricing.
+                    </p>
+                </div>
+
+                <!-- Header Stats Summary -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 shrink-0">
+                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 text-center min-w-[110px]">
+                        <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Active ATLs</div>
+                        <div id="statAtlTotal" class="text-xl sm:text-2xl font-black text-amber-400 font-mono mt-0.5">--</div>
+                    </div>
+                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 text-center min-w-[110px]">
+                        <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Avg Savings</div>
+                        <div id="statAtlAvgSavings" class="text-xl sm:text-2xl font-black text-emerald-400 font-mono mt-0.5">--%</div>
+                    </div>
+                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 text-center min-w-[110px] col-span-2 sm:col-span-1">
+                        <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Guarantee</div>
+                        <div class="text-xs font-black text-amber-300 font-mono mt-2">Zero Fake Sales</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Filter & Navigation Bar ───────────────────────────────────────── -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full sticky top-20 z-30 py-3 bg-[#070a11]/95 backdrop-blur-xl border-b border-slate-800/80">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <!-- Store Selector Pills -->
+            <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                <span class="text-xs font-bold text-slate-400 mr-1 hidden sm:inline">Store:</span>
+                <button onclick="setAtlStoreFilter('')" id="atlStoreAll" class="atl-store-pill px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-600 text-white shadow-sm shadow-amber-600/30 transition">
+                    All Stores
+                </button>
+                <button onclick="setAtlStoreFilter('amazon')" id="atlStoreAmazon" class="atl-store-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                    <span class="text-[#FF9900]">Amazon</span>
+                </button>
+                <button onclick="setAtlStoreFilter('flipkart')" id="atlStoreFlipkart" class="atl-store-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                    <span class="text-[#2874F0]">Flipkart</span>
+                </button>
+                <button onclick="setAtlStoreFilter('myntra')" id="atlStoreMyntra" class="atl-store-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                    <span class="text-[#FF3F6C]">Myntra</span>
+                </button>
+                <button onclick="setAtlStoreFilter('ajio')" id="atlStoreAjio" class="atl-store-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                    <span class="text-[#D99814]">Ajio</span>
+                </button>
+                <button onclick="setAtlStoreFilter('nykaa')" id="atlStoreNykaa" class="atl-store-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                    <span class="text-[#FC2779]">Nykaa</span>
+                </button>
+            </div>
+
+            <!-- Sort dropdown & category filter -->
+            <div class="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                <select id="atlCategorySelect" onchange="onAtlCategoryChange(this.value)" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 transition">
+                    <option value="">All Categories</option>
+                    <option value="electronics">Electronics</option>
+                    <option value="fashion">Fashion</option>
+                    <option value="footwear">Footwear</option>
+                    <option value="home">Home & Kitchen</option>
+                    <option value="beauty">Beauty</option>
+                </select>
+
+                <select id="atlSortSelect" onchange="onAtlSortChange(this.value)" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 transition">
+                    <option value="latest">Recently Verified</option>
+                    <option value="discount">Highest Discount %</option>
+                    <option value="price_asc">Price: Low to High</option>
+                    <option value="price_desc">Price: High to Low</option>
+                </select>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── ATL Grid Container ───────────────────────────────────────────── -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full mt-6 mb-16">
+        <div id="atlGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <!-- Loading Skeletons -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="atlEmptyState" class="hidden text-center py-16 px-4 bg-[#090d16]/60 border border-slate-800/80 rounded-3xl">
+            <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-3xl mx-auto mb-4">
+                👑
+            </div>
+            <h3 class="text-lg font-bold text-white">No All-Time Low Deals Found</h3>
+            <p class="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                No active products match this store or category at an all-time low. Try checking "All Stores".
+            </p>
+            <button onclick="resetAtlFilters()" class="mt-4 px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white transition">
+                Reset Store Filter
+            </button>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div id="atlPaginationBar" class="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80">
+            <div class="text-xs text-slate-400">
+                Page <span id="atlCurrentPage" class="font-bold text-white">1</span> of <span id="atlTotalPages" class="font-bold text-white">1</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="changeAtlPage(-1)" id="atlPrevBtn" disabled class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none text-slate-200 transition">
+                    ← Previous
+                </button>
+                <button onclick="changeAtlPage(1)" id="atlNextBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:pointer-events-none text-white transition flex items-center gap-1.5 shadow-lg shadow-amber-600/30">
+                    <span>Next Page</span>
+                    <span>→</span>
+                </button>
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const atlState = {
+        page: 1,
+        limit: 24,
+        totalPages: 1,
+        store: '',
+        category: '',
+        sortBy: 'latest',
+        items: []
+    };
+
+    let atlAutoRefreshTimer = null;
+    function startAtlAutoRefresh() {
+        if (atlAutoRefreshTimer) clearInterval(atlAutoRefreshTimer);
+        const settings = window.getUserSettings ? window.getUserSettings() : null;
+        const intervalSec = (settings && settings.syncInterval !== undefined) ? Math.max(15, settings.syncInterval) : 45;
+        if (settings && settings.syncInterval <= 0) return;
+        atlAutoRefreshTimer = setInterval(() => {
+            if (atlState.page === 1 && !document.hidden) {
+                loadAtlDeals(true);
+            }
+        }, intervalSec * 1000);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadAtlDeals();
+        startAtlAutoRefresh();
+    });
+
+    window.addEventListener('budgetby:syncRateChanged', () => {
+        startAtlAutoRefresh();
+    });
+
+    async function loadAtlDeals(isBackground = false) {
+        const grid = document.getElementById('atlGrid');
+        const emptyState = document.getElementById('atlEmptyState');
+        const paginationBar = document.getElementById('atlPaginationBar');
+
+        if (!isBackground) {
+            grid.innerHTML = `
+                <div class="col-span-full py-16 text-center">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-300 animate-pulse">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                        Scanning all-time low price records...
+                    </div>
+                </div>
+            `;
+            emptyState.classList.add('hidden');
+        }
+
+        try {
+            const params = new URLSearchParams({
+                tab: 'atl',
+                page: atlState.page,
+                limit: atlState.limit,
+                sort_by: atlState.sortBy
+            });
+            if (atlState.store) params.append('platform', atlState.store);
+            if (atlState.category) params.append('category', atlState.category);
+
+            const res = await fetch(`/api/public/deals?${params.toString()}`);
+            const data = await res.json();
+
+            atlState.items = (data.deals || data.items || []).map(d => ({
+                ...d,
+                id: d.product_id || d.deal_id,
+                current_price: d.deal_price !== undefined ? d.deal_price : (d.current_price || 0),
+                discount_percent: d.discount_pct !== undefined ? d.discount_pct : (d.discount_percent || 0),
+                drop_percent: d.drop_pct !== undefined ? d.drop_pct : (d.drop_percent || 0),
+                affiliate_url: d.affiliate_url || d.product_url
+            }));
+            atlState.totalPages = data.total_pages || 1;
+
+            const totalCount = data.total_matches !== undefined ? data.total_matches : (data.total || atlState.items.length);
+            document.getElementById('statAtlTotal').innerText = totalCount.toLocaleString('en-IN');
+            document.getElementById('atlCurrentPage').innerText = data.page || 1;
+            document.getElementById('atlTotalPages').innerText = atlState.totalPages;
+
+            if (atlState.items.length > 0) {
+                const discounts = atlState.items.map(d => d.discount_percent || 0).filter(d => d > 0);
+                if (discounts.length > 0) {
+                    const avg = Math.round(discounts.reduce((a, b) => a + b, 0) / discounts.length);
+                    document.getElementById('statAtlAvgSavings').innerText = `${avg}%`;
+                } else {
+                    document.getElementById('statAtlAvgSavings').innerText = '--%';
+                }
+            } else {
+                document.getElementById('statAtlAvgSavings').innerText = '--%';
+            }
+
+            document.getElementById('atlPrevBtn').disabled = (atlState.page <= 1);
+            document.getElementById('atlNextBtn').disabled = (atlState.page >= atlState.totalPages);
+
+            if (atlState.items.length === 0) {
+                if (!isBackground) {
+                    grid.innerHTML = '';
+                    emptyState.classList.remove('hidden');
+                    paginationBar.classList.add('hidden');
+                }
+            } else {
+                if (!isBackground || window.scrollY <= 400) {
+                    renderAtlCards(atlState.items);
+                    paginationBar.classList.remove('hidden');
+                }
+            }
+
+        } catch (err) {
+            console.error('Error loading ATL deals:', err);
+            if (!isBackground) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12 text-rose-400 text-xs font-semibold">
+                        Failed to load All-Time Low deals. Please try again.
+                    </div>
+                `;
+            }
+        }
+    }
+
+    function renderAtlCards(items) {
+        const grid = document.getElementById('atlGrid');
+        atlState.itemsMap = {};
+        const seenPids = new Set();
+        const seenLinks = new Set();
+        const uniqueItems = [];
+
+        items.forEach(d => {
+            const pid = d.product_id || d.id;
+            const link = (d.affiliate_url || d.product_url || d.url || '').split('?')[0].toLowerCase();
+            if (seenPids.has(pid) || (link && seenLinks.has(link))) {
+                return;
+            }
+            seenPids.add(pid);
+            if (link) seenLinks.add(link);
+            atlState.itemsMap[d.id] = d;
+            uniqueItems.push(d);
+        });
+
+        grid.innerHTML = uniqueItems.map(deal => {
+            const store = (deal.platform || 'amazon').toLowerCase();
+            const storeCfg = STORES[store] || STORES.amazon;
+            const discPct = Math.round(deal.discount_percent || 0);
+            const verifiedAgo = deal.last_checked ? formatTimeAgo(deal.last_checked) : 'Recently';
+            const inWatch = isInWatchlist(deal.id);
+            const safeTitle = escapeHtml(deal.title || 'Product Deal');
+            const buyUrl = deal.affiliate_url || deal.product_url || deal.url || '#';
+            const hasValidRating = deal.rating && typeof deal.rating === 'number' && deal.rating >= 1.0 && deal.rating <= 5.0;
+            const ratingHtml = hasValidRating ? `
+                <div class="flex items-center gap-1.5 mt-1.5">
+                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold font-mono">
+                        <span class="text-amber-400">★</span> ${deal.rating.toFixed(1)}
+                    </span>
+                    ${deal.review_count && deal.review_count > 0 ? `
+                        <span class="text-[10px] text-slate-400 font-mono">(${Number(deal.review_count).toLocaleString('en-IN')})</span>
+                    ` : ''}
+                </div>
+            ` : '';
+
+            return `
+                <div class="bg-[#0c101c]/95 border border-amber-500/30 hover:border-amber-400/60 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative hover:shadow-xl hover:shadow-amber-950/20">
+                    <div>
+                        <!-- Top Badges -->
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider ${storeCfg.badge}">
+                                ${storeCfg.name}
+                            </span>
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono flex items-center gap-1 shadow-sm">
+                                👑 ALL-TIME LOW
+                            </span>
+                        </div>
+
+                        <!-- Product Image Area -->
+                        <div class="relative w-full h-44 rounded-xl bg-[#090d16] p-2 flex items-center justify-center overflow-hidden border border-slate-800/60 group-hover:border-slate-700 transition">
+                            <img src="${deal.image_url || '/static/placeholder.png'}" 
+                                 alt="${safeTitle}" 
+                                 class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                                 loading="lazy"
+                                 onerror="this.src='/static/placeholder.png'" />
+                            
+                            <!-- Watchlist Quick Toggle -->
+                            <button onclick="handleAtlCardWatchlist(this, ${deal.id})" 
+                                    class="absolute top-2 right-2 p-1.5 rounded-xl bg-slate-950/80 backdrop-blur-md border border-slate-800 text-slate-400 hover:text-rose-400 transition" 
+                                    title="Save to Watchlist">
+                                <i data-lucide="heart" class="w-4 h-4 ${inWatch ? 'fill-rose-500 text-rose-500' : ''}"></i>
+                            </button>
+
+                            <!-- Freshness Pill -->
+                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800/80 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                <span>Verified ${verifiedAgo}</span>
+                            </div>
+                        </div>
+
+                        <!-- Product Title -->
+                        <div class="mt-3">
+                            <a href="${buyUrl}" target="_blank" rel="noopener noreferrer" 
+                               class="text-xs font-bold text-slate-100 hover:text-amber-400 line-clamp-2 transition leading-snug" 
+                               title="${safeTitle}">
+                                ${safeTitle}
+                            </a>
+                            ${ratingHtml}
+                        </div>
+                    </div>
+
+                    <!-- Price & Action Footer -->
+                    <div class="mt-3 pt-3 border-t border-slate-800/80">
+                        <div class="flex items-baseline justify-between gap-1 mb-2">
+                            <div>
+                                <span class="text-lg font-black text-amber-400 font-mono">${formatINR(deal.current_price)}</span>
+                                ${deal.mrp && deal.mrp > deal.current_price ? `
+                                    <span class="text-xs text-slate-500 line-through ml-1.5 font-mono">${formatINR(deal.mrp)}</span>
+                                ` : ''}
+                            </div>
+                            ${discPct > 0 ? `
+                                <div class="text-[10px] font-extrabold text-amber-300 bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-800/60 font-mono">
+                                    ${discPct}% OFF
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- Card Action Buttons Row -->
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button onclick="openPriceHistoryModal(${deal.id})" 
+                                    class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition" 
+                                    title="View Price History">
+                                <i data-lucide="trending-down" class="w-4 h-4 text-amber-400"></i>
+                            </button>
+                            <button onclick="handleAtlCardShare(${deal.id})" 
+                                    class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition" 
+                                    title="Share Deal">
+                                <i data-lucide="share-2" class="w-4 h-4 text-cyan-400"></i>
+                            </button>
+                            <a href="${buyUrl}" target="_blank" rel="noopener noreferrer" 
+                               class="col-span-2 py-2 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 text-xs font-extrabold flex items-center justify-center gap-1 shadow-lg shadow-amber-600/30 hover:scale-[1.02] active:scale-[0.98] transition">
+                                <span>Get ATL Deal</span>
+                                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        lucide.createIcons();
+    }
+
+    function setAtlStoreFilter(store) {
+        atlState.store = store;
+        atlState.page = 1;
+        document.querySelectorAll('.atl-store-pill').forEach(btn => {
+            btn.className = 'atl-store-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition';
+        });
+        const activeId = store ? `atlStore${store.charAt(0).toUpperCase() + store.slice(1)}` : 'atlStoreAll';
+        const activeBtn = document.getElementById(activeId);
+        if (activeBtn) {
+            activeBtn.className = 'atl-store-pill px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-600 text-white shadow-sm shadow-amber-600/30 transition';
+        }
+        loadAtlDeals();
+    }
+
+    function onAtlCategoryChange(val) {
+        atlState.category = val;
+        atlState.page = 1;
+        loadAtlDeals();
+    }
+
+    function onAtlSortChange(val) {
+        atlState.sortBy = val;
+        atlState.page = 1;
+        loadAtlDeals();
+    }
+
+    function changeAtlPage(delta) {
+        atlState.page += delta;
+        window.scrollTo({ top: 150, behavior: 'smooth' });
+        loadAtlDeals();
+    }
+
+    function resetAtlFilters() {
+        atlState.store = '';
+        atlState.category = '';
+        atlState.page = 1;
+        document.getElementById('atlCategorySelect').value = '';
+        setAtlStoreFilter('');
+    }
+
+    function handleAtlCardWatchlist(btn, id) {
+        const deal = atlState.itemsMap[id];
+        if (deal) {
+            toggleWatchlist(deal);
+            const icon = btn.querySelector('svg');
+            if (icon) {
+                if (isInWatchlist(deal.id)) {
+                    icon.classList.add('fill-rose-500', 'text-rose-500');
+                } else {
+                    icon.classList.remove('fill-rose-500', 'text-rose-500');
+                }
+            }
+        }
+    }
+
+    function handleAtlCardShare(id) {
+        const deal = atlState.itemsMap[id];
+        if (deal) openShareModal(deal);
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,542 @@
+{% extends "consumer/layout.html" %}
+
+{% block title %}24-Hour Price Drops & Flash Price Cuts — BudgetBy{% endblock %}
+{% block description %}Discover real-time verified 24-hour price cuts and steepest discounts across Amazon, Flipkart, Myntra, Ajio, and Nykaa. Zero fake sales.{% endblock %}
+
+{% block content %}
+<main class="w-full">
+    <!-- ── Page Header & Stats Banner ───────────────────────────────────── -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-6 pb-4">
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-2 text-xs text-slate-400 mb-3" aria-label="Breadcrumb">
+            <a href="/" class="hover:text-white transition flex items-center gap-1">
+                <span>🏠</span> Home
+            </a>
+            <span class="text-slate-600">/</span>
+            <span class="text-rose-400 font-semibold flex items-center gap-1">
+                <span>🔥</span> 24-Hour Price Drops
+            </span>
+        </nav>
+
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-rose-950/40 via-slate-900/90 to-amber-950/30 border border-rose-500/30 p-6 sm:p-8 shadow-2xl">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                <div class="max-w-2xl">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/15 text-rose-400 font-extrabold text-[11px] tracking-wider uppercase border border-rose-500/30 mb-3">
+                        <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                        LIVE PRICE CUT SCANNER
+                    </div>
+                    <h1 class="text-2xl sm:text-4xl font-black tracking-tight text-white leading-tight">
+                        Steepest 24-Hour Price Drops
+                    </h1>
+                    <p class="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                        Every single item below has suffered an actual price reduction in the last 24 hours. We compare today's price against the product's verified 30-day baseline to filter out inflated retail prices.
+                    </p>
+                </div>
+
+                <!-- Header Stats Summary -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 shrink-0">
+                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 text-center min-w-[110px]">
+                        <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Drops Today</div>
+                        <div id="statDropsTotal" class="text-xl sm:text-2xl font-black text-rose-400 font-mono mt-0.5">--</div>
+                    </div>
+                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 text-center min-w-[110px]">
+                        <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Top Drop</div>
+                        <div id="statTopDrop" class="text-xl sm:text-2xl font-black text-emerald-400 font-mono mt-0.5">-76%</div>
+                    </div>
+                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 text-center min-w-[110px] col-span-2 sm:col-span-1">
+                        <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Stores Tracked</div>
+                        <div class="text-xl sm:text-2xl font-black text-cyan-400 font-mono mt-0.5">5 Stores</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Filter & Navigation Bar ───────────────────────────────────────── -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full sticky top-20 z-30 py-3 bg-[#070a11]/95 backdrop-blur-xl border-b border-slate-800/80">
+        <div class="flex flex-col gap-3">
+            <!-- Row 1: Drop Depth Pills & Sort Dropdown -->
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <!-- Drop Depth Filter Pills -->
+                <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                    <span class="text-xs font-bold text-slate-400 mr-1 hidden sm:inline">Drop Depth:</span>
+                    <button onclick="setDropDepth(15)" id="pillDrop15" class="drop-depth-pill px-3 py-1.5 rounded-xl text-xs font-extrabold bg-rose-600 text-white shadow-sm shadow-rose-600/30 transition">
+                        🔥 All Drops (15%+)
+                    </button>
+                    <button onclick="setDropDepth(30)" id="pillDrop30" class="drop-depth-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition">
+                        ⚡ 30%+ Off
+                    </button>
+                    <button onclick="setDropDepth(50)" id="pillDrop50" class="drop-depth-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition">
+                        💥 50%+ Off
+                    </button>
+                    <button onclick="setDropDepth(70)" id="pillDrop70" class="drop-depth-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition">
+                        👑 70%+ Massive Cuts
+                    </button>
+                </div>
+
+                <!-- Sort & View Controls -->
+                <div class="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                    <label for="dropSortSelect" class="text-xs text-slate-400 font-semibold hidden md:inline">Sort by:</label>
+                    <select id="dropSortSelect" onchange="onSortChange(this.value)" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-rose-500 transition">
+                        <option value="drop_pct">Biggest Price Drop %</option>
+                        <option value="price_asc">Price: Low to High</option>
+                        <option value="discount">Highest Total Discount</option>
+                        <option value="latest">Most Recently Verified</option>
+                    </select>
+
+                    <button onclick="toggleDropsViewMode()" id="dropsViewToggleBtn" class="p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition" title="Toggle Grid / Compact List">
+                        <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Row 2: Store Pills & Active Match Counter -->
+            <div class="flex items-center justify-between gap-3 pt-2 border-t border-slate-800/60 overflow-x-auto no-scrollbar">
+                <!-- Store Filters -->
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <span class="text-xs font-bold text-slate-400 mr-1 hidden sm:inline">Store:</span>
+                    <button onclick="setStoreFilter('')" id="storePillAll" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-600 text-white transition">
+                        All Stores
+                    </button>
+                    <button onclick="setStoreFilter('amazon')" id="storePillAmazon" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                        <span class="text-[#FF9900]">Amazon</span>
+                    </button>
+                    <button onclick="setStoreFilter('flipkart')" id="storePillFlipkart" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                        <span class="text-[#2874F0]">Flipkart</span>
+                    </button>
+                    <button onclick="setStoreFilter('myntra')" id="storePillMyntra" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                        <span class="text-[#FF3F6C]">Myntra</span>
+                    </button>
+                    <button onclick="setStoreFilter('ajio')" id="storePillAjio" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                        <span class="text-[#D99814]">Ajio</span>
+                    </button>
+                    <button onclick="setStoreFilter('nykaa')" id="storePillNykaa" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                        <span class="text-[#FC2779]">Nykaa</span>
+                    </button>
+                </div>
+
+                <!-- Match Count Indicator -->
+                <div class="text-xs text-slate-400 font-mono shrink-0">
+                    Showing <span id="dropsCountDisplay" class="font-bold text-white">0</span> drops
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Price Drops Grid / Stream ────────────────────────────────────── -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full mt-6 mb-16">
+        <!-- Main Product Cards Container -->
+        <div id="dropsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <!-- Loading Skeletons -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
+        </div>
+
+        <!-- Empty State (Hidden by default) -->
+        <div id="dropsEmptyState" class="hidden text-center py-16 px-4">
+            <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-2xl mx-auto mb-4">
+                🔍
+            </div>
+            <h3 class="text-lg font-bold text-white">No Price Drops Found</h3>
+            <p class="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                No products match the selected drop depth or store filter right now. Try loosening the filter criteria.
+            </p>
+            <button onclick="resetDropsFilters()" class="mt-4 px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white transition">
+                Reset Filters
+            </button>
+        </div>
+
+        <!-- Load More / Pagination Bar -->
+        <div id="dropsPaginationBar" class="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80">
+            <div class="text-xs text-slate-400">
+                Page <span id="dropsCurrentPage" class="font-bold text-white">1</span> of <span id="dropsTotalPages" class="font-bold text-white">1</span>
+                (<span id="dropsLoadedCount" class="font-mono text-slate-300">0</span> loaded)
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="changeDropsPage(-1)" id="dropsPrevBtn" disabled class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none text-slate-200 transition">
+                    ← Previous
+                </button>
+                <button onclick="changeDropsPage(1)" id="dropsNextBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:pointer-events-none text-white transition flex items-center gap-1.5 shadow-lg shadow-rose-600/30">
+                    <span>Next Page</span>
+                    <span>→</span>
+                </button>
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // State management for 24H Price Drops Hub
+    const dropsState = {
+        page: 1,
+        limit: 24,
+        totalPages: 1,
+        minDrop: 15,
+        store: '',
+        sortBy: 'drop_pct',
+        viewMode: 'grid', // 'grid' | 'compact'
+        items: []
+    };
+
+    let dropsAutoRefreshTimer = null;
+    function startDropsAutoRefresh() {
+        if (dropsAutoRefreshTimer) clearInterval(dropsAutoRefreshTimer);
+        const settings = window.getUserSettings ? window.getUserSettings() : null;
+        const intervalSec = (settings && settings.syncInterval !== undefined) ? settings.syncInterval : 30;
+        if (intervalSec <= 0) return;
+        dropsAutoRefreshTimer = setInterval(() => {
+            if (dropsState.page === 1 && !document.hidden) {
+                loadDrops(true);
+            }
+        }, intervalSec * 1000);
+    }
+
+    // Initialize Hub
+    document.addEventListener('DOMContentLoaded', () => {
+        loadDrops();
+        startDropsAutoRefresh();
+    });
+
+    window.addEventListener('budgetby:syncRateChanged', () => {
+        startDropsAutoRefresh();
+    });
+
+    async function loadDrops(isBackground = false) {
+        const grid = document.getElementById('dropsGrid');
+        const emptyState = document.getElementById('dropsEmptyState');
+        const paginationBar = document.getElementById('dropsPaginationBar');
+
+        if (!isBackground) {
+            grid.innerHTML = `
+                <div class="col-span-full py-16 text-center">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-300 animate-pulse">
+                        <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                        Scanning today's verified price reductions...
+                    </div>
+                </div>
+            `;
+            emptyState.classList.add('hidden');
+        }
+
+        try {
+            const params = new URLSearchParams({
+                page: dropsState.page,
+                limit: dropsState.limit,
+                min_drop_percent: dropsState.minDrop,
+                sort_by: dropsState.sortBy
+            });
+            if (dropsState.store) {
+                params.append('platform', dropsState.store);
+            }
+
+            const res = await fetch(`/api/public/price-drops?${params.toString()}`);
+            const data = await res.json();
+
+            const incomingItems = (data.drops || data.items || []).map(d => ({
+                ...d,
+                id: d.product_id || d.deal_id,
+                drop_percent: d.drop_pct !== undefined ? d.drop_pct : (d.drop_percent || 0),
+                last_checked: d.last_price_change || d.last_checked,
+                affiliate_url: d.affiliate_url || d.product_url
+            }));
+            dropsState.items = incomingItems;
+            dropsState.totalPages = data.total_pages || 1;
+
+            // Update stats
+            const totalCount = data.total_drops_24h !== undefined ? data.total_drops_24h : (data.total || dropsState.items.length);
+            
+            if (isBackground && dropsState.lastTotalCount !== undefined && dropsState.lastTotalCount !== totalCount) {
+                if (window.isSoundAlertEnabled && window.isSoundAlertEnabled()) {
+                    window.playDealChime && window.playDealChime();
+                }
+            }
+            dropsState.lastTotalCount = totalCount;
+
+            document.getElementById('statDropsTotal').innerText = totalCount;
+            document.getElementById('dropsCountDisplay').innerText = totalCount;
+            document.getElementById('dropsCurrentPage').innerText = data.page || 1;
+            document.getElementById('dropsTotalPages').innerText = dropsState.totalPages;
+            document.getElementById('dropsLoadedCount').innerText = dropsState.items.length;
+
+            if (dropsState.items.length > 0) {
+                const maxDrop = Math.max(...dropsState.items.map(d => d.drop_percent || 0));
+                document.getElementById('statTopDrop').innerText = maxDrop > 0 ? `-${Math.round(maxDrop)}%` : '--';
+            } else {
+                document.getElementById('statTopDrop').innerText = '--';
+            }
+
+            document.getElementById('dropsPrevBtn').disabled = (dropsState.page <= 1);
+            document.getElementById('dropsNextBtn').disabled = (dropsState.page >= dropsState.totalPages);
+
+            if (dropsState.items.length === 0) {
+                if (!isBackground) {
+                    grid.innerHTML = '';
+                    emptyState.classList.remove('hidden');
+                    paginationBar.classList.add('hidden');
+                }
+            } else {
+                if (!isBackground || window.scrollY <= 400) {
+                    renderDropsCards(dropsState.items);
+                    paginationBar.classList.remove('hidden');
+                }
+            }
+
+        } catch (err) {
+            console.error('Error loading price drops:', err);
+            if (!isBackground) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12 text-rose-400 text-xs font-semibold">
+                        Failed to load price drops. Please try again.
+                    </div>
+                `;
+            }
+        }
+    }
+
+    function renderDropsCards(items) {
+        const grid = document.getElementById('dropsGrid');
+        dropsState.itemsMap = {};
+        const seenPids = new Set();
+        const seenLinks = new Set();
+        const uniqueItems = [];
+
+        items.forEach(d => {
+            const pid = d.product_id || d.id;
+            const link = (d.affiliate_url || d.product_url || d.url || '').split('?')[0].toLowerCase();
+            if (seenPids.has(pid) || (link && seenLinks.has(link))) {
+                return;
+            }
+            seenPids.add(pid);
+            if (link) seenLinks.add(link);
+            dropsState.itemsMap[d.id] = d;
+            uniqueItems.push(d);
+        });
+        
+        if (dropsState.viewMode === 'compact') {
+            grid.className = 'flex flex-col gap-3';
+        } else {
+            grid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4';
+        }
+
+        grid.innerHTML = uniqueItems.map(deal => {
+            const store = (deal.platform || 'amazon').toLowerCase();
+            const storeCfg = STORES[store] || STORES.amazon;
+            const dropPct = Math.round(deal.drop_percent || 0);
+            const verifiedAgo = deal.last_checked ? formatTimeAgo(deal.last_checked) : 'Recently';
+            const inWatch = isInWatchlist(deal.id);
+            const savedDropVal = (deal.previous_price && deal.current_price) 
+                ? formatINR(Math.round(deal.previous_price - deal.current_price)) 
+                : null;
+            const safeTitle = escapeHtml(deal.title || 'Product Deal');
+            const buyUrl = deal.affiliate_url || deal.product_url || deal.url || '#';
+            const hasValidRating = deal.rating && typeof deal.rating === 'number' && deal.rating >= 1.0 && deal.rating <= 5.0;
+            const ratingHtml = hasValidRating ? `
+                <div class="flex items-center gap-1.5 mt-1.5">
+                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold font-mono">
+                        <span class="text-amber-400">★</span> ${deal.rating.toFixed(1)}
+                    </span>
+                    ${deal.review_count && deal.review_count > 0 ? `
+                        <span class="text-[10px] text-slate-400 font-mono">(${Number(deal.review_count).toLocaleString('en-IN')})</span>
+                    ` : ''}
+                </div>
+            ` : '';
+
+            if (dropsState.viewMode === 'compact') {
+                return `
+                    <div class="bg-[#0c101c]/90 border border-slate-800/80 hover:border-slate-700 rounded-2xl p-3 flex items-center justify-between gap-4 transition group">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-14 h-14 rounded-xl bg-white/5 p-1 shrink-0 flex items-center justify-center overflow-hidden border border-slate-800">
+                                <img src="${deal.image_url || '/static/placeholder.png'}" alt="${safeTitle}" class="w-full h-full object-contain" loading="lazy" onerror="this.src='/static/placeholder.png'"/>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2 text-[10px] flex-wrap">
+                                    <span class="px-1.5 py-0.5 rounded font-extrabold uppercase ${storeCfg.badge}">${storeCfg.name}</span>
+                                    <span class="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-extrabold font-mono">-${dropPct}% DROP</span>
+                                    ${hasValidRating ? `<span class="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded font-mono"><span class="text-amber-400">★</span> ${deal.rating.toFixed(1)}</span>` : ''}
+                                    <span class="text-slate-500 hidden sm:inline">Verified ${verifiedAgo}</span>
+                                </div>
+                                <a href="${buyUrl}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-white hover:text-indigo-300 truncate block mt-1">
+                                    ${safeTitle}
+                                </a>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <div class="text-right">
+                                <div class="text-sm font-black text-white font-mono">${formatINR(deal.current_price)}</div>
+                                ${deal.previous_price ? `<div class="text-[10px] text-slate-500 line-through font-mono">${formatINR(deal.previous_price)}</div>` : ''}
+                            </div>
+                            <a href="${buyUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white transition">
+                                Buy ↗
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="bg-[#0c101c]/95 border border-slate-800/80 hover:border-slate-700/90 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative hover:shadow-xl hover:shadow-rose-950/20">
+                    <div>
+                        <!-- Top Meta Row -->
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider ${storeCfg.badge}">
+                                ${storeCfg.name}
+                            </span>
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono">
+                                📉 -${dropPct}% DROP
+                            </span>
+                        </div>
+
+                        <!-- Product Image Area -->
+                        <div class="relative w-full h-44 rounded-xl bg-[#090d16] p-2 flex items-center justify-center overflow-hidden border border-slate-800/60 group-hover:border-slate-700 transition">
+                            <img src="${deal.image_url || '/static/placeholder.png'}" 
+                                 alt="${safeTitle}" 
+                                 class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                                 loading="lazy"
+                                 onerror="this.src='/static/placeholder.png'" />
+                            
+                            <!-- Watchlist Quick Toggle -->
+                            <button onclick="handleCardWatchlist(this, ${deal.id})" 
+                                    class="absolute top-2 right-2 p-1.5 rounded-xl bg-slate-950/80 backdrop-blur-md border border-slate-800 text-slate-400 hover:text-rose-400 transition" 
+                                    title="Save to Watchlist">
+                                <i data-lucide="heart" class="w-4 h-4 ${inWatch ? 'fill-rose-500 text-rose-500' : ''}"></i>
+                            </button>
+
+                            <!-- Freshness Pill -->
+                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800/80 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                <span>Verified ${verifiedAgo}</span>
+                            </div>
+                        </div>
+
+                        <!-- Product Title -->
+                        <div class="mt-3">
+                            <a href="${buyUrl}" target="_blank" rel="noopener noreferrer" 
+                               class="text-xs font-bold text-slate-100 hover:text-indigo-400 line-clamp-2 transition leading-snug" 
+                               title="${safeTitle}">
+                                ${safeTitle}
+                            </a>
+                            ${ratingHtml}
+                        </div>
+                    </div>
+
+                    <!-- Price & Action Footer -->
+                    <div class="mt-3 pt-3 border-t border-slate-800/80">
+                        <div class="flex items-baseline justify-between gap-1 mb-2">
+                            <div>
+                                <span class="text-lg font-black text-white font-mono">${formatINR(deal.current_price)}</span>
+                                ${deal.previous_price ? `<span class="text-xs text-slate-500 line-through ml-1.5 font-mono">${formatINR(deal.previous_price)}</span>` : ''}
+                            </div>
+                            ${savedDropVal ? `
+                                <div class="text-[10px] font-extrabold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60 font-mono">
+                                    Cut ${savedDropVal}
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- Card Action Buttons Row -->
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button onclick="openPriceHistoryModal(${deal.id})" 
+                                    class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition" 
+                                    title="View Price Curve">
+                                <i data-lucide="trending-down" class="w-4 h-4 text-indigo-400"></i>
+                            </button>
+                            <button onclick="handleDropsCardShare(${deal.id})" 
+                                    class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition" 
+                                    title="Share Deal">
+                                <i data-lucide="share-2" class="w-4 h-4 text-cyan-400"></i>
+                            </button>
+                            <a href="${buyUrl}" target="_blank" rel="noopener noreferrer" 
+                               class="col-span-2 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-lg shadow-rose-600/30 hover:scale-[1.02] active:scale-[0.98] transition">
+                                <span>Get Deal</span>
+                                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        lucide.createIcons();
+    }
+
+    // Filter handlers
+    function setDropDepth(pct) {
+        dropsState.minDrop = pct;
+        dropsState.page = 1;
+        document.querySelectorAll('.drop-depth-pill').forEach(btn => {
+            btn.className = 'drop-depth-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition';
+        });
+        const activeBtn = document.getElementById(`pillDrop${pct}`);
+        if (activeBtn) {
+            activeBtn.className = 'drop-depth-pill px-3 py-1.5 rounded-xl text-xs font-extrabold bg-rose-600 text-white shadow-sm shadow-rose-600/30 transition';
+        }
+        loadDrops();
+    }
+
+    function setStoreFilter(store) {
+        dropsState.store = store;
+        dropsState.page = 1;
+        document.querySelectorAll('.store-pill').forEach(btn => {
+            btn.className = 'store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition';
+        });
+        const activeId = store ? `storePill${store.charAt(0).toUpperCase() + store.slice(1)}` : 'storePillAll';
+        const activeBtn = document.getElementById(activeId);
+        if (activeBtn) {
+            activeBtn.className = 'store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-600 text-white transition';
+        }
+        loadDrops();
+    }
+
+    function onSortChange(val) {
+        dropsState.sortBy = val;
+        dropsState.page = 1;
+        loadDrops();
+    }
+
+    function changeDropsPage(delta) {
+        dropsState.page += delta;
+        window.scrollTo({ top: 150, behavior: 'smooth' });
+        loadDrops();
+    }
+
+    function toggleDropsViewMode() {
+        dropsState.viewMode = (dropsState.viewMode === 'grid') ? 'compact' : 'grid';
+        renderDropsCards(dropsState.items);
+    }
+
+    function resetDropsFilters() {
+        dropsState.page = 1;
+        dropsState.minDrop = 15;
+        dropsState.store = '';
+        dropsState.sortBy = 'drop_pct';
+        document.getElementById('dropSortSelect').value = 'drop_pct';
+        setDropDepth(15);
+        setStoreFilter('');
+    }
+
+    function handleCardWatchlist(btn, id) {
+        const deal = dropsState.itemsMap[id];
+        if (deal) {
+            toggleWatchlist(deal);
+            const icon = btn.querySelector('svg');
+            if (icon) {
+                if (isInWatchlist(deal.id)) {
+                    icon.classList.add('fill-rose-500', 'text-rose-500');
+                } else {
+                    icon.classList.remove('fill-rose-500', 'text-rose-500');
+                }
+            }
+        }
+    }
+
+    function handleDropsCardShare(id) {
+        const deal = dropsState.itemsMap[id];
+        if (deal) openShareModal(deal);
+    }
+</script>
+{% endblock %}

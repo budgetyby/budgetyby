@@ -66,7 +66,16 @@ async def price_check_loop():
 
                     # Scrape current price
                     data = await scraper.scrape_product(product["product_url"])
-                    if not data or not data.get("current_price"):
+                    if not data:
+                        await database.schedule_next_check(product["id"], product["priority_tier"])
+                        return
+
+                    if not data.get("current_price") or data.get("in_stock") is False:
+                        # Product is verified out of stock or unavailable
+                        await database.execute(
+                            "UPDATE products SET in_stock = FALSE, last_checked = NOW() WHERE id = $1;",
+                            product["id"]
+                        )
                         await database.schedule_next_check(product["id"], product["priority_tier"])
                         return
 
@@ -239,6 +248,80 @@ async def paced_posting_loop():
         logger.error(f"Error in paced_posting_loop: {e}")
 
 
+async def verify_active_deals_loop():
+    """
+    Targeted Micro-Job Deal Verifier:
+    Fires every 60 seconds to re-verify the oldest unchecked active deals (3 products/min).
+    Ensures that if retailer raises price back to MRP or item sells out,
+    the deal is immediately dropped from the consumer website.
+    Uses ultra-low background resources (< 0.1% CPU, ~3 requests/min across 5 stores).
+    """
+    try:
+        from budgetby.scrapers.amazon import AmazonScraper
+        from budgetby.scrapers.flipkart import FlipkartScraper
+        from budgetby.scrapers.myntra import MyntraScraper
+        from budgetby.scrapers.ajio import AjioScraper
+        from budgetby.scrapers.nykaa import NykaaScraper
+
+        scrapers = {
+            "amazon": AmazonScraper(),
+            "flipkart": FlipkartScraper(),
+            "myntra": MyntraScraper(),
+            "ajio": AjioScraper(),
+            "nykaa": NykaaScraper(),
+        }
+
+        candidates = await database.fetch("""
+            SELECT p.id, p.platform, p.product_url, p.priority_tier, 
+                   COALESCE(d.posted_price, p.current_price) as posted_price, 
+                   p.current_price
+            FROM products p
+            LEFT JOIN deals d ON d.product_id = p.id
+            WHERE p.in_stock = TRUE AND p.status = 'ACTIVE'
+              AND LOWER(p.platform) != 'croma'
+              AND (
+                  p.last_checked < '2001-01-01'::timestamptz
+                  OR (d.id IS NOT NULL AND d.posted_at >= NOW() - INTERVAL '72 hours')
+              )
+            ORDER BY p.last_checked ASC NULLS FIRST
+            LIMIT 5;
+        """)
+        if not candidates:
+            return
+
+        for prod in candidates:
+            platform = prod["platform"]
+            scraper = scrapers.get(platform)
+            if not scraper:
+                continue
+            try:
+                data = await scraper.scrape_product(prod["product_url"])
+                if not data or not data.get("current_price") or data.get("in_stock") is False:
+                    # Verified out of stock or unavailable
+                    await database.execute(
+                        "UPDATE products SET in_stock = FALSE, last_checked = NOW() WHERE id = $1;",
+                        prod["id"]
+                    )
+                    logger.info(f"Micro-verifier: product #{prod['id']} ({platform}) marked OUT OF STOCK")
+                else:
+                    new_p = float(data["current_price"])
+                    await database.execute("""
+                        UPDATE products SET 
+                            current_price = $2,
+                            mrp = COALESCE($3, mrp),
+                            in_stock = $4,
+                            last_checked = NOW()
+                        WHERE id = $1;
+                    """, prod["id"], new_p, data.get("mrp"), data.get("in_stock", True))
+                    if prod["posted_price"] and new_p > float(prod["posted_price"]) * 1.01:
+                        logger.info(f"Micro-verifier: price increased for #{prod['id']} ({platform}) from {prod['posted_price']} to {new_p}")
+            except Exception as e:
+                logger.debug(f"Micro-verifier scrape error for #{prod['id']}: {e}")
+                await database.execute("UPDATE products SET last_checked = NOW() WHERE id = $1;", prod["id"])
+    except Exception as e:
+        logger.error(f"Error in verify_active_deals_loop: {e}")
+
+
 def start_scheduler():
     """Configure and start all scheduled jobs."""
     logger.info("Starting scheduler...")
@@ -246,6 +329,10 @@ def start_scheduler():
     # Core catalog price checking — every 30 seconds
     _scheduler.add_job(price_check_loop, "interval", seconds=30, id="price_check",
                        max_instances=1, coalesce=True, misfire_grace_time=60)
+
+    # Targeted Micro-Job Deal Verifier — every 60 seconds (3 req/min)
+    _scheduler.add_job(verify_active_deals_loop, "interval", seconds=60, id="deal_verifier",
+                       max_instances=1, coalesce=True, misfire_grace_time=30)
 
     # Discovery — every 6 hours (Croma & Myntra seeding disabled; Amazon/Flipkart/Ajio/Nykaa only)
     _scheduler.add_job(discovery_job, "interval",

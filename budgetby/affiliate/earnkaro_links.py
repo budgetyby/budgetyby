@@ -61,31 +61,15 @@ def _strip_existing_affiliate_params(url: str) -> str:
 
 def build_earnkaro_url_sync(url: str) -> str:
     """
-    Convert a raw product URL (Flipkart / Myntra / Ajio / Nykaa) into a
-    fully-tracked EarnKaro affiliate URL by appending the 3 required params.
-
-    Exactly replicates what EarnKaro's fktr.in redirect does — every call
-    generates a unique ENKR token so each click is individually tracked.
+    Returns clean merchant URL stripped of any third-party tracking or foreign affiliate parameters.
+    Does NOT append broken synthetic affid/ENKR parameters.
     """
     if not url:
         return ""
-
-    user_id = config.EARNKARO_API_KEY  # "5549565"
-    token = _generate_enkr_token()
-
     try:
-        clean_url = _strip_existing_affiliate_params(url)
-        sep = "&" if "?" in clean_url else "?"
-        affiliate_url = (
-            f"{clean_url}{sep}"
-            f"affid={EARNKARO_AFF_ID}"
-            f"&affExtParam1={token}"
-            f"&affExtParam2={user_id}"
-        )
-        logger.debug(f"EarnKaro URL built [{token}]: {affiliate_url[:80]}...")
-        return affiliate_url
+        return _strip_existing_affiliate_params(url)
     except Exception as e:
-        logger.warning(f"EarnKaro URL build failed for {url[:60]}: {e}")
+        logger.warning(f"URL clean failed for {url[:60]}: {e}")
         return url
 
 

@@ -144,58 +144,8 @@ class ProductSeeder:
                 self.stats["errors"] += 1
 
     async def seed_nykaa(self, sort_mode: str = "popularity"):
-        current_count = await self.get_platform_count("nykaa")
-        target = TARGET_PROPORTIONS["nykaa"]
-        if current_count >= target:
-            logger.info(f"Nykaa target reached ({current_count}/{target}). Skipping deep wave.")
-            return
-
-        logger.info(f"Starting concurrent Nykaa discovery [sort={sort_mode}] ({current_count}/{target} target)...")
-        sem = asyncio.Semaphore(4)
-
-        async def process_category(category, info):
-            cnt = await self.get_platform_count("nykaa")
-            if cnt >= target:
-                return
-            async with sem:
-                try:
-                    path = info.get("path", "")
-                    cat_type = info.get("category", "beauty")
-                    products = await nykaa_discover.discover_category(path, pages=12, sort=sort_mode)
-                    for p in products:
-                        p["category"] = cat_type
-                        await self._upsert(p)
-                    logger.info(f"Nykaa {category} ({sort_mode}): Added {len(products)} products")
-                    await asyncio.sleep(0.2)
-                except Exception as e:
-                    logger.error(f"Error seeding Nykaa {category}: {e}")
-                    self.stats["errors"] += 1
-
-        tasks = [process_category(cat, info) for cat, info in getattr(config, "NYKAA_DISCOVERY_TARGETS", {}).items()]
-        await asyncio.gather(*tasks, return_exceptions=True)
-
-    async def seed_croma(self):
-        current_count = await self.get_platform_count("croma")
-        target = TARGET_PROPORTIONS.get("croma", 3500)
-        if current_count >= target:
-            logger.info(f"Croma target reached ({current_count}/{target}). Skipping discovery.")
-            return
-
-        logger.info(f"Starting Croma electronics discovery ({current_count}/{target} target)...")
-        for cat_key, info in croma_discover.CROMA_CATEGORIES.items():
-            current_count = await self.get_platform_count("croma")
-            if current_count >= target:
-                break
-            try:
-                pages = info.get("pages", 6)
-                products = await croma_discover.discover_category(cat_key, max_pages=pages)
-                for p in products:
-                    await self._upsert(p)
-                logger.info(f"Croma {cat_key}: Added {len(products)} products (Total: {current_count})")
-                await asyncio.sleep(1.5)
-            except Exception as e:
-                logger.error(f"Error seeding Croma {cat_key}: {e}")
-                self.stats["errors"] += 1
+        # Explicitly disabled per user request to rely purely on live smart deal hunter
+        return
 
     async def _upsert(self, product_data: dict):
         try:
@@ -236,40 +186,22 @@ class ProductSeeder:
 
     async def run_bootstrap_until_target(self, target_count: int = 75000):
         """
-        Runs targeted bootstrap for platforms below quota (Nykaa & Croma).
+        Runs targeted bootstrap for platforms below quota.
         """
         logger.info("Initializing bootstrap discovery...")
 
         # 1. Croma Bootstrap (Temporarily paused)
-        # croma_count = await self.get_platform_count("croma")
-
-        # 2. Nykaa Bootstrap
-        nykaa_count = await self.get_platform_count("nykaa")
-        nykaa_target = TARGET_PROPORTIONS.get("nykaa", 7500)
-
-        if nykaa_count < nykaa_target:
-            logger.info(f"🎯 Seeding Nykaa until {nykaa_target} target (Current: {nykaa_count}/{nykaa_target})...")
-            try:
-                await self._platform_worker(
-                    "nykaa", 
-                    self.seed_nykaa, 
-                    ["popularity", "discount", "new_arrival", "customer_top_rated"]
-                )
-            except Exception as e:
-                logger.error(f"Nykaa bootstrap worker error: {e}")
-        else:
-            logger.info(f"✅ Nykaa target already reached ({nykaa_count}/{nykaa_target}).")
+        # 2. Nykaa Bootstrap (Temporarily paused per user request - relies on Live Hunter)
 
         logger.info("✨ Bootstrap seeder finished! New products will be dynamically ingested and saved to DB whenever deals arrive.")
 
 
     async def run_full_discovery(self) -> dict:
-        """Runs standard multi-platform discovery pass across active platforms (Amazon, Flipkart, Ajio, Nykaa)."""
-        logger.info("Running routine multi-platform discovery pass across Amazon, Flipkart, Ajio, Nykaa...")
+        """Runs standard multi-platform discovery pass across active platforms (Amazon, Flipkart, Ajio)."""
+        logger.info("Running routine multi-platform discovery pass across Amazon, Flipkart, Ajio...")
         results = await asyncio.gather(
             self.seed_flipkart(),
             self.seed_ajio(),
-            self.seed_nykaa(),
             self.seed_amazon(),
             return_exceptions=True
         )
@@ -278,3 +210,4 @@ class ProductSeeder:
                 logger.error(f"Discovery task failed: {r}", exc_info=r)
         logger.info(f"Discovery pass complete. Stats: {self.stats}")
         return self.stats
+

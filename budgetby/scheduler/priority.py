@@ -12,7 +12,10 @@ def assign_priority(product: asyncpg.Record) -> int:
     """
     now = datetime.datetime.now(datetime.timezone.utc)
     
-    # 1. Tier 1 (Critical): Price change in last 24h, lightning deal, movers & shakers
+    # 1. Tier 1 (Critical): Active deal posted in last 48h, price change in last 24h, lightning deal
+    if product.get('has_recent_deal'):
+        return 1
+
     last_change = product.get('last_price_change')
     if last_change:
         if last_change.tzinfo is None:

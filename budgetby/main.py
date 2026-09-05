@@ -150,6 +150,13 @@ async def main():
     except Exception as e:
         logger.warning(f"Could not start telegram private listener: {e}")
 
+    # 7b. Start Safe 1-by-1 Affiliate Link Converter Worker
+    try:
+        from budgetby.affiliate.converter_worker import run_affiliate_converter_worker
+        asyncio.create_task(run_affiliate_converter_worker())
+    except Exception as e:
+        logger.warning(f"Could not start affiliate converter worker: {e}")
+
     # 8. Run Bot Polling
     if application:
         try:

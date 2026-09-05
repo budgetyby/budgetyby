@@ -96,11 +96,54 @@ class NykaaScraper(BaseScraper):
             if not mrp or mrp < price:
                 mrp = price
 
-            # 5. Image
+            # 4. State Extraction Fallback (__PRELOADED_STATE__)
+            for script in tree.css("script"):
+                stxt = script.text() or ""
+                if "window.__PRELOADED_STATE__" in stxt:
+                    try:
+                        s_idx = stxt.find("window.__PRELOADED_STATE__ =")
+                        if s_idx != -1:
+                            j_str = stxt[s_idx + len("window.__PRELOADED_STATE__ ="):].strip()
+                            if j_str.endswith(";"):
+                                j_str = j_str[:-1].strip()
+                            s_data = json.loads(j_str)
+                            prod_obj = s_data.get("productPage", {}).get("product", {})
+                            if prod_obj:
+                                if not image_url and prod_obj.get("imageUrl"):
+                                    image_url = prod_obj.get("imageUrl")
+                                if not title and prod_obj.get("title"):
+                                    title = clean_title(prod_obj.get("title"))
+                                if (not price or price <= 0) and prod_obj.get("price"):
+                                    price = float(prod_obj.get("price"))
+                                if (not mrp or mrp <= 0) and prod_obj.get("mrp"):
+                                    mrp = float(prod_obj.get("mrp"))
+                                if prod_obj.get("rating"):
+                                    rating = float(prod_obj.get("rating"))
+                                if prod_obj.get("ratingCount"):
+                                    review_count = int(prod_obj.get("ratingCount"))
+                    except Exception:
+                        pass
+                    break
+
+            # 5. Meta Tag & DOM Image Fallback
             if not image_url:
-                img_node = tree.css_first("img.css-11q6006, img[alt]")
+                og_node = tree.css_first("meta[property='og:image'], meta[name='og:image']")
+                if og_node and og_node.attributes.get("content"):
+                    image_url = og_node.attributes.get("content").strip()
+
+            if not image_url:
+                tw_node = tree.css_first("meta[property='twitter:image'], meta[name='twitter:image']")
+                if tw_node and tw_node.attributes.get("content"):
+                    image_url = tw_node.attributes.get("content").strip()
+
+            if not image_url:
+                img_node = tree.css_first("img[src*='catalog/product'], img.css-11q6006, img[alt]")
                 if img_node:
-                    image_url = img_node.attributes.get("src", "")
+                    image_url = img_node.attributes.get("src", "").strip()
+
+            # Upgrade Nykaa image thumbnail to crisp 800x800 resolution
+            if image_url and "tr:" in image_url:
+                image_url = re.sub(r'tr:[^/]+/', 'tr:h-800,w-800,cm-pad_resize/', image_url)
         except Exception as e:
             logger.debug(f"Nykaa scraping error: {e}")
 

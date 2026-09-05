@@ -27,8 +27,8 @@
                         <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">DB: budgetby</span>
                     </div>
                     <div class="text-[11px] text-slate-400 flex items-center gap-2 flex-wrap">
-                        <span>🛍️ Total Products in DB: <b id="dbTotalProducts" class="text-amber-400 font-mono font-bold">84,960</b></span>
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">🆕 +7,759 Added Today</span>
+                        <span>🛍️ Total Products in DB: <b id="dbTotalProducts" class="text-amber-400 font-mono font-bold">--</b></span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">🆕 <span id="dbProductsAddedToday">--</span> Added Today</span>
                         <span>•</span>
                         <span>📦 Total DB Size: <b id="dbTotalSize" class="text-emerald-400 font-mono">-- MB</b></span>
                         <span>•</span>
@@ -37,11 +37,11 @@
                 </div>
             </div>
             <div class="flex items-center space-x-3">
-                <a href="/#movements-hub" class="px-3.5 py-1.5 text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl transition flex items-center gap-1.5 shadow-sm">
-                    <span>⚡</span> 24h Price Movements
+                <a href="/pnther#movements-hub" class="px-3.5 py-1.5 text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                    <span>⚡</span> 24h Movements
                 </a>
-                <a href="/" class="px-3.5 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl border border-slate-700 transition flex items-center gap-1.5">
-                    <span>⚡</span> Dashboard
+                <a href="/pnther" class="px-3.5 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl border border-slate-700 transition flex items-center gap-1.5">
+                    <span>⚙️</span> Control Center
                 </a>
                 <button onclick="loadTableData()" class="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition">🔄</button>
             </div>
@@ -191,6 +191,12 @@
                 dbOverview = await res.json();
                 
                 document.getElementById('dbTotalSize').textContent = dbOverview.total_size;
+                if (dbOverview.total_products !== undefined) {
+                    document.getElementById('dbTotalProducts').textContent = Number(dbOverview.total_products).toLocaleString('en-IN');
+                }
+                if (dbOverview.products_added_today !== undefined) {
+                    document.getElementById('dbProductsAddedToday').textContent = '+' + Number(dbOverview.products_added_today).toLocaleString('en-IN');
+                }
 
                 let navHtml = '';
                 dbOverview.tables.forEach(t => {

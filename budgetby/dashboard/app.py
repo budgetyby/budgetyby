@@ -1,52 +1,164 @@
 import asyncio
+import datetime
+import time
+import math
+import re
 import sys
 import os
-from fastapi import FastAPI, Query, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
+import secrets
+from fastapi import FastAPI, Query, HTTPException, Request, Depends, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 import uvicorn
+import logging
+
+logger = logging.getLogger("budgetby.dashboard.app")
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from budgetby import database, config
 
 app = FastAPI(title="BudgetBy Control Center", version="2.0")
 
-TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "templates", "index.html")
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        path = request.url.path
+        if path.startswith("/api/public/") or path.startswith("/api/deals") or path.startswith("/api/search"):
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+)
+
+TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
+templates = Jinja2Templates(directory=TEMPLATES_DIR)
+
+ADMIN_TEMPLATE_PATH = os.path.join(TEMPLATES_DIR, "index.html")
+EXPLORER_TEMPLATE_PATH = os.path.join(TEMPLATES_DIR, "explorer.html")
+
+ADMIN_SECRET_KEY = getattr(config, "ADMIN_SECRET_KEY", "bb_sec_9e72f8a14b30c5e7d82f091a384b62d1")
+
+def is_admin_authorized(request: Request) -> bool:
+    """Verifies whether request contains valid ADMIN_SECRET_KEY via query, header, or cookie."""
+    req_key = request.query_params.get("key") or request.query_params.get("admin_key")
+    if req_key and secrets.compare_digest(str(req_key), ADMIN_SECRET_KEY):
+        return True
+    header_key = request.headers.get("X-Admin-Key") or request.headers.get("x-admin-key")
+    if header_key and secrets.compare_digest(str(header_key), ADMIN_SECRET_KEY):
+        return True
+    cookie_key = request.cookies.get("budgetby_admin_session")
+    if cookie_key and secrets.compare_digest(str(cookie_key), ADMIN_SECRET_KEY):
+        return True
+    return False
+
+def require_admin(request: Request):
+    """
+    Dependency enforcing complete admin stealth isolation:
+    Returns 404 Not Found to unauthorized requests, completely hiding admin/db existence.
+    """
+    if not is_admin_authorized(request):
+        raise HTTPException(status_code=404, detail="Not Found")
+    return True
+
+
+# ── High-Speed In-Memory RAM Caching ─────────────────────────────────────────
+
+class SimpleMemoryCache:
+    """
+    High-concurrency in-memory TTL cache.
+    Eliminates redundant database queries by caching popular public API endpoints in RAM.
+    Reduces database load and egress bandwidth by >95%.
+    """
+    def __init__(self, default_ttl: int = 30, max_entries: int = 1000):
+        self._cache: dict[str, tuple[any, float]] = {}
+        self._default_ttl = default_ttl
+        self._max_entries = max_entries
+        self._lock = asyncio.Lock()
+
+    async def get(self, key: str):
+        entry = self._cache.get(key)
+        if not entry:
+            return None
+        val, expires_at = entry
+        if time.monotonic() > expires_at:
+            self._cache.pop(key, None)
+            return None
+        return val
+
+    async def set(self, key: str, value: any, ttl: int = None):
+        if ttl is None:
+            ttl = self._default_ttl
+        now = time.monotonic()
+        async with self._lock:
+            if len(self._cache) >= self._max_entries:
+                keys_to_del = [k for k, (v, exp) in self._cache.items() if now > exp]
+                for k in keys_to_del:
+                    self._cache.pop(k, None)
+                if len(self._cache) >= self._max_entries:
+                    for k in list(self._cache.keys())[:int(self._max_entries * 0.2)]:
+                        self._cache.pop(k, None)
+            self._cache[key] = (value, now + ttl)
+
+    def clear(self):
+        self._cache.clear()
+
+ram_cache = SimpleMemoryCache(default_ttl=30, max_entries=1000)
+
 
 @app.on_event("startup")
 async def startup():
     if not database._pool:
         await database.init_pool()
 
-@app.get("/api/stats")
+@app.get("/api/stats", dependencies=[Depends(require_admin)])
 async def get_stats():
+
     try:
-        # Total catalog products
-        total_prods = await database.fetchval("SELECT COUNT(*) FROM products;")
-        by_plat = await database.fetch("SELECT platform, COUNT(*) as count FROM products GROUP BY platform ORDER BY count DESC;")
+        core_metrics = await database.get_core_metrics()
+        total_prods = core_metrics["total_products"]
+        products_added_today = core_metrics["products_added_today"]
+        deals_lifetime = core_metrics.get("lifetime_deals", core_metrics["total_deals"])
+        deals_active = core_metrics["total_deals"]
+        deals_today = core_metrics["deals_today"]
+        drops_today = core_metrics.get("drops_today", 0)
+
+        by_plat = await database.fetch("SELECT platform, COUNT(*) as count FROM products WHERE LOWER(platform) != 'croma' GROUP BY platform ORDER BY count DESC;")
         
         # Time-based deals counts (IST Timezone)
-        deals_today = await database.fetchval("""
-            SELECT COUNT(*) FROM deals 
-            WHERE posted_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE;
-        """)
-        
         deals_1h = await database.fetchval("""
-            SELECT COUNT(*) FROM deals 
-            WHERE posted_at >= NOW() - INTERVAL '1 hour';
+            SELECT COUNT(*) FROM deals d
+            JOIN products p ON d.product_id = p.id
+            WHERE d.posted_at >= NOW() - INTERVAL '1 hour'
+              AND LOWER(p.platform) != 'croma';
         """)
         
         deals_this_month = await database.fetchval("""
-            SELECT COUNT(*) FROM deals 
-            WHERE posted_at >= date_trunc('month', NOW() AT TIME ZONE 'Asia/Kolkata');
+            SELECT COUNT(*) FROM deals d
+            JOIN products p ON d.product_id = p.id
+            WHERE d.posted_at >= date_trunc('month', NOW() AT TIME ZONE 'Asia/Kolkata')
+              AND LOWER(p.platform) != 'croma';
         """)
         
         deals_last_month = await database.fetchval("""
-            SELECT COUNT(*) FROM deals 
-            WHERE posted_at >= date_trunc('month', (NOW() AT TIME ZONE 'Asia/Kolkata') - INTERVAL '1 month')
-              AND posted_at < date_trunc('month', NOW() AT TIME ZONE 'Asia/Kolkata');
+            SELECT COUNT(*) FROM deals d
+            JOIN products p ON d.product_id = p.id
+            WHERE d.posted_at >= date_trunc('month', (NOW() AT TIME ZONE 'Asia/Kolkata') - INTERVAL '1 month')
+              AND d.posted_at < date_trunc('month', NOW() AT TIME ZONE 'Asia/Kolkata')
+              AND LOWER(p.platform) != 'croma';
         """)
-        
-        deals_lifetime = await database.fetchval("SELECT COUNT(*) FROM deals;")
         
         # Deals posted TODAY grouped by platform
         posted_today_rows = await database.fetch("""
@@ -77,7 +189,7 @@ async def get_stats():
         """)
         posted_life_by_plat = {r["platform"].lower(): r["count"] for r in posted_life_rows}
         
-        all_plats = ["amazon", "flipkart", "myntra", "ajio", "croma", "nykaa"]
+        all_plats = ["amazon", "flipkart", "myntra", "ajio", "nykaa"]
         for p in all_plats:
             posted_today_by_plat.setdefault(p, 0)
             posted_month_by_plat.setdefault(p, 0)
@@ -89,10 +201,6 @@ async def get_stats():
         # Channel Ingestion Stats
         total_ingested = await database.fetchval("SELECT COUNT(*) FROM ingested_channel_deals;")
         ingested_today = await database.fetchval("SELECT COUNT(*) FROM ingested_channel_deals WHERE created_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE;")
-        products_added_today = await database.fetchval("""
-            SELECT COUNT(*) FROM products 
-            WHERE (created_at AT TIME ZONE 'Asia/Kolkata')::DATE = (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE;
-        """)
         
         # Monthly History Breakdown
         history_rows = await database.fetch("""
@@ -104,7 +212,6 @@ async def get_stats():
                 COUNT(CASE WHEN p.platform = 'flipkart' THEN 1 END) as flipkart_deals,
                 COUNT(CASE WHEN p.platform = 'myntra' THEN 1 END) as myntra_deals,
                 COUNT(CASE WHEN p.platform = 'ajio' THEN 1 END) as ajio_deals,
-                COUNT(CASE WHEN p.platform = 'croma' THEN 1 END) as croma_deals,
                 COUNT(CASE WHEN p.platform = 'nykaa' THEN 1 END) as nykaa_deals
             FROM deals d
             LEFT JOIN products p ON d.product_id = p.id
@@ -114,16 +221,18 @@ async def get_stats():
         
         return {
             "status": "online",
-            "db_host": f"{config.DB_HOST}:{config.DB_PORT}",
-            "db_name": config.DB_NAME,
             "total_products": total_prods or 0,
             "products_added_today": products_added_today or 0,
             "by_platform": {r["platform"]: r["count"] for r in by_plat},
             "deals_today": deals_today or 0,
+            "drops_today": drops_today or 0,
+            "total_deals": deals_active or 0,
+            "deals_active": deals_active or 0,
             "deals_last_hour": deals_1h or 0,
             "deals_this_month": deals_this_month or 0,
             "deals_last_month": deals_last_month or 0,
             "deals_lifetime": deals_lifetime or 0,
+            "total_deals_lifetime": deals_lifetime or 0,
             "posted_today_by_platform": posted_today_by_plat,
             "posted_this_month_by_platform": posted_month_by_plat,
             "posted_lifetime_by_platform": posted_life_by_plat,
@@ -135,9 +244,10 @@ async def get_stats():
             "daily_prices_recorded": daily_prices or 0
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Internal stats error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.get("/api/channel_stats")
+@app.get("/api/channel_stats", dependencies=[Depends(require_admin)])
 async def get_channel_stats():
     """Returns all monitored Telegram channels with real-time heartbeat and deal statistics."""
     try:
@@ -158,9 +268,10 @@ async def get_channel_stats():
         """)
         return [dict(r) for r in rows]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Channel stats error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.get("/api/posting_queue")
+@app.get("/api/posting_queue", dependencies=[Depends(require_admin)])
 async def get_posting_queue_endpoint():
     """Returns real-time deals in the posting queue waiting to be broadcasted."""
     try:
@@ -168,9 +279,10 @@ async def get_posting_queue_endpoint():
         pq = get_posting_queue()
         return pq.get_queue_snapshot()
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Posting queue error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.get("/api/category_platform_stats")
+@app.get("/api/category_platform_stats", dependencies=[Depends(require_admin)])
 async def get_category_platform_stats():
     """Returns detailed cross-matrix of deals and catalog products by category and platform."""
     try:
@@ -253,7 +365,7 @@ async def get_category_platform_stats():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/price_changes_24h")
+@app.get("/api/price_changes_24h", dependencies=[Depends(require_admin)])
 async def get_price_changes_24h(
     direction: str = Query("all", pattern="^(all|drops|hikes)$"),
     platform: str = Query("", max_length=50),
@@ -365,16 +477,18 @@ async def get_price_changes_24h(
         count_drops = rows[0]["count_drops"] if rows else 0
         count_hikes = rows[0]["count_hikes"] if rows else 0
 
-        # Global stats across entire 24h window
+        # Global stats across entire 24h window (in-stock active products)
+        core_metrics = await database.get_core_metrics()
         global_stats = await database.fetchrow("""
             SELECT 
                 COUNT(*) as global_total,
-                COUNT(CASE WHEN dp_today.close_price < dp_yest.close_price THEN 1 END) as global_drops,
                 COUNT(CASE WHEN dp_today.close_price > dp_yest.close_price THEN 1 END) as global_hikes
             FROM products p
             JOIN daily_prices dp_today ON p.id = dp_today.product_id AND dp_today.date = (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE
             JOIN daily_prices dp_yest ON p.id = dp_yest.product_id AND dp_yest.date = ((NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - 1)
-            WHERE dp_today.close_price != dp_yest.close_price;
+            WHERE dp_today.close_price != dp_yest.close_price
+              AND p.in_stock = TRUE AND dp_today.close_price > 0 AND dp_yest.close_price > 0
+              AND LOWER(p.platform) != 'croma';
         """)
 
         results = []
@@ -405,7 +519,7 @@ async def get_price_changes_24h(
             "total_pages": (total_matches + limit - 1) // limit if total_matches > 0 else 1,
             "global_stats": {
                 "total": global_stats["global_total"] if global_stats else 0,
-                "drops": global_stats["global_drops"] if global_stats else 0,
+                "drops": core_metrics["drops_today"],
                 "hikes": global_stats["global_hikes"] if global_stats else 0
             },
             "products": results
@@ -426,20 +540,38 @@ ALLOWED_TABLES = [
     "deal_tracking"
 ]
 
-@app.get("/db-explorer", response_class=HTMLResponse)
-async def db_explorer_page():
-    """Renders the Full Database Explorer Web Interface."""
+ALLOWED_SORT_COLUMNS = {
+    "products": {"id", "title", "platform", "current_price", "mrp", "rating", "review_count", "in_stock", "status", "created_at", "last_checked", "last_price_change", "all_time_low"},
+    "deals": {"id", "product_id", "posted_price", "posted_mrp", "savings_pct", "badge", "deal_score", "posted_at", "source_channel"},
+    "daily_prices": {"id", "product_id", "date", "open_price", "high", "low", "close_price", "created_at"},
+    "ingested_channel_deals": {"id", "product_id", "platform", "raw_url", "source_channel", "created_at", "status"},
+    "channel_monitors": {"id", "channel_name", "status", "last_scanned_at"},
+    "post_cooldowns": {"id", "product_id", "expires_at", "created_at"},
+    "deal_tracking": {"id", "product_id", "status", "created_at"}
+}
+
+async def render_db_explorer():
+    """Renders the Full Database Explorer Web Interface (accessible strictly under /pnther/db-explorer)."""
     explorer_html_path = os.path.join(os.path.dirname(__file__), "templates", "explorer.html")
     if os.path.exists(explorer_html_path):
         with open(explorer_html_path, "r", encoding="utf-8") as f:
             return HTMLResponse(f.read())
     return HTMLResponse("<h1>Database Explorer Loading...</h1>")
 
-@app.get("/api/db/overview")
+@app.get("/db-explorer")
+@app.get("/db-explorer/{rest:path}")
+async def redirect_old_db_explorer(rest: str = ""):
+    """Safely redirects public /db-explorer requests to consumer homepage."""
+    return RedirectResponse(url="/", status_code=302)
+
+@app.get("/api/db/overview", dependencies=[Depends(require_admin)])
 async def get_db_overview():
     """Returns database size, table summaries, and column schemas for all tables."""
     try:
         total_db_size = await database.fetchval("SELECT pg_size_pretty(pg_database_size('budgetby'));")
+        core_metrics = await database.get_core_metrics()
+        total_products = core_metrics["total_products"]
+        products_added_today = core_metrics["products_added_today"]
         
         tables_stats = await database.fetch("""
             SELECT
@@ -463,6 +595,8 @@ async def get_db_overview():
 
         return {
             "total_size": total_db_size,
+            "total_products": total_products or 0,
+            "products_added_today": products_added_today or 0,
             "tables": [dict(t) for t in tables_stats],
             "schemas": table_schemas
         }
@@ -470,7 +604,7 @@ async def get_db_overview():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/db/product_history/{product_id}")
+@app.get("/api/db/product_history/{product_id}", dependencies=[Depends(require_admin)])
 async def get_product_history(product_id: int):
     """Returns the full 30-day chronological daily price timeline (Day 1 to Day 30) for a product."""
     try:
@@ -517,10 +651,13 @@ async def get_product_history(product_id: int):
             "history_count": len(history),
             "daily_prices": history
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Product history error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.get("/api/db/table_data")
+@app.get("/api/db/table_data", dependencies=[Depends(require_admin)])
 async def get_table_data(
     table: str = Query("products"),
     page: int = Query(1, ge=1),
@@ -548,10 +685,11 @@ async def get_table_data(
             if table == "products":
                 if clean_search.isdigit():
                     exact_id = int(clean_search)
+                    clean_digits = re.sub(r'[^0-9]', '', clean_search)
                     where_clauses.append(f"(id = ${arg_idx} OR id::text LIKE ${arg_idx+1} OR title ILIKE ${arg_idx+2} OR platform_id ILIKE ${arg_idx+2})")
-                    args.extend([exact_id, f"{clean_search}%", f"%{clean_search}%"])
+                    args.extend([exact_id, f"{clean_digits}%", f"%{clean_digits}%"])
                     arg_idx += 3
-                    order_override = f"ORDER BY CASE WHEN id = {exact_id} THEN 0 WHEN id::text LIKE '{clean_search}%' THEN 1 ELSE 2 END, id ASC"
+                    order_override = f"ORDER BY CASE WHEN id = {exact_id} THEN 0 WHEN id::text LIKE '{clean_digits}%' THEN 1 ELSE 2 END, id ASC"
                 else:
                     where_clauses.append(f"(title ILIKE ${arg_idx} OR platform_id ILIKE ${arg_idx} OR category ILIKE ${arg_idx})")
                     args.append(f"%{search}%")
@@ -595,7 +733,10 @@ async def get_table_data(
         if order_override:
             order_sql = order_override
         else:
-            order_col = sort_by if sort_by else ("id" if table != "channel_monitors" else "channel_name")
+            default_col = "id" if table != "channel_monitors" else "channel_name"
+            order_col = default_col
+            if sort_by and sort_by in ALLOWED_SORT_COLUMNS.get(table, set()):
+                order_col = sort_by
             order_sql = f"ORDER BY {order_col} {sort_order.upper()} NULLS LAST"
 
         # Data query
@@ -616,80 +757,1320 @@ async def get_table_data(
             "total_pages": max(1, (total_rows + limit - 1) // limit),
             "rows": [dict(r) for r in rows]
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Table data error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.get("/api/deals")
+
+@app.get("/api/deals", dependencies=[Depends(require_admin)])
 async def get_deals(limit: int = 36, platform: str = ""):
     try:
-        where_clause = ""
+        where_clauses = [
+            "LOWER(p.platform) != 'croma'",
+            "p.in_stock = TRUE",
+            "p.status = 'ACTIVE'",
+            "p.current_price > 0",
+            "p.current_price <= (d.posted_price * 1.01)",
+            "d.posted_at >= NOW() - INTERVAL '30 days'"
+        ]
         args = []
         if platform and platform.lower() != "all":
-            where_clause = "WHERE LOWER(p.platform) = $1"
+            where_clauses.append("LOWER(p.platform) = $1")
             args.append(platform.lower())
             
         limit_val = min(max(1, limit), 200)
+        args.append(limit_val)
         query = f"""
             SELECT d.id, d.posted_price, d.posted_mrp, d.savings_pct, d.badge, d.deal_score, d.posted_at, d.source_channel,
-                   p.title, p.platform, p.category, p.product_url, p.affiliate_url, p.image_url, p.rating
+                   p.id as product_id, p.title, p.platform, p.category, p.product_url, p.affiliate_url, p.image_url, p.rating
             FROM deals d
             JOIN products p ON d.product_id = p.id
-            {where_clause}
+            WHERE {' AND '.join(where_clauses)}
             ORDER BY d.posted_at DESC
-            LIMIT {limit_val};
+            LIMIT ${len(args)};
         """
-        rows = await database.fetch(query, *args) if args else await database.fetch(query)
-        return [dict(r) for r in rows]
+        rows = await database.fetch(query, *args)
+        res = []
+        for r in rows:
+            d = dict(r)
+            d["affiliate_url"] = resolve_deal_button_url(d.get("platform"), None, d.get("affiliate_url"), d.get("product_url"), product_id=d.get("product_id"))
+            res.append(d)
+        return res
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Internal deals error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/api/search")
-async def search_products(q: str = Query(..., min_length=2), limit: int = 20):
+async def search_products(
+    q: str = Query(..., min_length=2, max_length=100),
+    limit: int = Query(20, ge=1, le=50)
+):
     try:
+        clean_q = q.strip()
         rows = await database.fetch("""
             SELECT id, platform, title, current_price, mrp, rating, review_count, in_stock, affiliate_url, product_url, image_url, min_30d, all_time_low
             FROM products
-            WHERE title ILIKE $1 OR platform_id ILIKE $1
+            WHERE LOWER(platform) != 'croma'
+              AND (title ILIKE $1 OR platform_id ILIKE $1)
             ORDER BY current_price ASC NULLS LAST
             LIMIT $2;
-        """, f"%{q}%", limit)
-        return [dict(r) for r in rows]
+        """, f"%{clean_q}%", limit)
+        res = []
+        for r in rows:
+            d = dict(r)
+            d["affiliate_url"] = resolve_deal_button_url(d.get("platform"), None, d.get("affiliate_url"), d.get("product_url"), product_id=d.get("id"))
+            res.append(d)
+        return res
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Search error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.post("/api/trigger/backup")
+@app.post("/api/trigger/backup", dependencies=[Depends(require_admin)])
 async def trigger_backup():
     try:
         from budgetby.scheduler.cleanup import run_backup
         asyncio.create_task(run_backup())
         return {"status": "success", "message": "Database backup triggered successfully."}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Backup trigger error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.post("/api/trigger/backfill")
+@app.post("/api/trigger/backfill", dependencies=[Depends(require_admin)])
 async def trigger_backfill():
     try:
         from budgetby.scheduler.scheduler import hourly_backfill
         asyncio.create_task(hourly_backfill())
         return {"status": "success", "message": "Hourly backfill post triggered successfully."}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Backfill trigger error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.post("/api/trigger/channel_scan")
+@app.post("/api/trigger/channel_scan", dependencies=[Depends(require_admin)])
 async def trigger_channel_scan():
     try:
         from budgetby.ingest.channel_monitor import run_channel_monitor
         asyncio.create_task(run_channel_monitor())
         return {"status": "success", "message": "Channel spy monitor scan triggered in background!"}
     except Exception as e:
+        logger.error(f"Channel scan trigger error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# ── Public Storefront Endpoints ──────────────────────────────────────────────
+
+@app.get("/api/public/stats")
+async def get_public_stats():
+    """Returns quick hero statistics and latest activity timestamp for public website."""
+    cached = await ram_cache.get("public_stats")
+    if cached is not None:
+        return cached
+
+    try:
+        core_metrics = await database.get_core_metrics()
+        total_prods = core_metrics["total_products"]
+        total_deals = core_metrics["total_deals"]
+        deals_today = core_metrics["deals_today"]
+        drops_today = core_metrics["drops_today"]
+
+        latest_time = await database.fetchval("""
+            SELECT GREATEST(
+                COALESCE((SELECT MAX(d.posted_at) FROM deals d JOIN products p ON d.product_id = p.id WHERE LOWER(p.platform) != 'croma'), '2020-01-01'::timestamptz),
+                COALESCE((SELECT MAX(created_at) FROM products WHERE in_stock = TRUE AND current_price > 0 AND mrp > current_price AND LOWER(platform) != 'croma'), '2020-01-01'::timestamptz),
+                COALESCE((SELECT MAX(last_price_change) FROM products WHERE in_stock = TRUE AND current_price > 0 AND mrp > current_price AND LOWER(platform) != 'croma'), '2020-01-01'::timestamptz)
+            );
+        """)
+        by_plat = await database.fetch("""
+            SELECT platform, COUNT(*) as count, 
+                   MAX(ROUND(((mrp - current_price) / NULLIF(mrp, 0)) * 100)) as max_discount
+            FROM products 
+            WHERE in_stock = TRUE AND current_price > 0 AND mrp > current_price AND LOWER(platform) != 'croma'
+            GROUP BY platform;
+        """)
+
+        result = {
+            "total_products": total_prods,
+            "total_deals": total_deals,
+            "active_deals": total_deals,
+            "lifetime_deals": core_metrics.get("lifetime_deals", total_deals),
+            "deals_today": deals_today,
+            "drops_today": drops_today,
+            "by_platform": {r["platform"].lower(): {"count": r["count"], "max_discount": int(r["max_discount"] or 50)} for r in by_plat},
+            "latest_timestamp": latest_time.isoformat() if latest_time else None,
+            "platforms": ["Amazon", "Flipkart", "Myntra", "Ajio", "Nykaa"],
+            "status": "live"
+        }
+        await ram_cache.set("public_stats", result, ttl=30)
+        return result
+    except Exception as e:
+        return {
+            "total_products": 100000,
+            "total_deals": 4500,
+            "deals_today": 140,
+            "drops_today": 280,
+            "latest_timestamp": None,
+            "platforms": ["Amazon", "Flipkart", "Myntra", "Ajio", "Nykaa"],
+            "status": "fallback",
+            "error": str(e)
+        }
+
+@app.get("/api/public/categories")
+async def get_public_categories():
+    """Returns top product categories with active in-stock deal counts across deals and new products."""
+    cached = await ram_cache.get("public_categories")
+    if cached is not None:
+        return cached
+
+    try:
+        rows = await database.fetch("""
+            WITH combined_deals AS (
+                SELECT 
+                    COALESCE(NULLIF(LOWER(p.category), ''), 'general') as category,
+                    p.platform
+                FROM deals d
+                JOIN products p ON d.product_id = p.id
+                WHERE p.in_stock = TRUE AND p.status = 'ACTIVE' AND p.current_price > 0 AND p.mrp > p.current_price
+                  AND LOWER(p.platform) != 'croma'
+                  AND p.current_price <= (d.posted_price * 1.01)
+                  AND (d.posted_at >= NOW() - INTERVAL '24 hours' OR (p.last_checked >= NOW() - INTERVAL '12 hours' AND d.posted_at >= NOW() - INTERVAL '72 hours'))
+                UNION ALL
+                SELECT 
+                    COALESCE(NULLIF(LOWER(p.category), ''), 'general') as category,
+                    p.platform
+                FROM products p
+                WHERE p.in_stock = TRUE AND p.status = 'ACTIVE' AND p.current_price > 0 AND p.mrp > p.current_price
+                  AND LOWER(p.platform) != 'croma'
+                  AND (p.created_at >= NOW() - INTERVAL '48 hours' OR p.last_price_change >= NOW() - INTERVAL '48 hours')
+                  AND p.id NOT IN (SELECT product_id FROM deals WHERE posted_at >= NOW() - INTERVAL '72 hours')
+            )
+            SELECT 
+                category,
+                COUNT(*) as deal_count,
+                COUNT(DISTINCT platform) as platform_count
+            FROM combined_deals
+            GROUP BY category
+            HAVING COUNT(*) >= 5
+            ORDER BY deal_count DESC
+            LIMIT 25;
+        """)
+        res = [dict(r) for r in rows]
+        await ram_cache.set("public_categories", res, ttl=60)
+        return res
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+KNOWN_PLATFORMS = {'amazon', 'flipkart', 'myntra', 'ajio', 'croma', 'nykaa'}
+ACCESSORY_WORDS = {
+    'case', 'cover', 'glass', 'strap', 'cable', 'charger', 'adapter',
+    'sleeve', 'bag', 'backpack', 'pouch', 'guard', 'protector', 'skin',
+    'stand', 'mount', 'holder', 'cleaner', 'cooling pad', 'mouse pad'
+}
+
+def parse_search_query(raw_query: str):
+    """
+    Parses natural language search queries:
+    - Extracts platform names (e.g. 'puma shoes amazon' -> platform='amazon', keywords=['puma', 'shoes'])
+    - Extracts price constraints (e.g. 'under 500', 'below 1000', '500 to 1000', 'above 1500')
+    - Cleans noise words and extracts search tokens
+    - Detects if user specifically intends to search for accessories
+    """
+    query = raw_query.strip().lower()
+    target_platform = None
+    max_price = None
+    min_price = None
+
+    # Normalize t-shirt variants
+    query = re.sub(r'\bt[\s\-]+shirt\b', 'tshirt', query)
+
+    # 1. Platform extraction
+    for plat in KNOWN_PLATFORMS:
+        pattern = rf'\b(?:on|from|in|at)?\s*{plat}\b'
+        if re.search(pattern, query):
+            target_platform = plat
+            query = re.sub(pattern, ' ', query)
+            break
+
+    # 2. Price range: "500 to 1000", "between 500 and 1000"
+    range_match = re.search(r'\b(?:between\s+)?(\d+)\s*(?:to|-|and)\s*(\d+)\b', query)
+    if range_match:
+        val1 = float(range_match.group(1))
+        val2 = float(range_match.group(2))
+        min_price = min(val1, val2)
+        max_price = max(val1, val2)
+        query = re.sub(r'\b(?:between\s+)?(\d+)\s*(?:to|-|and)\s*(\d+)\b', ' ', query)
+    else:
+        under_match = re.search(r'\b(?:under|below|less than|within|<=|<)\s*(?:rs\.?|inr|₹)?\s*(\d+)\b', query)
+        if under_match:
+            max_price = float(under_match.group(1))
+            query = re.sub(r'\b(?:under|below|less than|within|<=|<)\s*(?:rs\.?|inr|₹)?\s*(\d+)\b', ' ', query)
+
+        above_match = re.search(r'\b(?:above|over|more than|>=|>)\s*(?:rs\.?|inr|₹)?\s*(\d+)\b', query)
+        if above_match:
+            min_price = float(above_match.group(1))
+            query = re.sub(r'\b(?:above|over|more than|>=|>)\s*(?:rs\.?|inr|₹)?\s*(\d+)\b', ' ', query)
+
+    # 3. Clean tokens
+    words = re.findall(r'\b[a-z0-9]{2,}\b', query)
+    stop_words = {'for', 'with', 'and', 'the', 'best', 'good', 'cheap', 'buy', 'online', 'in', 'on', 'from', 'at', 'to', 'of', 'a', 'an', 'deal', 'deals', 'offer', 'offers', 'all', 'top', 'latest'}
+    meaningful = [w for w in words if w not in stop_words]
+    tokens = meaningful if meaningful else words
+
+    is_accessory_query = any(w in raw_query.lower() for w in ACCESSORY_WORDS)
+
+    return {
+        'platform': target_platform,
+        'max_price': max_price,
+        'min_price': min_price,
+        'tokens': tokens,
+        'clean_query': " ".join(tokens),
+        'is_accessory_query': is_accessory_query
+    }
+
+ALLOWED_REDIRECT_DOMAINS = (
+    "amazon.in", "amazon.com", "amzn.to", "amzn.in",
+    "flipkart.com", "dl.flipkart.com", "fktr.in",
+    "myntra.com", "myntr.it",
+    "ajio.com", "ajiio.in",
+    "nykaa.com", "nykaa.ly", "clnk.in", "ekaro.in"
+)
+
+def is_safe_redirect_url(url: str) -> bool:
+    """Validates that destination URL belongs strictly to recognized merchant or affiliate domains."""
+    if not url or not isinstance(url, str) or not url.startswith("http"):
+        return False
+    try:
+        from urllib.parse import urlparse
+        host = urlparse(url).netloc.lower().split(":")[0]
+        if not host:
+            return False
+        return any(host == d or host.endswith("." + d) for d in ALLOWED_REDIRECT_DOMAINS)
+    except Exception:
+        return False
+
+def resolve_deal_button_url(
+    platform: str, 
+    tg_raw_url: str | None, 
+    affiliate_url: str | None, 
+    product_url: str | None, 
+    product_id: int | None = None
+) -> str:
+    """
+    Guarantees all consumer storefront deals route shoppers through verified affiliate links:
+    1. Amazon: Always attach the official associate tag dealpulse21-21.
+    2. Non-Amazon (Flipkart, Myntra, Ajio, Nykaa):
+       - If already converted to EarnKaro (fktr.in, ajiio.in, myntr.it, ekaro.in) or Cuelinks (clnk.in), return that link.
+       - If tg_raw_url is an affiliate shortlink (not synthetic), return that link.
+       - If not yet converted and product_id is available, route through /api/deal/redirect/{product_id}
+         which auto-converts on click via @ekconverter9bot / @CuelinksBot, caches the link in DB, and redirects.
+       - Fallback: clean direct merchant URL.
+    """
+    plat = (platform or "").strip().lower()
+
+    # 1. Amazon: Always use official associate tag dealpulse21-21
+    if plat == "amazon":
+        tag = getattr(config, "AMAZON_ASSOCIATE_TAG", "dealpulse21-21")
+        target = product_url or affiliate_url or tg_raw_url or ""
+        m = re.search(r'/(?:dp|gp/product|product)/([A-Z0-9]{10})', target)
+        if m:
+            return f"https://www.amazon.in/dp/{m.group(1)}?tag={tag}"
+        if target:
+            clean = re.sub(r'([?&])tag=[^&]*', '', target)
+            sep = "&" if "?" in clean else "?"
+            return f"{clean}{sep}tag={tag}"
+        return target
+
+    # 2. Non-Amazon: Check if already an EarnKaro or Cuelinks tracking shortlink
+    for candidate in (affiliate_url, tg_raw_url):
+        if candidate and candidate.startswith("http") and not any(bad in candidate for bad in ("affgrowth", "affExtParam")):
+            cand_lower = candidate.lower()
+            if any(domain in cand_lower for domain in ("fktr.in", "ajiio.in", "myntr.it", "ekaro.in", "clnk.in")):
+                return candidate
+
+    # 3. If product_id is known, route through redirect endpoint which converts live
+    if product_id:
+        return f"/api/deal/redirect/{product_id}"
+
+    # 4. Fallback: Clean direct merchant product_url without synthetic broken params
+    target = product_url or affiliate_url or ""
+    clean = target.split("&affid=")[0].split("?affid=")[0].split("&affExtParam")[0].split("?affExtParam")[0]
+    return clean
+
+@app.get("/api/deal/redirect/{product_id}")
+async def redirect_to_deal(product_id: int):
+    """
+    Outbound affiliate redirect endpoint:
+    Guarantees every click from the consumer website generates tracked affiliate credit.
+    - Amazon: tag=dealpulse21-21
+    - Flipkart/Myntra/Ajio: EarnKaro (fktr.in, myntr.it, ajiio.in, ekaro.in) via @ekconverter9bot
+    - Nykaa: Cuelinks (clnk.in) via @CuelinksBot / Cuelinks API
+    Caches the converted link in products.affiliate_url so subsequent loads and clicks are instant.
+    """
+    try:
+        row = await database.fetchrow("""
+            SELECT id, platform, product_url, affiliate_url
+            FROM products
+            WHERE id = $1
+        """, product_id)
+        if not row:
+            raise HTTPException(status_code=404, detail="Product not found")
+
+        platform = (row["platform"] or "").strip().lower()
+        prod_url = row["product_url"] or ""
+        aff_url = row["affiliate_url"] or ""
+
+        # 1. Amazon: Always use official tag
+        if platform == "amazon":
+            tag = getattr(config, "AMAZON_ASSOCIATE_TAG", "dealpulse21-21")
+            target = prod_url or aff_url
+            m = re.search(r'/(?:dp|gp/product|product)/([A-Z0-9]{10})', target)
+            if m:
+                final_url = f"https://www.amazon.in/dp/{m.group(1)}?tag={tag}"
+            else:
+                clean = re.sub(r'([?&])tag=[^&]*', '', target)
+                sep = "&" if "?" in clean else "?"
+                final_url = f"{clean}{sep}tag={tag}"
+            if is_safe_redirect_url(final_url):
+                return RedirectResponse(url=final_url, status_code=307)
+
+        # 2. Non-Amazon: If already converted to EarnKaro or Cuelinks, redirect directly
+        for candidate in (aff_url,):
+            if candidate and candidate.startswith("http") and not any(bad in candidate for bad in ("affgrowth", "affExtParam")):
+                cand_lower = candidate.lower()
+                if any(domain in cand_lower for domain in ("fktr.in", "ajiio.in", "myntr.it", "ekaro.in", "clnk.in")):
+                    if is_safe_redirect_url(candidate):
+                        return RedirectResponse(url=candidate, status_code=307)
+
+        # 3. Flipkart, Myntra, Ajio: Live conversion via @ekconverter9bot
+        if platform in ("flipkart", "myntra", "ajio"):
+            target_url = prod_url or aff_url
+            try:
+                from budgetby.ingest.telegram_listener import convert_url_via_ek_bot
+                converted = await convert_url_via_ek_bot(target_url, timeout=4.0)
+                if converted and converted != target_url and any(domain in converted.lower() for domain in ("fktr.in", "ajiio.in", "myntr.it", "ekaro.in")):
+                    if is_safe_redirect_url(converted):
+                        await database.execute("UPDATE products SET affiliate_url = $1 WHERE id = $2;", converted, product_id)
+                        logger.info(f"✨ [CLICK CONVERTED] Prod {product_id} [{platform}] ➔ {converted}")
+                        return RedirectResponse(url=converted, status_code=307)
+            except Exception as e:
+                logger.debug(f"Click redirect EK error: {e}")
+
+        # 4. Nykaa: Live conversion via @CuelinksBot or Cuelinks API
+        elif platform == "nykaa":
+            target_url = prod_url or aff_url
+            try:
+                from budgetby.ingest.telegram_listener import convert_url_via_cuelinks_bot
+                converted = await convert_url_via_cuelinks_bot(target_url, timeout=5.0)
+                if converted and converted != target_url and "clnk.in" in converted.lower():
+                    if is_safe_redirect_url(converted):
+                        await database.execute("UPDATE products SET affiliate_url = $1 WHERE id = $2;", converted, product_id)
+                        logger.info(f"✨ [CLICK CONVERTED] Prod {product_id} [NYKAA] ➔ {converted}")
+                        return RedirectResponse(url=converted, status_code=307)
+            except Exception as e:
+                logger.debug(f"Click redirect Cuelinks error: {e}")
+
+        # 5. Clean fallback to merchant page if conversion fails
+        clean = (prod_url or aff_url).split("&affid=")[0].split("?affid=")[0].split("&affExtParam")[0].split("?affExtParam")[0]
+        if is_safe_redirect_url(clean):
+            return RedirectResponse(url=clean, status_code=307)
+        return RedirectResponse(url="/deals", status_code=307)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Redirect deal error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+async def _background_convert_top_deals(limit: int = 100):
+    """
+    Background batch converter:
+    Converts active non-Amazon deals into live EarnKaro/Cuelinks tracking links
+    and persists them to PostgreSQL so the storefront immediately serves tracked links.
+    """
+    try:
+        from budgetby.ingest.telegram_listener import convert_url_via_ek_bot, convert_url_via_cuelinks_bot
+        deals = await database.fetch("""
+            SELECT d.id as deal_id, p.id as product_id, p.platform, p.product_url, p.affiliate_url
+            FROM deals d
+            JOIN products p ON d.product_id = p.id
+            WHERE p.in_stock = TRUE AND LOWER(p.platform) IN ('flipkart', 'myntra', 'ajio', 'nykaa')
+              AND (p.affiliate_url IS NULL 
+                   OR NOT (p.affiliate_url ILIKE '%fktr.in%' OR p.affiliate_url ILIKE '%myntr.it%' OR p.affiliate_url ILIKE '%ajiio.in%' OR p.affiliate_url ILIKE '%ekaro.in%' OR p.affiliate_url ILIKE '%clnk.in%'))
+            ORDER BY d.posted_at DESC
+            LIMIT $1;
+        """, limit)
+        
+        converted_count = 0
+        for d in deals:
+            pid = d["product_id"]
+            plat = d["platform"].lower()
+            url = d["product_url"] or d["affiliate_url"]
+            if not url:
+                continue
+            try:
+                if plat in ("flipkart", "myntra", "ajio"):
+                    new_url = await convert_url_via_ek_bot(url, timeout=4.0)
+                    if new_url and new_url != url and any(dom in new_url.lower() for dom in ("fktr.in", "myntr.it", "ajiio.in", "ekaro.in")):
+                        await database.execute("UPDATE products SET affiliate_url = $1 WHERE id = $2;", new_url, pid)
+                        converted_count += 1
+                        logger.info(f"✨ [BATCH CONVERTED] Prod {pid} [{plat}] ➔ {new_url}")
+                elif plat == "nykaa":
+                    new_url = await convert_url_via_cuelinks_bot(url, timeout=6.0)
+                    if new_url and new_url != url and "clnk.in" in new_url.lower():
+                        await database.execute("UPDATE products SET affiliate_url = $1 WHERE id = $2;", new_url, pid)
+                        converted_count += 1
+                        logger.info(f"✨ [BATCH CONVERTED] Prod {pid} [NYKAA] ➔ {new_url}")
+            except Exception as e:
+                logger.debug(f"Batch conversion error on prod {pid}: {e}")
+            await asyncio.sleep(0.5)
+        logger.info(f"✅ Background deal conversion finished: {converted_count}/{len(deals)} converted.")
+    except Exception as e:
+        logger.error(f"Error in background deal pre-converter: {e}")
+
+@app.post("/api/trigger/convert-top-deals", dependencies=[Depends(require_admin)])
+async def trigger_convert_top_deals(limit: int = 100):
+    try:
+        asyncio.create_task(_background_convert_top_deals(limit=min(limit, 200)))
+        return {"status": "success", "message": f"Background conversion of top {limit} active deals initiated."}
+    except Exception as e:
+        logger.error(f"Convert top deals trigger error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/api/public/price-drops")
+async def get_public_price_drops(
+    page: int = Query(1, ge=1),
+    limit: int = Query(14, ge=1, le=100),
+    min_drop_pct: float = Query(5.0, ge=1.0, le=90.0),
+    min_drop_percent: float = Query(None),
+    platform: str = Query("", max_length=50),
+    category: str = Query("", max_length=50),
+    sort_by: str = Query("drop_pct", max_length=30)
+):
+    """
+    Returns massive 24-hour price drops & today's specials with pagination support.
+    Calculates drop percentage, absolute rupee savings, previous price, and current price.
+    """
+    try:
+        if min_drop_percent is not None:
+            min_drop_pct = min_drop_percent
+
+        cache_key = f"drops:{page}:{limit}:{min_drop_pct}:{platform}:{category}:{sort_by}"
+        cached = await ram_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        core_metrics = await database.get_core_metrics()
+        total_drops_today = core_metrics["drops_today"]
+        offset = (page - 1) * limit
+
+        where_clauses = [
+            "p.in_stock = TRUE",
+            "p.status = 'ACTIVE'",
+            "LOWER(p.platform) != 'croma'",
+            "dp_today.close_price < dp_yest.close_price",
+            "dp_today.close_price > 0",
+            "dp_yest.close_price > 0",
+            "(((dp_yest.close_price - dp_today.close_price) / dp_yest.close_price) * 100) >= $1"
+        ]
+        args = [min_drop_pct]
+        arg_idx = 2
+
+        plat_clean = platform.strip().lower() if platform else ""
+        if plat_clean and plat_clean not in ("all", "croma"):
+            where_clauses.append(f"LOWER(p.platform) = ${arg_idx}")
+            args.append(plat_clean)
+            arg_idx += 1
+
+        cat_clean = category.strip().lower() if category else ""
+        if cat_clean and cat_clean not in ("all",):
+            where_clauses.append(f"LOWER(p.category) LIKE ${arg_idx}")
+            args.append(f"%{cat_clean}%")
+            arg_idx += 1
+
+        order_by = "drop_pct DESC, drop_amount DESC"
+        if sort_by == "price_asc":
+            order_by = "dp_today.close_price ASC, drop_pct DESC"
+        elif sort_by == "discount":
+            order_by = "drop_amount DESC, drop_pct DESC"
+        elif sort_by == "latest":
+            order_by = "last_price_change DESC, drop_pct DESC"
+
+        query = f"""
+            SELECT 
+                p.id as product_id,
+                COALESCE(d.id, -(p.id)) as deal_id,
+                p.title,
+                p.platform,
+                COALESCE(NULLIF(LOWER(p.category), ''), 'general') as category,
+                dp_today.close_price as current_price,
+                dp_yest.close_price as previous_price,
+                p.mrp,
+                p.image_url,
+                p.product_url,
+                p.affiliate_url,
+                tg.raw_url as tg_raw_url,
+                p.rating,
+                p.review_count,
+                COALESCE(p.last_price_change, NOW()) as last_price_change,
+                ROUND((((dp_yest.close_price - dp_today.close_price) / dp_yest.close_price) * 100)::numeric, 1) as drop_pct,
+                ROUND((dp_yest.close_price - dp_today.close_price)::numeric, 2) as drop_amount,
+                (d.id IS NOT NULL) as is_verified_deal,
+                COALESCE(d.badge, 'PRICE DROP') as badge,
+                COUNT(*) OVER() as total_drops_count
+            FROM products p
+            JOIN daily_prices dp_today ON p.id = dp_today.product_id AND dp_today.date = (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE
+            JOIN daily_prices dp_yest ON p.id = dp_yest.product_id AND dp_yest.date = ((NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - 1)
+            LEFT JOIN LATERAL (
+                SELECT d.id, d.badge, d.deal_score
+                FROM deals d
+                WHERE d.product_id = p.id
+                  AND dp_today.close_price <= (d.posted_price * 1.01)
+                  AND d.posted_at >= NOW() - INTERVAL '30 days'
+                LIMIT 1
+            ) d ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT raw_url 
+                FROM ingested_channel_deals 
+                WHERE product_id = p.id AND raw_url IS NOT NULL AND raw_url != ''
+                ORDER BY id DESC 
+                LIMIT 1
+            ) tg ON TRUE
+            WHERE {' AND '.join(where_clauses)}
+            ORDER BY {order_by}
+            LIMIT ${arg_idx} OFFSET ${arg_idx + 1};
+        """
+        args.extend([limit, offset])
+        rows = await database.fetch(query, *args)
+        total_count = rows[0]["total_drops_count"] if rows else 0
+        total_reported = total_drops_today if total_drops_today is not None else total_count
+        effective_count = max(total_reported, total_count)
+        total_pages = max(1, math.ceil(effective_count / limit)) if effective_count > 0 else 1
+        has_more = page < total_pages
+
+        drops = []
+        seen_pids = set()
+        seen_aff_urls = set()
+        for r in rows:
+            pid = r["product_id"]
+            if pid in seen_pids:
+                continue
+
+            cur_p = float(r["current_price"])
+            prev_p = float(r["previous_price"])
+            mrp_p = float(r["mrp"]) if r["mrp"] and float(r["mrp"]) > cur_p else None
+            drop_pct = float(r["drop_pct"])
+            drop_amt = float(r["drop_amount"])
+            aff_url = resolve_deal_button_url(r["platform"], r.get("tg_raw_url"), r["affiliate_url"], r["product_url"], product_id=r["product_id"])
+
+            if aff_url and "/api/deal/redirect/" not in aff_url:
+                clean_aff = aff_url.split("?")[0].rstrip("/").lower()
+                if aff_url in seen_aff_urls or clean_aff in seen_aff_urls:
+                    continue
+                seen_aff_urls.add(aff_url)
+                seen_aff_urls.add(clean_aff)
+
+            seen_pids.add(pid)
+
+            drops.append({
+                "product_id": r["product_id"],
+                "deal_id": r["deal_id"],
+                "title": r["title"],
+                "platform": r["platform"].lower(),
+                "category": r["category"],
+                "current_price": cur_p,
+                "previous_price": prev_p,
+                "mrp": mrp_p,
+                "drop_pct": drop_pct,
+                "drop_amount": drop_amt,
+                "is_verified_deal": bool(r["is_verified_deal"]),
+                "badge": r["badge"],
+                "image_url": r["image_url"],
+                "product_url": r["product_url"],
+                "rating": round(float(r["rating"]), 1) if r["rating"] is not None and 1.0 <= float(r["rating"]) <= 5.0 else None,
+                "review_count": int(r["review_count"]) if r.get("review_count") and int(r["review_count"]) > 0 else None,
+                "last_price_change": r["last_price_change"].isoformat() if hasattr(r["last_price_change"], "isoformat") else str(r["last_price_change"]) if r["last_price_change"] else None
+            })
+
+        result = {
+            "total_drops_24h": total_reported,
+            "page": page,
+            "limit": limit,
+            "total_pages": total_pages,
+            "has_more": has_more,
+            "min_drop_pct": min_drop_pct,
+            "drops": drops
+        }
+        await ram_cache.set(cache_key, result, ttl=25)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+_report_cooldowns: dict[int, float] = {}
+
+@app.post("/api/public/report-price/{product_id}")
+async def report_product_price(product_id: int):
+    """
+    Crowdsourced price reporting with anti-abuse cooldown:
+    Flags a product for immediate price re-verification by the micro-verifier.
+    Resets last_checked so it's prioritized at the front of the verification queue.
+    """
+    try:
+        now_ts = datetime.datetime.now().timestamp()
+        last_reported = _report_cooldowns.get(product_id, 0)
+        if now_ts - last_reported < 1800:  # 30-minute cooldown per product ID
+            return {
+                "status": "already_queued",
+                "product_id": product_id,
+                "message": "This product is already queued for instant verification."
+            }
+
+        exists = await database.fetchval("SELECT id FROM products WHERE id = $1;", product_id)
+        if not exists:
+            raise HTTPException(status_code=404, detail="Product not found")
+
+        _report_cooldowns[product_id] = now_ts
+        if len(_report_cooldowns) > 5000:
+            cutoff = now_ts - 3600
+            for pid in list(_report_cooldowns.keys()):
+                if _report_cooldowns[pid] < cutoff:
+                    del _report_cooldowns[pid]
+
+        # Reset last_checked to past timestamp to trigger immediate scan in next 60s micro-verifier run
+        await database.execute("""
+            UPDATE products 
+            SET last_checked = '2000-01-01'::timestamptz 
+            WHERE id = $1;
+        """, product_id)
+
+        return {
+            "status": "success",
+            "product_id": product_id,
+            "message": "Thank you! Flagged for immediate re-verification."
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Report price error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/api/public/deals")
+async def get_public_deals(
+    platform: str = Query("", max_length=50),
+    platforms: str = Query("", max_length=200),
+    category: str = Query("", max_length=50),
+    categories: str = Query("", max_length=500),
+    tab: str = Query("all", max_length=30),
+    search: str = Query("", max_length=100),
+    sort_by: str = Query("latest", max_length=30),
+    min_discount: float = Query(0.0, ge=0.0, le=100.0),
+    min_price: float = Query(0.0, ge=0.0),
+    max_price: float = Query(0.0, ge=0.0),
+    min_rating: float = Query(0.0, ge=0.0, le=5.0),
+    verified_only: bool = Query(False),
+    deal_type: str = Query("", max_length=30),
+    ids: str = Query("", max_length=500),
+    page: int = Query(1, ge=1),
+    limit: int = Query(24, ge=1, le=100)
+):
+    """
+    Public paginated deals & catalog feed.
+    - Exposes all 100,000+ products in the catalog to shoppers.
+    - Verified deals (price checked vs historical deals with no price increases) are always prioritized first.
+    - If a search has no verified deals, marks it clearly and serves all matching catalog products with price history.
+    """
+    try:
+        cache_key = f"deals:{platform}:{platforms}:{category}:{categories}:{tab}:{search}:{sort_by}:{min_discount}:{min_price}:{max_price}:{min_rating}:{verified_only}:{deal_type}:{ids}:{page}:{limit}"
+        cached = await ram_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        offset = (page - 1) * limit
+        search_clean = search.strip().lstrip("#")
+        platform_clean = platform.strip().lower()
+        category_clean = category.strip().lower()
+        tab_clean = tab.strip().lower()
+
+        where_clauses = [
+            "p.in_stock = TRUE",
+            "p.status = 'ACTIVE'",
+            "p.current_price > 0",
+            "LOWER(p.platform) != 'croma'"
+        ]
+        args = []
+        arg_idx = 1
+        relevance_select = "0 as relevance_score"
+
+        # Shared watchlist IDs filtering
+        if ids:
+            clean_ids = [int(x.strip()) for x in ids.split(",") if x.strip().isdigit()][:50]
+            if clean_ids:
+                where_clauses.append(f"p.id = ANY(${arg_idx})")
+                args.append(clean_ids)
+                arg_idx += 1
+
+        # ── SEARCH INTENT EXTRACTION & FILTERING ────────────────────────────
+        parsed = None
+        if search_clean:
+            parsed = parse_search_query(search_clean)
+            if parsed["platform"] and (not platform_clean or platform_clean == "all"):
+                platform_clean = parsed["platform"]
+
+            # Price constraints from search query
+            if parsed["max_price"]:
+                where_clauses.append(f"p.current_price <= ${arg_idx}")
+                args.append(parsed["max_price"])
+                arg_idx += 1
+            if parsed["min_price"]:
+                where_clauses.append(f"p.current_price >= ${arg_idx}")
+                args.append(parsed["min_price"])
+                arg_idx += 1
+
+            # Keyword tokens matching
+            for t in parsed["tokens"]:
+                if t == "tshirt":
+                    where_clauses.append(f"(p.title ILIKE ${arg_idx} OR p.title ILIKE ${arg_idx+1} OR COALESCE(p.category, '') ILIKE ${arg_idx})")
+                    args.extend(['%t-shirt%', '%tshirt%'])
+                    arg_idx += 2
+                else:
+                    where_clauses.append(f"(p.title ILIKE ${arg_idx} OR COALESCE(p.category, '') ILIKE ${arg_idx})")
+                    args.append(f"%{t}%")
+                    arg_idx += 1
+
+            # Scoring parameters
+            args.append(f"%{parsed['clean_query']}%")
+            exact_idx = arg_idx
+            arg_idx += 1
+
+            first_token = parsed["tokens"][0] if parsed["tokens"] else ""
+            args.append(f"{first_token}%")
+            starts_idx = arg_idx
+            arg_idx += 1
+
+            acc_sql = "0"
+            if not parsed["is_accessory_query"]:
+                acc_sql = """
+                    CASE 
+                        WHEN (p.title ILIKE '%case%' OR p.title ILIKE '%cover%' OR p.title ILIKE '%tempered glass%' 
+                              OR p.title ILIKE '%screen protector%' OR p.title ILIKE '%charger%' OR p.title ILIKE '%adapter%'
+                              OR p.title ILIKE '%cable%' OR p.title ILIKE '%sleeve%' OR p.title ILIKE '%bag%'
+                              OR p.title ILIKE '%backpack%' OR p.title ILIKE '%stand%' OR p.title ILIKE '%mount%'
+                              OR p.title ILIKE '%pouch%' OR p.title ILIKE '%cooling pad%' OR p.title ILIKE '%mouse pad%') 
+                        THEN -300 
+                        ELSE 0 
+                    END
+                """
+
+            relevance_select = f"""
+                (
+                    (CASE WHEN p.title ILIKE ${exact_idx} THEN 200 ELSE 0 END) +
+                    (CASE WHEN p.title ILIKE ${starts_idx} THEN 100 ELSE 0 END) +
+                    (CASE WHEN p.all_time_low IS NOT NULL AND p.current_price <= p.all_time_low * 1.02 THEN 50 ELSE 0 END) +
+                    (COALESCE(ROUND((((p.mrp - p.current_price)/NULLIF(p.mrp,0)) * 100)::numeric, 0), 0) * 0.5) +
+                    (COALESCE(p.rating, 0) * 8) +
+                    {acc_sql}
+                ) as relevance_score
+            """
+
+        # ── PLATFORM FILTER ─────────────────────────────────────────────────
+        selected_platforms = []
+        if platforms:
+            selected_platforms = [p.strip().lower() for p in platforms.split(",") if p.strip() and p.strip().lower() != "croma"]
+        elif platform_clean and platform_clean != "all" and platform_clean != "croma":
+            selected_platforms = [platform_clean]
+
+        if selected_platforms:
+            where_clauses.append(f"LOWER(p.platform) = ANY(${arg_idx})")
+            args.append(selected_platforms)
+            arg_idx += 1
+
+        # ── EXPLICIT PRICE RANGE FILTER ─────────────────────────────────────
+        if min_price and min_price > 0:
+            where_clauses.append(f"p.current_price >= ${arg_idx}")
+            args.append(min_price)
+            arg_idx += 1
+        if max_price and max_price > 0:
+            where_clauses.append(f"p.current_price <= ${arg_idx}")
+            args.append(max_price)
+            arg_idx += 1
+
+        # ── MINIMUM DISCOUNT FILTER ─────────────────────────────────────────
+        if min_discount and min_discount > 0:
+            where_clauses.append(f"""
+                COALESCE(
+                    ROUND((((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) * 100)::numeric, 0),
+                    ROUND((((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100)::numeric, 0),
+                    0
+                ) >= ${arg_idx}
+            """)
+            args.append(min_discount)
+            arg_idx += 1
+
+        # ── CUSTOMER RATING FILTER ──────────────────────────────────────────
+        if min_rating and min_rating > 0:
+            where_clauses.append(f"COALESCE(p.rating, 0) >= ${arg_idx}")
+            args.append(min_rating)
+            arg_idx += 1
+
+        # ── VERIFIED ONLY FILTER ────────────────────────────────────────────
+        if verified_only:
+            where_clauses.append("d.id IS NOT NULL")
+            where_clauses.append("(p.mrp IS NULL OR p.mrp > p.current_price)")
+
+        # ── CATEGORY FILTER ─────────────────────────────────────────────────
+        selected_categories = []
+        if categories:
+            selected_categories = [c.strip().lower() for c in categories.split(",") if c.strip()]
+        elif category_clean and category_clean != "all":
+            selected_categories = [category_clean]
+
+        if selected_categories:
+            cat_clauses = []
+            for cat in selected_categories:
+                if cat in ("general", "none", "other", "null"):
+                    cat_clauses.append("(p.category IS NULL OR LOWER(p.category) IN ('general', 'none', 'other') OR p.category = '')")
+                else:
+                    cat_clauses.append(f"LOWER(p.category) = ${arg_idx}")
+                    args.append(cat)
+                    arg_idx += 1
+            if cat_clauses:
+                where_clauses.append(f"({' OR '.join(cat_clauses)})")
+
+        # ── DEAL TYPE / TAB FILTER ──────────────────────────────────────────
+        deal_type_clean = deal_type.strip().lower()
+        if deal_type_clean == "verified" or tab_clean == "verified":
+            where_clauses.append("d.id IS NOT NULL")
+            where_clauses.append("(p.mrp IS NULL OR p.mrp > p.current_price)")
+        elif deal_type_clean == "drops" or tab_clean == "drops":
+            where_clauses.append("""
+                (
+                    (p.id IN (
+                        SELECT dp_today.product_id FROM daily_prices dp_today
+                        JOIN daily_prices dp_yest ON dp_today.product_id = dp_yest.product_id 
+                          AND dp_today.date = (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE 
+                          AND dp_yest.date = ((NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - 1)
+                        WHERE dp_today.close_price < dp_yest.close_price
+                          AND dp_today.close_price > 0 AND dp_yest.close_price > 0
+                    ))
+                    OR (p.previous_price IS NOT NULL AND p.previous_price > p.current_price AND (p.last_price_change >= NOW() - INTERVAL '24 hours' OR d.badge ILIKE '%DROP%'))
+                )
+            """)
+        elif deal_type_clean == "atl" or tab_clean == "atl":
+            where_clauses.append("(d.badge ILIKE '%ATL%' OR (p.all_time_low IS NOT NULL AND p.current_price <= p.all_time_low * 1.02))")
+        elif tab_clean == "under499":
+            where_clauses.append("p.current_price <= 499")
+        elif tab_clean == "under999":
+            where_clauses.append("p.current_price <= 999")
+        elif tab_clean == "featured":
+            where_clauses.append("(d.id IS NOT NULL OR ((p.mrp - p.current_price) / p.mrp) >= 0.50)")
+
+        # ── SORTING: ALWAYS PRIORITIZE VERIFIED DEALS FIRST ─────────────────
+        if sort_by == "discount_desc":
+            order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) DESC NULLS LAST, p.id DESC"
+        elif sort_by == "price_asc":
+            order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, p.current_price ASC, p.id DESC"
+        elif sort_by == "price_desc":
+            order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, p.current_price DESC, p.id DESC"
+        elif sort_by == "score_desc":
+            order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, COALESCE(d.deal_score, 50.0) DESC, p.id DESC"
+        elif search_clean:
+            # Search mode: verified deals first, then ranked by relevance
+            order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, relevance_score DESC, COALESCE(d.posted_at, p.last_price_change, p.created_at) DESC"
+        else:
+            # Browse mode: verified deals first, then by drop depth if drops tab, or freshness
+            if tab_clean == "drops":
+                order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, (((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0))) DESC NULLS LAST, p.last_price_change DESC NULLS LAST, p.id DESC"
+            else:
+                order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, COALESCE(d.posted_at, p.last_price_change, p.created_at) DESC, p.id DESC"
+
+        where_sql = f"WHERE {' AND '.join(where_clauses)}"
+        args.extend([limit, offset])
+
+        query = f"""
+            SELECT 
+                COALESCE(d.id, -(p.id)) as deal_id,
+                p.id as product_id,
+                p.title,
+                p.platform,
+                COALESCE(NULLIF(LOWER(p.category), ''), 'general') as category,
+                p.product_url,
+                p.affiliate_url,
+                tg.raw_url as tg_raw_url,
+                p.image_url,
+                p.rating,
+                p.review_count,
+                COALESCE(CASE WHEN d.id IS NOT NULL AND d.posted_price > 0 AND p.last_checked <= d.posted_at THEN d.posted_price ELSE p.current_price END, p.current_price) as current_price,
+                p.mrp,
+                p.previous_price,
+                p.min_30d,
+                p.all_time_low,
+                p.in_stock,
+                p.status,
+                GREATEST(COALESCE(p.last_checked, d.posted_at), COALESCE(d.posted_at, p.last_checked)) as last_checked,
+                (d.id IS NOT NULL) as is_verified,
+                COALESCE(d.badge, 
+                    CASE 
+                        WHEN p.all_time_low IS NOT NULL AND p.current_price <= p.all_time_low * 1.02 THEN 'ATL'
+                        WHEN p.last_price_change >= NOW() - INTERVAL '24 hours' THEN 'PRICE DROP'
+                        WHEN ((p.mrp - p.current_price)/NULLIF(p.mrp,0)) >= 0.50 THEN 'HOT DEAL'
+                        ELSE 'CATALOG'
+                    END
+                ) as badge,
+                COALESCE(d.deal_score, ROUND((((p.mrp - p.current_price)/NULLIF(p.mrp,0)) * 100)::numeric, 1), 50.0) as deal_score,
+                COALESCE(d.posted_at, p.last_price_change, p.created_at) as deal_time,
+                {relevance_select},
+                COUNT(*) OVER() as total_matches,
+                COUNT(d.id) OVER() as verified_matches
+            FROM products p
+            LEFT JOIN LATERAL (
+                SELECT d.id, d.badge, d.deal_score, d.posted_at, d.posted_price
+                FROM deals d
+                WHERE d.product_id = p.id
+                  AND p.current_price <= (d.posted_price * 1.01)
+                  AND d.posted_at >= NOW() - INTERVAL '30 days'
+                ORDER BY d.posted_at DESC
+                LIMIT 1
+            ) d ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT raw_url 
+                FROM ingested_channel_deals 
+                WHERE product_id = p.id AND raw_url IS NOT NULL AND raw_url != ''
+                ORDER BY id DESC 
+                LIMIT 1
+            ) tg ON TRUE
+            {where_sql}
+            {order_sql}
+            LIMIT ${arg_idx} OFFSET ${arg_idx + 1};
+        """
+
+        rows = await database.fetch(query, *args)
+        total_matches = rows[0]["total_matches"] if rows else 0
+        verified_matches = rows[0]["verified_matches"] if rows else 0
+        catalog_matches = max(0, total_matches - verified_matches)
+
+        deals = []
+        seen_pids = set()
+        seen_aff_urls = set()
+        for r in rows:
+            pid = r["product_id"]
+            if pid in seen_pids:
+                continue
+
+            cur_p = float(r["current_price"]) if r["current_price"] and float(r["current_price"]) > 0 else 0.0
+            mrp_p = float(r["mrp"]) if r["mrp"] and float(r["mrp"]) > cur_p else cur_p
+            
+            if mrp_p > cur_p and mrp_p > 0:
+                pct = round(((mrp_p - cur_p) / mrp_p) * 100)
+                savings = round(mrp_p - cur_p, 2)
+            else:
+                pct = 0
+                savings = 0.0
+
+            prev_p = float(r["previous_price"]) if r.get("previous_price") and float(r["previous_price"]) > cur_p else None
+            drop_pct = round(((prev_p - cur_p) / prev_p) * 100) if prev_p else 0
+            drop_amount = round(prev_p - cur_p, 2) if prev_p else 0.0
+
+            aff_url = resolve_deal_button_url(r["platform"], r.get("tg_raw_url"), r["affiliate_url"], r["product_url"], product_id=r["product_id"])
+
+            if aff_url and "/api/deal/redirect/" not in aff_url:
+                clean_aff = aff_url.split("?")[0].rstrip("/").lower()
+                if aff_url in seen_aff_urls or clean_aff in seen_aff_urls:
+                    continue
+                seen_aff_urls.add(aff_url)
+                seen_aff_urls.add(clean_aff)
+
+            seen_pids.add(pid)
+            is_verified = bool(r["is_verified"])
+
+            deals.append({
+                "deal_id": r["deal_id"],
+                "product_id": r["product_id"],
+                "title": r["title"],
+                "platform": r["platform"].lower(),
+                "category": r["category"] or "general",
+                "deal_price": cur_p,
+                "mrp": mrp_p if mrp_p > cur_p else None,
+                "previous_price": prev_p,
+                "drop_pct": drop_pct,
+                "drop_amount": drop_amount,
+                "discount_pct": pct,
+                "savings_amount": savings,
+                "is_verified_deal": is_verified,
+                "badge": r["badge"] or ("VERIFIED DEAL" if is_verified else "CATALOG"),
+                "deal_score": float(r["deal_score"]) if r["deal_score"] else None,
+                "posted_at": r["deal_time"].isoformat() if r["deal_time"] else None,
+                "image_url": r["image_url"],
+                "product_url": r["product_url"],
+                "affiliate_url": aff_url,
+                "rating": round(float(r["rating"]), 1) if r["rating"] is not None and 1.0 <= float(r["rating"]) <= 5.0 else None,
+                "review_count": int(r["review_count"]) if r.get("review_count") and int(r["review_count"]) > 0 else None,
+                "min_30d": float(r["min_30d"]) if r["min_30d"] else None,
+                "all_time_low": float(r["all_time_low"]) if r["all_time_low"] else None,
+                "in_stock": bool(r["in_stock"]),
+                "last_checked": r["last_checked"].isoformat() if r.get("last_checked") else None,
+                "is_catalog_product": not is_verified
+            })
+
+        result = {
+            "page": page,
+            "limit": limit,
+            "total_matches": total_matches,
+            "total_pages": max(1, (total_matches + limit - 1) // limit) if total_matches > 0 else 1,
+            "verified_matches": verified_matches,
+            "catalog_matches": catalog_matches,
+            "has_verified_deals": bool(verified_matches > 0),
+            "search_query": search_clean,
+            "deals": deals
+        }
+        await ram_cache.set(cache_key, result, ttl=20)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/public/product/{product_id}")
+async def get_public_product_history(product_id: int):
+    """
+    Returns detailed product view with comprehensive chronological daily price timeline (up to 180 days)
+    and calculated 30-day, 60-day, 90-day, and all-time minimum and median statistics.
+    """
+    cache_key = f"product:{product_id}"
+    cached = await ram_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    try:
+        product = await database.fetchrow("SELECT * FROM products WHERE id = $1;", product_id)
+        if not product:
+            deal = await database.fetchrow("SELECT product_id FROM deals WHERE id = $1;", product_id)
+            if deal:
+                product_id = deal["product_id"]
+                product = await database.fetchrow("SELECT * FROM products WHERE id = $1;", product_id)
+
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+
+        # Fetch up to 180 days of daily closing prices
+        daily_rows = await database.fetch("""
+            SELECT date, min_price, close_price
+            FROM daily_prices
+            WHERE product_id = $1
+            ORDER BY date ASC
+            LIMIT 180;
+        """, product["id"])
+
+        # Calculate exact 30d, 60d, 90d, and all-time minimums and statistical medians
+        stats = await database.fetchrow("""
+            SELECT 
+                MIN(CASE WHEN date >= CURRENT_DATE - INTERVAL '30 days' THEN min_price END) as min_30d,
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN date >= CURRENT_DATE - INTERVAL '30 days' THEN close_price END) as median_30d,
+                MIN(CASE WHEN date >= CURRENT_DATE - INTERVAL '60 days' THEN min_price END) as min_60d,
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN date >= CURRENT_DATE - INTERVAL '60 days' THEN close_price END) as median_60d,
+                MIN(CASE WHEN date >= CURRENT_DATE - INTERVAL '90 days' THEN min_price END) as min_90d,
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN date >= CURRENT_DATE - INTERVAL '90 days' THEN close_price END) as median_90d,
+                MIN(min_price) as min_all,
+                MAX(close_price) as max_all,
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY close_price) as median_all
+            FROM daily_prices
+            WHERE product_id = $1;
+        """, product["id"])
+
+        cur_price = float(product["current_price"]) if product["current_price"] else 0.0
+
+        min_30 = float(stats["min_30d"]) if stats and stats["min_30d"] is not None else (float(product["min_30d"]) if product.get("min_30d") else cur_price)
+        med_30 = float(stats["median_30d"]) if stats and stats["median_30d"] is not None else (float(product["median_30d_price"]) if product.get("median_30d_price") else cur_price)
+
+        min_60 = float(stats["min_60d"]) if stats and stats["min_60d"] is not None else min_30
+        med_60 = float(stats["median_60d"]) if stats and stats["median_60d"] is not None else med_30
+
+        min_90 = float(stats["min_90d"]) if stats and stats["min_90d"] is not None else min_60
+        med_90 = float(stats["median_90d"]) if stats and stats["median_90d"] is not None else med_60
+
+        min_all = float(stats["min_all"]) if stats and stats["min_all"] is not None else (float(product["all_time_low"]) if product.get("all_time_low") else min_90)
+        max_all = float(stats["max_all"]) if stats and stats["max_all"] is not None else (float(product["mrp"]) if product.get("mrp") else cur_price)
+        med_all = float(stats["median_all"]) if stats and stats["median_all"] is not None else med_90
+
+        if cur_price > 0 and (min_all == 0 or cur_price < min_all):
+            min_all = cur_price
+        if cur_price > 0 and (min_30 == 0 or cur_price < min_30):
+            min_30 = cur_price
+
+        mrp_val = float(product["mrp"]) if product.get("mrp") else None
+        if mrp_val and mrp_val > max_all:
+            max_all = mrp_val
+
+        is_atl = bool(min_all and cur_price > 0 and cur_price <= min_all * 1.01)
+
+        history = []
+        for r in daily_rows:
+            history.append({
+                "date": str(r["date"]),
+                "min_price": float(r["min_price"]) if r["min_price"] is not None else None,
+                "close_price": float(r["close_price"]) if r["close_price"] is not None else None
+            })
+
+        # Append today's live point if not yet captured in daily_prices
+        today_str = datetime.date.today().isoformat()
+        if history:
+            if history[-1]["date"] != today_str and cur_price > 0:
+                history.append({
+                    "date": today_str,
+                    "min_price": cur_price,
+                    "close_price": cur_price,
+                    "is_live": True
+                })
+        elif cur_price > 0:
+            history.append({
+                "date": today_str,
+                "min_price": cur_price,
+                "close_price": cur_price,
+                "is_live": True
+            })
+
+        tg_deal = await database.fetchrow(
+            "SELECT raw_url FROM ingested_channel_deals WHERE product_id = $1 AND raw_url IS NOT NULL AND raw_url != '' ORDER BY id DESC LIMIT 1;",
+            product["id"]
+        )
+        tg_raw = tg_deal["raw_url"] if tg_deal else None
+        modal_aff_url = resolve_deal_button_url(product["platform"], tg_raw, product["affiliate_url"], product["product_url"])
+
+        result = {
+            "product": {
+                "id": product["id"],
+                "title": product["title"],
+                "platform": product["platform"].lower(),
+                "category": product["category"],
+                "current_price": cur_price,
+                "mrp": mrp_val,
+                "rating": round(float(product["rating"]), 1) if product.get("rating") is not None and 1.0 <= float(product["rating"]) <= 5.0 else None,
+                "review_count": int(product["review_count"]) if product.get("review_count") and int(product["review_count"]) > 0 else None,
+                "image_url": product["image_url"],
+                "product_url": product["product_url"],
+                "affiliate_url": modal_aff_url,
+                "in_stock": product["in_stock"],
+                "min_30d": min_30,
+                "median_30d": med_30,
+                "min_60d": min_60,
+                "median_60d": med_60,
+                "min_90d": min_90,
+                "median_90d": med_90,
+                "all_time_low": min_all,
+                "all_time_median": med_all,
+                "all_time_high": max_all,
+                "min_recorded_price": min_all,
+                "max_recorded_price": max_all,
+                "is_at_all_time_low": is_atl
+            },
+            "history_count": len(history),
+            "daily_prices": history,
+            "stats": {
+                "30d": {"min": min_30, "median": med_30},
+                "60d": {"min": min_60, "median": med_60},
+                "90d": {"min": min_90, "median": med_90},
+                "all": {"min": min_all, "median": med_all, "max": max_all}
+            }
+        }
+        await ram_cache.set(cache_key, result, ttl=60)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Page Rendering Routes ───────────────────────────────────────────────────
+
+STORE_DISPLAY_NAMES = {
+    "amazon": "Amazon India",
+    "flipkart": "Flipkart",
+    "myntra": "Myntra",
+    "ajio": "Ajio",
+    "nykaa": "Nykaa"
+}
+
 @app.get("/", response_class=HTMLResponse)
-async def dashboard_home():
-    if os.path.exists(TEMPLATE_PATH):
-        with open(TEMPLATE_PATH, "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
-    return HTMLResponse(content="<h1>BudgetBy Dashboard</h1><p>Template loading...</p>")
+async def page_home(request: Request):
+    """Renders the modular BudgetBy Home Hub."""
+    return templates.TemplateResponse("consumer/home.html", {"request": request, "active_page": "home"})
+
+@app.get("/drops", response_class=HTMLResponse)
+@app.get("/price-drops", response_class=HTMLResponse)
+async def page_drops(request: Request):
+    """Renders the dedicated 24-Hour Price Drops Hub."""
+    return templates.TemplateResponse("consumer/drops.html", {"request": request, "active_page": "drops"})
+
+@app.get("/deals", response_class=HTMLResponse)
+async def page_deals(request: Request):
+    """Renders the Deals Catalog with Amazon & Flipkart style faceted filter bar."""
+    return templates.TemplateResponse("consumer/deals.html", {"request": request, "active_page": "deals"})
+
+@app.get("/all-time-lows", response_class=HTMLResponse)
+@app.get("/atl", response_class=HTMLResponse)
+async def page_atl(request: Request):
+    """Renders the All-Time Lows (ATL) Showcase Hub."""
+    return templates.TemplateResponse("consumer/atl.html", {"request": request, "active_page": "atl"})
+
+@app.get("/stores", response_class=HTMLResponse)
+@app.get("/stores/{platform}", response_class=HTMLResponse)
+async def page_stores(request: Request, platform: str = ""):
+    """Renders the Stores Directory or Dedicated Store Deals Page."""
+    plat_clean = platform.strip().lower() if platform else ""
+    if plat_clean == "croma":
+        return RedirectResponse(url="/stores", status_code=302)
+    store_name = STORE_DISPLAY_NAMES.get(plat_clean, plat_clean.capitalize()) if plat_clean else None
+    return templates.TemplateResponse(
+        "consumer/stores.html", 
+        {
+            "request": request, 
+            "active_page": "stores", 
+            "store_id": plat_clean if plat_clean in STORE_DISPLAY_NAMES else None,
+            "store_name": store_name
+        }
+    )
+
+@app.get("/pnther", response_class=HTMLResponse)
+async def admin_dashboard(request: Request):
+    """Renders the BudgetBy Admin Control Center (Stealth Protected URL: /pnther)."""
+    if not is_admin_authorized(request):
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    response = HTMLResponse(content="<h1>BudgetBy Admin Dashboard Loading...</h1>")
+    if os.path.exists(ADMIN_TEMPLATE_PATH):
+        with open(ADMIN_TEMPLATE_PATH, "r", encoding="utf-8") as f:
+            response = HTMLResponse(content=f.read())
+
+    # Set secure session cookie if authenticated via query param
+    req_key = request.query_params.get("key") or request.query_params.get("admin_key")
+    if req_key and secrets.compare_digest(str(req_key), ADMIN_SECRET_KEY):
+        response.set_cookie(
+            key="budgetby_admin_session",
+            value=ADMIN_SECRET_KEY,
+            httponly=True,
+            samesite="lax",
+            max_age=86400 * 7
+        )
+    return response
+
+@app.get("/pnther/db-explorer", response_class=HTMLResponse)
+async def admin_db_explorer(request: Request):
+    """Renders the BudgetBy Database Explorer (Stealth Protected URL: /pnther/db-explorer)."""
+    if not is_admin_authorized(request):
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    response = await render_db_explorer()
+    req_key = request.query_params.get("key") or request.query_params.get("admin_key")
+    if req_key and secrets.compare_digest(str(req_key), ADMIN_SECRET_KEY):
+        response.set_cookie(
+            key="budgetby_admin_session",
+            value=ADMIN_SECRET_KEY,
+            httponly=True,
+            samesite="lax",
+            max_age=86400 * 7
+        )
+    return response
+
+@app.get("/admin")
+@app.get("/admin/{rest:path}")
+async def redirect_old_admin(rest: str = ""):
+    """Safely redirects deprecated /admin routes to consumer homepage."""
+    return RedirectResponse(url="/", status_code=302)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=5000)

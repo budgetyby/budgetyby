@@ -33,17 +33,29 @@ async def unshorten_url(url: str, client: httpx.AsyncClient) -> str:
     if not url or not url.startswith("http"):
         return url or ""
     try:
-        if any(store in url for store in ["amazon.in/dp/", "amazon.in/gp/product/", "flipkart.com/", "myntra.com/", "ajio.com/", "nykaa.com/"]):
+        if any(store in url for store in ["amazon.in/dp/", "amazon.in/gp/product/"]):
             return url
 
         resp = await client.get(url, follow_redirects=True, timeout=8)
-        return str(resp.url)
+        final_url = str(resp.url)
+
+        # If landed on linkredirect.in (EarnKaro gateway), extract destination from dl parameter
+        if "linkredirect.in" in final_url and "dl=" in final_url:
+            import urllib.parse
+            parsed = urllib.parse.urlparse(final_url)
+            qs = urllib.parse.parse_qs(parsed.query)
+            if "dl" in qs and qs["dl"]:
+                return qs["dl"][0]
+
+        return final_url
     except Exception:
         return url
 
 def clean_and_tag_url(resolved_url: str) -> tuple[Optional[str], Optional[str], Optional[str]]:
     """
-    Identifies store platform, strips foreign affiliate tracking, and injects our affiliate tag.
+    Identifies store platform, cleans the product URL for local scraping,
+    and builds affiliate URL for Amazon (with official dealpulse tag).
+    For non-Amazon platforms, returns clean merchant URL (affiliate link is kept from Telegram raw_url).
     Returns: (platform, clean_product_url, affiliate_url)
     """
     if not resolved_url:
@@ -62,35 +74,29 @@ def clean_and_tag_url(resolved_url: str) -> tuple[Optional[str], Optional[str], 
 
     # 2. Flipkart
     elif "flipkart.com" in resolved_url or "fkrt." in resolved_url:
-        clean_url = resolved_url.split('?')[0]
-        if "/p/itm" in clean_url or "/p/" in clean_url or "pid=" in resolved_url:
-            from budgetby.affiliate.earnkaro_links import build_earnkaro_url_sync
-            aff_url = build_earnkaro_url_sync(clean_url)
-            return "flipkart", clean_url, aff_url
+        pid_match = re.search(r'[?&]pid=([A-Za-z0-9]+)', resolved_url)
+        base_path = resolved_url.split('?')[0]
+        clean_url = f"{base_path}?pid={pid_match.group(1)}" if pid_match else base_path
+        if "/p/itm" in clean_url or "/p/" in clean_url or pid_match:
+            return "flipkart", clean_url, clean_url
 
     # 3. Myntra
     elif "myntra.com" in resolved_url or "myntr." in resolved_url:
         clean_url = resolved_url.split('?')[0]
         if "/buy" in clean_url or re.search(r'/\d+$', clean_url):
-            from budgetby.affiliate.earnkaro_links import build_earnkaro_url_sync
-            aff_url = build_earnkaro_url_sync(clean_url)
-            return "myntra", clean_url, aff_url
+            return "myntra", clean_url, clean_url
 
     # 4. Ajio
     elif "ajio.com" in resolved_url:
         clean_url = resolved_url.split('?')[0]
         if "/p/" in clean_url:
-            from budgetby.affiliate.earnkaro_links import build_earnkaro_url_sync
-            aff_url = build_earnkaro_url_sync(clean_url)
-            return "ajio", clean_url, aff_url
+            return "ajio", clean_url, clean_url
 
     # 5. Nykaa
     elif "nykaa.com" in resolved_url:
         clean_url = resolved_url.split('?')[0]
         if "/p/" in clean_url or "/product/" in clean_url:
-            from budgetby.affiliate.earnkaro_links import build_earnkaro_url_sync
-            aff_url = build_earnkaro_url_sync(clean_url)
-            return "nykaa", clean_url, aff_url
+            return "nykaa", clean_url, clean_url
 
     return None, None, None
 
@@ -159,9 +165,16 @@ async def verify_and_ingest_single_deal(channel: str, post_id: int, raw_url: str
             asin_match = re.search(r'/(?:dp|gp/product)/([A-Z0-9]{10})', clean_url)
             platform_id = asin_match.group(1) if asin_match else None
         elif platform == "flipkart":
-            itm_match = re.search(r'/p/([^/?]+)', clean_url)
-            platform_id = itm_match.group(1) if itm_match else clean_url.split('/')[-1]
-        elif platform in ["myntra", "ajio", "nykaa"]:
+            pid_m = re.search(r'[?&]pid=([A-Za-z0-9]+)', clean_url) or re.search(r'[?&]pid=([A-Za-z0-9]+)', resolved) or re.search(r'[?&]pid=([A-Za-z0-9]+)', raw_url)
+            if pid_m:
+                platform_id = pid_m.group(1)
+            else:
+                itm_match = re.search(r'/p/([^/?]+)', clean_url)
+                platform_id = itm_match.group(1) if itm_match else clean_url.split('/')[-1]
+        elif platform == "myntra":
+            mid_m = re.search(r'/(\d{5,10})', clean_url) or re.search(r'/(\d{5,10})', resolved) or re.search(r'/(\d{5,10})', raw_url)
+            platform_id = mid_m.group(1) if mid_m else clean_url.rstrip('/').split('/')[-1].replace('.html', '')
+        elif platform in ["ajio", "nykaa"]:
             platform_id = clean_url.rstrip('/').split('/')[-1].replace('.html', '')
 
         if not platform_id:
@@ -208,13 +221,36 @@ async def verify_and_ingest_single_deal(channel: str, post_id: int, raw_url: str
             return None
 
         # 4. Upsert product into local database
+        # For Amazon, use official dealpulse associate tag.
+        # For non-Amazon, convert through our own EarnKaro/Cuelinks bot to ensure clicks attribute to our account.
+        final_deal_url = None
+        if platform == "amazon":
+            final_deal_url = f"{clean_url}?tag={config.AMAZON_ASSOCIATE_TAG}"
+        elif any(d in (raw_url or "").lower() for d in ("fktr.in", "myntr.it", "ajiio.in", "ekaro.in", "clnk.in")):
+            final_deal_url = raw_url
+        else:
+            try:
+                from budgetby.ingest.telegram_listener import convert_url_via_ek_bot, convert_url_via_cuelinks_bot
+                if platform in ("flipkart", "myntra", "ajio"):
+                    converted = await convert_url_via_ek_bot(clean_url, platform=platform, timeout=6.0)
+                    if converted and converted != clean_url:
+                        final_deal_url = converted
+                elif platform == "nykaa":
+                    converted = await convert_url_via_cuelinks_bot(clean_url, platform="nykaa", timeout=8.0)
+                    if converted and converted != clean_url:
+                        final_deal_url = converted
+            except Exception as e:
+                logger.debug(f"Immediate channel convert notice: {e}")
+            if not final_deal_url:
+                final_deal_url = clean_url
+
         prod_dict = {
             "platform": platform,
             "platform_id": platform_id,
             "title": title,
             "category": "deals",
             "product_url": clean_url,
-            "affiliate_url": aff_url or clean_url,
+            "affiliate_url": final_deal_url,
             "image_url": image_url,
             "current_price": price,
             "mrp": mrp,
@@ -256,7 +292,7 @@ async def verify_and_ingest_single_deal(channel: str, post_id: int, raw_url: str
                     "platform": platform,
                     "category": "deals",
                     "product_url": clean_url,
-                    "affiliate_url": aff_url or clean_url,
+                    "affiliate_url": final_deal_url,
                     "image_url": image_url,
                     "current_price": price,
                     "mrp": mrp,

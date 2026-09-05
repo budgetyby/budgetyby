@@ -1,0 +1,572 @@
+{% extends "consumer/layout.html" %}
+
+{% block title %}
+    {% if store_name %}
+        {{ store_name }} Verified Deals & Discounts — BudgetBy
+    {% else %}
+        Stores Directory — Amazon, Flipkart, Myntra, Ajio & Nykaa | BudgetBy
+    {% endif %}
+{% endblock %}
+
+{% block description %}
+    {% if store_name %}
+        Browse all verified deals, live price cuts, and historical price baselines for {{ store_name }} on BudgetBy.
+    {% else %}
+        Discover real-time verified price drops across India's top online retailers: Amazon, Flipkart, Myntra, Ajio, and Nykaa.
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<main class="w-full">
+    {% if not store_id %}
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- MODE 1: ALL STORES DIRECTORY (/stores)                             -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-6 pb-16">
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-2 text-xs text-slate-400 mb-3" aria-label="Breadcrumb">
+            <a href="/" class="hover:text-white transition flex items-center gap-1">
+                <span>🏠</span> Home
+            </a>
+            <span class="text-slate-600">/</span>
+            <span class="text-cyan-400 font-semibold flex items-center gap-1">
+                <span>🏪</span> Stores Directory
+            </span>
+        </nav>
+
+        <!-- Hub Header -->
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-cyan-950/40 via-slate-900/90 to-indigo-950/30 border border-cyan-500/30 p-6 sm:p-8 shadow-2xl mb-8">
+            <div class="max-w-2xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-400 font-extrabold text-[11px] tracking-wider uppercase border border-cyan-500/30 mb-3">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                    5 VERIFIED RETAIL PLATFORMS
+                </div>
+                <h1 class="text-2xl sm:text-4xl font-black tracking-tight text-white leading-tight">
+                    Shop Verified Deals by Store
+                </h1>
+                <p class="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    We continuously monitor millions of price points across India's premier online stores. Click any store to inspect real-time price drops, loot deals, and all-time lows.
+                </p>
+            </div>
+        </div>
+
+        <!-- Stores Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            <!-- Amazon Card -->
+            <div class="bg-[#090d16]/90 border border-slate-800 hover:border-[#FF9900]/50 rounded-3xl p-6 flex flex-col justify-between transition group hover:shadow-2xl hover:shadow-[#FF9900]/10 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-[#FF9900]/10 rounded-full blur-2xl pointer-events-none"></div>
+                <div>
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-2xl bg-[#FF9900]/15 border border-[#FF9900]/30 flex items-center justify-center text-xl font-black text-[#FF9900]">
+                            a
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                            ● 24/7 Verified
+                        </span>
+                    </div>
+                    <h2 class="text-xl font-black text-white group-hover:text-[#FF9900] transition">Amazon India</h2>
+                    <p class="text-xs text-slate-400 mt-1">Electronics, Gadgets, Kitchenware, Appliances, Books & Household Daily Needs.</p>
+                    <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] text-slate-500 block uppercase">Deals Live</span>
+                            <span id="storeCntAmazon" class="text-sm font-bold text-white font-mono">1,500+</span>
+                        </div>
+                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] text-slate-500 block uppercase">Max Cut</span>
+                            <span id="storeCutAmazon" class="text-sm font-bold text-emerald-400 font-mono">-75%</span>
+                        </div>
+                    </div>
+                </div>
+                <a href="/stores/amazon" class="mt-6 w-full py-2.5 rounded-xl bg-[#FF9900] hover:bg-[#FFaa33] text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-[#FF9900]/20 transition">
+                    <span>Explore Amazon Deals</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </a>
+            </div>
+
+            <!-- Flipkart Card -->
+            <div class="bg-[#090d16]/90 border border-slate-800 hover:border-[#2874F0]/50 rounded-3xl p-6 flex flex-col justify-between transition group hover:shadow-2xl hover:shadow-[#2874F0]/10 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-[#2874F0]/10 rounded-full blur-2xl pointer-events-none"></div>
+                <div>
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-2xl bg-[#2874F0]/15 border border-[#2874F0]/30 flex items-center justify-center text-xl font-black text-[#2874F0]">
+                            fk
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                            ● 24/7 Verified
+                        </span>
+                    </div>
+                    <h2 class="text-xl font-black text-white group-hover:text-[#2874F0] transition">Flipkart</h2>
+                    <p class="text-xs text-slate-400 mt-1">Smartphones, Laptops, Television, Smart Home & Big Billion Deals.</p>
+                    <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] text-slate-500 block uppercase">Deals Live</span>
+                            <span id="storeCntFlipkart" class="text-sm font-bold text-white font-mono">1,800+</span>
+                        </div>
+                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] text-slate-500 block uppercase">Max Cut</span>
+                            <span id="storeCutFlipkart" class="text-sm font-bold text-emerald-400 font-mono">-76%</span>
+                        </div>
+                    </div>
+                </div>
+                <a href="/stores/flipkart" class="mt-6 w-full py-2.5 rounded-xl bg-[#2874F0] hover:bg-[#4B8DF8] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-[#2874F0]/20 transition">
+                    <span>Explore Flipkart Deals</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </a>
+            </div>
+
+            <!-- Myntra Card -->
+            <div class="bg-[#090d16]/90 border border-slate-800 hover:border-[#FF3F6C]/50 rounded-3xl p-6 flex flex-col justify-between transition group hover:shadow-2xl hover:shadow-[#FF3F6C]/10 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-[#FF3F6C]/10 rounded-full blur-2xl pointer-events-none"></div>
+                <div>
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-2xl bg-[#FF3F6C]/15 border border-[#FF3F6C]/30 flex items-center justify-center text-xl font-black text-[#FF3F6C]">
+                            M
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                            ● 24/7 Verified
+                        </span>
+                    </div>
+                    <h2 class="text-xl font-black text-white group-hover:text-[#FF3F6C] transition">Myntra</h2>
+                    <p class="text-xs text-slate-400 mt-1">Trendy Men & Women Fashion, Premium Footwear, Accessories & Fragrances.</p>
+                    <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] text-slate-500 block uppercase">Deals Live</span>
+                            <span id="storeCntMyntra" class="text-sm font-bold text-white font-mono">600+</span>
+                        </div>
+                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] text-slate-500 block uppercase">Max Cut</span>
+                            <span id="storeCutMyntra" class="text-sm font-bold text-emerald-400 font-mono">-70%</span>
+                        </div>
+                    </div>
+                </div>
+                <a href="/stores/myntra" class="mt-6 w-full py-2.5 rounded-xl bg-[#FF3F6C] hover:bg-[#FF658B] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-[#FF3F6C]/20 transition">
+                    <span>Explore Myntra Deals</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </a>
+            </div>
+
+            <!-- Ajio Card -->
+            <div class="bg-[#090d16]/90 border border-slate-800 hover:border-[#D99814]/50 rounded-3xl p-6 flex flex-col justify-between transition group hover:shadow-2xl hover:shadow-[#D99814]/10 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-[#D99814]/10 rounded-full blur-2xl pointer-events-none"></div>
+                <div>
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-2xl bg-[#D99814]/15 border border-[#D99814]/30 flex items-center justify-center text-xl font-black text-[#D99814]">
+                            AJ
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                            ● 24/7 Verified
+                        </span>
+                    </div>
+                    <h2 class="text-xl font-black text-white group-hover:text-[#D99814] transition">Ajio</h2>
+                    <p class="text-xs text-slate-400 mt-1">Trendy Indie & International Fashion, Sneakers, Athleisure & Denim.</p>
+                    <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] text-slate-500 block uppercase">Deals Live</span>
+                            <span id="storeCntAjio" class="text-sm font-bold text-white font-mono">500+</span>
+                        </div>
+                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] text-slate-500 block uppercase">Max Cut</span>
+                            <span id="storeCutAjio" class="text-sm font-bold text-emerald-400 font-mono">-65%</span>
+                        </div>
+                    </div>
+                </div>
+                <a href="/stores/ajio" class="mt-6 w-full py-2.5 rounded-xl bg-[#D99814] hover:bg-[#F5B027] text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-[#D99814]/20 transition">
+                    <span>Explore Ajio Deals</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </a>
+            </div>
+
+            <!-- Nykaa Card -->
+            <div class="bg-[#090d16]/90 border border-slate-800 hover:border-[#FC2779]/50 rounded-3xl p-6 flex flex-col justify-between transition group hover:shadow-2xl hover:shadow-[#FC2779]/10 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-[#FC2779]/10 rounded-full blur-2xl pointer-events-none"></div>
+                <div>
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-2xl bg-[#FC2779]/15 border border-[#FC2779]/30 flex items-center justify-center text-xl font-black text-[#FC2779]">
+                            N
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                            ● 24/7 Verified
+                        </span>
+                    </div>
+                    <h2 class="text-xl font-black text-white group-hover:text-[#FC2779] transition">Nykaa</h2>
+                    <p class="text-xs text-slate-400 mt-1">Cosmetics, Skincare, Hair Care, Fragrance & Wellness Essentials.</p>
+                    <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] text-slate-500 block uppercase">Deals Live</span>
+                            <span id="storeCntNykaa" class="text-sm font-bold text-white font-mono">400+</span>
+                        </div>
+                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] text-slate-500 block uppercase">Max Cut</span>
+                            <span id="storeCutNykaa" class="text-sm font-bold text-emerald-400 font-mono">-60%</span>
+                        </div>
+                    </div>
+                </div>
+                <a href="/stores/nykaa" class="mt-6 w-full py-2.5 rounded-xl bg-[#FC2779] hover:bg-[#FD5797] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-[#FC2779]/20 transition">
+                    <span>Explore Nykaa Deals</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </a>
+            </div>
+
+        </div>
+    </section>
+
+    {% else %}
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- MODE 2: DEDICATED STORE PAGE (/stores/{platform})                  -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-6 pb-16">
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-2 text-xs text-slate-400 mb-3" aria-label="Breadcrumb">
+            <a href="/" class="hover:text-white transition flex items-center gap-1">
+                <span>🏠</span> Home
+            </a>
+            <span class="text-slate-600">/</span>
+            <a href="/stores" class="hover:text-white transition flex items-center gap-1">
+                <span>🏪</span> Stores
+            </a>
+            <span class="text-slate-600">/</span>
+            <span class="text-indigo-400 font-semibold uppercase">{{ store_name }}</span>
+        </nav>
+
+        <!-- Store Branded Header -->
+        <div class="relative overflow-hidden rounded-3xl bg-[#090d16] border border-slate-800 p-6 sm:p-8 shadow-2xl mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 rounded-2xl p-1 bg-white/5 border border-slate-700 flex items-center justify-center text-3xl font-black text-white">
+                        {{ store_name[0] }}
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-2xl sm:text-3xl font-black text-white">{{ store_name }} Deals & Price Tracker</h1>
+                            <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                                Verified
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">Real-time verified price cuts and discounts on {{ store_name }}.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <a href="/deals?platform={{ store_id }}" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-white transition flex items-center gap-1.5">
+                        <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                        <span>Advanced Filters</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Store Deals Filter Bar -->
+        <div class="bg-[#090d16]/95 border border-slate-800 rounded-2xl p-3.5 mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-400 font-mono">Found <span id="storeTotalCount" class="font-bold text-white">0</span> active deals</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <select id="storeCategorySelect" onchange="onStoreCatChange(this.value)" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    <option value="">All Categories</option>
+                    <option value="electronics">Electronics</option>
+                    <option value="fashion">Fashion</option>
+                    <option value="footwear">Footwear</option>
+                    <option value="home">Home & Kitchen</option>
+                    <option value="beauty">Beauty</option>
+                </select>
+
+                <select id="storeSortSelect" onchange="onStoreSortChange(this.value)" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    <option value="latest">Recently Verified</option>
+                    <option value="discount">Highest Discount %</option>
+                    <option value="price_asc">Price: Low to High</option>
+                    <option value="price_desc">Price: High to Low</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Store Products Grid -->
+        <div id="storeDealsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
+        </div>
+
+        <!-- Pagination Bar -->
+        <div id="storePaginationBar" class="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80">
+            <div class="text-xs text-slate-400">
+                Page <span id="storeCurrentPage" class="font-bold text-white">1</span> of <span id="storeTotalPages" class="font-bold text-white">1</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="changeStorePage(-1)" id="storePrevBtn" disabled class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none text-slate-200 transition">
+                    ← Previous
+                </button>
+                <button onclick="changeStorePage(1)" id="storeNextBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:pointer-events-none text-white transition flex items-center gap-1.5">
+                    <span>Next Page</span>
+                    <span>→</span>
+                </button>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    {% if store_id %}
+    const storeState = {
+        platform: "{{ store_id }}",
+        category: '',
+        sortBy: 'latest',
+        page: 1,
+        limit: 24,
+        totalPages: 1,
+        items: []
+    };
+
+    let storeDealsAutoRefreshTimer = null;
+    function startStoreDealsAutoRefresh() {
+        if (storeDealsAutoRefreshTimer) clearInterval(storeDealsAutoRefreshTimer);
+        const settings = window.getUserSettings ? window.getUserSettings() : null;
+        const intervalSec = (settings && settings.syncInterval !== undefined) ? settings.syncInterval : 30;
+        if (intervalSec <= 0) return;
+        storeDealsAutoRefreshTimer = setInterval(() => {
+            if (storeState.page === 1 && !document.hidden) {
+                loadStoreDeals(true);
+            }
+        }, intervalSec * 1000);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadStoreDeals();
+        startStoreDealsAutoRefresh();
+    });
+
+    window.addEventListener('budgetby:syncRateChanged', () => {
+        startStoreDealsAutoRefresh();
+    });
+
+    async function loadStoreDeals(isBackground = false) {
+        const grid = document.getElementById('storeDealsGrid');
+        if (!isBackground) {
+            grid.innerHTML = `
+                <div class="col-span-full py-16 text-center">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-300 animate-pulse">
+                        <span class="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
+                        Scanning {{ store_name }} deals...
+                    </div>
+                </div>
+            `;
+        }
+
+        try {
+            const params = new URLSearchParams({
+                platform: storeState.platform,
+                page: storeState.page,
+                limit: storeState.limit,
+                sort_by: storeState.sortBy
+            });
+            if (storeState.category) params.append('category', storeState.category);
+
+            const res = await fetch(`/api/public/deals?${params.toString()}`);
+            const data = await res.json();
+
+            storeState.items = (data.deals || data.items || []).map(d => ({
+                ...d,
+                id: d.product_id || d.deal_id,
+                current_price: d.deal_price !== undefined ? d.deal_price : (d.current_price || 0),
+                discount_percent: d.discount_pct !== undefined ? d.discount_pct : (d.discount_percent || 0),
+                drop_percent: d.drop_pct !== undefined ? d.drop_pct : (d.drop_percent || 0),
+                affiliate_url: d.affiliate_url || d.product_url
+            }));
+            storeState.totalPages = data.total_pages || 1;
+
+            const totalCount = data.total_matches !== undefined ? data.total_matches : (data.total || storeState.items.length);
+            document.getElementById('storeTotalCount').innerText = totalCount.toLocaleString('en-IN');
+            document.getElementById('storeCurrentPage').innerText = data.page || 1;
+            document.getElementById('storeTotalPages').innerText = storeState.totalPages;
+
+            document.getElementById('storePrevBtn').disabled = (storeState.page <= 1);
+            document.getElementById('storeNextBtn').disabled = (storeState.page >= storeState.totalPages);
+
+            renderStoreCards(storeState.items);
+        } catch (err) {
+            console.error('Error loading store deals:', err);
+            const grid = document.getElementById('storeDealsGrid');
+            if (grid) {
+                grid.innerHTML = '<div class="col-span-full py-12 text-center text-xs text-rose-400 font-semibold">Failed to load deals for this store. Please refresh or try again later.</div>';
+            }
+        }
+    }
+
+    function renderStoreCards(items) {
+        const grid = document.getElementById('storeDealsGrid');
+        if (items.length === 0) {
+            grid.innerHTML = `<div class="col-span-full py-12 text-center text-xs text-slate-400">No active deals found for {{ store_name }} with current filter.</div>`;
+            return;
+        }
+
+        storeState.itemsMap = {};
+        const seenPids = new Set();
+        const seenLinks = new Set();
+        const uniqueItems = [];
+
+        items.forEach(d => {
+            const pid = d.product_id || d.id;
+            const link = (d.affiliate_url || d.product_url || '').split('?')[0].toLowerCase();
+            if (seenPids.has(pid) || (link && seenLinks.has(link))) {
+                return;
+            }
+            seenPids.add(pid);
+            if (link) seenLinks.add(link);
+            storeState.itemsMap[d.id] = d;
+            uniqueItems.push(d);
+        });
+
+        grid.innerHTML = uniqueItems.map(deal => {
+            const store = (deal.platform || 'amazon').toLowerCase();
+            const storeCfg = STORES[store] || STORES.amazon;
+            const discPct = Math.round(deal.discount_percent || 0);
+            const verifiedAgo = deal.last_checked ? formatTimeAgo(deal.last_checked) : 'Recently';
+            const inWatch = isInWatchlist(deal.id);
+            const safeTitle = escapeHtml(deal.title);
+            const dealLink = deal.affiliate_url || deal.product_url || '#';
+            const hasValidRating = deal.rating && typeof deal.rating === 'number' && deal.rating >= 1.0 && deal.rating <= 5.0;
+            const ratingHtml = hasValidRating ? `
+                <div class="flex items-center gap-1.5 mt-1.5">
+                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold font-mono">
+                        <span class="text-amber-400">★</span> ${deal.rating.toFixed(1)}
+                    </span>
+                    ${deal.review_count && deal.review_count > 0 ? `
+                        <span class="text-[10px] text-slate-400 font-mono">(${Number(deal.review_count).toLocaleString('en-IN')})</span>
+                    ` : ''}
+                </div>
+            ` : '';
+
+            return `
+                <div class="bg-[#0c101c]/95 border border-slate-800/80 hover:border-slate-700/90 rounded-2xl p-3.5 flex flex-col justify-between transition group relative">
+                    <div>
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase ${storeCfg.badge}">
+                                ${storeCfg.name}
+                            </span>
+                            ${discPct > 0 ? `
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-500/20 text-emerald-300 font-mono">
+                                    ${discPct}% OFF
+                                </span>
+                            ` : ''}
+                        </div>
+
+                        <div class="relative w-full h-44 rounded-xl bg-[#090d16] p-2 flex items-center justify-center overflow-hidden border border-slate-800">
+                            <img src="${deal.image_url || '/static/placeholder.png'}" alt="${safeTitle}" class="w-full h-full object-contain group-hover:scale-105 transition" loading="lazy" onerror="this.src='/static/placeholder.png'"/>
+                            <button onclick="handleStoreWatchlist(this, ${deal.id})" class="absolute top-2 right-2 p-1.5 rounded-xl bg-slate-950/80 border border-slate-800 text-slate-400 hover:text-rose-400 transition">
+                                <i data-lucide="heart" class="w-4 h-4 ${inWatch ? 'fill-rose-500 text-rose-500' : ''}"></i>
+                            </button>
+                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800/80 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                <span>Verified ${verifiedAgo}</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <a href="${dealLink}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-slate-100 hover:text-indigo-400 line-clamp-2 transition leading-snug" title="${safeTitle}">
+                                ${safeTitle}
+                            </a>
+                            ${ratingHtml}
+                        </div>
+                    </div>
+
+                    <div class="mt-3 pt-3 border-t border-slate-800/80">
+                        <div class="flex items-baseline justify-between gap-1 mb-2">
+                            <span class="text-lg font-black text-white font-mono">${formatINR(deal.current_price)}</span>
+                            ${deal.mrp && deal.mrp > deal.current_price ? `<span class="text-xs text-slate-500 line-through font-mono">${formatINR(deal.mrp)}</span>` : ''}
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button onclick="openPriceHistoryModal(${deal.id})" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition" title="Price History">
+                                <i data-lucide="trending-down" class="w-4 h-4 text-indigo-400"></i>
+                            </button>
+                            <button onclick="handleStoreShare(${deal.id})" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition" title="Share Deal">
+                                <i data-lucide="share-2" class="w-4 h-4 text-cyan-400"></i>
+                            </button>
+                            <a href="${dealLink}" target="_blank" rel="noopener noreferrer" class="col-span-2 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-lg transition">
+                                <span>Get Deal</span>
+                                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        lucide.createIcons();
+    }
+
+    function onStoreCatChange(val) {
+        storeState.category = val;
+        storeState.page = 1;
+        loadStoreDeals();
+    }
+
+    function onStoreSortChange(val) {
+        storeState.sortBy = val;
+        storeState.page = 1;
+        loadStoreDeals();
+    }
+
+    function changeStorePage(delta) {
+        storeState.page += delta;
+        window.scrollTo({ top: 150, behavior: 'smooth' });
+        loadStoreDeals();
+    }
+
+    function handleStoreWatchlist(btn, id) {
+        const deal = storeState.itemsMap[id];
+        if (deal) {
+            toggleWatchlist(deal);
+            const icon = btn.querySelector('svg');
+            if (icon) {
+                if (isInWatchlist(deal.id)) {
+                    icon.classList.add('fill-rose-500', 'text-rose-500');
+                } else {
+                    icon.classList.remove('fill-rose-500', 'text-rose-500');
+                }
+            }
+        }
+    }
+
+    function handleStoreShare(id) {
+        const deal = storeState.itemsMap[id];
+        if (deal) openShareModal(deal);
+    }
+
+    {% else %}
+    // Load dynamic store counts and max cuts for directory mode
+    function refreshDirectoryStats() {
+        fetch('/api/public/stats')
+            .then(r => r.json())
+            .then(data => {
+                if (data.by_platform) {
+                    Object.entries(data.by_platform).forEach(([plat, info]) => {
+                        const capitalized = plat.charAt(0).toUpperCase() + plat.slice(1);
+                        const cntEl = document.getElementById(`storeCnt${capitalized}`);
+                        if (cntEl && info.count) {
+                            cntEl.innerText = `${info.count.toLocaleString('en-IN')}`;
+                        }
+                        const cutEl = document.getElementById(`storeCut${capitalized}`);
+                        if (cutEl && info.max_discount) {
+                            cutEl.innerText = `-${info.max_discount}%`;
+                        }
+                    });
+                }
+            }).catch(err => console.warn('Store stats error:', err));
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        refreshDirectoryStats();
+        setInterval(() => {
+            if (!document.hidden) refreshDirectoryStats();
+        }, 30000);
+    });
+    {% endif %}
+</script>
+{% endblock %}

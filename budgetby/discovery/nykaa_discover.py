@@ -27,6 +27,64 @@ async def discover_category(category_path: str, pages: int = 3, sort: str = "pop
                 if response.status_code != 200:
                     continue
 
+                page_products = []
+
+                # Strategy 1: Fast & 100% accurate JSON extraction from window.__PRELOADED_STATE__
+                try:
+                    import json
+                    txt = response.text
+                    if "window.__PRELOADED_STATE__" in txt:
+                        start_idx = txt.find("window.__PRELOADED_STATE__ =")
+                        if start_idx != -1:
+                            j_str = txt[start_idx + len("window.__PRELOADED_STATE__ ="):].strip()
+                            if j_str.endswith(";"):
+                                j_str = j_str[:-1].strip()
+                            data = json.loads(j_str)
+                            prods = (data.get("categoryListing", {}).get("listingData", {}).get("products") or 
+                                     data.get("searchListingPage", {}).get("listingData", {}).get("products") or [])
+                            for p in prods:
+                                pid = str(p.get("productId") or p.get("id") or "")
+                                slug = p.get("slug") or ""
+                                if slug:
+                                    product_url = f"https://www.nykaa.com/{slug.lstrip('/')}"
+                                else:
+                                    product_url = f"https://www.nykaa.com/p/{pid}"
+
+                                title = clean_title(p.get("title") or p.get("productTitle") or p.get("name") or "")
+                                raw_img = p.get("imageUrl") or ""
+                                # Upgrade thumbnail to high quality
+                                if "tr:" in raw_img:
+                                    image_url = re.sub(r'tr:[^/]+/', 'tr:h-500,w-500,cm-pad_resize/', raw_img)
+                                else:
+                                    image_url = raw_img
+
+                                price = float(p.get("price") or 0)
+                                mrp = float(p.get("mrp") or price)
+                                rating = float(p.get("rating") or 4.3)
+                                review_count = int(p.get("ratingCount") or 0)
+
+                                if pid and title and price > 0:
+                                    page_products.append({
+                                        "platform": "nykaa",
+                                        "platform_id": pid,
+                                        "product_url": product_url,
+                                        "affiliate_url": build_cuelinks_url_sync(product_url),
+                                        "title": title,
+                                        "image_url": image_url,
+                                        "current_price": price,
+                                        "mrp": mrp,
+                                        "rating": rating,
+                                        "review_count": review_count,
+                                    })
+                except Exception as ex:
+                    logger.debug(f"Nykaa preloaded state extraction fallback: {ex}")
+
+                # If JSON state produced products, append and move to next page
+                if page_products:
+                    results.extend(page_products)
+                    continue
+
+                # Strategy 2: DOM Parsing Fallback
                 tree = HTMLParser(response.text)
                 items = tree.css("div.productWrapper, div.product-listing")
                 if not items:
@@ -71,8 +129,12 @@ async def discover_category(category_path: str, pages: int = 3, sort: str = "pop
 
                     title = clean_title(title)
 
-                    img_node = item.css_first("img[src*='media'], img[src*='assets'], img")
-                    image_url = img_node.attributes.get("src", "") if img_node else ""
+                    img_node = item.css_first("img[src*='catalog/product'], img[src*='media'], img[src*='assets'], img")
+                    image_url = ""
+                    if img_node:
+                        image_url = img_node.attributes.get("src") or img_node.attributes.get("data-src") or ""
+                        if "tr:" in image_url:
+                            image_url = re.sub(r'tr:[^/]+/', 'tr:h-500,w-500,cm-pad_resize/', image_url)
 
                     price = None
                     p_node = item.css_first(".css-111z9ua, .post-discount-price, span.css-111z9ua, .css-1jczs19")
