@@ -53,71 +53,73 @@
     </section>
 
     <!-- ── Filter & Navigation Bar ───────────────────────────────────────── -->
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full sticky top-20 z-30 py-3 bg-[#070a11]/95 backdrop-blur-xl border-b border-slate-800/80">
-        <div class="flex flex-col gap-3">
-            <!-- Row 1: Drop Depth Pills & Sort Dropdown -->
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <!-- Drop Depth Filter Pills -->
-                <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-                    <span class="text-xs font-bold text-slate-400 mr-1 hidden sm:inline">Drop Depth:</span>
-                    <button onclick="setDropDepth(15)" id="pillDrop15" class="drop-depth-pill px-3 py-1.5 rounded-xl text-xs font-extrabold bg-rose-600 text-white shadow-sm shadow-rose-600/30 transition">
-                        🔥 All Drops (15%+)
-                    </button>
-                    <button onclick="setDropDepth(30)" id="pillDrop30" class="drop-depth-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition">
-                        ⚡ 30%+ Off
-                    </button>
-                    <button onclick="setDropDepth(50)" id="pillDrop50" class="drop-depth-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition">
-                        💥 50%+ Off
-                    </button>
-                    <button onclick="setDropDepth(70)" id="pillDrop70" class="drop-depth-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition">
-                        👑 70%+ Massive Cuts
-                    </button>
+    <section class="w-full sticky top-16 z-30 bg-[#070a11]/95 backdrop-blur-xl border-b border-slate-800/80 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div class="flex flex-col gap-3">
+                <!-- Row 1: Drop Depth Pills & Sort Dropdown -->
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <!-- Drop Depth Filter Pills -->
+                    <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                        <span class="text-xs font-bold text-slate-400 mr-1 hidden sm:inline">Drop Depth:</span>
+                        <button onclick="setDropDepth(15)" id="pillDrop15" class="drop-depth-pill px-3 py-1.5 rounded-xl text-xs font-extrabold bg-rose-600 text-white shadow-sm shadow-rose-600/30 transition">
+                            🔥 All Drops (15%+)
+                        </button>
+                        <button onclick="setDropDepth(30)" id="pillDrop30" class="drop-depth-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition">
+                            ⚡ 30%+ Off
+                        </button>
+                        <button onclick="setDropDepth(50)" id="pillDrop50" class="drop-depth-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition">
+                            💥 50%+ Off
+                        </button>
+                        <button onclick="setDropDepth(70)" id="pillDrop70" class="drop-depth-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition">
+                            👑 70%+ Massive Cuts
+                        </button>
+                    </div>
+
+                    <!-- Sort & View Controls -->
+                    <div class="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                        <label for="dropSortSelect" class="text-xs text-slate-400 font-semibold hidden md:inline">Sort by:</label>
+                        <select id="dropSortSelect" onchange="onSortChange(this.value)" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-rose-500 transition">
+                            <option value="drop_pct">Biggest Price Drop %</option>
+                            <option value="price_asc">Price: Low to High</option>
+                            <option value="discount">Highest Total Discount</option>
+                            <option value="latest">Most Recently Verified</option>
+                        </select>
+
+                        <button onclick="toggleDropsViewMode()" id="dropsViewToggleBtn" class="p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition" title="Toggle Grid / Compact List">
+                            <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Sort & View Controls -->
-                <div class="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                    <label for="dropSortSelect" class="text-xs text-slate-400 font-semibold hidden md:inline">Sort by:</label>
-                    <select id="dropSortSelect" onchange="onSortChange(this.value)" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-rose-500 transition">
-                        <option value="drop_pct">Biggest Price Drop %</option>
-                        <option value="price_asc">Price: Low to High</option>
-                        <option value="discount">Highest Total Discount</option>
-                        <option value="latest">Most Recently Verified</option>
-                    </select>
+                <!-- Row 2: Store Pills & Active Match Counter -->
+                <div class="flex items-center justify-between gap-3 pt-2 border-t border-slate-800/60 overflow-x-auto no-scrollbar">
+                    <!-- Store Filters -->
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <span class="text-xs font-bold text-slate-400 mr-1 hidden sm:inline">Store:</span>
+                        <button onclick="setStoreFilter('')" id="storePillAll" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-600 text-white transition">
+                            All Stores
+                        </button>
+                        <button onclick="setStoreFilter('amazon')" id="storePillAmazon" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                            <span class="text-[#FF9900]">Amazon</span>
+                        </button>
+                        <button onclick="setStoreFilter('flipkart')" id="storePillFlipkart" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                            <span class="text-[#2874F0]">Flipkart</span>
+                        </button>
+                        <button onclick="setStoreFilter('myntra')" id="storePillMyntra" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                            <span class="text-[#FF3F6C]">Myntra</span>
+                        </button>
+                        <button onclick="setStoreFilter('ajio')" id="storePillAjio" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                            <span class="text-[#D99814]">Ajio</span>
+                        </button>
+                        <button onclick="setStoreFilter('nykaa')" id="storePillNykaa" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                            <span class="text-[#FC2779]">Nykaa</span>
+                        </button>
+                    </div>
 
-                    <button onclick="toggleDropsViewMode()" id="dropsViewToggleBtn" class="p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition" title="Toggle Grid / Compact List">
-                        <i data-lucide="layout-grid" class="w-4 h-4"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Row 2: Store Pills & Active Match Counter -->
-            <div class="flex items-center justify-between gap-3 pt-2 border-t border-slate-800/60 overflow-x-auto no-scrollbar">
-                <!-- Store Filters -->
-                <div class="flex items-center gap-1.5 shrink-0">
-                    <span class="text-xs font-bold text-slate-400 mr-1 hidden sm:inline">Store:</span>
-                    <button onclick="setStoreFilter('')" id="storePillAll" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-600 text-white transition">
-                        All Stores
-                    </button>
-                    <button onclick="setStoreFilter('amazon')" id="storePillAmazon" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
-                        <span class="text-[#FF9900]">Amazon</span>
-                    </button>
-                    <button onclick="setStoreFilter('flipkart')" id="storePillFlipkart" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
-                        <span class="text-[#2874F0]">Flipkart</span>
-                    </button>
-                    <button onclick="setStoreFilter('myntra')" id="storePillMyntra" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
-                        <span class="text-[#FF3F6C]">Myntra</span>
-                    </button>
-                    <button onclick="setStoreFilter('ajio')" id="storePillAjio" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
-                        <span class="text-[#D99814]">Ajio</span>
-                    </button>
-                    <button onclick="setStoreFilter('nykaa')" id="storePillNykaa" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
-                        <span class="text-[#FC2779]">Nykaa</span>
-                    </button>
-                </div>
-
-                <!-- Match Count Indicator -->
-                <div class="text-xs text-slate-400 font-mono shrink-0">
-                    Showing <span id="dropsCountDisplay" class="font-bold text-white">0</span> drops
+                    <!-- Match Count Indicator -->
+                    <div class="text-xs text-slate-400 font-mono shrink-0">
+                        Showing <span id="dropsCountDisplay" class="font-bold text-white">0</span> drops
+                    </div>
                 </div>
             </div>
         </div>
