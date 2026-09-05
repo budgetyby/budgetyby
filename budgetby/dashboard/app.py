@@ -51,8 +51,17 @@ EXPLORER_TEMPLATE_PATH = os.path.join(TEMPLATES_DIR, "explorer.html")
 
 ADMIN_SECRET_KEY = getattr(config, "ADMIN_SECRET_KEY", "bb_sec_9e72f8a14b30c5e7d82f091a384b62d1")
 
+def is_local_request(request: Request) -> bool:
+    """Returns True ONLY if request originated locally (localhost/loopback). Blocked completely on Cloud/Render."""
+    if os.getenv("RENDER"):
+        return False
+    client_host = request.client.host if request.client else ""
+    return client_host in ("127.0.0.1", "localhost", "::1")
+
 def is_admin_authorized(request: Request) -> bool:
-    """Verifies whether request contains valid ADMIN_SECRET_KEY via query, header, or cookie."""
+    """Verifies that the request is strictly local AND contains valid ADMIN_SECRET_KEY."""
+    if not is_local_request(request):
+        return False
     req_key = request.query_params.get("key") or request.query_params.get("admin_key")
     if req_key and secrets.compare_digest(str(req_key), ADMIN_SECRET_KEY):
         return True
@@ -67,7 +76,7 @@ def is_admin_authorized(request: Request) -> bool:
 def require_admin(request: Request):
     """
     Dependency enforcing complete admin stealth isolation:
-    Returns 404 Not Found to unauthorized requests, completely hiding admin/db existence.
+    Returns 404 Not Found to unauthorized or cloud requests, completely hiding admin/db existence.
     """
     if not is_admin_authorized(request):
         raise HTTPException(status_code=404, detail="Not Found")
