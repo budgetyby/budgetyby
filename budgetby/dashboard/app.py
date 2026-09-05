@@ -893,26 +893,81 @@ async def get_deals(limit: int = 36, platform: str = ""):
 
 @app.get("/api/search")
 async def search_products(
-    q: str = Query(..., min_length=2, max_length=100),
-    limit: int = Query(20, ge=1, le=50)
+    q: str = Query(..., min_length=1, max_length=100),
+    limit: int = Query(8, ge=1, le=50)
 ):
     try:
         clean_q = q.strip()
-        rows = await database.fetch("""
+        if not clean_q:
+            return []
+
+        cache_key = f"search:{clean_q.lower()}:{limit}"
+        cached = await ram_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        parsed = parse_search_query(clean_q)
+        tokens = parsed.get("tokens", [])
+        target_plat = parsed.get("platform")
+        max_p = parsed.get("max_price")
+        min_p = parsed.get("min_price")
+
+        where_clauses = [
+            "LOWER(platform) != 'croma'",
+            "in_stock = TRUE",
+            "current_price > 0",
+            "status = 'ACTIVE'"
+        ]
+        args = []
+        arg_idx = 1
+
+        if target_plat:
+            where_clauses.append(f"LOWER(platform) = ${arg_idx}")
+            args.append(target_plat)
+            arg_idx += 1
+
+        if max_p is not None:
+            where_clauses.append(f"current_price <= ${arg_idx}")
+            args.append(max_p)
+            arg_idx += 1
+
+        if min_p is not None:
+            where_clauses.append(f"current_price >= ${arg_idx}")
+            args.append(min_p)
+            arg_idx += 1
+
+        if tokens:
+            for t in tokens:
+                t_wild = f"%{t}%"
+                where_clauses.append(f"(title ILIKE ${arg_idx} OR platform_id ILIKE ${arg_idx} OR COALESCE(category, '') ILIKE ${arg_idx})")
+                args.append(t_wild)
+                arg_idx += 1
+        else:
+            where_clauses.append(f"(title ILIKE ${arg_idx} OR platform_id ILIKE ${arg_idx})")
+            args.append(f"%{clean_q}%")
+            arg_idx += 1
+
+        args.append(limit)
+        limit_arg_idx = arg_idx
+
+        where_sql = " AND ".join(where_clauses)
+        sql = f"""
             SELECT id, platform, title, current_price, mrp, rating, review_count, in_stock, affiliate_url, product_url, image_url, min_30d, all_time_low
             FROM products
-            WHERE LOWER(platform) != 'croma'
-              AND (title ILIKE $1 OR platform_id ILIKE $1)
+            WHERE {where_sql}
             ORDER BY 
               (CASE WHEN affiliate_url ILIKE '%fktr.in%' OR affiliate_url ILIKE '%myntr.it%' OR affiliate_url ILIKE '%ajiio.in%' OR affiliate_url ILIKE '%clnk.in%' OR LOWER(platform) = 'amazon' THEN 1 ELSE 0 END) DESC,
+              (CASE WHEN mrp > current_price AND mrp > 0 THEN ((mrp - current_price)::float / mrp) ELSE 0 END) DESC,
               current_price ASC NULLS LAST
-            LIMIT $2;
-        """, f"%{clean_q}%", limit)
+            LIMIT ${limit_arg_idx};
+        """
+        rows = await database.fetch(sql, *args)
         res = []
         for r in rows:
             d = dict(r)
             d["affiliate_url"] = resolve_deal_button_url(d.get("platform"), None, d.get("affiliate_url"), d.get("product_url"), product_id=d.get("id"))
             res.append(d)
+        await ram_cache.set(cache_key, res, ttl=60)
         return res
     except Exception as e:
         logger.error(f"Search error: {e}")
@@ -2202,6 +2257,10 @@ async def page_deals(
     min_discount: float = Query(0.0)
 ):
     """Renders the Deals Catalog with complete pre-rendered items (SSR)."""
+    # When user searches, show all matching products across catalog unless verified_only is explicitly set
+    if search and "verified_only" not in request.query_params:
+        verified_only = False
+
     initial_data = {"deals": [], "total_matches": 0, "total_pages": 1, "page": page}
     try:
         initial_data = await get_public_deals(

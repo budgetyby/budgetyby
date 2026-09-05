@@ -79,86 +79,97 @@
     </aside>
 
     <!-- ── Main Navigation Bar ──────────────────────────────────────────── -->
-    <header class="sticky top-0 z-40 bg-[#070a11]/90 backdrop-blur-xl border-b border-slate-800/80 transition-all duration-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+    <header class="sticky top-0 z-40 bg-[#070a11]/95 backdrop-blur-xl border-b border-slate-800/80 transition-all duration-200">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2.5 sm:gap-4">
             
             <!-- Logo & Brand -->
-            <div class="flex items-center gap-3 shrink-0">
-                <a href="/" class="flex items-center gap-2.5 group">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-emerald-400 p-0.5 shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition duration-200">
-                        <div class="w-full h-full bg-[#090d16] rounded-[10px] flex items-center justify-center text-emerald-400 font-extrabold text-xl">
+            <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
+                <a href="/" class="flex items-center gap-2 sm:gap-2.5 group">
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-emerald-400 p-0.5 shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition duration-200 shrink-0">
+                        <div class="w-full h-full bg-[#090d16] rounded-[10px] flex items-center justify-center text-emerald-400 font-extrabold text-lg sm:text-xl">
                             ⚡
                         </div>
                     </div>
                     <div>
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">BudgetBy</span>
-                            <span class="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Deals</span>
+                        <div class="flex items-center gap-1 sm:gap-1.5">
+                            <span class="text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">BudgetBy</span>
+                            <span class="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Deals</span>
                         </div>
-                        <p class="text-[10px] text-slate-400 font-medium -mt-0.5">India's Smartest Price Tracker</p>
+                        <p class="hidden 2xl:block text-[10px] text-slate-400 font-medium -mt-0.5">India's Smartest Price Tracker</p>
                     </div>
                 </a>
             </div>
 
-            <!-- Primary Navigation Links (Desktop) -->
-            <nav class="hidden lg:flex items-center gap-1 bg-slate-900/70 border border-slate-800/80 rounded-2xl p-1 text-xs">
-                <a href="/" class="px-3.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 {% if active_page == 'home' %}bg-indigo-600 text-white shadow-sm shadow-indigo-600/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/80{% endif %}">
+            <!-- Primary Navigation Links (Desktop xl+) -->
+            <nav class="hidden xl:flex items-center gap-1 bg-slate-900/70 border border-slate-800/80 rounded-2xl p-1 text-xs shrink-0">
+                <a href="/" class="px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 {% if active_page == 'home' %}bg-indigo-600 text-white shadow-sm shadow-indigo-600/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/80{% endif %}">
                     <span>🏠</span> Home
                 </a>
-                <a href="/drops" class="px-3.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 {% if active_page == 'drops' %}bg-rose-600 text-white shadow-sm shadow-rose-600/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/80{% endif %}">
+                <a href="/drops" class="px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 {% if active_page == 'drops' %}bg-rose-600 text-white shadow-sm shadow-rose-600/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/80{% endif %}">
                     <span>🔥</span> 24H Drops
                     <span id="navDropsBadge" class="px-1.5 py-0.2 text-[9px] rounded-full bg-rose-500/30 text-rose-300 border border-rose-500/40 font-mono">--</span>
                 </a>
-                <a href="/deals" class="px-3.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 {% if active_page == 'deals' %}bg-indigo-600 text-white shadow-sm shadow-indigo-600/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/80{% endif %}">
+                <a href="/deals" class="px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 {% if active_page == 'deals' %}bg-indigo-600 text-white shadow-sm shadow-indigo-600/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/80{% endif %}">
                     <span>🎯</span> All Deals
                 </a>
-                <a href="/all-time-lows" class="px-3.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 {% if active_page == 'atl' %}bg-amber-600 text-white shadow-sm shadow-amber-600/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/80{% endif %}">
+                <a href="/all-time-lows" class="px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 {% if active_page == 'atl' %}bg-amber-600 text-white shadow-sm shadow-amber-600/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/80{% endif %}">
                     <span>👑</span> All-Time Lows
                 </a>
-                <a href="/stores" class="px-3.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 {% if active_page == 'stores' %}bg-cyan-600 text-white shadow-sm shadow-cyan-600/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/80{% endif %}">
+                <a href="/stores" class="px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 {% if active_page == 'stores' %}bg-cyan-600 text-white shadow-sm shadow-cyan-600/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/80{% endif %}">
                     <span>🏪</span> Stores
                 </a>
             </nav>
 
-            <!-- Global Search Form (Directs to /deals?search=...) -->
-            <form action="/deals" method="GET" class="flex-1 max-w-md hidden md:block">
-                <div class="relative">
-                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
-                    <input 
-                        type="text" 
-                        name="search"
-                        id="globalSearchInput"
-                        value="{{ request.query_params.get('search', '') }}"
-                        placeholder="Search products, stores & prices (e.g. 'shoes under 999', 'laptops')..." 
-                        class="w-full pl-10 pr-10 py-2 bg-slate-900/90 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition"
-                    />
+            <!-- Global Search Form & Autocomplete Dropdown -->
+            <div id="globalSearchContainer" class="flex-1 min-w-[160px] sm:min-w-[240px] max-w-xl relative mx-1 sm:mx-2">
+                <form action="/deals" method="GET" id="globalSearchForm" class="relative w-full" autocomplete="off">
+                    <div class="relative flex items-center">
+                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                        <input 
+                            type="text" 
+                            name="search"
+                            id="globalSearchInput"
+                            value="{{ request.query_params.get('search', '') }}"
+                            placeholder="Search products, stores & prices (e.g. 'boat earphone', 'shoes under 1000')..." 
+                            autocomplete="off"
+                            spellcheck="false"
+                            class="w-full pl-8 sm:pl-10 pr-12 sm:pr-16 py-1.5 sm:py-2 bg-slate-900/95 hover:bg-slate-900 border border-slate-700/80 focus:border-indigo-500 rounded-xl text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 transition shadow-inner"
+                        />
+                        <!-- Right Controls inside input -->
+                        <div class="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                            <button type="button" id="globalSearchClearBtn" class="hidden text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-800 transition" title="Clear search">
+                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <kbd class="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-slate-800/90 border border-slate-700/80 rounded pointer-events-none">/</kbd>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Autocomplete Live Dropdown Panel -->
+                <div id="globalSearchDropdown" class="hidden absolute left-0 right-0 top-full mt-2 bg-[#090d16] border border-slate-750 rounded-2xl shadow-2xl overflow-hidden z-50 divide-y divide-slate-800/80 max-h-[440px] overflow-y-auto">
+                    <!-- Dynamic suggestions injected by JS -->
                 </div>
-            </form>
+            </div>
 
             <!-- Action buttons -->
-            <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
-                <!-- Mobile search trigger -->
-                <button onclick="toggleMobileSearch()" class="md:hidden p-2 text-slate-400 hover:text-white hover:bg-slate-900 rounded-xl transition" title="Search">
-                    <i data-lucide="search" class="w-5 h-5"></i>
-                </button>
-
+            <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <!-- Watchlist / Saved Deals Trigger -->
-                <button onclick="openWatchlistDrawer()" class="px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 flex items-center gap-1.5 transition shadow-sm" title="View your saved watchlist">
+                <button onclick="openWatchlistDrawer()" class="px-2 sm:px-3 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 flex items-center gap-1 sm:gap-1.5 transition shadow-sm" title="View your saved watchlist">
                     <span class="text-rose-400">❤️</span>
                     <span class="hidden sm:inline">Saved</span>
                     <span id="watchlistCountBadge" class="px-1.5 py-0.2 text-[10px] rounded-full bg-rose-500/20 text-rose-300 font-mono">0</span>
                 </button>
 
-                <!-- 24H Price Drops Quick Nav (Mobile) -->
-                <a href="/drops" class="lg:hidden px-2.5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-1 shadow-md shadow-rose-600/20 transition">
+                <!-- 24H Price Drops Quick Nav (Mobile & Tablets where primary nav is in subbar) -->
+                <a href="/drops" class="xl:hidden px-2.5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-1 shadow-md shadow-rose-600/20 transition">
                     <span>⚡ Drops</span>
                 </a>
 
                 <!-- Telegram Channel Join -->
                 <a href="https://t.me/DealPulse_Deals" target="_blank" rel="noopener noreferrer" 
-                   class="hidden sm:flex px-3.5 py-2 rounded-xl text-xs font-bold bg-sky-500 hover:bg-sky-400 text-white items-center gap-1.5 shadow-lg shadow-sky-500/20 hover:scale-[1.02] active:scale-[0.98] transition">
+                   class="hidden sm:flex px-2.5 sm:px-3.5 py-2 rounded-xl text-xs font-bold bg-sky-500 hover:bg-sky-400 text-white items-center gap-1.5 shadow-lg shadow-sky-500/20 hover:scale-[1.02] active:scale-[0.98] transition">
                     <i data-lucide="send" class="w-3.5 h-3.5"></i>
-                    <span>Telegram</span>
+                    <span class="hidden md:inline">Telegram</span>
                     <span class="px-1.5 py-0.2 text-[10px] rounded-full bg-sky-600 font-mono">50K+</span>
                 </a>
 
@@ -169,8 +180,8 @@
             </div>
         </div>
 
-        <!-- Mobile Quick Navigation Bar -->
-        <div class="lg:hidden border-t border-slate-800/80 bg-slate-950/80 px-4 py-2 flex items-center justify-around text-xs">
+        <!-- Quick Navigation Bar (shown on screens < xl where desktop nav is condensed) -->
+        <div class="xl:hidden border-t border-slate-800/80 bg-slate-950/80 px-4 py-2 flex items-center justify-around text-xs">
             <a href="/" class="flex flex-col items-center gap-0.5 {% if active_page == 'home' %}text-indigo-400 font-bold{% else %}text-slate-400 hover:text-white{% endif %}">
                 <span>🏠</span>
                 <span class="text-[10px]">Home</span>
@@ -191,22 +202,6 @@
                 <span>🏪</span>
                 <span class="text-[10px]">Stores</span>
             </a>
-        </div>
-
-        <!-- Mobile Search Dropdown Box -->
-        <div id="mobileSearchBox" class="hidden md:hidden px-4 py-2.5 border-t border-slate-800/80 bg-slate-950">
-            <form action="/deals" method="GET">
-                <div class="relative">
-                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                    <input 
-                        type="text" 
-                        name="search"
-                        id="mobileSearchInput"
-                        placeholder="Search deals across Amazon, Flipkart..." 
-                        class="w-full pl-9 pr-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                    />
-                </div>
-            </form>
         </div>
     </header>
 
@@ -1401,13 +1396,241 @@
             });
         }
 
-        function toggleMobileSearch() {
-            const box = document.getElementById('mobileSearchBox');
-            if (box) {
-                box.classList.toggle('hidden');
-                if (!box.classList.contains('hidden')) {
-                    document.getElementById('mobileSearchInput').focus();
+        // ── Real-Time Global Search Autocomplete Controller ─────────────────
+        let searchDebounceTimer = null;
+        let selectedDropdownIndex = -1;
+
+        function initGlobalSearchAutocomplete() {
+            const input = document.getElementById('globalSearchInput');
+            const clearBtn = document.getElementById('globalSearchClearBtn');
+            const dropdown = document.getElementById('globalSearchDropdown');
+            const form = document.getElementById('globalSearchForm');
+
+            if (!input || !dropdown) return;
+
+            function updateClearBtn() {
+                if (clearBtn) {
+                    if (input.value.trim().length > 0) {
+                        clearBtn.classList.remove('hidden');
+                    } else {
+                        clearBtn.classList.add('hidden');
+                    }
                 }
+            }
+
+            if (clearBtn) {
+                clearBtn.addEventListener('click', () => {
+                    input.value = '';
+                    updateClearBtn();
+                    dropdown.classList.add('hidden');
+                    dropdown.innerHTML = '';
+                    input.focus();
+                });
+            }
+
+            input.addEventListener('input', () => {
+                updateClearBtn();
+                const q = input.value.trim();
+                if (q.length < 2) {
+                    dropdown.classList.add('hidden');
+                    dropdown.innerHTML = '';
+                    selectedDropdownIndex = -1;
+                    return;
+                }
+
+                clearTimeout(searchDebounceTimer);
+                searchDebounceTimer = setTimeout(() => {
+                    performLiveSearch(q);
+                }, 180);
+            });
+
+            input.addEventListener('focus', () => {
+                const q = input.value.trim();
+                if (q.length >= 2 && dropdown.innerHTML.trim().length > 0) {
+                    dropdown.classList.remove('hidden');
+                }
+            });
+
+            // Keyboard navigation (ArrowDown, ArrowUp, Enter, Escape)
+            input.addEventListener('keydown', (e) => {
+                const items = dropdown.querySelectorAll('.search-item-row');
+                if (!items.length || dropdown.classList.contains('hidden')) {
+                    if (e.key === 'Escape') {
+                        dropdown.classList.add('hidden');
+                    }
+                    return;
+                }
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    selectedDropdownIndex = (selectedDropdownIndex + 1) % items.length;
+                    highlightDropdownItem(items);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    selectedDropdownIndex = (selectedDropdownIndex - 1 + items.length) % items.length;
+                    highlightDropdownItem(items);
+                } else if (e.key === 'Enter') {
+                    if (selectedDropdownIndex >= 0 && selectedDropdownIndex < items.length) {
+                        e.preventDefault();
+                        items[selectedDropdownIndex].click();
+                    }
+                } else if (e.key === 'Escape') {
+                    dropdown.classList.add('hidden');
+                    selectedDropdownIndex = -1;
+                }
+            });
+
+            // Global shortcut '/' to focus search input
+            document.addEventListener('keydown', (e) => {
+                if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                    e.preventDefault();
+                    input.focus();
+                    input.select();
+                }
+            });
+
+            // Click outside closes dropdown
+            document.addEventListener('click', (e) => {
+                const container = document.getElementById('globalSearchContainer');
+                if (container && !container.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                    selectedDropdownIndex = -1;
+                }
+            });
+
+            updateClearBtn();
+        }
+
+        function highlightDropdownItem(items) {
+            items.forEach((item, idx) => {
+                if (idx === selectedDropdownIndex) {
+                    item.classList.add('bg-indigo-950/70', 'ring-1', 'ring-indigo-500/50');
+                    item.scrollIntoView({ block: 'nearest' });
+                } else {
+                    item.classList.remove('bg-indigo-950/70', 'ring-1', 'ring-indigo-500/50');
+                }
+            });
+        }
+
+        async function performLiveSearch(q) {
+            const dropdown = document.getElementById('globalSearchDropdown');
+            if (!dropdown) return;
+
+            dropdown.classList.remove('hidden');
+            dropdown.innerHTML = `
+                <div class="p-3.5 flex items-center justify-center gap-2 text-slate-400 text-xs">
+                    <span class="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></span>
+                    <span>Searching catalog for "<b class="text-white">${escapeSearchHtml(q)}</b>"...</span>
+                </div>
+            `;
+
+            try {
+                const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=6`);
+                if (!res.ok) throw new Error('Search failed');
+                const data = await res.json();
+                renderLiveSearchResults(q, data);
+            } catch (err) {
+                dropdown.innerHTML = `
+                    <div class="p-3 text-center text-xs text-slate-400">
+                        <span>Press Enter to search catalog for "${escapeSearchHtml(q)}"</span>
+                    </div>
+                `;
+            }
+        }
+
+        function renderLiveSearchResults(q, products) {
+            const dropdown = document.getElementById('globalSearchDropdown');
+            if (!dropdown) return;
+            selectedDropdownIndex = -1;
+
+            if (!products || products.length === 0) {
+                dropdown.innerHTML = `
+                    <div class="p-4 text-center">
+                        <div class="text-xs text-slate-400 mb-2">No direct products found for "<b class="text-white">${escapeSearchHtml(q)}</b>"</div>
+                        <a href="/deals?search=${encodeURIComponent(q)}" class="inline-flex items-center gap-1 text-xs font-bold text-indigo-400 hover:text-indigo-300 hover:underline">
+                            <span>Search entire catalog in All Deals</span>
+                            <span>→</span>
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+
+            const storeStyles = {
+                amazon: { bg: 'bg-[#FF9900]/15 text-[#FF9900] border-[#FF9900]/30', label: 'Amazon' },
+                flipkart: { bg: 'bg-[#2874F0]/15 text-[#2874F0] border-[#2874F0]/30', label: 'Flipkart' },
+                myntra: { bg: 'bg-[#FF3F6C]/15 text-[#FF3F6C] border-[#FF3F6C]/30', label: 'Myntra' },
+                ajio: { bg: 'bg-[#D99814]/15 text-[#D99814] border-[#D99814]/30', label: 'Ajio' },
+                nykaa: { bg: 'bg-[#FC2779]/15 text-[#FC2779] border-[#FC2779]/30', label: 'Nykaa' }
+            };
+
+            let html = `
+                <div class="px-3 py-1.5 bg-slate-950 text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between border-b border-slate-800/80">
+                    <span>Products (${products.length})</span>
+                    <span class="text-slate-500 font-mono font-normal">Instant Matches</span>
+                </div>
+                <div class="divide-y divide-slate-800/60 max-h-[300px] overflow-y-auto">
+            `;
+
+            products.forEach((p) => {
+                const plat = (p.platform || 'store').toLowerCase();
+                const st = storeStyles[plat] || { bg: 'bg-slate-800 text-slate-300 border-slate-700', label: plat };
+                const price = Math.round(p.current_price || 0);
+                const mrp = Math.round(p.mrp || 0);
+                const hasDiscount = mrp > price && mrp > 0;
+                const discPct = hasDiscount ? Math.round(((mrp - price) / mrp) * 100) : 0;
+                const dealUrl = p.affiliate_url || `/api/deal/redirect/${p.id}`;
+
+                html += `
+                    <a href="${dealUrl}" target="_blank" rel="noopener noreferrer" class="search-item-row flex items-center justify-between gap-3 p-2.5 hover:bg-slate-900 transition group block">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <img src="${p.image_url || 'https://placehold.co/80x80/0f172a/94a3b8?text=Deal'}" 
+                                 alt="" 
+                                 class="w-10 h-10 object-contain rounded-lg bg-white/5 border border-slate-800/80 p-0.5 shrink-0" 
+                                 onerror="this.src='https://placehold.co/80x80/0f172a/94a3b8?text=Deal'" />
+                            <div class="min-w-0">
+                                <div class="text-xs font-semibold text-slate-200 group-hover:text-white truncate max-w-[200px] sm:max-w-[300px]">${escapeSearchHtml(p.title)}</div>
+                                <div class="flex items-center gap-1.5 mt-0.5">
+                                    <span class="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded border ${st.bg}">${st.label}</span>
+                                    ${p.rating ? `<span class="text-[10px] text-amber-400 font-semibold flex items-center gap-0.5">★ ${p.rating}</span>` : ''}
+                                    ${discPct > 0 ? `<span class="text-[9px] font-bold text-emerald-400 bg-emerald-500/15 px-1 py-0.2 rounded">${discPct}% OFF</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <div class="text-xs font-black text-emerald-400 font-mono">₹${price.toLocaleString('en-IN')}</div>
+                            ${hasDiscount ? `<div class="text-[10px] text-slate-500 line-through font-mono">₹${mrp.toLocaleString('en-IN')}</div>` : ''}
+                        </div>
+                    </a>
+                `;
+            });
+
+            html += `
+                </div>
+                <a href="/deals?search=${encodeURIComponent(q)}" class="block px-3 py-2.5 bg-slate-950 hover:bg-indigo-950/60 text-center text-xs font-bold text-indigo-400 hover:text-indigo-300 transition flex items-center justify-center gap-1.5 group">
+                    <span>🔍 View all results for "<b class="text-white">${escapeSearchHtml(q)}</b>" in All Deals</span>
+                    <span class="group-hover:translate-x-0.5 transition-transform">→</span>
+                </a>
+            `;
+
+            dropdown.innerHTML = html;
+        }
+
+        function escapeSearchHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function toggleMobileSearch() {
+            const input = document.getElementById('globalSearchInput');
+            if (input) {
+                input.focus();
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
 
@@ -1416,6 +1639,7 @@
             loadUserSettings();
             applyUserSettings();
             updateWatchlistBadge();
+            initGlobalSearchAutocomplete();
             if (window.lucide) lucide.createIcons();
 
             // Auto-open settings if query param ?settings=open

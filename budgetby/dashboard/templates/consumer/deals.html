@@ -422,6 +422,9 @@
         if (urlParams.get('search')) {
             dealsState.search = urlParams.get('search');
             document.getElementById('facetSearchInput').value = dealsState.search;
+            if (urlParams.get('verified_only') === null) {
+                dealsState.verifiedOnly = false;
+            }
         }
         if (urlParams.get('platform')) {
             dealsState.platform = urlParams.get('platform');
