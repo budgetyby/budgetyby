@@ -201,7 +201,7 @@
                     <!-- Left: Result Count & Active Filter Tags -->
                     <div class="flex items-center gap-2 flex-wrap">
                         <div class="text-xs text-slate-400 font-mono">
-                            Found <span id="dealsTotalFound" class="font-bold text-white">0</span> deals
+                            Found <span id="dealsTotalFound" class="font-bold text-white">{{ initial_data.total_matches if initial_data and initial_data.total_matches else 0 }}</span> deals
                         </div>
                         <div id="activeTagsContainer" class="flex items-center gap-1.5 flex-wrap">
                             <!-- Dynamic filter chips rendered here -->
@@ -218,11 +218,11 @@
                         </button>
                         <label for="dealsSortSelect" class="text-xs text-slate-400 font-semibold hidden sm:inline">Sort:</label>
                         <select id="dealsSortSelect" onchange="onDealsSortChange(this.value)" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition">
-                            <option value="latest">Most Recently Verified</option>
-                            <option value="discount">Highest Discount %</option>
-                            <option value="price_asc">Price: Low to High</option>
-                            <option value="price_desc">Price: High to Low</option>
-                            <option value="score">Best Value Deal</option>
+                            <option value="latest" {% if current_sort == 'latest' %}selected{% endif %}>Most Recently Verified</option>
+                            <option value="discount" {% if current_sort == 'discount' %}selected{% endif %}>Highest Discount %</option>
+                            <option value="price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+                            <option value="price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+                            <option value="score" {% if current_sort == 'score' %}selected{% endif %}>Best Value Deal</option>
                         </select>
                     </div>
                 </div>
@@ -239,15 +239,112 @@
                 </div>
 
                 <!-- Products Grid -->
-                <div id="dealsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    <!-- Skeletons -->
-                    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
-                    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
-                    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
+                <div id="dealsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 transition-opacity duration-200">
+                    {% if initial_data and initial_data.deals %}
+                        {% for deal in initial_data.deals %}
+                        <div data-deal-id="{{ deal.product_id or deal.id }}" class="bg-[#0c101c]/95 border border-slate-800/80 hover:border-slate-700/90 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative hover:shadow-xl hover:shadow-indigo-950/20">
+                            <div>
+                                <!-- Store Badge & Discount Meta -->
+                                <div class="flex items-center justify-between gap-2 mb-2">
+                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider {{ deal.platform|store_badge }}">
+                                        {{ deal.platform|store_name }}
+                                    </span>
+                                    {% if deal.drop_pct and deal.drop_pct >= 10 %}
+                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono">
+                                        📉 -{{ deal.drop_pct|round_int }}% DROP
+                                    </span>
+                                    {% elif deal.discount_pct and deal.discount_pct > 0 %}
+                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
+                                        {{ deal.discount_pct|round_int }}% OFF
+                                    </span>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Image Area -->
+                                <div class="relative w-full h-44 rounded-xl bg-[#090d16] p-2 flex items-center justify-center overflow-hidden border border-slate-800/60 group-hover:border-slate-700 transition">
+                                    <img src="{{ deal.image_url or '/static/placeholder.png' }}" 
+                                         alt="{{ deal.title }}" 
+                                         class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                                         loading="lazy"
+                                         onerror="this.src='/static/placeholder.png'" />
+                                    
+                                    <!-- Watchlist Toggle -->
+                                    <button onclick="handleDealsCardWatchlist(this, {{ deal.product_id or deal.id }})" 
+                                            class="absolute top-2 right-2 p-1.5 rounded-xl bg-slate-950/80 backdrop-blur-md border border-slate-800 text-slate-400 hover:text-rose-400 transition" 
+                                            title="Save to Watchlist">
+                                        <i data-lucide="heart" class="w-4 h-4"></i>
+                                    </button>
+
+                                    <!-- Freshness Pill -->
+                                    <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800/80 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                        <span>Verified {{ deal.last_checked|time_ago }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Product Title -->
+                                <div class="mt-3">
+                                    <a href="{{ deal.affiliate_url or deal.product_url or '#' }}" target="_blank" rel="noopener noreferrer" 
+                                       class="text-xs font-bold text-slate-100 hover:text-indigo-400 line-clamp-2 transition leading-snug" 
+                                       title="{{ deal.title }}">
+                                        {{ deal.title }}
+                                    </a>
+                                    {% if deal.rating and deal.rating >= 1.0 %}
+                                    <div class="flex items-center gap-1.5 mt-1.5">
+                                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold font-mono">
+                                            <span class="text-amber-400">★</span> {{ deal.rating }}
+                                        </span>
+                                        {% if deal.review_count and deal.review_count > 0 %}
+                                        <span class="text-[10px] text-slate-400 font-mono">({{ deal.review_count }})</span>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Price & Action Footer -->
+                            <div class="mt-3 pt-3 border-t border-slate-800/80">
+                                <div class="flex items-baseline justify-between gap-1 mb-2">
+                                    <div>
+                                        {% set cp = deal.current_price or deal.deal_price or 0 %}
+                                        <span class="text-lg font-black text-white font-mono">{{ cp|format_inr }}</span>
+                                        {% if deal.mrp and deal.mrp > cp %}
+                                        <span class="text-xs text-slate-500 line-through ml-1.5 font-mono">{{ deal.mrp|format_inr }}</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if deal.mrp and deal.mrp > cp %}
+                                    <div class="text-[10px] font-extrabold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60 font-mono">
+                                        Save {{ (deal.mrp - cp)|format_inr }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Card Buttons -->
+                                <div class="grid grid-cols-4 gap-1.5">
+                                    <button onclick="openPriceHistoryModal({{ deal.product_id or deal.id }})" 
+                                            class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition" 
+                                            title="View Price History">
+                                        <i data-lucide="trending-down" class="w-4 h-4 text-indigo-400"></i>
+                                    </button>
+                                    <button onclick="handleDealsCardShare({{ deal.product_id or deal.id }})" 
+                                            class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition" 
+                                            title="Share Deal">
+                                        <i data-lucide="share-2" class="w-4 h-4 text-cyan-400"></i>
+                                    </button>
+                                    <a href="{{ deal.affiliate_url or deal.product_url or '#' }}" target="_blank" rel="noopener noreferrer" 
+                                       class="col-span-2 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-lg shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98] transition">
+                                        <span>Get Deal</span>
+                                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
                 </div>
 
                 <!-- Empty State -->
-                <div id="dealsEmptyState" class="hidden text-center py-20 px-4 bg-[#090d16]/60 border border-slate-800/80 rounded-3xl">
+                <div id="dealsEmptyState" class="{% if initial_data and initial_data.deals and initial_data.deals|length > 0 %}hidden{% endif %} text-center py-20 px-4 bg-[#090d16]/60 border border-slate-800/80 rounded-3xl">
                     <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-3xl mx-auto mb-4">
                         🛍️
                     </div>
@@ -261,16 +358,16 @@
                 </div>
 
                 <!-- Pagination Strip -->
-                <div id="dealsPaginationStrip" class="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-[#090d16]/80 border border-slate-800/80">
+                <div id="dealsPaginationStrip" class="{% if not initial_data or not initial_data.deals or initial_data.deals|length == 0 %}hidden{% endif %} mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-[#090d16]/80 border border-slate-800/80">
                     <div class="text-xs text-slate-400">
-                        Page <span id="dealsPageNum" class="font-bold text-white">1</span> of <span id="dealsTotalPageNum" class="font-bold text-white">1</span>
+                        Page <span id="dealsPageNum" class="font-bold text-white">{{ initial_data.page if initial_data and initial_data.page else 1 }}</span> of <span id="dealsTotalPageNum" class="font-bold text-white">{{ initial_data.total_pages if initial_data and initial_data.total_pages else 1 }}</span>
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <button onclick="changeDealsPage(-1)" id="dealsPrevBtn" disabled class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none text-slate-200 transition">
+                        <button onclick="changeDealsPage(-1)" id="dealsPrevBtn" {% if not initial_data or initial_data.page <= 1 %}disabled{% endif %} class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none text-slate-200 transition">
                             ← Previous
                         </button>
-                        <button onclick="changeDealsPage(1)" id="dealsNextBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:pointer-events-none text-white transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/30">
+                        <button onclick="changeDealsPage(1)" id="dealsNextBtn" {% if not initial_data or initial_data.page >= initial_data.total_pages %}disabled{% endif %} class="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:pointer-events-none text-white transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/30">
                             <span>Next Page</span>
                             <span>→</span>
                         </button>
@@ -284,29 +381,32 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script id="initial-deals-data" type="application/json">{{ initial_data|tojson|safe }}</script>
 <script>
     const dealsState = {
-        page: 1,
+        page: {{ current_page if current_page else 1 }},
         limit: 24,
-        totalPages: 1,
-        search: "{{ request.query_params.get('search', '') }}",
-        platform: "{{ request.query_params.get('platform', '') }}",
-        category: "{{ request.query_params.get('category', '') }}",
-        tab: "{{ request.query_params.get('tab', '') }}",
+        totalPages: {{ initial_data.total_pages if initial_data and initial_data.total_pages else 1 }},
+        search: "{{ current_search if current_search else '' }}",
+        platform: "{{ current_platform if current_platform else '' }}",
+        category: "{{ current_category if current_category else '' }}",
+        tab: "{{ current_tab if current_tab else '' }}",
         minPrice: 0,
         maxPrice: 0,
-        minDiscount: 0,
-        verifiedOnly: true,
-        sortBy: 'latest',
+        minDiscount: {{ current_min_discount if current_min_discount else 0 }},
+        verifiedOnly: {{ 'true' if current_verified_only else 'false' }},
+        sortBy: '{{ current_sort if current_sort else "latest" }}',
         items: []
     };
 
     document.addEventListener('DOMContentLoaded', () => {
         // Initialize state from URL params
         const urlParams = new URLSearchParams(window.location.search);
+        let hasFilterOverride = false;
         if (urlParams.get('saved')) {
             dealsState.savedIds = urlParams.get('saved');
             dealsState.verifiedOnly = false;
+            hasFilterOverride = true;
         }
         if (urlParams.get('tab')) {
             dealsState.tab = urlParams.get('tab');
@@ -345,7 +445,46 @@
             verifiedCb.checked = dealsState.verifiedOnly;
         }
 
-        loadDeals();
+        // Check if SSR data is available
+        const rawInitial = document.getElementById('initial-deals-data');
+        let usedInitial = false;
+        if (!hasFilterOverride && rawInitial && rawInitial.textContent.trim()) {
+            try {
+                const initialData = JSON.parse(rawInitial.textContent);
+                if (initialData && initialData.deals && initialData.deals.length > 0) {
+                    dealsState.items = initialData.deals.map(d => ({
+                        ...d,
+                        id: d.product_id || d.deal_id,
+                        current_price: d.deal_price !== undefined ? d.deal_price : (d.current_price || 0),
+                        discount_percent: d.discount_pct !== undefined ? d.discount_pct : (d.discount_percent || 0),
+                        drop_percent: d.drop_pct !== undefined ? d.drop_pct : (d.drop_percent || 0),
+                        affiliate_url: d.affiliate_url || d.product_url
+                    }));
+                    dealsState.totalPages = initialData.total_pages || 1;
+                    dealsState.page = initialData.page || 1;
+                    dealsState.itemsMap = {};
+                    dealsState.items.forEach(d => { dealsState.itemsMap[d.id] = d; });
+                    
+                    // Sync heart icons with localStorage watchlist
+                    document.querySelectorAll('#dealsGrid [data-deal-id]').forEach(card => {
+                        const id = card.getAttribute('data-deal-id');
+                        if (id && isProductInWatchlist(id)) {
+                            const heart = card.querySelector('[data-lucide="heart"]');
+                            if (heart) heart.classList.add('fill-rose-500', 'text-rose-500');
+                        }
+                    });
+                    renderActiveFilterTags();
+                    lucide.createIcons();
+                    usedInitial = true;
+                }
+            } catch (e) {
+                console.warn('Error reading initial deals SSR data:', e);
+            }
+        }
+
+        if (!usedInitial) {
+            loadDeals();
+        }
         startDealsAutoRefresh();
     });
 
@@ -413,14 +552,8 @@
         const paginationStrip = document.getElementById('dealsPaginationStrip');
 
         if (!isBackground) {
-            grid.innerHTML = `
-                <div class="col-span-full py-16 text-center">
-                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-300 animate-pulse">
-                        <span class="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
-                        Fetching verified deals catalog...
-                    </div>
-                </div>
-            `;
+            if (typeof showPageProgress === 'function') showPageProgress();
+            grid.classList.add('opacity-50', 'pointer-events-none');
             emptyState.classList.add('hidden');
         }
 
@@ -532,12 +665,10 @@
 
         } catch (err) {
             console.error('Error loading deals:', err);
+        } finally {
             if (!isBackground) {
-                grid.innerHTML = `
-                    <div class="col-span-full text-center py-12 text-rose-400 text-xs font-semibold">
-                        Failed to load deals catalog. Please check your connection.
-                    </div>
-                `;
+                if (typeof hidePageProgress === 'function') hidePageProgress();
+                grid.classList.remove('opacity-50', 'pointer-events-none');
             }
         }
     }

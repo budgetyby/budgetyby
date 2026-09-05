@@ -259,7 +259,7 @@
         <!-- Store Deals Filter Bar -->
         <div class="bg-[#090d16]/95 border border-slate-800 rounded-2xl p-3.5 mb-6 flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-2">
-                <span class="text-xs text-slate-400 font-mono">Found <span id="storeTotalCount" class="font-bold text-white">0</span> active deals</span>
+                <span class="text-xs text-slate-400 font-mono">Found <span id="storeTotalCount" class="font-bold text-white">{{ initial_data.total_matches if initial_data and initial_data.total_matches else 0 }}</span> active deals</span>
             </div>
 
             <div class="flex items-center gap-2">
@@ -282,24 +282,121 @@
         </div>
 
         <!-- Store Products Grid -->
-        <div id="storeDealsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
-            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
-            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
-            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
+        <div id="storeDealsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 transition-opacity duration-200">
+            {% if initial_data and initial_data.deals %}
+                {% for deal in initial_data.deals %}
+                <div data-deal-id="{{ deal.product_id or deal.id }}" class="bg-[#0c101c]/95 border border-slate-800/80 hover:border-slate-700/90 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative hover:shadow-xl hover:shadow-indigo-950/20">
+                    <div>
+                        <!-- Store Badge & Discount Meta -->
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider {{ deal.platform|store_badge }}">
+                                {{ deal.platform|store_name }}
+                            </span>
+                            {% if deal.discount_pct and deal.discount_pct > 0 %}
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
+                                {{ deal.discount_pct|round_int }}% OFF
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Image Area -->
+                        <div class="relative w-full h-44 rounded-xl bg-[#090d16] p-2 flex items-center justify-center overflow-hidden border border-slate-800/60 group-hover:border-slate-700 transition">
+                            <img src="{{ deal.image_url or '/static/placeholder.png' }}" 
+                                 alt="{{ deal.title }}" 
+                                 class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" 
+                                 loading="lazy" 
+                                 onerror="this.src='/static/placeholder.png'" />
+                            
+                            <!-- Watchlist Toggle -->
+                            <button onclick="handleStoreWatchlist(this, {{ deal.product_id or deal.id }})" 
+                                    class="absolute top-2 right-2 p-1.5 rounded-xl bg-slate-950/80 border border-slate-800 text-slate-400 hover:text-rose-400 transition" 
+                                    title="Save to Watchlist">
+                                <i data-lucide="heart" class="w-4 h-4"></i>
+                            </button>
+
+                            <!-- Freshness Pill -->
+                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800/80 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                <span>Verified {{ deal.last_checked|time_ago }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Product Title -->
+                        <div class="mt-3">
+                            <a href="{{ deal.affiliate_url or deal.product_url or '#' }}" target="_blank" rel="noopener noreferrer" 
+                               class="text-xs font-bold text-slate-100 hover:text-indigo-400 line-clamp-2 transition leading-snug" 
+                               title="{{ deal.title }}">
+                                {{ deal.title }}
+                            </a>
+                            {% if deal.rating and deal.rating >= 1.0 %}
+                            <div class="flex items-center gap-1.5 mt-1.5">
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold font-mono">
+                                    <span class="text-amber-400">★</span> {{ deal.rating }}
+                                </span>
+                                {% if deal.review_count and deal.review_count > 0 %}
+                                <span class="text-[10px] text-slate-400 font-mono">({{ deal.review_count }})</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Price & Action Footer -->
+                    <div class="mt-3 pt-3 border-t border-slate-800/80">
+                        <div class="flex items-baseline justify-between gap-1 mb-2">
+                            <div>
+                                {% set cp = deal.current_price or deal.deal_price or 0 %}
+                                <span class="text-lg font-black text-white font-mono">{{ cp|format_inr }}</span>
+                                {% if deal.mrp and deal.mrp > cp %}
+                                <span class="text-xs text-slate-500 line-through ml-1.5 font-mono">{{ deal.mrp|format_inr }}</span>
+                                {% endif %}
+                            </div>
+                            {% if deal.mrp and deal.mrp > cp %}
+                            <div class="text-[10px] font-extrabold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60 font-mono">
+                                Save {{ (deal.mrp - cp)|format_inr }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Card Action Buttons -->
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button onclick="openPriceHistoryModal({{ deal.product_id or deal.id }})" 
+                                    class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition" 
+                                    title="Price History">
+                                <i data-lucide="trending-down" class="w-4 h-4 text-indigo-400"></i>
+                            </button>
+                            <button onclick="handleStoreShare({{ deal.product_id or deal.id }})" 
+                                    class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition" 
+                                    title="Share Deal">
+                                <i data-lucide="share-2" class="w-4 h-4 text-cyan-400"></i>
+                            </button>
+                            <a href="{{ deal.affiliate_url or deal.product_url or '#' }}" target="_blank" rel="noopener noreferrer" 
+                               class="col-span-2 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-lg shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98] transition">
+                                <span>Get Deal</span>
+                                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-span-full py-16 text-center text-xs text-slate-400">
+                    No active deals found for {{ store_name }} right now. Check back soon!
+                </div>
+            {% endif %}
         </div>
 
         <!-- Pagination Bar -->
         <div id="storePaginationBar" class="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div class="text-xs text-slate-400">
-                Page <span id="storeCurrentPage" class="font-bold text-white">1</span> of <span id="storeTotalPages" class="font-bold text-white">1</span>
+                Page <span id="storeCurrentPage" class="font-bold text-white">{{ initial_data.page if initial_data and initial_data.page else 1 }}</span> of <span id="storeTotalPages" class="font-bold text-white">{{ initial_data.total_pages if initial_data and initial_data.total_pages else 1 }}</span>
             </div>
 
             <div class="flex items-center gap-2">
                 <button onclick="changeStorePage(-1)" id="storePrevBtn" disabled class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none text-slate-200 transition">
                     ← Previous
                 </button>
-                <button onclick="changeStorePage(1)" id="storeNextBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:pointer-events-none text-white transition flex items-center gap-1.5">
+                <button onclick="changeStorePage(1)" id="storeNextBtn" {% if not initial_data or initial_data.total_pages <= 1 %}disabled{% endif %} class="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:pointer-events-none text-white transition flex items-center gap-1.5">
                     <span>Next Page</span>
                     <span>→</span>
                 </button>
@@ -311,16 +408,18 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script id="initial-store-data" type="application/json">{{ initial_data|tojson|safe }}</script>
 <script>
     {% if store_id %}
     const storeState = {
         platform: "{{ store_id }}",
         category: '',
         sortBy: 'latest',
-        page: 1,
+        page: {{ initial_data.page if initial_data and initial_data.page else 1 }},
         limit: 24,
-        totalPages: 1,
-        items: []
+        totalPages: {{ initial_data.total_pages if initial_data and initial_data.total_pages else 1 }},
+        items: [],
+        itemsMap: {}
     };
 
     let storeDealsAutoRefreshTimer = null;
@@ -336,8 +435,48 @@
         }, intervalSec * 1000);
     }
 
+    function syncStoreWatchlistHearts() {
+        if (!window.isInWatchlist) return;
+        document.querySelectorAll('#storeDealsGrid [data-deal-id]').forEach(card => {
+            const id = card.dataset.dealId;
+            const heartIcon = card.querySelector('[title="Save to Watchlist"] i');
+            if (id && heartIcon && isInWatchlist(id)) {
+                heartIcon.classList.add('fill-rose-500', 'text-rose-500');
+            }
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
-        loadStoreDeals();
+        const rawStoreData = document.getElementById('initial-store-data');
+        let hasInitialData = false;
+        if (rawStoreData && rawStoreData.textContent.trim()) {
+            try {
+                const parsed = JSON.parse(rawStoreData.textContent);
+                if (parsed && parsed.deals && parsed.deals.length > 0) {
+                    storeState.items = (parsed.deals || []).map(d => ({
+                        ...d,
+                        id: d.product_id || d.deal_id,
+                        current_price: d.deal_price !== undefined ? d.deal_price : (d.current_price || 0),
+                        discount_percent: d.discount_pct !== undefined ? d.discount_pct : (d.discount_percent || 0),
+                        drop_percent: d.drop_pct !== undefined ? d.drop_pct : (d.drop_percent || 0),
+                        affiliate_url: d.affiliate_url || d.product_url
+                    }));
+                    storeState.totalPages = parsed.total_pages || 1;
+                    storeState.itemsMap = {};
+                    storeState.items.forEach(d => { storeState.itemsMap[d.id] = d; });
+                    hasInitialData = true;
+                }
+            } catch (e) {
+                console.warn('Could not parse initial-store-data', e);
+            }
+        }
+
+        if (!hasInitialData) {
+            loadStoreDeals();
+        } else {
+            if (window.lucide) lucide.createIcons();
+            syncStoreWatchlistHearts();
+        }
         startStoreDealsAutoRefresh();
     });
 
@@ -348,14 +487,10 @@
     async function loadStoreDeals(isBackground = false) {
         const grid = document.getElementById('storeDealsGrid');
         if (!isBackground) {
-            grid.innerHTML = `
-                <div class="col-span-full py-16 text-center">
-                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-300 animate-pulse">
-                        <span class="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
-                        Scanning {{ store_name }} deals...
-                    </div>
-                </div>
-            `;
+            if (typeof showPageProgress === 'function') showPageProgress();
+            if (grid) {
+                grid.classList.add('opacity-50', 'pointer-events-none');
+            }
         }
 
         try {
@@ -381,19 +516,28 @@
             storeState.totalPages = data.total_pages || 1;
 
             const totalCount = data.total_matches !== undefined ? data.total_matches : (data.total || storeState.items.length);
-            document.getElementById('storeTotalCount').innerText = totalCount.toLocaleString('en-IN');
-            document.getElementById('storeCurrentPage').innerText = data.page || 1;
-            document.getElementById('storeTotalPages').innerText = storeState.totalPages;
+            const totalEl = document.getElementById('storeTotalCount');
+            if (totalEl) totalEl.innerText = totalCount.toLocaleString('en-IN');
+            const curPageEl = document.getElementById('storeCurrentPage');
+            if (curPageEl) curPageEl.innerText = data.page || 1;
+            const totalPagesEl = document.getElementById('storeTotalPages');
+            if (totalPagesEl) totalPagesEl.innerText = storeState.totalPages;
 
-            document.getElementById('storePrevBtn').disabled = (storeState.page <= 1);
-            document.getElementById('storeNextBtn').disabled = (storeState.page >= storeState.totalPages);
+            const prevBtn = document.getElementById('storePrevBtn');
+            if (prevBtn) prevBtn.disabled = (storeState.page <= 1);
+            const nextBtn = document.getElementById('storeNextBtn');
+            if (nextBtn) nextBtn.disabled = (storeState.page >= storeState.totalPages);
 
             renderStoreCards(storeState.items);
         } catch (err) {
             console.error('Error loading store deals:', err);
-            const grid = document.getElementById('storeDealsGrid');
-            if (grid) {
+            if (grid && (!storeState.items || storeState.items.length === 0)) {
                 grid.innerHTML = '<div class="col-span-full py-12 text-center text-xs text-rose-400 font-semibold">Failed to load deals for this store. Please refresh or try again later.</div>';
+            }
+        } finally {
+            if (typeof hidePageProgress === 'function') hidePageProgress();
+            if (grid) {
+                grid.classList.remove('opacity-50', 'pointer-events-none');
             }
         }
     }

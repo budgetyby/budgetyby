@@ -37,7 +37,7 @@
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 shrink-0">
                     <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 text-center min-w-[110px]">
                         <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Drops Today</div>
-                        <div id="statDropsTotal" class="text-xl sm:text-2xl font-black text-rose-400 font-mono mt-0.5">--</div>
+                        <div id="statDropsTotal" class="text-xl sm:text-2xl font-black text-rose-400 font-mono mt-0.5">{{ initial_data.total_drops_24h if initial_data and initial_data.total_drops_24h else '--' }}</div>
                     </div>
                     <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 text-center min-w-[110px]">
                         <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Top Drop</div>
@@ -118,7 +118,7 @@
 
                     <!-- Match Count Indicator -->
                     <div class="text-xs text-slate-400 font-mono shrink-0">
-                        Showing <span id="dropsCountDisplay" class="font-bold text-white">0</span> drops
+                        Showing <span id="dropsCountDisplay" class="font-bold text-white">{{ initial_data.total_drops_24h if initial_data and initial_data.total_drops_24h else 0 }}</span> drops
                     </div>
                 </div>
             </div>
@@ -128,16 +128,105 @@
     <!-- ── Price Drops Grid / Stream ────────────────────────────────────── -->
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full mt-6 mb-16">
         <!-- Main Product Cards Container -->
-        <div id="dropsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            <!-- Loading Skeletons -->
-            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
-            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
-            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
-            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 animate-pulse h-80"></div>
+        <div id="dropsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 transition-opacity duration-200">
+            {% if initial_data and initial_data.drops %}
+                {% for deal in initial_data.drops %}
+                <div data-deal-id="{{ deal.product_id }}" class="bg-[#0c101c]/95 border border-slate-800/80 hover:border-slate-700/90 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative hover:shadow-xl hover:shadow-rose-950/20">
+                    <div>
+                        <!-- Top Meta Row -->
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider {{ deal.platform|store_badge }}">
+                                {{ deal.platform|store_name }}
+                            </span>
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono">
+                                📉 -{{ deal.drop_pct|round_int }}% DROP
+                            </span>
+                        </div>
+
+                        <!-- Product Image Area -->
+                        <div class="relative w-full h-44 rounded-xl bg-[#090d16] p-2 flex items-center justify-center overflow-hidden border border-slate-800/60 group-hover:border-slate-700 transition">
+                            <img src="{{ deal.image_url or '/static/placeholder.png' }}" 
+                                 alt="{{ deal.title }}" 
+                                 class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                                 loading="lazy"
+                                 onerror="this.src='/static/placeholder.png'" />
+                            
+                            <!-- Watchlist Quick Toggle -->
+                            <button onclick="handleCardWatchlist(this, {{ deal.product_id }})" 
+                                    class="absolute top-2 right-2 p-1.5 rounded-xl bg-slate-950/80 backdrop-blur-md border border-slate-800 text-slate-400 hover:text-rose-400 transition" 
+                                    title="Save to Watchlist">
+                                <i data-lucide="heart" class="w-4 h-4"></i>
+                            </button>
+
+                            <!-- Freshness Pill -->
+                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800/80 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                <span>Verified {{ deal.last_price_change|time_ago }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Product Title -->
+                        <div class="mt-3">
+                            <a href="{{ deal.affiliate_url or deal.product_url or '#' }}" target="_blank" rel="noopener noreferrer" 
+                               class="text-xs font-bold text-slate-100 hover:text-indigo-400 line-clamp-2 transition leading-snug" 
+                               title="{{ deal.title }}">
+                                {{ deal.title }}
+                            </a>
+                            {% if deal.rating and deal.rating >= 1.0 %}
+                            <div class="flex items-center gap-1.5 mt-1.5">
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold font-mono">
+                                    <span class="text-amber-400">★</span> {{ deal.rating }}
+                                </span>
+                                {% if deal.review_count and deal.review_count > 0 %}
+                                <span class="text-[10px] text-slate-400 font-mono">({{ deal.review_count }})</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Price & Action Footer -->
+                    <div class="mt-3 pt-3 border-t border-slate-800/80">
+                        <div class="flex items-baseline justify-between gap-1 mb-2">
+                            <div>
+                                <span class="text-lg font-black text-white font-mono">{{ deal.current_price|format_inr }}</span>
+                                {% if deal.previous_price and deal.previous_price > deal.current_price %}
+                                <span class="text-xs text-slate-500 line-through ml-1.5 font-mono">{{ deal.previous_price|format_inr }}</span>
+                                {% endif %}
+                            </div>
+                            {% if deal.previous_price and deal.current_price and deal.previous_price > deal.current_price %}
+                            <div class="text-[10px] font-extrabold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60 font-mono">
+                                Cut {{ (deal.previous_price - deal.current_price)|format_inr }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Card Action Buttons Row -->
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button onclick="openPriceHistoryModal({{ deal.product_id }})" 
+                                    class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition" 
+                                    title="View Price Curve">
+                                <i data-lucide="trending-down" class="w-4 h-4 text-indigo-400"></i>
+                            </button>
+                            <button onclick="handleDropsCardShare({{ deal.product_id }})" 
+                                    class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition" 
+                                    title="Share Deal">
+                                <i data-lucide="share-2" class="w-4 h-4 text-cyan-400"></i>
+                            </button>
+                            <a href="{{ deal.affiliate_url or deal.product_url or '#' }}" target="_blank" rel="noopener noreferrer" 
+                               class="col-span-2 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-lg shadow-rose-600/30 hover:scale-[1.02] active:scale-[0.98] transition">
+                                <span>Get Deal</span>
+                                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
         </div>
 
         <!-- Empty State (Hidden by default) -->
-        <div id="dropsEmptyState" class="hidden text-center py-16 px-4">
+        <div id="dropsEmptyState" class="{% if initial_data and initial_data.drops and initial_data.drops|length > 0 %}hidden{% endif %} text-center py-16 px-4">
             <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-2xl mx-auto mb-4">
                 🔍
             </div>
@@ -151,17 +240,17 @@
         </div>
 
         <!-- Load More / Pagination Bar -->
-        <div id="dropsPaginationBar" class="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80">
+        <div id="dropsPaginationBar" class="{% if not initial_data or not initial_data.drops or initial_data.drops|length == 0 %}hidden{% endif %} mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div class="text-xs text-slate-400">
-                Page <span id="dropsCurrentPage" class="font-bold text-white">1</span> of <span id="dropsTotalPages" class="font-bold text-white">1</span>
-                (<span id="dropsLoadedCount" class="font-mono text-slate-300">0</span> loaded)
+                Page <span id="dropsCurrentPage" class="font-bold text-white">{{ initial_data.page if initial_data and initial_data.page else 1 }}</span> of <span id="dropsTotalPages" class="font-bold text-white">{{ initial_data.total_pages if initial_data and initial_data.total_pages else 1 }}</span>
+                (<span id="dropsLoadedCount" class="font-mono text-slate-300">{{ initial_data.drops|length if initial_data and initial_data.drops else 0 }}</span> loaded)
             </div>
 
             <div class="flex items-center gap-2">
-                <button onclick="changeDropsPage(-1)" id="dropsPrevBtn" disabled class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none text-slate-200 transition">
+                <button onclick="changeDropsPage(-1)" id="dropsPrevBtn" {% if not initial_data or initial_data.page <= 1 %}disabled{% endif %} class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none text-slate-200 transition">
                     ← Previous
                 </button>
-                <button onclick="changeDropsPage(1)" id="dropsNextBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:pointer-events-none text-white transition flex items-center gap-1.5 shadow-lg shadow-rose-600/30">
+                <button onclick="changeDropsPage(1)" id="dropsNextBtn" {% if not initial_data or initial_data.page >= initial_data.total_pages %}disabled{% endif %} class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:pointer-events-none text-white transition flex items-center gap-1.5 shadow-lg shadow-rose-600/30">
                     <span>Next Page</span>
                     <span>→</span>
                 </button>
@@ -172,15 +261,16 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script id="initial-drops-data" type="application/json">{{ initial_data|tojson|safe }}</script>
 <script>
     // State management for 24H Price Drops Hub
     const dropsState = {
-        page: 1,
+        page: {{ current_page if current_page else 1 }},
         limit: 24,
-        totalPages: 1,
-        minDrop: 15,
-        store: '',
-        sortBy: 'drop_pct',
+        totalPages: {{ initial_data.total_pages if initial_data and initial_data.total_pages else 1 }},
+        minDrop: {{ current_min_drop if current_min_drop else 15 }},
+        store: '{{ current_platform if current_platform else "" }}',
+        sortBy: '{{ current_sort if current_sort else "drop_pct" }}',
         viewMode: 'grid', // 'grid' | 'compact'
         items: []
     };
@@ -200,7 +290,42 @@
 
     // Initialize Hub
     document.addEventListener('DOMContentLoaded', () => {
-        loadDrops();
+        const rawInitial = document.getElementById('initial-drops-data');
+        let usedInitial = false;
+        if (rawInitial && rawInitial.textContent.trim()) {
+            try {
+                const initialData = JSON.parse(rawInitial.textContent);
+                if (initialData && initialData.drops && initialData.drops.length > 0) {
+                    dropsState.items = initialData.drops.map(d => ({
+                        ...d,
+                        id: d.product_id || d.deal_id,
+                        drop_percent: d.drop_pct !== undefined ? d.drop_pct : (d.drop_percent || 0),
+                        last_checked: d.last_price_change || d.last_checked,
+                        affiliate_url: d.affiliate_url || d.product_url
+                    }));
+                    dropsState.totalPages = initialData.total_pages || 1;
+                    dropsState.page = initialData.page || 1;
+                    dropsState.itemsMap = {};
+                    dropsState.items.forEach(d => { dropsState.itemsMap[d.id] = d; });
+                    
+                    // Sync heart icons with localStorage watchlist
+                    document.querySelectorAll('#dropsGrid [data-deal-id]').forEach(card => {
+                        const id = card.getAttribute('data-deal-id');
+                        if (id && isProductInWatchlist(id)) {
+                            const heart = card.querySelector('[data-lucide="heart"]');
+                            if (heart) heart.classList.add('fill-rose-500', 'text-rose-500');
+                        }
+                    });
+                    lucide.createIcons();
+                    usedInitial = true;
+                }
+            } catch (e) {
+                console.warn('Error reading initial drops SSR data:', e);
+            }
+        }
+        if (!usedInitial) {
+            loadDrops();
+        }
         startDropsAutoRefresh();
     });
 
@@ -214,15 +339,8 @@
         const paginationBar = document.getElementById('dropsPaginationBar');
 
         if (!isBackground) {
-            grid.innerHTML = `
-                <div class="col-span-full py-16 text-center">
-                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-300 animate-pulse">
-                        <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
-                        Scanning today's verified price reductions...
-                    </div>
-                </div>
-            `;
-            emptyState.classList.add('hidden');
+            if (typeof showPageProgress === 'function') showPageProgress();
+            grid.classList.add('opacity-50', 'pointer-events-none');
         }
 
         try {
@@ -276,26 +394,21 @@
             document.getElementById('dropsNextBtn').disabled = (dropsState.page >= dropsState.totalPages);
 
             if (dropsState.items.length === 0) {
-                if (!isBackground) {
-                    grid.innerHTML = '';
-                    emptyState.classList.remove('hidden');
-                    paginationBar.classList.add('hidden');
-                }
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                paginationBar.classList.add('hidden');
             } else {
-                if (!isBackground || window.scrollY <= 400) {
-                    renderDropsCards(dropsState.items);
-                    paginationBar.classList.remove('hidden');
-                }
+                emptyState.classList.add('hidden');
+                renderDropsCards(dropsState.items);
+                paginationBar.classList.remove('hidden');
             }
 
         } catch (err) {
             console.error('Error loading price drops:', err);
+        } finally {
             if (!isBackground) {
-                grid.innerHTML = `
-                    <div class="col-span-full text-center py-12 text-rose-400 text-xs font-semibold">
-                        Failed to load price drops. Please try again.
-                    </div>
-                `;
+                if (typeof hidePageProgress === 'function') hidePageProgress();
+                grid.classList.remove('opacity-50', 'pointer-events-none');
             }
         }
     }

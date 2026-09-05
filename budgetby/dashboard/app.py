@@ -48,6 +48,84 @@ app.add_middleware(
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
+# ── Jinja2 Custom Storefront Filters for Server-Side Rendering (SSR) ────────
+def jinja_format_inr(val):
+    if val is None:
+        return "₹0"
+    try:
+        val_int = int(round(float(val)))
+        s = str(abs(val_int))
+        if len(s) <= 3:
+            res = s
+        else:
+            last3 = s[-3:]
+            rest = s[:-3]
+            chunks = []
+            while len(rest) > 2:
+                chunks.insert(0, rest[-2:])
+                rest = rest[:-2]
+            if rest:
+                chunks.insert(0, rest)
+            res = ",".join(chunks) + "," + last3
+        prefix = "-" if val_int < 0 else ""
+        return f"{prefix}₹{res}"
+    except Exception:
+        return f"₹{val}"
+
+def jinja_time_ago(val):
+    if not val:
+        return "Recently"
+    try:
+        if isinstance(val, str):
+            val = datetime.datetime.fromisoformat(val.replace("Z", "+00:00"))
+        now = datetime.datetime.now(datetime.timezone.utc)
+        if hasattr(val, "tzinfo") and val.tzinfo is None:
+            val = val.replace(tzinfo=datetime.timezone.utc)
+        diff = int((now - val).total_seconds())
+        if diff < 60:
+            return "Just now"
+        if diff < 3600:
+            return f"{diff // 60}m ago"
+        if diff < 86400:
+            return f"{diff // 3600}h ago"
+        return f"{diff // 86400}d ago"
+    except Exception:
+        return "Recently"
+
+def jinja_store_badge(platform):
+    plat = (platform or "").lower()
+    badges = {
+        "amazon": "bg-amber-500/20 text-amber-300 border border-amber-500/40",
+        "flipkart": "bg-blue-500/20 text-blue-300 border border-blue-500/40",
+        "myntra": "bg-pink-500/20 text-pink-300 border border-pink-500/40",
+        "ajio": "bg-yellow-500/20 text-yellow-300 border border-yellow-500/40",
+        "nykaa": "bg-rose-500/20 text-rose-300 border border-rose-500/40",
+    }
+    return badges.get(plat, "bg-slate-800 text-slate-300 border border-slate-700")
+
+def jinja_store_name(platform):
+    plat = (platform or "").lower()
+    names = {
+        "amazon": "Amazon",
+        "flipkart": "Flipkart",
+        "myntra": "Myntra",
+        "ajio": "Ajio",
+        "nykaa": "Nykaa",
+    }
+    return names.get(plat, plat.capitalize())
+
+def jinja_round_int(val):
+    try:
+        return int(round(float(val)))
+    except Exception:
+        return 0
+
+templates.env.filters["format_inr"] = jinja_format_inr
+templates.env.filters["time_ago"] = jinja_time_ago
+templates.env.filters["store_badge"] = jinja_store_badge
+templates.env.filters["store_name"] = jinja_store_name
+templates.env.filters["round_int"] = jinja_round_int
+
 ADMIN_TEMPLATE_PATH = os.path.join(TEMPLATES_DIR, "index.html")
 EXPLORER_TEMPLATE_PATH = os.path.join(TEMPLATES_DIR, "explorer.html")
 
@@ -1380,6 +1458,7 @@ async def get_public_price_drops(
                 "platform": r["platform"].lower(),
                 "category": r["category"],
                 "current_price": cur_p,
+                "deal_price": cur_p,
                 "previous_price": prev_p,
                 "mrp": mrp_p,
                 "drop_pct": drop_pct,
@@ -1823,6 +1902,7 @@ async def get_public_deals(
                 "platform": r["platform"].lower(),
                 "category": r["category"] or "general",
                 "deal_price": cur_p,
+                "current_price": cur_p,
                 "mrp": mrp_p if mrp_p > cur_p else None,
                 "previous_price": prev_p,
                 "drop_pct": drop_pct,
@@ -2041,25 +2121,159 @@ def render_consumer_template(template_name: str, request: Request, context: dict
 
 @app.get("/", response_class=HTMLResponse)
 async def page_home(request: Request):
-    """Renders the modular BudgetBy Home Hub."""
-    return render_consumer_template("consumer/home.html", request, {"active_page": "home"})
+    """Renders the modular BudgetBy Home Hub with pre-rendered initial data (SSR)."""
+    initial_drops = {"drops": []}
+    initial_featured = {"deals": []}
+    initial_stats = {}
+    try:
+        drops_task = get_public_price_drops(page=1, limit=14, min_drop_pct=5.0, min_drop_percent=None, platform="", category="", sort_by="drop_pct")
+        featured_task = get_public_deals(platform="", platforms="", category="", categories="", tab="featured", search="", sort_by="discount", min_discount=30.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=True, deal_type="", ids="", page=1, limit=8)
+        stats_task = get_public_stats()
+        r_drops, r_featured, r_stats = await asyncio.gather(drops_task, featured_task, stats_task, return_exceptions=True)
+        if not isinstance(r_drops, Exception):
+            initial_drops = r_drops
+        if not isinstance(r_featured, Exception):
+            initial_featured = r_featured
+        if not isinstance(r_stats, Exception):
+            initial_stats = r_stats
+    except Exception as e:
+        logger.warning(f"Home SSR prefetch error: {e}")
+
+    return render_consumer_template("consumer/home.html", request, {
+        "active_page": "home",
+        "initial_drops": initial_drops,
+        "initial_featured": initial_featured,
+        "initial_stats": initial_stats
+    })
 
 @app.get("/drops", response_class=HTMLResponse)
 @app.get("/price-drops", response_class=HTMLResponse)
-async def page_drops(request: Request):
-    """Renders the dedicated 24-Hour Price Drops Hub."""
-    return render_consumer_template("consumer/drops.html", request, {"active_page": "drops"})
+async def page_drops(
+    request: Request,
+    page: int = Query(1, ge=1),
+    limit: int = Query(24, ge=1, le=100),
+    min_drop_percent: float = Query(None),
+    min_drop_pct: float = Query(15.0),
+    platform: str = Query(""),
+    sort_by: str = Query("drop_pct")
+):
+    """Renders the dedicated 24-Hour Price Drops Hub with complete pre-rendered items (SSR)."""
+    eff_min_drop = min_drop_percent if min_drop_percent is not None else min_drop_pct
+    initial_data = {"drops": [], "total_drops_24h": 0, "total_pages": 1, "page": page}
+    try:
+        initial_data = await get_public_price_drops(
+            page=page,
+            limit=limit,
+            min_drop_pct=eff_min_drop,
+            min_drop_percent=None,
+            platform=platform,
+            category="",
+            sort_by=sort_by
+        )
+    except Exception as e:
+        logger.warning(f"Drops SSR prefetch error: {e}")
+
+    return render_consumer_template("consumer/drops.html", request, {
+        "active_page": "drops",
+        "initial_data": initial_data,
+        "current_page": page,
+        "current_min_drop": eff_min_drop,
+        "current_platform": platform,
+        "current_sort": sort_by
+    })
 
 @app.get("/deals", response_class=HTMLResponse)
-async def page_deals(request: Request):
-    """Renders the Deals Catalog with faceted filter bar."""
-    return render_consumer_template("consumer/deals.html", request, {"active_page": "deals"})
+async def page_deals(
+    request: Request,
+    page: int = Query(1, ge=1),
+    limit: int = Query(24, ge=1, le=100),
+    search: str = Query(""),
+    platform: str = Query(""),
+    category: str = Query(""),
+    tab: str = Query("all"),
+    verified_only: bool = Query(True),
+    sort_by: str = Query("latest"),
+    min_discount: float = Query(0.0)
+):
+    """Renders the Deals Catalog with complete pre-rendered items (SSR)."""
+    initial_data = {"deals": [], "total_matches": 0, "total_pages": 1, "page": page}
+    try:
+        initial_data = await get_public_deals(
+            platform=platform,
+            platforms="",
+            category=category,
+            categories="",
+            tab=tab,
+            search=search,
+            sort_by=sort_by,
+            min_discount=min_discount,
+            min_price=0.0,
+            max_price=0.0,
+            min_rating=0.0,
+            verified_only=verified_only,
+            deal_type="",
+            ids="",
+            page=page,
+            limit=limit
+        )
+    except Exception as e:
+        logger.warning(f"Deals SSR prefetch error: {e}")
+
+    return render_consumer_template("consumer/deals.html", request, {
+        "active_page": "deals",
+        "initial_data": initial_data,
+        "current_page": page,
+        "current_search": search,
+        "current_platform": platform,
+        "current_category": category,
+        "current_tab": tab,
+        "current_verified_only": verified_only,
+        "current_sort": sort_by,
+        "current_min_discount": min_discount
+    })
 
 @app.get("/all-time-lows", response_class=HTMLResponse)
 @app.get("/atl", response_class=HTMLResponse)
-async def page_atl(request: Request):
-    """Renders the All-Time Lows (ATL) Showcase Hub."""
-    return render_consumer_template("consumer/atl.html", request, {"active_page": "atl"})
+async def page_atl(
+    request: Request,
+    page: int = Query(1, ge=1),
+    limit: int = Query(24, ge=1, le=100),
+    platform: str = Query(""),
+    category: str = Query(""),
+    sort_by: str = Query("latest")
+):
+    """Renders the All-Time Lows (ATL) Showcase Hub with complete pre-rendered items (SSR)."""
+    initial_data = {"deals": [], "total_matches": 0, "total_pages": 1, "page": page}
+    try:
+        initial_data = await get_public_deals(
+            platform=platform,
+            platforms="",
+            category=category,
+            categories="",
+            tab="atl",
+            search="",
+            sort_by=sort_by,
+            min_discount=0.0,
+            min_price=0.0,
+            max_price=0.0,
+            min_rating=0.0,
+            verified_only=False,
+            deal_type="",
+            ids="",
+            page=page,
+            limit=limit
+        )
+    except Exception as e:
+        logger.warning(f"ATL SSR prefetch error: {e}")
+
+    return render_consumer_template("consumer/atl.html", request, {
+        "active_page": "atl",
+        "initial_data": initial_data,
+        "current_page": page,
+        "current_platform": platform,
+        "current_category": category,
+        "current_sort": sort_by
+    })
 
 @app.get("/stores", response_class=HTMLResponse)
 @app.get("/stores/{platform}", response_class=HTMLResponse)
@@ -2069,13 +2283,39 @@ async def page_stores(request: Request, platform: str = ""):
     if plat_clean == "croma":
         return RedirectResponse(url="/stores", status_code=302)
     store_name = STORE_DISPLAY_NAMES.get(plat_clean, plat_clean.capitalize()) if plat_clean else None
+    
+    initial_deals = None
+    if plat_clean in STORE_DISPLAY_NAMES:
+        try:
+            initial_deals = await get_public_deals(
+                platform=plat_clean,
+                platforms="",
+                category="",
+                categories="",
+                tab="all",
+                search="",
+                sort_by="latest",
+                min_discount=0.0,
+                min_price=0.0,
+                max_price=0.0,
+                min_rating=0.0,
+                verified_only=False,
+                deal_type="",
+                ids="",
+                page=1,
+                limit=24
+            )
+        except Exception as e:
+            logger.warning(f"Store deals SSR prefetch error: {e}")
+
     return render_consumer_template(
         "consumer/stores.html", 
         request, 
         {
             "active_page": "stores", 
             "store_id": plat_clean if plat_clean in STORE_DISPLAY_NAMES else None,
-            "store_name": store_name
+            "store_name": store_name,
+            "initial_data": initial_deals
         }
     )
 
