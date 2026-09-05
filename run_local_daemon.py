@@ -11,15 +11,30 @@ import logging
 import ctypes
 import psutil
 
+if sys.platform == "win32":
+    try:
+        if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 BASE_DIR = r"c:\Users\jaysi\.gemini\antigravity\scratch\budget-by"
 LOG_FILE = os.path.join(BASE_DIR, "bot_runner.log")
 
 logging.basicConfig(
     filename=LOG_FILE,
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s"
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    encoding="utf-8"
 )
-console = logging.StreamHandler()
+import io
+if sys.platform == "win32" and sys.stdout and hasattr(sys.stdout, "buffer"):
+    utf8_stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace", line_buffering=True)
+    console = logging.StreamHandler(utf8_stdout)
+else:
+    console = logging.StreamHandler(sys.stdout)
 console.setLevel(logging.INFO)
 logging.getLogger("").addHandler(console)
 
@@ -51,8 +66,12 @@ def cleanup_orphaned_instances():
         try:
             if p.info['pid'] == current_pid:
                 continue
-            cmdline = " ".join(p.info['cmdline'] or [])
-            if "budgetby.main" in cmdline or ("run_local_daemon.py" in cmdline and p.info['pid'] != current_pid):
+            cmd_args = p.info.get('cmdline') or []
+            if not cmd_args:
+                continue
+            is_daemon = any(arg.endswith("run_local_daemon.py") for arg in cmd_args[:2])
+            is_bot = any("budgetby.main" in arg for arg in cmd_args)
+            if (is_bot or is_daemon) and p.info['pid'] != current_pid and p.info['pid'] != os.getppid():
                 logging.warning(f"🧹 Terminating old/duplicate instance (PID {p.info['pid']})...")
                 p.kill()
                 killed += 1
