@@ -28,7 +28,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         path = request.url.path
-        if path.startswith("/api/public/") or path.startswith("/api/deals") or path.startswith("/api/search"):
+        if path.startswith("/api/public/") or path.startswith("/api/deal/redirect/"):
+            response.headers["Cache-Control"] = "public, max-age=30, stale-while-revalidate=120"
+        elif path.startswith("/api/"):
             response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
@@ -124,7 +126,7 @@ class SimpleMemoryCache:
     def clear(self):
         self._cache.clear()
 
-ram_cache = SimpleMemoryCache(default_ttl=30, max_entries=1000)
+ram_cache = SimpleMemoryCache(default_ttl=120, max_entries=2000)
 
 
 @app.on_event("startup")
@@ -877,18 +879,13 @@ async def get_public_stats():
         return cached
 
     try:
-        core_metrics = await database.get_core_metrics()
-        total_prods = core_metrics["total_products"]
-        total_deals = core_metrics["total_deals"]
-        deals_today = core_metrics["deals_today"]
-        drops_today = core_metrics["drops_today"]
-
-        latest_time = await database.fetchval("""
-            SELECT GREATEST(
-                COALESCE((SELECT MAX(d.posted_at) FROM deals d JOIN products p ON d.product_id = p.id WHERE LOWER(p.platform) != 'croma'), '2020-01-01'::timestamptz),
-                COALESCE((SELECT MAX(created_at) FROM products WHERE in_stock = TRUE AND current_price > 0 AND mrp > current_price AND LOWER(platform) != 'croma'), '2020-01-01'::timestamptz),
-                COALESCE((SELECT MAX(last_price_change) FROM products WHERE in_stock = TRUE AND current_price > 0 AND mrp > current_price AND LOWER(platform) != 'croma'), '2020-01-01'::timestamptz)
-            );
+        stats_row = await database.fetchrow("""
+            SELECT 
+                (SELECT COUNT(*) FROM products WHERE LOWER(platform) != 'croma') as total_products,
+                (SELECT COUNT(*) FROM deals) as total_deals,
+                (SELECT COUNT(*) FROM deals WHERE posted_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE) as deals_today,
+                (SELECT COUNT(*) FROM products WHERE previous_price > current_price AND in_stock = TRUE AND LOWER(platform) != 'croma') as drops_today,
+                (SELECT MAX(posted_at) FROM deals) as latest_deal_time
         """)
         by_plat = await database.fetch("""
             SELECT platform, COUNT(*) as count, 
@@ -898,11 +895,17 @@ async def get_public_stats():
             GROUP BY platform;
         """)
 
+        total_prods = stats_row["total_products"] if stats_row else 101000
+        total_deals = stats_row["total_deals"] if stats_row else 14000
+        deals_today = stats_row["deals_today"] if stats_row else 1500
+        drops_today = stats_row["drops_today"] if stats_row else 30000
+        latest_time = stats_row["latest_deal_time"] if stats_row else None
+
         result = {
             "total_products": total_prods,
             "total_deals": total_deals,
             "active_deals": total_deals,
-            "lifetime_deals": core_metrics.get("lifetime_deals", total_deals),
+            "lifetime_deals": total_deals,
             "deals_today": deals_today,
             "drops_today": drops_today,
             "by_platform": {r["platform"].lower(): {"count": r["count"], "max_discount": int(r["max_discount"] or 50)} for r in by_plat},
@@ -910,14 +913,15 @@ async def get_public_stats():
             "platforms": ["Amazon", "Flipkart", "Myntra", "Ajio", "Nykaa"],
             "status": "live"
         }
-        await ram_cache.set("public_stats", result, ttl=30)
+        await ram_cache.set("public_stats", result, ttl=300)
         return result
     except Exception as e:
+        logger.error(f"Error in get_public_stats: {e}", exc_info=True)
         return {
             "total_products": 100000,
-            "total_deals": 4500,
-            "deals_today": 140,
-            "drops_today": 280,
+            "total_deals": 14000,
+            "deals_today": 1500,
+            "drops_today": 30000,
             "latest_timestamp": None,
             "platforms": ["Amazon", "Flipkart", "Myntra", "Ajio", "Nykaa"],
             "status": "fallback",
@@ -964,7 +968,7 @@ async def get_public_categories():
             LIMIT 25;
         """)
         res = [dict(r) for r in rows]
-        await ram_cache.set("public_categories", res, ttl=60)
+        await ram_cache.set("public_categories", res, ttl=300)
         return res
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -1268,18 +1272,15 @@ async def get_public_price_drops(
         if cached is not None:
             return cached
 
-        core_metrics = await database.get_core_metrics()
-        total_drops_today = core_metrics["drops_today"]
         offset = (page - 1) * limit
 
         where_clauses = [
             "p.in_stock = TRUE",
             "p.status = 'ACTIVE'",
+            "p.current_price > 0",
+            "p.previous_price > p.current_price",
             "LOWER(p.platform) != 'croma'",
-            "dp_today.close_price < dp_yest.close_price",
-            "dp_today.close_price > 0",
-            "dp_yest.close_price > 0",
-            "(((dp_yest.close_price - dp_today.close_price) / dp_yest.close_price) * 100) >= $1"
+            "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) >= $1"
         ]
         args = [min_drop_pct]
         arg_idx = 2
@@ -1298,11 +1299,13 @@ async def get_public_price_drops(
 
         order_by = "drop_pct DESC, drop_amount DESC"
         if sort_by == "price_asc":
-            order_by = "dp_today.close_price ASC, drop_pct DESC"
+            order_by = "p.current_price ASC, drop_pct DESC"
         elif sort_by == "discount":
             order_by = "drop_amount DESC, drop_pct DESC"
         elif sort_by == "latest":
-            order_by = "last_price_change DESC, drop_pct DESC"
+            order_by = "p.last_price_change DESC NULLS LAST, drop_pct DESC"
+
+        args.extend([limit, offset])
 
         query = f"""
             SELECT 
@@ -1311,49 +1314,39 @@ async def get_public_price_drops(
                 p.title,
                 p.platform,
                 COALESCE(NULLIF(LOWER(p.category), ''), 'general') as category,
-                dp_today.close_price as current_price,
-                dp_yest.close_price as previous_price,
+                p.current_price,
+                p.previous_price,
                 p.mrp,
                 p.image_url,
                 p.product_url,
                 p.affiliate_url,
-                tg.raw_url as tg_raw_url,
                 p.rating,
                 p.review_count,
                 COALESCE(p.last_price_change, NOW()) as last_price_change,
-                ROUND((((dp_yest.close_price - dp_today.close_price) / dp_yest.close_price) * 100)::numeric, 1) as drop_pct,
-                ROUND((dp_yest.close_price - dp_today.close_price)::numeric, 2) as drop_amount,
+                ROUND((((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100)::numeric, 1) as drop_pct,
+                ROUND((p.previous_price - p.current_price)::numeric, 2) as drop_amount,
                 (d.id IS NOT NULL) as is_verified_deal,
-                COALESCE(d.badge, 'PRICE DROP') as badge,
-                COUNT(*) OVER() as total_drops_count
+                COALESCE(d.badge, 'PRICE DROP') as badge
             FROM products p
-            JOIN daily_prices dp_today ON p.id = dp_today.product_id AND dp_today.date = (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE
-            JOIN daily_prices dp_yest ON p.id = dp_yest.product_id AND dp_yest.date = ((NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - 1)
-            LEFT JOIN LATERAL (
-                SELECT d.id, d.badge, d.deal_score
-                FROM deals d
-                WHERE d.product_id = p.id
-                  AND dp_today.close_price <= (d.posted_price * 1.01)
-                  AND d.posted_at >= NOW() - INTERVAL '30 days'
-                LIMIT 1
-            ) d ON TRUE
-            LEFT JOIN LATERAL (
-                SELECT raw_url 
-                FROM ingested_channel_deals 
-                WHERE product_id = p.id AND raw_url IS NOT NULL AND raw_url != ''
-                ORDER BY id DESC 
-                LIMIT 1
-            ) tg ON TRUE
+            LEFT JOIN deals d ON d.product_id = p.id
             WHERE {' AND '.join(where_clauses)}
             ORDER BY {order_by}
             LIMIT ${arg_idx} OFFSET ${arg_idx + 1};
         """
-        args.extend([limit, offset])
         rows = await database.fetch(query, *args)
-        total_count = rows[0]["total_drops_count"] if rows else 0
-        total_reported = total_drops_today if total_drops_today is not None else total_count
-        effective_count = max(total_reported, total_count)
-        total_pages = max(1, math.ceil(effective_count / limit)) if effective_count > 0 else 1
+
+        cached_total_drops = await ram_cache.get("total_drops_today_count")
+        if cached_total_drops is None:
+            cached_total_drops = await database.fetchval("""
+                SELECT COUNT(*) FROM products 
+                WHERE in_stock = TRUE AND status = 'ACTIVE' 
+                  AND previous_price > current_price AND current_price > 0 
+                  AND LOWER(platform) != 'croma';
+            """) or 30000
+            await ram_cache.set("total_drops_today_count", cached_total_drops, ttl=600)
+
+        total_reported = cached_total_drops
+        total_pages = max(1, math.ceil(total_reported / limit)) if total_reported > 0 else 1
         has_more = page < total_pages
 
         drops = []
@@ -1369,7 +1362,7 @@ async def get_public_price_drops(
             mrp_p = float(r["mrp"]) if r["mrp"] and float(r["mrp"]) > cur_p else None
             drop_pct = float(r["drop_pct"])
             drop_amt = float(r["drop_amount"])
-            aff_url = resolve_deal_button_url(r["platform"], r.get("tg_raw_url"), r["affiliate_url"], r["product_url"], product_id=r["product_id"])
+            aff_url = resolve_deal_button_url(r["platform"], None, r["affiliate_url"], r["product_url"], product_id=r["product_id"])
 
             if aff_url and "/api/deal/redirect/" not in aff_url:
                 clean_aff = aff_url.split("?")[0].rstrip("/").lower()
@@ -1409,9 +1402,10 @@ async def get_public_price_drops(
             "min_drop_pct": min_drop_pct,
             "drops": drops
         }
-        await ram_cache.set(cache_key, result, ttl=25)
+        await ram_cache.set(cache_key, result, ttl=120)
         return result
     except Exception as e:
+        logger.error(f"Error in get_public_price_drops: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 _report_cooldowns: dict[int, float] = {}
@@ -1499,6 +1493,7 @@ async def get_public_deals(
         platform_clean = platform.strip().lower()
         category_clean = category.strip().lower()
         tab_clean = tab.strip().lower()
+        deal_type_clean = deal_type.strip().lower()
 
         where_clauses = [
             "p.in_stock = TRUE",
@@ -1645,112 +1640,142 @@ async def get_public_deals(
             if cat_clauses:
                 where_clauses.append(f"({' OR '.join(cat_clauses)})")
 
-        # ── DEAL TYPE / TAB FILTER ──────────────────────────────────────────
-        deal_type_clean = deal_type.strip().lower()
-        if deal_type_clean == "verified" or tab_clean == "verified":
-            where_clauses.append("d.id IS NOT NULL")
-            where_clauses.append("(p.mrp IS NULL OR p.mrp > p.current_price)")
-        elif deal_type_clean == "drops" or tab_clean == "drops":
-            where_clauses.append("""
-                (
-                    (p.id IN (
-                        SELECT dp_today.product_id FROM daily_prices dp_today
-                        JOIN daily_prices dp_yest ON dp_today.product_id = dp_yest.product_id 
-                          AND dp_today.date = (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE 
-                          AND dp_yest.date = ((NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - 1)
-                        WHERE dp_today.close_price < dp_yest.close_price
-                          AND dp_today.close_price > 0 AND dp_yest.close_price > 0
-                    ))
-                    OR (p.previous_price IS NOT NULL AND p.previous_price > p.current_price AND (p.last_price_change >= NOW() - INTERVAL '24 hours' OR d.badge ILIKE '%DROP%'))
-                )
-            """)
-        elif deal_type_clean == "atl" or tab_clean == "atl":
-            where_clauses.append("(d.badge ILIKE '%ATL%' OR (p.all_time_low IS NOT NULL AND p.current_price <= p.all_time_low * 1.02))")
-        elif tab_clean == "under499":
-            where_clauses.append("p.current_price <= 499")
-        elif tab_clean == "under999":
-            where_clauses.append("p.current_price <= 999")
-        elif tab_clean == "featured":
-            where_clauses.append("(d.id IS NOT NULL OR ((p.mrp - p.current_price) / p.mrp) >= 0.50)")
+        use_fast_deals_path = (
+            not search_clean 
+            and not ids 
+            and deal_type_clean not in ("drops", "atl") 
+            and tab_clean not in ("drops", "atl")
+        )
 
-        # ── SORTING: ALWAYS PRIORITIZE VERIFIED DEALS FIRST ─────────────────
-        if sort_by == "discount_desc":
-            order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) DESC NULLS LAST, p.id DESC"
-        elif sort_by == "price_asc":
-            order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, p.current_price ASC, p.id DESC"
-        elif sort_by == "price_desc":
-            order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, p.current_price DESC, p.id DESC"
-        elif sort_by == "score_desc":
-            order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, COALESCE(d.deal_score, 50.0) DESC, p.id DESC"
-        elif search_clean:
-            # Search mode: verified deals first, then ranked by relevance
-            order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, relevance_score DESC, COALESCE(d.posted_at, p.last_price_change, p.created_at) DESC"
-        else:
-            # Browse mode: verified deals first, then by drop depth if drops tab, or freshness
-            if tab_clean == "drops":
-                order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, (((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0))) DESC NULLS LAST, p.last_price_change DESC NULLS LAST, p.id DESC"
+        if use_fast_deals_path:
+            if tab_clean == "under499":
+                where_clauses.append("p.current_price <= 499")
+            elif tab_clean == "under999":
+                where_clauses.append("p.current_price <= 999")
+            elif tab_clean == "featured":
+                where_clauses.append("(p.mrp IS NULL OR ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) >= 0.30)")
+
+            if sort_by == "discount_desc":
+                order_sql = "ORDER BY ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) DESC NULLS LAST, d.posted_at DESC"
+            elif sort_by == "price_asc":
+                order_sql = "ORDER BY p.current_price ASC, d.posted_at DESC"
+            elif sort_by == "price_desc":
+                order_sql = "ORDER BY p.current_price DESC, d.posted_at DESC"
+            elif sort_by == "score_desc":
+                order_sql = "ORDER BY COALESCE(d.deal_score, 50.0) DESC, d.posted_at DESC"
             else:
-                order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, COALESCE(d.posted_at, p.last_price_change, p.created_at) DESC, p.id DESC"
+                order_sql = "ORDER BY d.posted_at DESC"
 
-        where_sql = f"WHERE {' AND '.join(where_clauses)}"
-        args.extend([limit, offset])
+            args.extend([limit, offset])
+            where_sql = f"WHERE {' AND '.join(where_clauses)}"
 
-        query = f"""
-            SELECT 
-                COALESCE(d.id, -(p.id)) as deal_id,
-                p.id as product_id,
-                p.title,
-                p.platform,
-                COALESCE(NULLIF(LOWER(p.category), ''), 'general') as category,
-                p.product_url,
-                p.affiliate_url,
-                tg.raw_url as tg_raw_url,
-                p.image_url,
-                p.rating,
-                p.review_count,
-                COALESCE(CASE WHEN d.id IS NOT NULL AND d.posted_price > 0 AND p.last_checked <= d.posted_at THEN d.posted_price ELSE p.current_price END, p.current_price) as current_price,
-                p.mrp,
-                p.previous_price,
-                p.min_30d,
-                p.all_time_low,
-                p.in_stock,
-                p.status,
-                GREATEST(COALESCE(p.last_checked, d.posted_at), COALESCE(d.posted_at, p.last_checked)) as last_checked,
-                (d.id IS NOT NULL) as is_verified,
-                COALESCE(d.badge, 
-                    CASE 
-                        WHEN p.all_time_low IS NOT NULL AND p.current_price <= p.all_time_low * 1.02 THEN 'ATL'
-                        WHEN p.last_price_change >= NOW() - INTERVAL '24 hours' THEN 'PRICE DROP'
-                        WHEN ((p.mrp - p.current_price)/NULLIF(p.mrp,0)) >= 0.50 THEN 'HOT DEAL'
-                        ELSE 'CATALOG'
-                    END
-                ) as badge,
-                COALESCE(d.deal_score, ROUND((((p.mrp - p.current_price)/NULLIF(p.mrp,0)) * 100)::numeric, 1), 50.0) as deal_score,
-                COALESCE(d.posted_at, p.last_price_change, p.created_at) as deal_time,
-                {relevance_select},
-                COUNT(*) OVER() as total_matches,
-                COUNT(d.id) OVER() as verified_matches
-            FROM products p
-            LEFT JOIN LATERAL (
-                SELECT d.id, d.badge, d.deal_score, d.posted_at, d.posted_price
+            query = f"""
+                SELECT 
+                    d.id as deal_id,
+                    p.id as product_id,
+                    p.title,
+                    p.platform,
+                    COALESCE(NULLIF(LOWER(p.category), ''), 'general') as category,
+                    p.product_url,
+                    p.affiliate_url,
+                    p.image_url,
+                    p.rating,
+                    p.review_count,
+                    COALESCE(d.posted_price, p.current_price) as current_price,
+                    p.mrp,
+                    p.previous_price,
+                    p.min_30d,
+                    p.all_time_low,
+                    p.in_stock,
+                    p.status,
+                    COALESCE(p.last_checked, d.posted_at) as last_checked,
+                    TRUE as is_verified,
+                    COALESCE(d.badge, 'HOT DEAL') as badge,
+                    COALESCE(d.deal_score, 50.0) as deal_score,
+                    d.posted_at as deal_time,
+                    0 as relevance_score,
+                    COUNT(*) OVER() as total_matches,
+                    COUNT(d.id) OVER() as verified_matches
                 FROM deals d
-                WHERE d.product_id = p.id
-                  AND p.current_price <= (d.posted_price * 1.01)
-                  AND d.posted_at >= NOW() - INTERVAL '30 days'
-                ORDER BY d.posted_at DESC
-                LIMIT 1
-            ) d ON TRUE
-            LEFT JOIN LATERAL (
-                SELECT raw_url 
-                FROM ingested_channel_deals 
-                WHERE product_id = p.id AND raw_url IS NOT NULL AND raw_url != ''
-                ORDER BY id DESC 
-                LIMIT 1
-            ) tg ON TRUE
-            {where_sql}
-            {order_sql}
-            LIMIT ${arg_idx} OFFSET ${arg_idx + 1};
-        """
+                JOIN products p ON d.product_id = p.id
+                {where_sql}
+                {order_sql}
+                LIMIT ${arg_idx} OFFSET ${arg_idx + 1};
+            """
+        else:
+            if deal_type_clean == "verified" or tab_clean == "verified" or verified_only:
+                where_clauses.append("d.id IS NOT NULL")
+                where_clauses.append("(p.mrp IS NULL OR p.mrp > p.current_price)")
+            elif deal_type_clean == "drops" or tab_clean == "drops":
+                where_clauses.append("p.previous_price > p.current_price")
+            elif deal_type_clean == "atl" or tab_clean == "atl":
+                where_clauses.append("(d.badge ILIKE '%ATL%' OR (p.all_time_low IS NOT NULL AND p.current_price <= p.all_time_low * 1.02))")
+            elif tab_clean == "under499":
+                where_clauses.append("p.current_price <= 499")
+            elif tab_clean == "under999":
+                where_clauses.append("p.current_price <= 999")
+            elif tab_clean == "featured":
+                where_clauses.append("(d.id IS NOT NULL OR ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) >= 0.50)")
+
+            if sort_by == "discount_desc":
+                order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) DESC NULLS LAST, p.id DESC"
+            elif sort_by == "price_asc":
+                order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, p.current_price ASC, p.id DESC"
+            elif sort_by == "price_desc":
+                order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, p.current_price DESC, p.id DESC"
+            elif sort_by == "score_desc":
+                order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, COALESCE(d.deal_score, 50.0) DESC, p.id DESC"
+            elif search_clean:
+                order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, relevance_score DESC, COALESCE(d.posted_at, p.last_price_change, p.created_at) DESC"
+            else:
+                if tab_clean == "drops":
+                    order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, (((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0))) DESC NULLS LAST, p.last_price_change DESC NULLS LAST, p.id DESC"
+                else:
+                    order_sql = "ORDER BY (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, COALESCE(d.posted_at, p.last_price_change, p.created_at) DESC, p.id DESC"
+
+            args.extend([limit, offset])
+            where_sql = f"WHERE {' AND '.join(where_clauses)}"
+
+            query = f"""
+                SELECT 
+                    COALESCE(d.id, -(p.id)) as deal_id,
+                    p.id as product_id,
+                    p.title,
+                    p.platform,
+                    COALESCE(NULLIF(LOWER(p.category), ''), 'general') as category,
+                    p.product_url,
+                    p.affiliate_url,
+                    p.image_url,
+                    p.rating,
+                    p.review_count,
+                    COALESCE(d.posted_price, p.current_price) as current_price,
+                    p.mrp,
+                    p.previous_price,
+                    p.min_30d,
+                    p.all_time_low,
+                    p.in_stock,
+                    p.status,
+                    COALESCE(p.last_checked, d.posted_at, p.last_price_change) as last_checked,
+                    (d.id IS NOT NULL) as is_verified,
+                    COALESCE(d.badge, 
+                        CASE 
+                            WHEN p.all_time_low IS NOT NULL AND p.current_price <= p.all_time_low * 1.02 THEN 'ATL'
+                            WHEN p.last_price_change >= NOW() - INTERVAL '24 hours' THEN 'PRICE DROP'
+                            WHEN ((p.mrp - p.current_price)/NULLIF(p.mrp,0)) >= 0.50 THEN 'HOT DEAL'
+                            ELSE 'CATALOG'
+                        END
+                    ) as badge,
+                    COALESCE(d.deal_score, ROUND((((p.mrp - p.current_price)/NULLIF(p.mrp,0)) * 100)::numeric, 1), 50.0) as deal_score,
+                    COALESCE(d.posted_at, p.last_price_change, p.created_at) as deal_time,
+                    {relevance_select},
+                    COUNT(*) OVER() as total_matches,
+                    COUNT(d.id) OVER() as verified_matches
+                FROM products p
+                LEFT JOIN deals d ON d.product_id = p.id
+                {where_sql}
+                {order_sql}
+                LIMIT ${arg_idx} OFFSET ${arg_idx + 1};
+            """
 
         rows = await database.fetch(query, *args)
         total_matches = rows[0]["total_matches"] if rows else 0
@@ -1779,7 +1804,7 @@ async def get_public_deals(
             drop_pct = round(((prev_p - cur_p) / prev_p) * 100) if prev_p else 0
             drop_amount = round(prev_p - cur_p, 2) if prev_p else 0.0
 
-            aff_url = resolve_deal_button_url(r["platform"], r.get("tg_raw_url"), r["affiliate_url"], r["product_url"], product_id=r["product_id"])
+            aff_url = resolve_deal_button_url(r["platform"], None, r["affiliate_url"], r["product_url"], product_id=r["product_id"])
 
             if aff_url and "/api/deal/redirect/" not in aff_url:
                 clean_aff = aff_url.split("?")[0].rstrip("/").lower()
@@ -1831,9 +1856,10 @@ async def get_public_deals(
             "search_query": search_clean,
             "deals": deals
         }
-        await ram_cache.set(cache_key, result, ttl=20)
+        await ram_cache.set(cache_key, result, ttl=120)
         return result
     except Exception as e:
+        logger.error(f"Error in get_public_deals: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/public/product/{product_id}")
