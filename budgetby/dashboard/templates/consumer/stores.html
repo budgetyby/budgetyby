@@ -359,19 +359,14 @@
                         </div>
 
                         <!-- Card Action Buttons -->
-                        <div class="grid grid-cols-4 gap-1.5">
-                            <button onclick="openPriceHistoryModal({{ deal.product_id or deal.id }})" 
-                                    class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition" 
-                                    title="Price History">
-                                <i data-lucide="trending-down" class="w-4 h-4 text-indigo-400"></i>
-                            </button>
+                        <div class="flex items-center gap-1.5">
                             <button onclick="handleStoreShare({{ deal.product_id or deal.id }})" 
-                                    class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition" 
+                                    class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition shrink-0" 
                                     title="Share Deal">
                                 <i data-lucide="share-2" class="w-4 h-4 text-cyan-400"></i>
                             </button>
                             <a href="{{ deal.affiliate_url or deal.product_url or '#' }}" target="_blank" rel="noopener noreferrer" 
-                               class="col-span-2 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-lg shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98] transition">
+                               class="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-lg shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98] transition">
                                 <span>Get Deal</span>
                                 <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
                             </a>
@@ -625,14 +620,11 @@
                             ${deal.mrp && deal.mrp > deal.current_price ? `<span class="text-xs text-slate-500 line-through font-mono">${formatINR(deal.mrp)}</span>` : ''}
                         </div>
 
-                        <div class="grid grid-cols-4 gap-1.5">
-                            <button onclick="openPriceHistoryModal(${deal.id})" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition" title="Price History">
-                                <i data-lucide="trending-down" class="w-4 h-4 text-indigo-400"></i>
-                            </button>
-                            <button onclick="handleStoreShare(${deal.id})" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition" title="Share Deal">
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="handleStoreShare(${deal.id})" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition shrink-0" title="Share Deal">
                                 <i data-lucide="share-2" class="w-4 h-4 text-cyan-400"></i>
                             </button>
-                            <a href="${dealLink}" target="_blank" rel="noopener noreferrer" class="col-span-2 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-lg transition">
+                            <a href="${dealLink}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-lg transition">
                                 <span>Get Deal</span>
                                 <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
                             </a>

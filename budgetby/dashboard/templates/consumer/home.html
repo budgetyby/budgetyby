@@ -168,15 +168,10 @@
                             {% if d.drop_amount and d.drop_amount > 0 %}
                             <div class="text-[11px] text-emerald-400 font-bold mb-3">💥 Save {{ d.drop_amount|format_inr }} today</div>
                             {% endif %}
-                            <div class="flex items-center gap-2">
-                                <a href="{{ d.affiliate_url or d.product_url or '#' }}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center gap-1.5 shadow-md transition hover:scale-[1.02] active:scale-[0.98]">
-                                    <span>Grab Deal</span>
-                                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                                </a>
-                                <button onclick="openPriceHistoryModal({{ d.product_id }})" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Price History">
-                                    <i data-lucide="line-chart" class="w-3.5 h-3.5"></i>
-                                </button>
-                            </div>
+                            <a href="{{ d.affiliate_url or d.product_url or '#' }}" target="_blank" rel="noopener noreferrer" class="w-full py-2 px-3 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center gap-1.5 shadow-md transition hover:scale-[1.02] active:scale-[0.98]">
+                                <span>Grab Deal</span>
+                                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                            </a>
                         </div>
                     </div>
                     {% endfor %}
@@ -330,15 +325,10 @@
                                 {% endif %}
                             </div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <a href="{{ d.affiliate_url or d.product_url or '#' }}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center gap-1.5 shadow-md transition hover:scale-[1.02]">
-                                <span>Grab Deal</span>
-                                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                            </a>
-                            <button onclick="openPriceHistoryModal({{ d.product_id or d.id }})" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Price History">
-                                <i data-lucide="line-chart" class="w-3.5 h-3.5"></i>
-                            </button>
-                        </div>
+                        <a href="{{ d.affiliate_url or d.product_url or '#' }}" target="_blank" rel="noopener noreferrer" class="w-full py-2 px-3 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center gap-1.5 shadow-md transition hover:scale-[1.02]">
+                            <span>Grab Deal</span>
+                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        </a>
                     </div>
                 </div>
                 {% endfor %}
@@ -449,9 +439,6 @@
                                 </a>
                                 <button onclick="toggleWatchlistDeal('${dealJsonStr}')" data-watchlist-id="${d.product_id}" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition ${isSaved ? 'text-rose-500' : ''}" title="Save to Watchlist">
                                     ${isSaved ? '❤️' : '🤍'}
-                                </button>
-                                <button onclick="openPriceHistoryModal(${d.product_id})" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Price History">
-                                    <i data-lucide="line-chart" class="w-3.5 h-3.5"></i>
                                 </button>
                             </div>
                         </div>
