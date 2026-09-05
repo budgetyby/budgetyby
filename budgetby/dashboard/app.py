@@ -1994,27 +1994,46 @@ STORE_DISPLAY_NAMES = {
     "nykaa": "Nykaa"
 }
 
+def render_consumer_template(template_name: str, request: Request, context: dict = None):
+    if context is None:
+        context = {}
+    context["request"] = request
+    try:
+        return templates.TemplateResponse(request=request, name=template_name, context=context)
+    except TypeError:
+        # Fallback for older Starlette signature: TemplateResponse(name, context)
+        try:
+            return templates.TemplateResponse(template_name, context)
+        except Exception as e:
+            logger.error(f"Fallback render error for {template_name}: {e}", exc_info=True)
+            import traceback
+            return HTMLResponse(content=f"<h3>Template Error: {e}</h3><pre>{traceback.format_exc()}</pre>", status_code=500)
+    except Exception as e:
+        logger.error(f"Render error for {template_name}: {e}", exc_info=True)
+        import traceback
+        return HTMLResponse(content=f"<h3>Template Error: {e}</h3><pre>{traceback.format_exc()}</pre>", status_code=500)
+
 @app.get("/", response_class=HTMLResponse)
 async def page_home(request: Request):
     """Renders the modular BudgetBy Home Hub."""
-    return templates.TemplateResponse("consumer/home.html", {"request": request, "active_page": "home"})
+    return render_consumer_template("consumer/home.html", request, {"active_page": "home"})
 
 @app.get("/drops", response_class=HTMLResponse)
 @app.get("/price-drops", response_class=HTMLResponse)
 async def page_drops(request: Request):
     """Renders the dedicated 24-Hour Price Drops Hub."""
-    return templates.TemplateResponse("consumer/drops.html", {"request": request, "active_page": "drops"})
+    return render_consumer_template("consumer/drops.html", request, {"active_page": "drops"})
 
 @app.get("/deals", response_class=HTMLResponse)
 async def page_deals(request: Request):
-    """Renders the Deals Catalog with Amazon & Flipkart style faceted filter bar."""
-    return templates.TemplateResponse("consumer/deals.html", {"request": request, "active_page": "deals"})
+    """Renders the Deals Catalog with faceted filter bar."""
+    return render_consumer_template("consumer/deals.html", request, {"active_page": "deals"})
 
 @app.get("/all-time-lows", response_class=HTMLResponse)
 @app.get("/atl", response_class=HTMLResponse)
 async def page_atl(request: Request):
     """Renders the All-Time Lows (ATL) Showcase Hub."""
-    return templates.TemplateResponse("consumer/atl.html", {"request": request, "active_page": "atl"})
+    return render_consumer_template("consumer/atl.html", request, {"active_page": "atl"})
 
 @app.get("/stores", response_class=HTMLResponse)
 @app.get("/stores/{platform}", response_class=HTMLResponse)
@@ -2024,10 +2043,10 @@ async def page_stores(request: Request, platform: str = ""):
     if plat_clean == "croma":
         return RedirectResponse(url="/stores", status_code=302)
     store_name = STORE_DISPLAY_NAMES.get(plat_clean, plat_clean.capitalize()) if plat_clean else None
-    return templates.TemplateResponse(
+    return render_consumer_template(
         "consumer/stores.html", 
+        request, 
         {
-            "request": request, 
             "active_page": "stores", 
             "store_id": plat_clean if plat_clean in STORE_DISPLAY_NAMES else None,
             "store_name": store_name
