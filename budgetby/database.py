@@ -529,7 +529,7 @@ async def insert_deal(data: dict) -> int:
             posted_mrp, savings_amount, savings_pct, deal_score,
             badge, source_channel, posted_at
         ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, (NOW() AT TIME ZONE 'Asia/Kolkata')
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, NOW()
         )
         ON CONFLICT (product_id) DO UPDATE SET
             deal_type = EXCLUDED.deal_type,
@@ -540,7 +540,7 @@ async def insert_deal(data: dict) -> int:
             deal_score = EXCLUDED.deal_score,
             badge = EXCLUDED.badge,
             source_channel = EXCLUDED.source_channel,
-            posted_at = EXCLUDED.posted_at
+            posted_at = NOW()
         RETURNING id;
     """,
         pid,
@@ -557,7 +557,7 @@ async def insert_deal(data: dict) -> int:
         try:
             await execute("""
                 UPDATE products 
-                SET last_checked = (NOW() AT TIME ZONE 'Asia/Kolkata'),
+                SET last_checked = NOW(),
                     current_price = $1,
                     in_stock = TRUE
                 WHERE id = $2;

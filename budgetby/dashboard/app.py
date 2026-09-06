@@ -961,10 +961,6 @@ async def get_deals(limit: int = 36, platform: str = ""):
     try:
         where_clauses = [
             "LOWER(p.platform) != 'croma'",
-            "p.in_stock = TRUE",
-            "p.status = 'ACTIVE'",
-            "p.current_price > 0",
-            "p.current_price <= (d.posted_price * 1.01)",
             "d.posted_at >= NOW() - INTERVAL '30 days'"
         ]
         args = []
@@ -976,7 +972,8 @@ async def get_deals(limit: int = 36, platform: str = ""):
         args.append(limit_val)
         query = f"""
             SELECT d.id, d.posted_price, d.posted_mrp, d.savings_pct, d.badge, d.deal_score, d.posted_at, d.source_channel,
-                   p.id as product_id, p.title, p.platform, p.category, p.product_url, p.affiliate_url, p.image_url, p.rating
+                   p.id as product_id, p.title, p.platform, p.category, p.product_url, p.affiliate_url, p.image_url, p.rating,
+                   p.current_price, p.in_stock
             FROM deals d
             JOIN products p ON d.product_id = p.id
             WHERE {' AND '.join(where_clauses)}
