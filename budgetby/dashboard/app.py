@@ -2301,15 +2301,22 @@ async def page_stores(request: Request, platform: str = ""):
         }
     )
 
+def render_admin_login_template(request: Request, context: dict, status_code: int = 200):
+    context["request"] = request
+    try:
+        return templates.TemplateResponse(request=request, name="admin_login.html", context=context, status_code=status_code)
+    except TypeError:
+        return templates.TemplateResponse("admin_login.html", context, status_code=status_code)
+
 @app.get("/pnther/login", response_class=HTMLResponse)
 async def get_admin_login(request: Request, next: str = "/pnther"):
     """Renders the secure Admin Login Page."""
     clean_next = next if next.startswith("/pnther") and not next.startswith("/pnther/login") else "/pnther"
     if is_admin_authorized(request):
         return RedirectResponse(url=clean_next, status_code=302)
-    return templates.TemplateResponse(
-        "admin_login.html",
-        {"request": request, "next": clean_next, "error": None}
+    return render_admin_login_template(
+        request,
+        {"next": clean_next, "error": None}
     )
 
 @app.post("/pnther/login", response_class=HTMLResponse)
@@ -2339,9 +2346,9 @@ async def post_admin_login(
 
     if not auth_ok:
         await asyncio.sleep(0.3)  # Anti brute-force timing buffer
-        return templates.TemplateResponse(
-            "admin_login.html",
-            {"request": request, "next": clean_next, "error": "Invalid username or password. Access denied."},
+        return render_admin_login_template(
+            request,
+            {"next": clean_next, "error": "Invalid username or password. Access denied."},
             status_code=401
         )
 
