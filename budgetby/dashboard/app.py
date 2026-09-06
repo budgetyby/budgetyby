@@ -6,7 +6,9 @@ import re
 import sys
 import os
 import secrets
-from fastapi import FastAPI, Query, HTTPException, Request, Depends, Response
+import hmac
+import hashlib
+from fastapi import FastAPI, Query, HTTPException, Request, Depends, Response, Form
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -128,41 +130,68 @@ templates.env.filters["round_int"] = jinja_round_int
 
 ADMIN_TEMPLATE_PATH = os.path.join(TEMPLATES_DIR, "index.html")
 EXPLORER_TEMPLATE_PATH = os.path.join(TEMPLATES_DIR, "explorer.html")
+ADMIN_LOGIN_TEMPLATE_PATH = os.path.join(TEMPLATES_DIR, "admin_login.html")
 
 ADMIN_SECRET_KEY = getattr(config, "ADMIN_SECRET_KEY", "bb_sec_9e72f8a14b30c5e7d82f091a384b62d1")
 
-def is_local_request(request: Request) -> bool:
-    """Returns True ONLY if request originated locally (localhost/loopback). Blocked completely on Cloud/Render."""
-    if os.getenv("RENDER"):
+# Authorized Admin Credentials (Either pair unlocks access)
+ADMIN_CREDENTIALS = [
+    ("pnther", "Pnther@3Alphabetisc"),
+    ("vidushi", "lilu"),
+]
+
+def create_admin_session_token(username: str) -> str:
+    """Creates a tamper-proof HMAC-SHA256 signed session token."""
+    now_ts = int(time.time())
+    msg = f"{username}:{now_ts}"
+    sig = hmac.new(ADMIN_SECRET_KEY.encode(), msg.encode(), hashlib.sha256).hexdigest()
+    return f"{msg}:{sig}"
+
+def verify_admin_session_token(token: str) -> bool:
+    """Verifies that the session token is authentic, unexpired, and properly signed."""
+    if not token:
         return False
-    client_host = request.client.host if request.client else ""
-    return client_host in ("127.0.0.1", "localhost", "::1")
+    # Backwards compatibility: raw ADMIN_SECRET_KEY as cookie
+    if secrets.compare_digest(str(token), ADMIN_SECRET_KEY):
+        return True
+    try:
+        parts = token.split(":")
+        if len(parts) != 3:
+            return False
+        username, ts_str, sig = parts
+        msg = f"{username}:{ts_str}"
+        expected_sig = hmac.new(ADMIN_SECRET_KEY.encode(), msg.encode(), hashlib.sha256).hexdigest()
+        if not secrets.compare_digest(sig, expected_sig):
+            return False
+        token_time = int(ts_str)
+        if (time.time() - token_time) > 86400 * 7:  # 7 days max age
+            return False
+        return username in ("pnther", "vidushi")
+    except Exception:
+        return False
 
 def is_admin_authorized(request: Request) -> bool:
     """
-    Cryptographically verifies admin access via ADMIN_SECRET_KEY.
-    Accepts the key via:
-    - Query parameter: ?key=<ADMIN_SECRET_KEY> or ?admin_key=<ADMIN_SECRET_KEY>
-    - Header: X-Admin-Key: <ADMIN_SECRET_KEY>
-    - Browser Session Cookie: budgetby_admin_session
-    Works seamlessly both locally and on Render.
-    Unauthorized requests return False (triggering a 404 stealth response).
+    Cryptographically verifies admin access via:
+    1. Verified HMAC session cookie (budgetby_admin_session)
+    2. Header: X-Admin-Key: <ADMIN_SECRET_KEY>
+    3. Query parameter: ?key=<ADMIN_SECRET_KEY> or ?admin_key=<ADMIN_SECRET_KEY>
     """
-    req_key = request.query_params.get("key") or request.query_params.get("admin_key")
-    if req_key and secrets.compare_digest(str(req_key), ADMIN_SECRET_KEY):
+    cookie_key = request.cookies.get("budgetby_admin_session")
+    if cookie_key and verify_admin_session_token(cookie_key):
         return True
     header_key = request.headers.get("X-Admin-Key") or request.headers.get("x-admin-key")
     if header_key and secrets.compare_digest(str(header_key), ADMIN_SECRET_KEY):
         return True
-    cookie_key = request.cookies.get("budgetby_admin_session")
-    if cookie_key and secrets.compare_digest(str(cookie_key), ADMIN_SECRET_KEY):
+    req_key = request.query_params.get("key") or request.query_params.get("admin_key")
+    if req_key and secrets.compare_digest(str(req_key), ADMIN_SECRET_KEY):
         return True
     return False
 
 def require_admin(request: Request):
     """
-    Dependency enforcing complete admin stealth isolation:
-    Returns 404 Not Found to unauthorized or cloud requests, completely hiding admin/db existence.
+    Dependency enforcing complete admin stealth isolation for APIs:
+    Returns 404 Not Found to unauthorized requests, completely hiding admin/db existence.
     """
     if not is_admin_authorized(request):
         raise HTTPException(status_code=404, detail="Not Found")
@@ -2272,11 +2301,74 @@ async def page_stores(request: Request, platform: str = ""):
         }
     )
 
+@app.get("/pnther/login", response_class=HTMLResponse)
+async def get_admin_login(request: Request, next: str = "/pnther"):
+    """Renders the secure Admin Login Page."""
+    clean_next = next if next.startswith("/pnther") and not next.startswith("/pnther/login") else "/pnther"
+    if is_admin_authorized(request):
+        return RedirectResponse(url=clean_next, status_code=302)
+    return templates.TemplateResponse(
+        "admin_login.html",
+        {"request": request, "next": clean_next, "error": None}
+    )
+
+@app.post("/pnther/login", response_class=HTMLResponse)
+async def post_admin_login(
+    request: Request,
+    username: str = Form(""),
+    password: str = Form(""),
+    next: str = Form("/pnther")
+):
+    """
+    Authenticates admin credentials against authorized pairs:
+    1) pnther / Pnther@3Alphabetisc
+    2) vidushi / lilu
+    """
+    user_clean = (username or "").strip()
+    pwd_clean = (password or "").strip()
+
+    auth_ok = False
+    matched_user = None
+    for u, p in ADMIN_CREDENTIALS:
+        if secrets.compare_digest(user_clean, u) and secrets.compare_digest(pwd_clean, p):
+            auth_ok = True
+            matched_user = u
+            break
+
+    clean_next = next if next.startswith("/pnther") and not next.startswith("/pnther/login") else "/pnther"
+
+    if not auth_ok:
+        await asyncio.sleep(0.3)  # Anti brute-force timing buffer
+        return templates.TemplateResponse(
+            "admin_login.html",
+            {"request": request, "next": clean_next, "error": "Invalid username or password. Access denied."},
+            status_code=401
+        )
+
+    token = create_admin_session_token(matched_user)
+    resp = RedirectResponse(url=clean_next, status_code=303)
+    resp.set_cookie(
+        key="budgetby_admin_session",
+        value=token,
+        httponly=True,
+        samesite="lax",
+        max_age=86400 * 7
+    )
+    return resp
+
+@app.get("/pnther/logout")
+@app.post("/pnther/logout")
+async def admin_logout():
+    """Logs out admin and terminates the session cookie."""
+    resp = RedirectResponse(url="/pnther/login", status_code=302)
+    resp.delete_cookie(key="budgetby_admin_session")
+    return resp
+
 @app.get("/pnther", response_class=HTMLResponse)
 async def admin_dashboard(request: Request):
     """Renders the BudgetBy Admin Control Center (Stealth Protected URL: /pnther)."""
     if not is_admin_authorized(request):
-        raise HTTPException(status_code=404, detail="Not Found")
+        return RedirectResponse(url="/pnther/login?next=/pnther", status_code=302)
 
     response = HTMLResponse(content="<h1>BudgetBy Admin Dashboard Loading...</h1>")
     if os.path.exists(ADMIN_TEMPLATE_PATH):
@@ -2286,9 +2378,10 @@ async def admin_dashboard(request: Request):
     # Set secure session cookie if authenticated via query param
     req_key = request.query_params.get("key") or request.query_params.get("admin_key")
     if req_key and secrets.compare_digest(str(req_key), ADMIN_SECRET_KEY):
+        token = create_admin_session_token("pnther")
         response.set_cookie(
             key="budgetby_admin_session",
-            value=ADMIN_SECRET_KEY,
+            value=token,
             httponly=True,
             samesite="lax",
             max_age=86400 * 7
@@ -2299,14 +2392,15 @@ async def admin_dashboard(request: Request):
 async def admin_db_explorer(request: Request):
     """Renders the BudgetBy Database Explorer (Stealth Protected URL: /pnther/db-explorer)."""
     if not is_admin_authorized(request):
-        raise HTTPException(status_code=404, detail="Not Found")
+        return RedirectResponse(url="/pnther/login?next=/pnther/db-explorer", status_code=302)
 
     response = await render_db_explorer()
     req_key = request.query_params.get("key") or request.query_params.get("admin_key")
     if req_key and secrets.compare_digest(str(req_key), ADMIN_SECRET_KEY):
+        token = create_admin_session_token("pnther")
         response.set_cookie(
             key="budgetby_admin_session",
-            value=ADMIN_SECRET_KEY,
+            value=token,
             httponly=True,
             samesite="lax",
             max_age=86400 * 7
