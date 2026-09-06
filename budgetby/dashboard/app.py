@@ -173,18 +173,22 @@ def verify_admin_session_token(token: str) -> bool:
 def is_admin_authorized(request: Request) -> bool:
     """
     Cryptographically verifies admin access via:
-    1. Verified HMAC session cookie (budgetby_admin_session)
+    1. Header: X-Admin-Session: <token>
     2. Header: X-Admin-Key: <ADMIN_SECRET_KEY>
     3. Query parameter: ?key=<ADMIN_SECRET_KEY> or ?admin_key=<ADMIN_SECRET_KEY>
+    4. Query parameter: ?auth_token=<token>
     """
-    cookie_key = request.cookies.get("budgetby_admin_session")
-    if cookie_key and verify_admin_session_token(cookie_key):
+    session_hdr = request.headers.get("X-Admin-Session") or request.headers.get("x-admin-session")
+    if session_hdr and verify_admin_session_token(session_hdr):
         return True
     header_key = request.headers.get("X-Admin-Key") or request.headers.get("x-admin-key")
     if header_key and secrets.compare_digest(str(header_key), ADMIN_SECRET_KEY):
         return True
     req_key = request.query_params.get("key") or request.query_params.get("admin_key")
     if req_key and secrets.compare_digest(str(req_key), ADMIN_SECRET_KEY):
+        return True
+    auth_tok = request.query_params.get("auth_token")
+    if auth_tok and verify_admin_session_token(auth_tok):
         return True
     return False
 
@@ -674,13 +678,77 @@ ALLOWED_SORT_COLUMNS = {
     "deal_tracking": {"id", "product_id", "status", "created_at"}
 }
 
-async def render_db_explorer():
+def inject_admin_session_script(html_content: str, token: str) -> str:
+    """
+    Injects tab-scoped, in-memory session token & fetch interceptor.
+    Prevents persistent cookies:
+    - Reloading the page forces re-login (URL token is stripped from history via replaceState)
+    - Opening a new tab forces re-login (no cookies or URL tokens shared)
+    - Directly visiting /pnther/login always shows the login form
+    - All background AJAX/fetch calls in the active dashboard are seamlessly authenticated via X-Admin-Session header
+    """
+    script_tag = f"""
+    <script>
+        window.BB_ADMIN_TOKEN = "{token}";
+        (function() {{
+            const originalFetch = window.fetch;
+            window.fetch = function(input, init) {{
+                if (input instanceof Request) {{
+                    input.headers.set('X-Admin-Session', window.BB_ADMIN_TOKEN);
+                    return originalFetch(input, init);
+                }}
+                init = init || {{}};
+                init.headers = init.headers || {{}};
+                if (init.headers instanceof Headers) {{
+                    init.headers.set('X-Admin-Session', window.BB_ADMIN_TOKEN);
+                }} else if (Array.isArray(init.headers)) {{
+                    init.headers.push(['X-Admin-Session', window.BB_ADMIN_TOKEN]);
+                }} else {{
+                    init.headers['X-Admin-Session'] = window.BB_ADMIN_TOKEN;
+                }}
+                return originalFetch(input, init);
+            }};
+            if (window.history.replaceState) {{
+                try {{
+                    const u = new URL(window.location.href);
+                    if (u.searchParams.has('auth_token')) {{
+                        u.searchParams.delete('auth_token');
+                        window.history.replaceState({{}}, document.title, u.pathname + (u.search ? u.search : ''));
+                    }}
+                }} catch(e) {{}}
+            }}
+            document.addEventListener('click', function(e) {{
+                const a = e.target.closest('a');
+                if (a && a.href) {{
+                    try {{
+                        const u = new URL(a.href, window.location.origin);
+                        if (u.origin === window.location.origin && u.pathname.startsWith('/pnther') && !u.pathname.startsWith('/pnther/logout') && !u.pathname.startsWith('/pnther/login')) {{
+                            if (!a.target || a.target === '_self') {{
+                                e.preventDefault();
+                                u.searchParams.set('auth_token', window.BB_ADMIN_TOKEN);
+                                window.location.href = u.toString();
+                            }}
+                        }}
+                    }} catch(err) {{}}
+                }}
+            }});
+        }})();
+    </script>
+    """
+    if "</head>" in html_content:
+        return html_content.replace("</head>", f"{script_tag}\n</head>", 1)
+    return script_tag + html_content
+
+async def render_db_explorer(token: str = ""):
     """Renders the Full Database Explorer Web Interface (accessible strictly under /pnther/db-explorer)."""
     explorer_html_path = os.path.join(os.path.dirname(__file__), "templates", "explorer.html")
+    raw_html = "<h1>Database Explorer Loading...</h1>"
     if os.path.exists(explorer_html_path):
         with open(explorer_html_path, "r", encoding="utf-8") as f:
-            return HTMLResponse(f.read())
-    return HTMLResponse("<h1>Database Explorer Loading...</h1>")
+            raw_html = f.read()
+    if token:
+        return HTMLResponse(inject_admin_session_script(raw_html, token))
+    return HTMLResponse(raw_html)
 
 @app.get("/db-explorer")
 @app.get("/db-explorer/{rest:path}")
@@ -2310,14 +2378,15 @@ def render_admin_login_template(request: Request, context: dict, status_code: in
 
 @app.get("/pnther/login", response_class=HTMLResponse)
 async def get_admin_login(request: Request, next: str = "/pnther"):
-    """Renders the secure Admin Login Page."""
+    """Renders the secure Admin Login Page. Always prompts for credentials."""
     clean_next = next if next.startswith("/pnther") and not next.startswith("/pnther/login") else "/pnther"
-    if is_admin_authorized(request):
-        return RedirectResponse(url=clean_next, status_code=302)
-    return render_admin_login_template(
+    response = render_admin_login_template(
         request,
         {"next": clean_next, "error": None}
     )
+    response.delete_cookie(key="budgetby_admin_session")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
 
 @app.post("/pnther/login", response_class=HTMLResponse)
 async def post_admin_login(
@@ -2353,65 +2422,65 @@ async def post_admin_login(
         )
 
     token = create_admin_session_token(matched_user)
-    resp = RedirectResponse(url=clean_next, status_code=303)
-    resp.set_cookie(
-        key="budgetby_admin_session",
-        value=token,
-        httponly=True,
-        samesite="lax",
-        max_age=86400 * 7
-    )
+    target_url = f"{clean_next}{'&' if '?' in clean_next else '?'}auth_token={token}"
+    resp = RedirectResponse(url=target_url, status_code=303)
+    resp.delete_cookie(key="budgetby_admin_session")
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return resp
 
 @app.get("/pnther/logout")
 @app.post("/pnther/logout")
 async def admin_logout():
-    """Logs out admin and terminates the session cookie."""
+    """Logs out admin and terminates any session."""
     resp = RedirectResponse(url="/pnther/login", status_code=302)
     resp.delete_cookie(key="budgetby_admin_session")
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return resp
 
 @app.get("/pnther", response_class=HTMLResponse)
 async def admin_dashboard(request: Request):
     """Renders the BudgetBy Admin Control Center (Stealth Protected URL: /pnther)."""
-    if not is_admin_authorized(request):
+    auth_tok = request.query_params.get("auth_token")
+    req_key = request.query_params.get("key") or request.query_params.get("admin_key")
+
+    is_valid_token = bool(auth_tok and verify_admin_session_token(auth_tok))
+    is_valid_key = bool(req_key and secrets.compare_digest(str(req_key), ADMIN_SECRET_KEY))
+
+    if not is_valid_token and not is_valid_key:
         return RedirectResponse(url="/pnther/login?next=/pnther", status_code=302)
 
-    response = HTMLResponse(content="<h1>BudgetBy Admin Dashboard Loading...</h1>")
+    active_token = auth_tok if is_valid_token else create_admin_session_token("pnther")
+
+    raw_html = "<h1>BudgetBy Admin Dashboard Loading...</h1>"
     if os.path.exists(ADMIN_TEMPLATE_PATH):
         with open(ADMIN_TEMPLATE_PATH, "r", encoding="utf-8") as f:
-            response = HTMLResponse(content=f.read())
+            raw_html = f.read()
 
-    # Set secure session cookie if authenticated via query param
-    req_key = request.query_params.get("key") or request.query_params.get("admin_key")
-    if req_key and secrets.compare_digest(str(req_key), ADMIN_SECRET_KEY):
-        token = create_admin_session_token("pnther")
-        response.set_cookie(
-            key="budgetby_admin_session",
-            value=token,
-            httponly=True,
-            samesite="lax",
-            max_age=86400 * 7
-        )
+    final_html = inject_admin_session_script(raw_html, active_token)
+    response = HTMLResponse(content=final_html)
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.delete_cookie(key="budgetby_admin_session")
     return response
 
 @app.get("/pnther/db-explorer", response_class=HTMLResponse)
 async def admin_db_explorer(request: Request):
     """Renders the BudgetBy Database Explorer (Stealth Protected URL: /pnther/db-explorer)."""
-    if not is_admin_authorized(request):
+    auth_tok = request.query_params.get("auth_token")
+    req_key = request.query_params.get("key") or request.query_params.get("admin_key")
+
+    is_valid_token = bool(auth_tok and verify_admin_session_token(auth_tok))
+    is_valid_key = bool(req_key and secrets.compare_digest(str(req_key), ADMIN_SECRET_KEY))
+
+    if not is_valid_token and not is_valid_key:
         return RedirectResponse(url="/pnther/login?next=/pnther/db-explorer", status_code=302)
 
-    response = await render_db_explorer()
-    req_key = request.query_params.get("key") or request.query_params.get("admin_key")
-    if req_key and secrets.compare_digest(str(req_key), ADMIN_SECRET_KEY):
-        token = create_admin_session_token("pnther")
-        response.set_cookie(
-            key="budgetby_admin_session",
-            value=token,
-            httponly=True,
-            samesite="lax",
-            max_age=86400 * 7
-        )
+    active_token = auth_tok if is_valid_token else create_admin_session_token("pnther")
+
+    response = await render_db_explorer(token=active_token)
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.delete_cookie(key="budgetby_admin_session")
     return response
 
 @app.get("/admin")
