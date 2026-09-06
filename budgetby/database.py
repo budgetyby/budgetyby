@@ -361,23 +361,25 @@ async def schedule_next_check(product_id: int, priority_tier: int):
 async def refresh_30d_benchmarks():
     """
     Recalculate min_30d and median_30d_price from daily_prices for all products.
-    Run daily at midnight.
+    Run daily at midnight. Uses 120s timeout — this query scans a large table.
     """
-    await execute("""
-        UPDATE products p SET
-            min_30d = sub.min_30d,
-            median_30d_price = sub.median_price
-        FROM (
-            SELECT
-                product_id,
-                MIN(min_price) AS min_30d,
-                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY close_price) AS median_price
-            FROM daily_prices
-            WHERE date >= ((NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - 30)
-            GROUP BY product_id
-        ) sub
-        WHERE p.id = sub.product_id
-    """)
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("""
+            UPDATE products p SET
+                min_30d = sub.min_30d,
+                median_30d_price = sub.median_price
+            FROM (
+                SELECT
+                    product_id,
+                    MIN(min_price) AS min_30d,
+                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY close_price) AS median_price
+                FROM daily_prices
+                WHERE date >= ((NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - 30)
+                GROUP BY product_id
+            ) sub
+            WHERE p.id = sub.product_id
+        """, timeout=120)
     logger.info("Refreshed 30-day benchmarks for all products")
 
 
@@ -434,7 +436,7 @@ async def compress_old_daily_prices():
         GROUP BY
             product_id,
             (DATE '2000-01-01' + (((date - DATE '2000-01-01') / {bucket_size}) * {bucket_size}))
-        HAVING COUNT(*) >= {bucket_size}
+        HAVING COUNT(*) >= 1   -- Compress ALL old raw rows, even partial windows (1 or 2 day buckets)
         ON CONFLICT (product_id, date) DO UPDATE SET
             min_price     = LEAST(daily_prices.min_price, EXCLUDED.min_price),
             close_price   = EXCLUDED.close_price,
