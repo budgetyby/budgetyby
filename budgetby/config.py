@@ -53,10 +53,21 @@ STATUS_ACTIVE = "ACTIVE"
 STATUS_TEMP_OOS = "TEMP_OOS"
 STATUS_DORMANT = "DORMANT"
 
-# Prune daily prices older than 90 days and permanently delete dead OOS products
-DAILY_PRICE_RETENTION_DAYS = 90
+# ── Tiered Price History Retention ────────────────────────────────────────
+# Stage 1: Keep raw daily rows for the most recent N days
+PRICE_RAW_RETENTION_DAYS = 5
+
+# Stage 2: Compress old raw rows into 3-day bucket averages (1 row per 3 days)
+PRICE_BUCKET_SIZE_DAYS = 3
+
+# Stage 3: Delete ALL daily_prices rows (raw + buckets) older than 30 days.
+#          Benchmarks (min_30d, median_30d_price) are persisted on products row first.
+DAILY_PRICE_RETENTION_DAYS = 30
+
+# OOS product archival thresholds
 DORMANT_THRESHOLD_DAYS = 14
 DELETE_THRESHOLD_DAYS = 30
+
 
 # ════════════════════════════════════════════════════════════════════════
 # 2. SCRAPER SETTINGS
@@ -103,10 +114,14 @@ PRIORITY_INTERVALS = {
 SALE_MODE_INTERVAL_MULTIPLIER = 0.5  # 2x faster checks
 
 # ════════════════════════════════════════════════════════════════════════
-# 4. PRICE STORAGE
+# 4. PRICE STORAGE — Tiered Compression (defined in section 1.5 above)
 # ════════════════════════════════════════════════════════════════════════
-
-DAILY_PRICE_RETENTION_DAYS = 30
+# PRICE_RAW_RETENTION_DAYS = 5        (5 raw daily rows per product)
+# PRICE_BUCKET_SIZE_DAYS   = 3        (compress every 3 old days into 1 bucket)
+# DAILY_PRICE_RETENTION_DAYS = 30     (delete all rows after 30 days)
+# After 30d: benchmarks live on products.min_30d / median_30d_price
+# After 60d: products.min_60d  | After 90d: products.min_90d
+# After 120d: products.min_120d
 
 # ════════════════════════════════════════════════════════════════════════
 # 5. CASCADING COMPARISON BENCHMARKS
@@ -117,6 +132,7 @@ BENCHMARK_MARGINS = {
     "min_30d":       0.00,   # 0% — must be AT or BELOW 30-day low
     "min_60d":       0.05,   # 5% — within 5% of 60-day low
     "min_90d":       0.08,   # 8% — within 8% of 90-day low
+    "min_120d":      0.10,   # 10% — within 10% of 120-day low
     "all_time_low":  0.10,   # 10% — within 10% of all-time low
 }
 

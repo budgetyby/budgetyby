@@ -289,8 +289,8 @@ async def sync_daily_price_baselines():
     Runs instantaneously at midnight and on startup.
     """
     await execute("""
-        INSERT INTO daily_prices (product_id, date, min_price, close_price)
-        SELECT id, (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE, current_price, current_price
+        INSERT INTO daily_prices (product_id, date, min_price, close_price, is_compressed)
+        SELECT id, (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE, current_price, current_price, FALSE
         FROM products
         WHERE status = 'ACTIVE' AND current_price > 0
         ON CONFLICT (product_id, date) DO NOTHING;
@@ -305,11 +305,12 @@ async def upsert_daily_price(product_id: int, price: float):
     if not price or price <= 0:
         return
     await execute("""
-        INSERT INTO daily_prices (product_id, date, min_price, close_price)
-        VALUES ($1, (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE, $2, $2)
+        INSERT INTO daily_prices (product_id, date, min_price, close_price, is_compressed)
+        VALUES ($1, (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE, $2, $2, FALSE)
         ON CONFLICT (product_id, date) DO UPDATE SET
             min_price = LEAST(daily_prices.min_price, $2),
             close_price = $2
+        WHERE daily_prices.is_compressed = FALSE
     """, product_id, price)
 
 
@@ -382,25 +383,95 @@ async def refresh_30d_benchmarks():
 
 async def monthly_benchmark_shift():
     """
-    Monthly sliding window shift:
-    min_90d ← min_60d, min_60d ← min_30d, then min_30d recalculates fresh.
+    Monthly sliding window shift (runs once a month):
+      min_120d <- min_90d   (preserve 90d low as 120d history)
+      min_90d  <- min_60d
+      min_60d  <- min_30d
+      min_30d  recalculates fresh from daily_prices
     """
     await execute("""
         UPDATE products SET
-            min_90d = min_60d,
-            min_60d = min_30d
+            min_120d = COALESCE(min_90d, min_120d),
+            min_90d  = COALESCE(min_60d, min_90d),
+            min_60d  = COALESCE(min_30d, min_60d)
     """)
     await refresh_30d_benchmarks()
-    logger.info("Monthly benchmark shift complete")
+    logger.info("Monthly benchmark shift complete (min_120d/90d/60d/30d updated)")
+
+
+async def compress_old_daily_prices():
+    """
+    Tiered compression: raw daily rows older than PRICE_RAW_RETENTION_DAYS get compressed
+    into 3-day bucket averages to save storage.
+
+    Algorithm:
+    1. Find all uncompressed rows older than 5 days.
+    2. For each complete 3-day window (per product), compute:
+       - bucket date = start of the 3-day window (aligned to fixed epoch)
+       - min_price   = MIN of the 3 daily min_prices
+       - close_price = AVG of the 3 daily close_prices
+    3. Insert those as is_compressed=TRUE bucket rows.
+    4. Delete the original raw rows that were compressed.
+
+    This runs DAILY before cleanup_old_daily_prices().
+    """
+    raw_days = config.PRICE_RAW_RETENTION_DAYS   # 5
+    bucket_size = config.PRICE_BUCKET_SIZE_DAYS  # 3
+
+    # Step A: Insert compressed bucket rows for all complete 3-day windows
+    await execute(f"""
+        INSERT INTO daily_prices (product_id, date, min_price, close_price, is_compressed)
+        SELECT
+            product_id,
+            -- Align bucket start to fixed 3-day epoch from 2000-01-01
+            (DATE '2000-01-01' + (((date - DATE '2000-01-01') / {bucket_size}) * {bucket_size})) AS bucket_start,
+            MIN(min_price)                                     AS agg_min,
+            ROUND(AVG(close_price)::numeric, 2)                AS agg_close,
+            TRUE
+        FROM daily_prices
+        WHERE is_compressed = FALSE
+          AND date < (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - INTERVAL '{raw_days} days'
+        GROUP BY
+            product_id,
+            (DATE '2000-01-01' + (((date - DATE '2000-01-01') / {bucket_size}) * {bucket_size}))
+        HAVING COUNT(*) >= {bucket_size}
+        ON CONFLICT (product_id, date) DO UPDATE SET
+            min_price     = LEAST(daily_prices.min_price, EXCLUDED.min_price),
+            close_price   = EXCLUDED.close_price,
+            is_compressed = TRUE;
+    """)
+
+    # Step B: Delete the raw rows that have been successfully compressed
+    result = await execute(f"""
+        DELETE FROM daily_prices
+        WHERE is_compressed = FALSE
+          AND date < (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - INTERVAL '{raw_days} days'
+          AND EXISTS (
+              SELECT 1 FROM daily_prices dp2
+              WHERE dp2.product_id = daily_prices.product_id
+                AND dp2.is_compressed = TRUE
+                AND dp2.date = (DATE '2000-01-01' + (
+                    ((daily_prices.date - DATE '2000-01-01') / {bucket_size}) * {bucket_size}
+                ))
+          );
+    """)
+    logger.info(f"Price compression complete: compressed raw rows deleted: {result}")
 
 
 async def cleanup_old_daily_prices():
-    """Delete daily_prices older than retention period."""
+    """
+    Delete ALL daily_prices rows (raw AND compressed) older than DAILY_PRICE_RETENTION_DAYS (30 days).
+    Benchmarks (min_30d, median_30d_price) are recalculated and persisted on the products row FIRST
+    so no historical data is lost when rows are deleted.
+    """
+    # Persist benchmarks before any deletion
+    await refresh_30d_benchmarks()
+
     result = await execute("""
         DELETE FROM daily_prices
         WHERE date < (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - ($1 * INTERVAL '1 day')
     """, config.DAILY_PRICE_RETENTION_DAYS)
-    logger.info(f"Cleaned up old daily prices: {result}")
+    logger.info(f"Cleaned up old daily prices (>{config.DAILY_PRICE_RETENTION_DAYS} days): {result}")
 
 
 async def get_product_by_platform_id(platform: str, platform_id: str) -> asyncpg.Record | None:

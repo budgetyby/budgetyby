@@ -25,6 +25,10 @@ async def daily_cleanup():
             FROM products p WHERE dp.product_id = p.id AND p.current_price > 0 AND (dp.close_price > (p.current_price * 5.0) OR dp.close_price < (p.current_price * 0.2));
         """)
 
+        # 2. Compress raw rows older than 5 days into 3-day buckets (must run BEFORE cleanup)
+        await database.compress_old_daily_prices()
+
+        # 3. Delete rows older than 30 days (benchmarks are persisted inside cleanup before delete)
         await database.cleanup_old_daily_prices()
         await database.sync_daily_price_baselines()
         await database.refresh_30d_benchmarks()

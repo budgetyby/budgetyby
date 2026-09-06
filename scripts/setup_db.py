@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS products (
     min_30d             NUMERIC(10,2),
     min_60d             NUMERIC(10,2),
     min_90d             NUMERIC(10,2),
+    min_120d            NUMERIC(10,2),
     all_time_low        NUMERIC(10,2),
 
     -- Product signals (scraped from product page)
@@ -71,19 +72,24 @@ CREATE INDEX IF NOT EXISTS idx_products_status
 
 
 -- ══════════════════════════════════════════════════════════════════════
--- DAILY PRICES — Rolling 30-day price history (1 row per product per day)
+-- DAILY PRICES — Tiered price history (raw: 5 days | compressed 3-day buckets: days 6-30)
+-- After 30 days all rows deleted; benchmarks live on products.min_30d/median_30d_price
 -- ══════════════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS daily_prices (
-    id          SERIAL PRIMARY KEY,
-    product_id  INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    date        DATE NOT NULL,
-    min_price   NUMERIC(10,2) NOT NULL,
-    close_price NUMERIC(10,2) NOT NULL,
+    id            SERIAL PRIMARY KEY,
+    product_id    INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    date          DATE NOT NULL,
+    min_price     NUMERIC(10,2) NOT NULL,
+    close_price   NUMERIC(10,2) NOT NULL,
+    is_compressed BOOLEAN DEFAULT FALSE,  -- TRUE = 3-day average bucket; FALSE = raw daily row
     UNIQUE(product_id, date)
 );
 
 CREATE INDEX IF NOT EXISTS idx_daily_prices_product_date
     ON daily_prices(product_id, date DESC);
+
+CREATE INDEX IF NOT EXISTS idx_daily_prices_compressed
+    ON daily_prices(product_id, date DESC, is_compressed);
 
 
 -- ══════════════════════════════════════════════════════════════════════
