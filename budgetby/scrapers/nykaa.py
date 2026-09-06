@@ -150,6 +150,11 @@ class NykaaScraper(BaseScraper):
         if not title or price <= 0:
             return None
 
+        if not mrp or mrp < price:
+            mrp = price
+        elif mrp > 4.5 * price or (price < 1500 and mrp > 15000) or mrp > 200000:
+            mrp = round((price * 1.35) / 10) * 10
+
         affiliate_url = build_cuelinks_url_sync(url)
 
         return {

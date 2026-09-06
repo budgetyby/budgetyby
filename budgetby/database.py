@@ -136,7 +136,9 @@ async def upsert_product(data: dict) -> int:
     cur_price = data.get("current_price")
     mrp_val = data.get("mrp")
     if cur_price and mrp_val and cur_price > 0:
-        if mrp_val > 4.0 * cur_price or (mrp_val > 100000 and cur_price < 10000):
+        if mrp_val < cur_price:
+            mrp_val = cur_price
+        elif mrp_val > 4.5 * cur_price or (cur_price < 1500 and mrp_val > 15000) or mrp_val > 200000:
             mrp_val = round((cur_price * 1.35) / 10) * 10
 
     platform = data.get("platform")
@@ -233,22 +235,38 @@ async def update_price(product_id: int, new_price: float, in_stock: bool,
     """
     Update a product's live price snapshot and product details (title, mrp, rating, etc.).
     Also updates min benchmarks and all_time_low.
+    Prevents phantom price drops by validating previous_price and clamping anomalous MRPs.
     """
     if new_price and new_price > 0:
         if mrp:
             if new_price > mrp:
                 mrp = new_price
-            elif mrp > 4.0 * new_price or (mrp > 100000 and new_price < 10000):
+            elif mrp > 4.5 * new_price or (new_price < 1500 and mrp > 15000) or mrp > 200000:
                 mrp = round((new_price * 1.35) / 10) * 10
     await execute("""
         UPDATE products SET
-            previous_price = current_price,
+            previous_price = CASE
+                -- If current price is higher than new price, verify it is realistic before storing as previous_price
+                WHEN current_price IS NOT NULL 
+                 AND current_price > $2::numeric 
+                 AND current_price <= GREATEST(COALESCE($5::numeric, mrp, $2::numeric * 1.35) * 1.15, $2::numeric * 3.0)
+                THEN current_price
+                WHEN current_price IS NOT NULL AND current_price <= $2::numeric
+                THEN current_price
+                -- If old current_price was an absurd anomaly (e.g. 61,190 on a 133 item), do NOT inherit it
+                ELSE CASE 
+                    WHEN previous_price > GREATEST(COALESCE($5::numeric, mrp, $2::numeric * 1.35) * 1.15, $2::numeric * 3.0)
+                    THEN NULL
+                    ELSE previous_price
+                END
+            END,
             current_price = $2::numeric,
             in_stock = $3::boolean,
             title = CASE WHEN $4::text IS NOT NULL AND $4::text != '' THEN $4::text ELSE title END,
             mrp = CASE 
                 WHEN $5::numeric IS NOT NULL THEN $5::numeric
                 WHEN mrp < $2::numeric THEN $2::numeric
+                WHEN mrp > $2::numeric * 4.5 THEN ROUND(($2::numeric * 1.35) / 10) * 10
                 ELSE mrp 
             END,
             rating = COALESCE($6::numeric, rating),

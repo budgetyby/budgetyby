@@ -46,6 +46,8 @@ class MyntraScraper(BaseScraper):
                 title = pdp_data.get("name", "")
                 price = float(pdp_data.get("price", {}).get("discounted", 0) or 0)
                 mrp = float(pdp_data.get("price", {}).get("mrp", 0) or price)
+                if price > 0 and (mrp > 4.5 * price or (price < 1500 and mrp > 15000) or mrp > 200000):
+                    mrp = round((price * 1.35) / 10) * 10
                 
                 media = pdp_data.get("media", {}).get("albums", [])
                 if media and media[0].get("images"):

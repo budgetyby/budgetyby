@@ -139,9 +139,15 @@ def is_local_request(request: Request) -> bool:
     return client_host in ("127.0.0.1", "localhost", "::1")
 
 def is_admin_authorized(request: Request) -> bool:
-    """Verifies that the request is strictly local AND contains valid ADMIN_SECRET_KEY."""
-    if not is_local_request(request):
-        return False
+    """
+    Cryptographically verifies admin access via ADMIN_SECRET_KEY.
+    Accepts the key via:
+    - Query parameter: ?key=<ADMIN_SECRET_KEY> or ?admin_key=<ADMIN_SECRET_KEY>
+    - Header: X-Admin-Key: <ADMIN_SECRET_KEY>
+    - Browser Session Cookie: budgetby_admin_session
+    Works seamlessly both locally and on Render.
+    Unauthorized requests return False (triggering a 404 stealth response).
+    """
     req_key = request.query_params.get("key") or request.query_params.get("admin_key")
     if req_key and secrets.compare_digest(str(req_key), ADMIN_SECRET_KEY):
         return True
@@ -1017,16 +1023,16 @@ async def get_public_stats():
         stats_row = await database.fetchrow("""
             SELECT 
                 (SELECT COUNT(*) FROM products WHERE LOWER(platform) != 'croma') as total_products,
-                (SELECT COUNT(*) FROM deals) as total_deals,
-                (SELECT COUNT(*) FROM deals WHERE posted_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE) as deals_today,
-                (SELECT COUNT(*) FROM products WHERE previous_price > current_price AND in_stock = TRUE AND LOWER(platform) != 'croma') as drops_today,
-                (SELECT MAX(posted_at) FROM deals) as latest_deal_time
+                (SELECT COUNT(*) FROM deals WHERE posted_mrp <= posted_price * 4.0 AND savings_pct <= 0.85) as total_deals,
+                (SELECT COUNT(*) FROM deals WHERE posted_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE AND posted_mrp <= posted_price * 4.0 AND savings_pct <= 0.85) as deals_today,
+                (SELECT COUNT(*) FROM products WHERE previous_price > current_price AND in_stock = TRUE AND previous_price <= GREATEST(COALESCE(NULLIF(mrp, 0), current_price * 1.35) * 1.15, current_price * 3.0) AND (((previous_price - current_price) / NULLIF(previous_price, 0)) * 100) <= 85.0 AND LOWER(platform) != 'croma') as drops_today,
+                (SELECT MAX(posted_at) FROM deals WHERE posted_mrp <= posted_price * 4.0) as latest_deal_time
         """)
         by_plat = await database.fetch("""
             SELECT platform, COUNT(*) as count, 
-                   MAX(ROUND(((mrp - current_price) / NULLIF(mrp, 0)) * 100)) as max_discount
+                   MAX(CASE WHEN ((mrp - current_price) / NULLIF(mrp, 0)) * 100 <= 85.0 THEN ROUND(((mrp - current_price) / NULLIF(mrp, 0)) * 100) END) as max_discount
             FROM products 
-            WHERE in_stock = TRUE AND current_price > 0 AND mrp > current_price AND LOWER(platform) != 'croma'
+            WHERE in_stock = TRUE AND current_price > 0 AND mrp > current_price AND mrp <= current_price * 4.5 AND LOWER(platform) != 'croma'
             GROUP BY platform;
         """)
 
@@ -1414,8 +1420,10 @@ async def get_public_price_drops(
             "p.status = 'ACTIVE'",
             "p.current_price > 0",
             "p.previous_price > p.current_price",
+            "p.previous_price <= GREATEST(COALESCE(NULLIF(p.mrp, 0), p.current_price * 1.35) * 1.15, p.current_price * 3.0)",
             "LOWER(p.platform) != 'croma'",
-            "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) >= $1"
+            "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) >= $1",
+            "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) <= 85.0"
         ]
         args = [min_drop_pct]
         arg_idx = 2
@@ -1477,6 +1485,8 @@ async def get_public_price_drops(
                 SELECT COUNT(*) FROM products 
                 WHERE in_stock = TRUE AND status = 'ACTIVE' 
                   AND previous_price > current_price AND current_price > 0 
+                  AND previous_price <= GREATEST(COALESCE(NULLIF(mrp, 0), current_price * 1.35) * 1.15, current_price * 3.0)
+                  AND (((previous_price - current_price) / NULLIF(previous_price, 0)) * 100) <= 85.0
                   AND LOWER(platform) != 'croma';
             """) or 30000
             await ram_cache.set("total_drops_today_count", cached_total_drops, ttl=600)
@@ -1496,8 +1506,19 @@ async def get_public_price_drops(
             cur_p = float(r["current_price"])
             prev_p = float(r["previous_price"])
             mrp_p = float(r["mrp"]) if r["mrp"] and float(r["mrp"]) > cur_p else None
-            drop_pct = float(r["drop_pct"])
-            drop_amt = float(r["drop_amount"])
+            if mrp_p and mrp_p > cur_p * 4.5:
+                mrp_p = round(cur_p * 1.35, 2)
+            if mrp_p and cur_p < 1500 and mrp_p > 15000:
+                mrp_p = round(cur_p * 1.35, 2)
+
+            # Plausibility clamps on consumer display
+            if mrp_p and prev_p > mrp_p:
+                prev_p = mrp_p
+            elif prev_p > cur_p * 3.0:
+                prev_p = round(cur_p * 1.35, 2)
+
+            drop_amt = max(0.0, prev_p - cur_p)
+            drop_pct = round((drop_amt / prev_p) * 100, 1) if prev_p > 0 else 0.0
             aff_url = resolve_deal_button_url(r["platform"], None, r["affiliate_url"], r["product_url"], product_id=r["product_id"])
 
             if aff_url and "/api/deal/redirect/" not in aff_url:
@@ -1637,7 +1658,9 @@ async def get_public_deals(
             "p.in_stock = TRUE",
             "p.status = 'ACTIVE'",
             "p.current_price > 0",
-            "LOWER(p.platform) != 'croma'"
+            "LOWER(p.platform) != 'croma'",
+            "(p.mrp IS NULL OR p.mrp <= p.current_price * 4.0)",
+            "(d.id IS NULL OR (d.posted_mrp <= d.posted_price * 4.0 AND d.savings_pct <= 0.85))"
         ]
         args = []
         arg_idx = 1
@@ -1848,6 +1871,8 @@ async def get_public_deals(
                 where_clauses.append("(p.mrp IS NULL OR p.mrp > p.current_price)")
             elif deal_type_clean == "drops" or tab_clean == "drops":
                 where_clauses.append("p.previous_price > p.current_price")
+                where_clauses.append("p.previous_price <= GREATEST(COALESCE(NULLIF(p.mrp, 0), p.current_price * 1.35) * 1.15, p.current_price * 3.0)")
+                where_clauses.append("(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) <= 85.0")
             elif deal_type_clean == "atl" or tab_clean == "atl":
                 where_clauses.append("(d.badge ILIKE '%ATL%' OR (p.all_time_low IS NOT NULL AND p.current_price <= p.all_time_low * 1.02))")
             elif tab_clean == "under499":
@@ -1932,6 +1957,10 @@ async def get_public_deals(
 
             cur_p = float(r["current_price"]) if r["current_price"] and float(r["current_price"]) > 0 else 0.0
             mrp_p = float(r["mrp"]) if r["mrp"] and float(r["mrp"]) > cur_p else cur_p
+            if mrp_p > cur_p * 4.5:
+                mrp_p = round(cur_p * 1.35, 2)
+            if cur_p < 1500 and mrp_p > 15000:
+                mrp_p = round(cur_p * 1.35, 2)
             
             if mrp_p > cur_p and mrp_p > 0:
                 pct = round(((mrp_p - cur_p) / mrp_p) * 100)
@@ -1941,6 +1970,12 @@ async def get_public_deals(
                 savings = 0.0
 
             prev_p = float(r["previous_price"]) if r.get("previous_price") and float(r["previous_price"]) > cur_p else None
+            if prev_p:
+                if mrp_p and prev_p > mrp_p:
+                    prev_p = mrp_p
+                elif prev_p > cur_p * 3.0:
+                    prev_p = round(cur_p * 1.35, 2)
+
             drop_pct = round(((prev_p - cur_p) / prev_p) * 100) if prev_p else 0
             drop_amount = round(prev_p - cur_p, 2) if prev_p else 0.0
 

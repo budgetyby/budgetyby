@@ -60,6 +60,9 @@ def extract_price(text: str) -> float:
         return 0.0
     try:
         val = float(match.group(1))
+        # Reject numbers > 20,00,000 (20 Lakhs) as they are tracking IDs/phone numbers/metadata
+        if val > 2000000.0:
+            return 0.0
         return val
     except ValueError:
         return 0.0

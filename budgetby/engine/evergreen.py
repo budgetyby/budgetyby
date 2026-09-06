@@ -23,8 +23,11 @@ async def find_evergreen_deals(limit: int = 10, platform: str = None) -> list[Re
             WHERE p.in_stock = TRUE
               AND p.mrp > 0 AND p.current_price > 0
               AND p.mrp > p.current_price
+              AND p.mrp <= p.current_price * 4.5
               AND ((p.mrp - p.current_price) / p.mrp) >= $1
+              AND ((p.mrp - p.current_price) / p.mrp) <= 0.85
               AND (p.mrp - p.current_price) >= $2
+              AND NOT (p.mrp > 15000 AND p.current_price < 1500)
               {platform_filter}
               AND c.product_id IS NULL
               AND NOT EXISTS (

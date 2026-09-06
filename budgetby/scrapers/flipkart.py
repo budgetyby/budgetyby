@@ -80,34 +80,28 @@ class FlipkartScraper(BaseScraper):
                     price = extract_price(p_node.text())
                     break
 
-        # 4. Accurate Hero Strike-Through MRP Extraction (Strictly for this SKU, ignoring other storage variant pills)
+        # 4. Accurate Hero Strike-Through MRP Extraction
         if price > 0:
-            price_int = int(price)
-            price_str = f"{price_int:,}"
-            price_digits = str(price_int)
-
-            # Search in DOM text blocks where HTML tags are stripped
-            for el in tree.css("div.OmE16y, div.asbjxx, div[class*='_1psv1ze'], div[class*='price'], div, span"):
-                txt = el.text(strip=True)
-                if price_str in txt or price_digits in txt:
-                    m = re.search(rf'(\d+%)?\s*([0-9,]{{2,8}})\s*₹?\s*(?:{re.escape(price_str)}|{price_digits})', txt)
-                    if m:
-                        cand = float(m.group(2).replace(',', ''))
-                        if cand > price:
-                            mrp = cand
-                            break
-
-        if not mrp or mrp < price:
-            for m_sel in ["div.v1zwn21n.v1zwn21", ".yRaY8j.A6rEoz", "._3I9_wc._2p6lqe", "div.Nx9bqj ~ div.yRaY8j"]:
+            for m_sel in [
+                "div.yRaY8j.A6rEoz", "div.v1zwn21n.v1zwn21", "div._3I9_wc._2p6lqe", 
+                "._3I9_wc", ".yRaY8j", "div.Nx9bqj ~ div.yRaY8j", "div._25b18c div._3I9_wc",
+                "div.OmE16y div.yRaY8j"
+            ]:
                 m_node = tree.css_first(m_sel)
                 if m_node and extract_price(m_node.text()) > 0:
-                    extracted_mrp = extract_price(m_node.text())
-                    if extracted_mrp > price:
-                        mrp = extracted_mrp
+                    cand = extract_price(m_node.text())
+                    if cand > price:
+                        # Plausibility sanity clamp: MRP cannot exceed 4.5x price or 15k for cheap items
+                        if cand > 4.5 * price or (price < 1500 and cand > 15000) or cand > 200000:
+                            cand = round((price * 1.35) / 10) * 10
+                        mrp = cand
                         break
 
+        # Final MRP fallback & bounds check
         if not mrp or mrp < price:
             mrp = price
+        elif mrp > 4.5 * price or (price < 1500 and mrp > 15000) or mrp > 200000:
+            mrp = round((price * 1.35) / 10) * 10
             
         # 4. Fallback Rating & Review count
         if not rating:
