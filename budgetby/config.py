@@ -55,7 +55,8 @@ STATUS_DORMANT = "DORMANT"
 
 # ── Tiered Price History Retention ────────────────────────────────────────
 # Stage 1: Keep raw daily rows for the most recent N days
-PRICE_RAW_RETENTION_DAYS = 5
+# 2 = keep only today + yesterday (the minimum needed for price-drop detection)
+PRICE_RAW_RETENTION_DAYS = 2
 
 # Stage 2: Compress old raw rows into 3-day bucket averages (1 row per 3 days)
 PRICE_BUCKET_SIZE_DAYS = 3
@@ -116,7 +117,7 @@ SALE_MODE_INTERVAL_MULTIPLIER = 0.5  # 2x faster checks
 # ════════════════════════════════════════════════════════════════════════
 # 4. PRICE STORAGE — Tiered Compression (defined in section 1.5 above)
 # ════════════════════════════════════════════════════════════════════════
-# PRICE_RAW_RETENTION_DAYS = 5        (5 raw daily rows per product)
+# PRICE_RAW_RETENTION_DAYS = 2        (keep today + yesterday raw only)
 # PRICE_BUCKET_SIZE_DAYS   = 3        (compress every 3 old days into 1 bucket)
 # DAILY_PRICE_RETENTION_DAYS = 30     (delete all rows after 30 days)
 # After 30d: benchmarks live on products.min_30d / median_30d_price
