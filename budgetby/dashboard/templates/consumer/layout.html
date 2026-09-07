@@ -228,51 +228,33 @@
         <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
             <div class="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar py-2 text-xs font-bold whitespace-nowrap">
                 
-                <!-- Footwear -->
+                <!-- 1. Fashion & Apparel -->
                 <div class="relative group">
-                    <a href="/deals?category=footwear" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-indigo-600 transition flex items-center gap-1.5 {% if current_category == 'footwear' %}bg-indigo-50 text-indigo-700 border border-indigo-200{% endif %}">
-                        <span class="text-sm">👟</span>
-                        <span>Footwear</span>
-                        <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
-                    </a>
-                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[210px]">
-                        <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=footwear" class="block px-3 py-2 rounded-xl font-extrabold text-indigo-700 bg-indigo-50 hover:bg-indigo-100">All Footwear & Shoes ➔</a>
-                            <a href="/deals?category=footwear&sub=sneakers" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👟 Sneakers & Sports</a>
-                            <a href="/deals?category=footwear&sub=slippers" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🩴 Slippers & Slides</a>
-                            <a href="/deals?category=footwear&sub=formal" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👞 Formal & Loafers</a>
-                            <a href="/deals?category=footwear&sub=heels" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👠 Heels & Wedges</a>
-                            <a href="/deals?category=footwear&sub=boots" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👢 Boots & High-Tops</a>
-                            <a href="/deals?category=footwear&sub=sandals" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👡 Sandals & Floaters</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Electronics -->
-                <div class="relative group">
-                    <a href="/deals?category=electronics" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-indigo-600 transition flex items-center gap-1.5 {% if current_category == 'electronics' %}bg-indigo-50 text-indigo-700 border border-indigo-200{% endif %}">
-                        <span class="text-sm">📱</span>
-                        <span>Electronics</span>
+                    <a href="/deals?category=fashion" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-purple-600 transition flex items-center gap-1.5 {% if current_category == 'fashion' %}bg-purple-50 text-purple-700 border border-purple-200{% endif %}">
+                        <span class="text-sm">👗</span>
+                        <span>Fashion</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
                     <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[220px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=electronics" class="block px-3 py-2 rounded-xl font-extrabold text-indigo-700 bg-indigo-50 hover:bg-indigo-100">All Electronics & Gadgets ➔</a>
-                            <a href="/deals?category=electronics&sub=earbuds" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎧 TWS Earbuds</a>
-                            <a href="/deals?category=electronics&sub=headphones" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎧 Headphones & Neckbands</a>
-                            <a href="/deals?category=electronics&sub=smartwatches" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⌚ Smartwatches & Bands</a>
-                            <a href="/deals?category=electronics&sub=speakers" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🔊 Bluetooth Speakers</a>
-                            <a href="/deals?category=electronics&sub=powerbanks" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🔋 Power Banks & Cables</a>
-                            <a href="/deals?category=electronics&sub=smartphones" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">📱 Smartphones</a>
+                            <a href="/deals?category=fashion" class="block px-3 py-2 rounded-xl font-extrabold text-purple-700 bg-purple-50 hover:bg-purple-100">All Fashion & Apparel ➔</a>
+                            <a href="/deals?category=fashion&sub=tshirts" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👕 T-Shirts & Polos</a>
+                            <a href="/deals?category=fashion&sub=shirts" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👔 Casual & Formal Shirts</a>
+                            <a href="/deals?category=fashion&sub=kurta" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">✨ Kurtas & Ethnic Wear</a>
+                            <a href="/deals?category=fashion&sub=jeans" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👖 Jeans & Denims</a>
+                            <a href="/deals?category=fashion&sub=trousers" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👖 Trousers & Joggers</a>
+                            <a href="/deals?category=fashion&sub=dresses" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👗 Dresses & Tops</a>
+                            <a href="/deals?category=fashion&sub=jackets" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧥 Jackets & Hoodies</a>
+                            <a href="/deals?category=fashion&sub=innerwear" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🩲 Innerwear & Loungewear</a>
                         </div>
                     </div>
                 </div>
 
-                <!-- Skincare & Beauty -->
+                <!-- 2. Beauty & Skincare -->
                 <div class="relative group">
                     <a href="/deals?category=beauty" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-rose-600 transition flex items-center gap-1.5 {% if current_category == 'beauty' %}bg-rose-50 text-rose-700 border border-rose-200{% endif %}">
                         <span class="text-sm">💄</span>
-                        <span>Beauty & Skincare</span>
+                        <span>Beauty</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
                     <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[220px]">
@@ -283,43 +265,43 @@
                             <a href="/deals?category=beauty&sub=serum" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💧 Serums & Oils</a>
                             <a href="/deals?category=beauty&sub=moisturizer" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧴 Moisturizers & Creams</a>
                             <a href="/deals?category=beauty&sub=perfume" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🌸 Perfumes & Deos</a>
-                            <a href="/deals?category=beauty&sub=haircare" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💆‍♀️ Shampoos & Haircare</a>
+                            <a href="/deals?category=beauty&sub=haircare" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💆 Shampoos & Haircare</a>
                             <a href="/deals?category=beauty&sub=makeup" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💋 Lipsticks & Makeup</a>
+                            <a href="/deals?category=beauty&sub=grooming" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🪒 Men's Grooming</a>
                         </div>
                     </div>
                 </div>
 
-                <!-- Fashion & Apparel -->
+                <!-- 3. Electronics -->
                 <div class="relative group">
-                    <a href="/deals?category=fashion" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-indigo-600 transition flex items-center gap-1.5 {% if current_category == 'fashion' %}bg-indigo-50 text-indigo-700 border border-indigo-200{% endif %}">
-                        <span class="text-sm">👗</span>
-                        <span>Fashion & Wear</span>
+                    <a href="/deals?category=electronics" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-blue-600 transition flex items-center gap-1.5 {% if current_category == 'electronics' %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
+                        <span class="text-sm">📱</span>
+                        <span>Electronics</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
                     <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[220px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=fashion" class="block px-3 py-2 rounded-xl font-extrabold text-indigo-700 bg-indigo-50 hover:bg-indigo-100">All Fashion & Apparel ➔</a>
-                            <a href="/deals?category=fashion&sub=tshirts" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👕 T-Shirts & Polos</a>
-                            <a href="/deals?category=fashion&sub=shirts" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👔 Casual & Formal Shirts</a>
-                            <a href="/deals?category=fashion&sub=kurta" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">✨ Kurtas & Ethnic Wear</a>
-                            <a href="/deals?category=fashion&sub=jeans" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👖 Jeans & Denims</a>
-                            <a href="/deals?category=fashion&sub=trousers" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👖 Trousers & Joggers</a>
-                            <a href="/deals?category=fashion&sub=dresses" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👗 Dresses & Tops</a>
-                            <a href="/deals?category=fashion&sub=jackets" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧥 Jackets & Hoodies</a>
+                            <a href="/deals?category=electronics" class="block px-3 py-2 rounded-xl font-extrabold text-blue-700 bg-blue-50 hover:bg-blue-100">All Electronics & Gadgets ➔</a>
+                            <a href="/deals?category=electronics&sub=earbuds" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎧 TWS Earbuds</a>
+                            <a href="/deals?category=electronics&sub=headphones" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎧 Headphones & Neckbands</a>
+                            <a href="/deals?category=electronics&sub=speakers" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🔊 Bluetooth Speakers</a>
+                            <a href="/deals?category=electronics&sub=powerbanks" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🔋 Power Banks & Cables</a>
+                            <a href="/deals?category=electronics&sub=smartphones" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">📱 Smartphones</a>
+                            <a href="/deals?category=electronics&sub=laptops" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💻 Laptops & Computing</a>
                         </div>
                     </div>
                 </div>
 
-                <!-- Home & Kitchen -->
+                <!-- 4. Home & Kitchen -->
                 <div class="relative group">
-                    <a href="/deals?category=home" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-indigo-600 transition flex items-center gap-1.5 {% if current_category == 'home' %}bg-indigo-50 text-indigo-700 border border-indigo-200{% endif %}">
+                    <a href="/deals?category=home" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-amber-600 transition flex items-center gap-1.5 {% if current_category == 'home' %}bg-amber-50 text-amber-700 border border-amber-200{% endif %}">
                         <span class="text-sm">🏠</span>
-                        <span>Home & Kitchen</span>
+                        <span>Home</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
                     <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[220px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=home" class="block px-3 py-2 rounded-xl font-extrabold text-indigo-700 bg-indigo-50 hover:bg-indigo-100">All Home & Kitchen ➔</a>
+                            <a href="/deals?category=home" class="block px-3 py-2 rounded-xl font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100">All Home & Kitchen ➔</a>
                             <a href="/deals?category=home&sub=bottles" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🍶 Bottles & Lunch Boxes</a>
                             <a href="/deals?category=home&sub=cookware" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🍳 Cookware & Pans</a>
                             <a href="/deals?category=home&sub=storage" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">📦 Storage Containers</a>
@@ -330,26 +312,85 @@
                     </div>
                 </div>
 
-                <!-- Watches & Bags -->
+                <!-- 5. Sports & Fitness -->
                 <div class="relative group">
-                    <a href="/deals?category=watches_bags" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-indigo-600 transition flex items-center gap-1.5 {% if current_category == 'watches_bags' %}bg-indigo-50 text-indigo-700 border border-indigo-200{% endif %}">
-                        <span class="text-sm">⌚</span>
-                        <span>Watches & Bags</span>
+                    <a href="/deals?category=sports" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-green-600 transition flex items-center gap-1.5 {% if current_category == 'sports' %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+                        <span class="text-sm">🏋️</span>
+                        <span>Sports</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
-                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[220px]">
+                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[210px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=watches_bags" class="block px-3 py-2 rounded-xl font-extrabold text-indigo-700 bg-indigo-50 hover:bg-indigo-100">All Watches & Bags ➔</a>
-                            <a href="/deals?category=watches_bags&sub=menwatches" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⌚ Men's Watches</a>
-                            <a href="/deals?category=watches_bags&sub=womenwatches" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⌚ Women's Watches</a>
-                            <a href="/deals?category=watches_bags&sub=handbags" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👜 Handbags & Totes</a>
-                            <a href="/deals?category=watches_bags&sub=backpacks" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎒 Backpacks & Duffels</a>
-                            <a href="/deals?category=watches_bags&sub=wallets" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👛 Wallets & Belts</a>
+                            <a href="/deals?category=sports" class="block px-3 py-2 rounded-xl font-extrabold text-green-700 bg-green-50 hover:bg-green-100">All Sports & Fitness ➔</a>
+                            <a href="/deals?category=sports&sub=gym" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💪 Gym & Weights</a>
+                            <a href="/deals?category=sports&sub=yoga" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧘 Yoga & Exercise</a>
+                            <a href="/deals?category=sports&sub=badminton" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🏸 Badminton & Racket</a>
+                            <a href="/deals?category=sports&sub=cricket" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🏏 Cricket Gear</a>
+                            <a href="/deals?category=sports&sub=cycling" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🚴 Cycling & Outdoors</a>
                         </div>
                     </div>
                 </div>
 
-                <!-- More Categories Dropdown -->
+                <!-- 6. Footwear -->
+                <div class="relative group">
+                    <a href="/deals?category=footwear" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-indigo-600 transition flex items-center gap-1.5 {% if current_category == 'footwear' %}bg-indigo-50 text-indigo-700 border border-indigo-200{% endif %}">
+                        <span class="text-sm">👟</span>
+                        <span>Footwear</span>
+                        <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
+                    </a>
+                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[210px]">
+                        <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
+                            <a href="/deals?category=footwear" class="block px-3 py-2 rounded-xl font-extrabold text-indigo-700 bg-indigo-50 hover:bg-indigo-100">All Footwear & Shoes ➔</a>
+                            <a href="/deals?category=footwear&sub=sneakers" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👟 Sneakers & Running</a>
+                            <a href="/deals?category=footwear&sub=slippers" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🩴 Slippers & Slides</a>
+                            <a href="/deals?category=footwear&sub=formal" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👞 Formal & Loafers</a>
+                            <a href="/deals?category=footwear&sub=heels" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👠 Heels & Wedges</a>
+                            <a href="/deals?category=footwear&sub=boots" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👢 Boots & High-Tops</a>
+                            <a href="/deals?category=footwear&sub=sandals" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👡 Sandals & Floaters</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. Watches (SPLIT) -->
+                <div class="relative group">
+                    <a href="/deals?category=watches" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-slate-600 transition flex items-center gap-1.5 {% if current_category == 'watches' %}bg-slate-100 text-slate-700 border border-slate-300{% endif %}">
+                        <span class="text-sm">⌚</span>
+                        <span>Watches</span>
+                        <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
+                    </a>
+                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[210px]">
+                        <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
+                            <a href="/deals?category=watches" class="block px-3 py-2 rounded-xl font-extrabold text-slate-700 bg-slate-100 hover:bg-slate-200">All Watches ➔</a>
+                            <a href="/deals?category=watches&sub=menwatches" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⌚ Men's Watches</a>
+                            <a href="/deals?category=watches&sub=womenwatches" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⌚ Women's Watches</a>
+                            <a href="/deals?category=watches&sub=smartwatches" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💡 Smartwatches & Bands</a>
+                            <a href="/deals?category=watches&sub=digital" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🔢 Digital & Sports</a>
+                            <a href="/deals?category=watches&sub=couple" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💑 Couple Watches</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. Bags & Luggage (SPLIT) -->
+                <div class="relative group">
+                    <a href="/deals?category=bags" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-teal-600 transition flex items-center gap-1.5 {% if current_category == 'bags' %}bg-teal-50 text-teal-700 border border-teal-200{% endif %}">
+                        <span class="text-sm">👜</span>
+                        <span>Bags</span>
+                        <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
+                    </a>
+                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[210px]">
+                        <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
+                            <a href="/deals?category=bags" class="block px-3 py-2 rounded-xl font-extrabold text-teal-700 bg-teal-50 hover:bg-teal-100">All Bags & Luggage ➔</a>
+                            <a href="/deals?category=bags&sub=handbags" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👜 Handbags & Totes</a>
+                            <a href="/deals?category=bags&sub=slingbags" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👝 Sling & Crossbody</a>
+                            <a href="/deals?category=bags&sub=backpacks" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎒 Backpacks & Duffels</a>
+                            <a href="/deals?category=bags&sub=wallets" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👛 Wallets & Cardholders</a>
+                            <a href="/deals?category=bags&sub=belts" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🪙 Belts</a>
+                            <a href="/deals?category=bags&sub=luggage" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧳 Trolley & Travel Bags</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 9 & 10. More (Toys, Auto) -->
                 <div class="relative group">
                     <button class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 transition flex items-center gap-1.5">
                         <i data-lucide="grid" class="w-3.5 h-3.5 text-slate-500"></i>
@@ -358,9 +399,8 @@
                     </button>
                     <div class="hidden group-hover:block absolute right-0 top-full pt-1 z-50 min-w-[200px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=sports" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🏋️ Sports & Fitness</a>
                             <a href="/deals?category=toys_kids" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧸 Toys, Kids & Baby</a>
-                            <a href="/deals?category=automotive" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🚗 Automotive & Bike</a>
+                            <a href="/deals?category=automotive" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🚗 Auto & Bikes</a>
                             <a href="/stores" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🏪 Shop by Store</a>
                         </div>
                     </div>
@@ -368,10 +408,10 @@
 
                 <div class="h-4 w-[1px] bg-slate-200 mx-1 shrink-0"></div>
 
-                <!-- High-Converting Deal Hotspots -->
+                <!-- Hot Deals Badges -->
                 <a href="/deals?min_discount=70" class="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition flex items-center gap-1 shrink-0 font-extrabold shadow-sm">
                     <span>🔥</span>
-                    <span>70%+ Off Loot</span>
+                    <span>70%+ Off</span>
                 </a>
 
                 <a href="/deals?tab=under499" class="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition flex items-center gap-1 shrink-0 font-extrabold shadow-sm">
@@ -386,7 +426,6 @@
             </div>
         </div>
     </nav>
-
 
     <!-- ── Main Content Area ────────────────────────────────────────────── -->
     <div class="flex-1 w-full">
@@ -1312,5 +1351,31 @@ ${deal.title}
     </script>
 
     {% block extra_scripts %}{% endblock %}
+
+    <!-- ── Mobile Sticky Bottom Navigation Bar ────────────────────────────── -->
+    <div class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 py-1.5 flex items-center justify-around text-center shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+        <a href="/" class="flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl {% if active_page == 'home' %}text-indigo-600 font-black{% else %}text-slate-500 font-medium hover:text-slate-900{% endif %} transition">
+            <i data-lucide="home" class="w-4 h-4"></i>
+            <span class="text-[10px]">Home</span>
+        </a>
+        <a href="/deals" class="flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl {% if active_page == 'deals' %}text-indigo-600 font-black{% else %}text-slate-500 font-medium hover:text-slate-900{% endif %} transition">
+            <i data-lucide="tag" class="w-4 h-4"></i>
+            <span class="text-[10px]">Deals</span>
+        </a>
+        <a href="/drops" class="flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl {% if active_page == 'drops' %}text-rose-600 font-black{% else %}text-slate-500 font-medium hover:text-rose-600{% endif %} transition">
+            <i data-lucide="trending-down" class="w-4 h-4"></i>
+            <span class="text-[10px]">Drops</span>
+        </a>
+        <a href="/all-time-lows" class="flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl {% if active_page == 'atl' %}text-amber-600 font-black{% else %}text-slate-500 font-medium hover:text-amber-600{% endif %} transition">
+            <i data-lucide="award" class="w-4 h-4"></i>
+            <span class="text-[10px]">ATLs</span>
+        </a>
+        <button onclick="openWatchlistDrawer()" class="flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl text-slate-500 font-medium hover:text-rose-600 transition relative">
+            <i data-lucide="heart" class="w-4 h-4 text-rose-500"></i>
+            <span class="text-[10px]">Saved</span>
+            <span id="watchlistCountBadgeMobile" class="hidden absolute top-0.5 right-2 px-1 rounded-full text-[8px] font-extrabold bg-rose-500 text-white">0</span>
+        </button>
+    </div>
+
 </body>
 </html>

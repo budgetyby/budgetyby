@@ -1131,75 +1131,64 @@ async def trigger_channel_scan():
 # ── Universal E-Commerce Category & Subcategory Taxonomy ────────────────────
 
 UNIVERSAL_CATEGORIES = {
-    "footwear": {
-        "name": "Footwear",
-        "icon": "👟",
-        "badge": "SHOES & FOOTWEAR",
-        "aliases": ["footwear", "shoes", "shoe"],
-        "keywords": ["shoe", "shoes", "sneaker", "sneakers", "slipper", "slippers", "flip flop", "sandal", "sandals", "boot", "boots", "heel", "heels", "loafer", "loafers", "floaters", "clog", "crocs"],
-        "subcategories": {
-            "sneakers": {"name": "Sneakers", "keywords": ["sneaker", "running shoe", "sports shoe", "training shoe", "gym shoe"]},
-            "slippers": {"name": "Slippers & Slides", "keywords": ["slipper", "flip flop", "flip-flop", "slide", "slides", "chappal", "thong"]},
-            "formal": {"name": "Formal & Loafers", "keywords": ["formal shoe", "loafer", "oxford", "derby", "monk strap", "office shoe"]},
-            "heels": {"name": "Heels & Wedges", "keywords": ["heel", "heels", "wedge", "stilettos", "pump", "pumps", "block heel"]},
-            "boots": {"name": "Boots", "keywords": ["boot", "boots", "ankle boot", "high top", "chelsea boot"]},
-            "sandals": {"name": "Sandals & Floaters", "keywords": ["sandal", "sandals", "floater", "floaters", "strap sandal"]},
-            "clogs": {"name": "Clogs & Crocs", "keywords": ["clog", "clogs", "crocs", "mule"]}
-        }
-    },
-    "electronics": {
-        "name": "Electronics",
-        "icon": "📱",
-        "badge": "GADGETS & AUDIO",
-        "aliases": ["electronics", "smartphones", "laptops", "appliances", "gadgets"],
-        "keywords": ["earphone", "headphone", "earbuds", "tws", "smartwatch", "speaker", "power bank", "charger", "smartphone", "laptop"],
-        "subcategories": {
-            "earbuds": {"name": "TWS Earbuds", "keywords": ["earbuds", "tws", "airbuds", "airdopes", "wireless earbuds", "true wireless"]},
-            "headphones": {"name": "Headphones & Neckbands", "keywords": ["headphone", "headphones", "neckband", "earphone", "earphones", "wired earphone"]},
-            "smartwatches": {"name": "Smartwatches", "keywords": ["smartwatch", "smart watch", "fitness band", "smart band", "activity tracker"]},
-            "speakers": {"name": "Bluetooth Speakers", "keywords": ["speaker", "speakers", "bluetooth speaker", "soundbar", "party speaker"]},
-            "powerbanks": {"name": "Power Banks & Chargers", "keywords": ["power bank", "powerbank", "fast charger", "adapter", "usb cable", "type-c", "charging cable"]},
-            "smartphones": {"name": "Smartphones", "keywords": ["smartphone", "mobile phone", "android phone", "iphone", "5g phone"]},
-            "laptops": {"name": "Laptops & Computing", "keywords": ["laptop", "laptops", "wireless mouse", "mechanical keyboard", "pen drive"]}
-        }
-    },
-    "beauty": {
-        "name": "Skincare & Beauty",
-        "icon": "💄",
-        "badge": "BEAUTY & SKINCARE",
-        "aliases": ["beauty", "skincare", "cosmetics", "grooming", "personal_care"],
-        "keywords": ["face wash", "sunscreen", "serum", "moisturizer", "perfume", "shampoo", "lipstick", "cream", "lotion", "deodorant"],
-        "subcategories": {
-            "facewash": {"name": "Face Wash", "keywords": ["face wash", "facewash", "cleanser", "face scrub", "foaming face wash"]},
-            "sunscreen": {"name": "Sunscreen & SPF", "keywords": ["sunscreen", "sun block", "spf 50", "spf 30", "sun screen"]},
-            "serum": {"name": "Serums & Oils", "keywords": ["serum", "face serum", "niacinamide", "salicylic acid", "vitamin c serum", "retinol"]},
-            "moisturizer": {"name": "Moisturizers", "keywords": ["moisturizer", "moisturising cream", "body lotion", "night cream", "day cream"]},
-            "perfume": {"name": "Perfumes & Deos", "keywords": ["perfume", "eau de parfum", "deodorant", "deo", "body spray", "body mist", "attar"]},
-            "haircare": {"name": "Haircare & Shampoo", "keywords": ["shampoo", "conditioner", "hair oil", "hair mask", "hair serum"]},
-            "makeup": {"name": "Lipsticks & Makeup", "keywords": ["lipstick", "kajal", "eyeliner", "foundation", "compact", "mascara"]},
-            "grooming": {"name": "Men's Grooming", "keywords": ["trimmer", "beard oil", "shaving", "razor", "after shave", "beard wash"]}
-        }
-    },
     "fashion": {
         "name": "Fashion & Apparel",
         "icon": "👗",
         "badge": "CLOTHING & WEAR",
+        "color": "purple",
         "aliases": ["fashion", "clothing", "apparel", "wear"],
-        "keywords": ["t-shirt", "shirt", "kurta", "kurti", "saree", "jeans", "trouser", "dress", "top", "jacket", "hoodie", "boxer"],
+        "keywords": ["t-shirt", "shirt", "kurta", "kurti", "saree", "jeans", "trouser", "dress", "top", "jacket", "hoodie", "boxer", "lehenga", "ethnic"],
         "subcategories": {
             "tshirts": {"name": "T-Shirts & Polos", "keywords": ["t-shirt", "tshirt", "polo", "printed t-shirt", "oversized t-shirt", "round neck"]},
             "shirts": {"name": "Shirts", "keywords": ["shirt", "shirts", "casual shirt", "formal shirt", "spread collar", "cotton shirt"]},
-            "kurta": {"name": "Kurtas & Ethnic", "keywords": ["kurta", "kurti", "saree", "anarkali", "ethnic", "nehru jacket", "lehenga"]},
+            "kurta": {"name": "Kurtas & Ethnic", "keywords": ["kurta", "kurti", "saree", "anarkali", "ethnic", "nehru jacket", "lehenga", "sherwani"]},
             "jeans": {"name": "Jeans & Denim", "keywords": ["jeans", "denim", "skinny fit", "slim fit jeans", "straight fit jeans", "baggy jeans"]},
             "trousers": {"name": "Trousers & Joggers", "keywords": ["trouser", "trousers", "chino", "cargos", "cargo pant", "track pant", "joggers"]},
             "dresses": {"name": "Dresses & Tops", "keywords": ["dress", "dresses", "maxi dress", "top", "crop top", "jumpsuit", "tunic"]},
-            "jackets": {"name": "Jackets & Hoodies", "keywords": ["jacket", "jackets", "hoodie", "hoodies", "sweatshirt", "blazer"]}
+            "jackets": {"name": "Jackets & Hoodies", "keywords": ["jacket", "jackets", "hoodie", "hoodies", "sweatshirt", "blazer"]},
+            "innerwear": {"name": "Innerwear & Loungewear", "keywords": ["boxer", "brief", "innerwear", "trunks", "bra", "nightsuit", "pyjama", "lounge wear"]}
+        }
+    },
+    "beauty": {
+        "name": "Beauty & Skincare",
+        "icon": "💄",
+        "badge": "BEAUTY & SKINCARE",
+        "color": "rose",
+        "aliases": ["beauty", "skincare", "cosmetics", "grooming", "personal_care"],
+        "keywords": ["face wash", "sunscreen", "serum", "moisturizer", "perfume", "shampoo", "lipstick", "cream", "lotion", "deodorant"],
+        "subcategories": {
+            "facewash": {"name": "Face Wash & Cleansers", "keywords": ["face wash", "facewash", "cleanser", "face scrub", "foaming face wash"]},
+            "sunscreen": {"name": "Sunscreen & SPF", "keywords": ["sunscreen", "sun block", "spf 50", "spf 30", "sun screen"]},
+            "serum": {"name": "Serums & Oils", "keywords": ["serum", "face serum", "niacinamide", "salicylic acid", "vitamin c serum", "retinol"]},
+            "moisturizer": {"name": "Moisturizers & Creams", "keywords": ["moisturizer", "moisturising cream", "body lotion", "night cream", "day cream"]},
+            "perfume": {"name": "Perfumes & Deos", "keywords": ["perfume", "eau de parfum", "deodorant", "deo", "body spray", "body mist", "attar"]},
+            "haircare": {"name": "Haircare & Shampoo", "keywords": ["shampoo", "conditioner", "hair oil", "hair mask", "hair serum"]},
+            "makeup": {"name": "Lipsticks & Makeup", "keywords": ["lipstick", "kajal", "eyeliner", "foundation", "compact", "mascara", "blush"]},
+            "grooming": {"name": "Men's Grooming", "keywords": ["trimmer", "beard oil", "shaving", "razor", "after shave", "beard wash"]}
+        }
+    },
+    "electronics": {
+        "name": "Electronics & Gadgets",
+        "icon": "📱",
+        "badge": "GADGETS & AUDIO",
+        "color": "blue",
+        "aliases": ["electronics", "smartphones", "laptops", "appliances", "gadgets"],
+        "keywords": ["earphone", "headphone", "earbuds", "tws", "speaker", "power bank", "charger", "smartphone", "laptop", "tablet"],
+        "subcategories": {
+            "earbuds": {"name": "TWS Earbuds", "keywords": ["earbuds", "tws", "airbuds", "airdopes", "wireless earbuds", "true wireless"]},
+            "headphones": {"name": "Headphones & Neckbands", "keywords": ["headphone", "headphones", "neckband", "earphone", "earphones", "wired earphone"]},
+            "speakers": {"name": "Bluetooth Speakers", "keywords": ["speaker", "speakers", "bluetooth speaker", "soundbar", "party speaker"]},
+            "powerbanks": {"name": "Power Banks & Chargers", "keywords": ["power bank", "powerbank", "fast charger", "adapter", "usb cable", "type-c", "charging cable"]},
+            "smartphones": {"name": "Smartphones", "keywords": ["smartphone", "mobile phone", "android phone", "iphone", "5g phone"]},
+            "laptops": {"name": "Laptops & Computing", "keywords": ["laptop", "laptops", "wireless mouse", "mechanical keyboard", "pen drive", "tablet"]},
+            "cameras": {"name": "Cameras & Accessories", "keywords": ["camera", "action camera", "gopro", "dslr", "webcam", "tripod", "memory card"]}
         }
     },
     "home": {
         "name": "Home & Kitchen",
         "icon": "🏠",
         "badge": "HOME & ESSENTIALS",
+        "color": "amber",
         "aliases": ["home", "kitchen", "household", "appliances_home"],
         "keywords": ["bottle", "lunch box", "pan", "cookware", "container", "dustbin", "bedsheet", "curtain", "kettle", "iron"],
         "subcategories": {
@@ -1208,58 +1197,100 @@ UNIVERSAL_CATEGORIES = {
             "storage": {"name": "Storage Containers", "keywords": ["container", "containers", "airtight jar", "spice rack", "kitchen organizer", "storage box"]},
             "cleaning": {"name": "Cleaning & Dustbins", "keywords": ["dustbin", "garbage bin", "mop", "spin mop", "broom", "cleaning wiper"]},
             "bedding": {"name": "Bedsheets & Curtains", "keywords": ["bedsheet", "bed cover", "curtain", "curtains", "pillow cover", "towel", "blanket"]},
-            "appliances": {"name": "Kitchen Appliances", "keywords": ["kettle", "electric kettle", "air fryer", "mixer grinder", "chopper", "sandwich maker", "induction"]}
-        }
-    },
-    "watches_bags": {
-        "name": "Watches & Bags",
-        "icon": "⌚",
-        "badge": "ACCESSORIES & BAGS",
-        "aliases": ["watches", "bags", "accessories", "luggage", "wallets"],
-        "keywords": ["watch", "handbag", "tote", "backpack", "wallet", "belt", "sling bag"],
-        "subcategories": {
-            "menwatches": {"name": "Men's Watches", "keywords": ["men watch", "analog watch men", "chronograph men", "leather strap watch"]},
-            "womenwatches": {"name": "Women's Watches", "keywords": ["women watch", "analog watch women", "rose gold watch", "dial watch women"]},
-            "handbags": {"name": "Handbags & Totes", "keywords": ["handbag", "tote bag", "shoulder bag", "sling bag", "satchel", "clutch"]},
-            "backpacks": {"name": "Backpacks & Duffels", "keywords": ["backpack", "laptop backpack", "school bag", "duffel bag", "travel backpack"]},
-            "wallets": {"name": "Wallets & Belts", "keywords": ["wallet", "leather wallet", "belt", "leather belt", "card holder"]}
+            "appliances": {"name": "Kitchen Appliances", "keywords": ["kettle", "electric kettle", "air fryer", "mixer grinder", "chopper", "sandwich maker", "induction"]},
+            "decor": {"name": "Home Decor", "keywords": ["photo frame", "wall art", "vase", "candle", "fairy lights", "indoor plant", "showpiece"]}
         }
     },
     "sports": {
         "name": "Sports & Fitness",
         "icon": "🏋️",
         "badge": "FITNESS & SPORTS",
+        "color": "green",
         "aliases": ["sports", "fitness", "gym", "workout"],
-        "keywords": ["gym", "yoga", "dumbbell", "badminton", "cricket"],
+        "keywords": ["gym", "yoga", "dumbbell", "badminton", "cricket", "cycling", "football", "fitness"],
         "subcategories": {
-            "gym": {"name": "Gym & Weights", "keywords": ["dumbbell", "dumbbells", "resistance band", "gym shaker", "gym gloves", "weight plates"]},
-            "yoga": {"name": "Yoga & Exercise", "keywords": ["yoga mat", "exercise mat", "foam roller", "skipping rope"]},
-            "badminton": {"name": "Badminton Gear", "keywords": ["badminton", "shuttlecock", "badminton racquet", "racquet cover"]},
-            "cricket": {"name": "Cricket Gear", "keywords": ["cricket bat", "cricket ball", "batting gloves", "cricket kit"]}
+            "gym": {"name": "Gym & Weights", "keywords": ["dumbbell", "dumbbells", "resistance band", "gym shaker", "gym gloves", "weight plates", "barbell"]},
+            "yoga": {"name": "Yoga & Exercise", "keywords": ["yoga mat", "exercise mat", "foam roller", "skipping rope", "ab roller"]},
+            "badminton": {"name": "Badminton & Racket Sports", "keywords": ["badminton", "shuttlecock", "badminton racquet", "squash", "table tennis"]},
+            "cricket": {"name": "Cricket Gear", "keywords": ["cricket bat", "cricket ball", "batting gloves", "cricket kit", "cricket helmet"]},
+            "cycling": {"name": "Cycling & Outdoors", "keywords": ["cycle", "bicycle", "cycling gloves", "cycle lock", "tent", "trekking"]},
+            "sportswear": {"name": "Sportswear & Shoes", "keywords": ["sports shoe", "running shoe", "training shoe", "sports bra", "compression", "track suit"]}
+        }
+    },
+    "footwear": {
+        "name": "Footwear & Shoes",
+        "icon": "👟",
+        "badge": "SHOES & FOOTWEAR",
+        "color": "indigo",
+        "aliases": ["footwear", "shoes", "shoe"],
+        "keywords": ["shoe", "shoes", "sneaker", "sneakers", "slipper", "slippers", "flip flop", "sandal", "sandals", "boot", "boots", "heel", "heels", "loafer", "loafers", "floaters", "clog", "crocs"],
+        "subcategories": {
+            "sneakers": {"name": "Sneakers & Running", "keywords": ["sneaker", "running shoe", "sports shoe", "training shoe", "gym shoe", "casual sneaker"]},
+            "slippers": {"name": "Slippers & Slides", "keywords": ["slipper", "flip flop", "flip-flop", "slide", "slides", "chappal", "thong"]},
+            "formal": {"name": "Formal & Loafers", "keywords": ["formal shoe", "loafer", "oxford", "derby", "monk strap", "office shoe"]},
+            "heels": {"name": "Heels & Wedges", "keywords": ["heel", "heels", "wedge", "stilettos", "pump", "pumps", "block heel"]},
+            "boots": {"name": "Boots & Ankle Boots", "keywords": ["boot", "boots", "ankle boot", "high top", "chelsea boot"]},
+            "sandals": {"name": "Sandals & Floaters", "keywords": ["sandal", "sandals", "floater", "floaters", "strap sandal"]},
+            "clogs": {"name": "Clogs & Crocs", "keywords": ["clog", "clogs", "crocs", "mule"]}
+        }
+    },
+    "watches": {
+        "name": "Watches",
+        "icon": "⌚",
+        "badge": "WATCHES & WEARABLES",
+        "color": "slate",
+        "aliases": ["watches", "watch", "wristwatch"],
+        "keywords": ["watch", "wrist watch", "analog watch", "digital watch", "chronograph", "smartwatch", "smart watch"],
+        "subcategories": {
+            "menwatches": {"name": "Men's Watches", "keywords": ["men watch", "analog watch men", "chronograph men", "leather strap watch", "sports watch men"]},
+            "womenwatches": {"name": "Women's Watches", "keywords": ["women watch", "analog watch women", "rose gold watch", "dial watch women", "ladies watch"]},
+            "smartwatches": {"name": "Smartwatches & Bands", "keywords": ["smartwatch", "smart watch", "fitness band", "smart band", "activity tracker", "mi band"]},
+            "digital": {"name": "Digital & Sports", "keywords": ["digital watch", "sport watch", "military watch", "casio", "g-shock"]},
+            "couple": {"name": "Couple & Kids Watches", "keywords": ["couple watch", "kids watch", "children watch", "kids digital watch"]}
+        }
+    },
+    "bags": {
+        "name": "Bags & Luggage",
+        "icon": "👜",
+        "badge": "BAGS & LUGGAGE",
+        "color": "teal",
+        "aliases": ["bags", "bag", "luggage", "wallets", "accessories"],
+        "keywords": ["handbag", "tote", "backpack", "wallet", "belt", "sling bag", "clutch", "luggage", "trolley bag", "gym bag"],
+        "subcategories": {
+            "handbags": {"name": "Handbags & Totes", "keywords": ["handbag", "tote bag", "shoulder bag", "satchel", "structured bag"]},
+            "slingbags": {"name": "Sling & Crossbody", "keywords": ["sling bag", "crossbody", "side bag", "mini bag"]},
+            "backpacks": {"name": "Backpacks & Duffels", "keywords": ["backpack", "laptop backpack", "school bag", "duffel bag", "travel backpack", "rucksack"]},
+            "wallets": {"name": "Wallets & Cardholders", "keywords": ["wallet", "leather wallet", "card holder", "purse", "money clip"]},
+            "belts": {"name": "Belts", "keywords": ["belt", "leather belt", "formal belt", "casual belt", "reversible belt"]},
+            "luggage": {"name": "Trolley & Travel Bags", "keywords": ["trolley bag", "suitcase", "cabin luggage", "travel bag", "travel organizer"]},
+            "clutches": {"name": "Clutches & Evening Bags", "keywords": ["clutch", "evening bag", "party bag", "wristlet"]}
         }
     },
     "toys_kids": {
-        "name": "Toys & Kids",
+        "name": "Toys & Baby",
         "icon": "🧸",
         "badge": "TOYS & BABY",
+        "color": "yellow",
         "aliases": ["toys", "baby", "kids", "games"],
-        "keywords": ["toy", "toys", "board game", "diaper", "baby"],
+        "keywords": ["toy", "toys", "board game", "diaper", "baby", "puzzle", "kids"],
         "subcategories": {
-            "boardgames": {"name": "Board Games", "keywords": ["board game", "puzzle", "monopoly", "uno", "chess", "rubik"]},
-            "toys": {"name": "Action Toys", "keywords": ["toy", "toys", "lego", "building blocks", "action figure", "remote control car", "doll"]},
-            "baby": {"name": "Baby & Diapers", "keywords": ["diaper", "diapers", "baby wipes", "baby lotion", "baby shampoo"]}
+            "boardgames": {"name": "Board & Card Games", "keywords": ["board game", "puzzle", "monopoly", "uno", "chess", "rubik", "card game"]},
+            "toys": {"name": "Action Toys & LEGO", "keywords": ["toy", "toys", "lego", "building blocks", "action figure", "remote control car", "doll"]},
+            "baby": {"name": "Baby & Diapers", "keywords": ["diaper", "diapers", "baby wipes", "baby lotion", "baby shampoo", "baby oil"]},
+            "stationery": {"name": "School & Stationery", "keywords": ["pencil", "pen", "notebook", "school bag", "geometry box", "crayon", "color pencil"]}
         }
     },
     "automotive": {
-        "name": "Automotive",
+        "name": "Auto & Bikes",
         "icon": "🚗",
         "badge": "BIKE & CAR",
+        "color": "orange",
         "aliases": ["automotive", "car", "bike", "auto"],
-        "keywords": ["helmet", "car", "bike", "automotive"],
+        "keywords": ["helmet", "car", "bike", "automotive", "tyre", "engine"],
         "subcategories": {
-            "helmets": {"name": "Helmets & Riding", "keywords": ["helmet", "riding gloves", "bike face mask"]},
+            "helmets": {"name": "Helmets & Riding Gear", "keywords": ["helmet", "riding gloves", "bike face mask", "riding jacket"]},
             "caraccessories": {"name": "Car Accessories", "keywords": ["car mount", "mobile holder car", "car vacuum", "car charger", "tire inflator", "car perfume"]},
-            "cleaning_auto": {"name": "Covers & Care", "keywords": ["car cover", "bike cover", "microfiber cloth", "car wash shampoo"]}
+            "bikescare": {"name": "Bike Care & Covers", "keywords": ["car cover", "bike cover", "microfiber cloth", "car wash shampoo", "bike lock"]}
         }
     }
 }
@@ -2168,7 +2199,11 @@ async def get_public_deals(
         if categories:
             selected_categories = [c.strip().lower() for c in categories.split(",") if c.strip()]
         elif category_clean and category_clean != "all":
-            selected_categories = [category_clean]
+            # Handle legacy 'watches_bags' key — map to both watches + bags
+            if category_clean == "watches_bags":
+                selected_categories = ["watches", "bags"]
+            else:
+                selected_categories = [category_clean]
 
         if selected_categories:
             cat_clauses = []
@@ -2474,56 +2509,69 @@ async def page_home(request: Request):
     """Renders the high-converting BudgetBy E-Commerce Purchase Storefront with dedicated category aisles."""
     initial_drops = {"drops": []}
     initial_featured = {"deals": []}
+    just_dropped = {"deals": []}
+    atl_mini = {"deals": []}
     initial_stats = {}
-    footwear_deals = {"deals": []}
-    electronics_deals = {"deals": []}
-    beauty_deals = {"deals": []}
     fashion_deals = {"deals": []}
+    beauty_deals = {"deals": []}
+    electronics_deals = {"deals": []}
     home_deals = {"deals": []}
+    sports_deals = {"deals": []}
+    footwear_deals = {"deals": []}
     watches_deals = {"deals": []}
-    
+    bags_deals = {"deals": []}
+
     try:
         drops_task = get_public_price_drops(page=1, limit=12, min_drop_pct=5.0, min_drop_percent=None, platform="", category="", sort_by="drop_pct")
-        featured_task = get_public_deals(platform="", platforms="", category="", categories="", sub="", subcategory="", tab="featured", search="", sort_by="discount", min_discount=30.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
+        just_dropped_task = get_public_deals(platform="", platforms="", category="", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=True, deal_type="", ids="", page=1, limit=10)
+        atl_task = get_public_deals(platform="", platforms="", category="", categories="", sub="", subcategory="", tab="atl", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=4)
         stats_task = get_public_stats()
-        
-        # Prefetch category aisles in parallel (served from RAM cache in < 1ms on repeat visits)
-        footwear_task = get_public_deals(platform="", platforms="", category="footwear", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
-        electronics_task = get_public_deals(platform="", platforms="", category="electronics", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
-        beauty_task = get_public_deals(platform="", platforms="", category="beauty", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
+
+        # Prefetch category aisles in parallel — ordered by volume (egress protected by 30s RAM cache)
         fashion_task = get_public_deals(platform="", platforms="", category="fashion", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
+        beauty_task = get_public_deals(platform="", platforms="", category="beauty", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
+        electronics_task = get_public_deals(platform="", platforms="", category="electronics", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
         home_task = get_public_deals(platform="", platforms="", category="home", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
-        watches_task = get_public_deals(platform="", platforms="", category="watches_bags", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
+        sports_task = get_public_deals(platform="", platforms="", category="sports", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
+        footwear_task = get_public_deals(platform="", platforms="", category="footwear", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
+        watches_task = get_public_deals(platform="", platforms="", category="watches", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
+        bags_task = get_public_deals(platform="", platforms="", category="bags", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
 
         results = await asyncio.gather(
-            drops_task, featured_task, stats_task, 
-            footwear_task, electronics_task, beauty_task, 
-            fashion_task, home_task, watches_task, 
+            drops_task, just_dropped_task, atl_task, stats_task,
+            fashion_task, beauty_task, electronics_task, home_task,
+            sports_task, footwear_task, watches_task, bags_task,
             return_exceptions=True
         )
         if not isinstance(results[0], Exception): initial_drops = results[0]
-        if not isinstance(results[1], Exception): initial_featured = results[1]
-        if not isinstance(results[2], Exception): initial_stats = results[2]
-        if not isinstance(results[3], Exception): footwear_deals = results[3]
-        if not isinstance(results[4], Exception): electronics_deals = results[4]
+        if not isinstance(results[1], Exception): just_dropped = results[1]
+        if not isinstance(results[2], Exception): atl_mini = results[2]
+        if not isinstance(results[3], Exception): initial_stats = results[3]
+        if not isinstance(results[4], Exception): fashion_deals = results[4]
         if not isinstance(results[5], Exception): beauty_deals = results[5]
-        if not isinstance(results[6], Exception): fashion_deals = results[6]
+        if not isinstance(results[6], Exception): electronics_deals = results[6]
         if not isinstance(results[7], Exception): home_deals = results[7]
-        if not isinstance(results[8], Exception): watches_deals = results[8]
+        if not isinstance(results[8], Exception): sports_deals = results[8]
+        if not isinstance(results[9], Exception): footwear_deals = results[9]
+        if not isinstance(results[10], Exception): watches_deals = results[10]
+        if not isinstance(results[11], Exception): bags_deals = results[11]
     except Exception as e:
         logger.warning(f"Home SSR prefetch error: {e}")
 
     return render_consumer_template("consumer/home.html", request, {
         "active_page": "home",
         "initial_drops": initial_drops,
-        "initial_featured": initial_featured,
+        "just_dropped": just_dropped,
+        "atl_mini": atl_mini,
         "initial_stats": initial_stats,
-        "footwear_deals": footwear_deals,
-        "electronics_deals": electronics_deals,
-        "beauty_deals": beauty_deals,
         "fashion_deals": fashion_deals,
+        "beauty_deals": beauty_deals,
+        "electronics_deals": electronics_deals,
         "home_deals": home_deals,
-        "watches_deals": watches_deals
+        "sports_deals": sports_deals,
+        "footwear_deals": footwear_deals,
+        "watches_deals": watches_deals,
+        "bags_deals": bags_deals
     })
 
 @app.get("/drops", response_class=HTMLResponse)

@@ -6,6 +6,9 @@
 {% set platform = (deal.platform or 'store')|lower %}
 {% set buy_url = deal.affiliate_url or deal.product_url or '#' %}
 {% set pid = deal.product_id or deal.id or 0 %}
+{% set rating = deal.rating or 0 %}
+{% set reviews = deal.review_count or 0 %}
+{% set badge = deal.badge or ('ATL' if deal.all_time_low and cp <= (deal.all_time_low * 1.02) else '') %}
 
 <div class="bg-white border border-slate-200/90 hover:border-indigo-400 rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-md group relative">
     <div>
@@ -18,9 +21,9 @@
             <span class="px-1.5 py-0.5 rounded-md text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200 font-mono">
                 -{{ discount_pct|round_int }}%
             </span>
-            {% elif deal.badge %}
+            {% elif badge %}
             <span class="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-amber-50 text-amber-700 border border-amber-200 uppercase font-mono">
-                {{ deal.badge }}
+                {{ badge }}
             </span>
             {% endif %}
         </div>
@@ -33,6 +36,16 @@
                  loading="lazy"
                  onerror="this.src='/static/placeholder.png'" />
             
+            {% if badge == 'ATL' or deal.is_atl %}
+            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded-md text-[9px] font-black bg-amber-500 text-white uppercase font-mono shadow-sm">
+                🏆 ATL
+            </span>
+            {% elif discount_pct >= 60 %}
+            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded-md text-[9px] font-black bg-rose-600 text-white uppercase font-mono shadow-sm">
+                🔥 LOOT
+            </span>
+            {% endif %}
+
             <!-- Save to Watchlist -->
             <button onclick="handleHomeWatchlist(this, {{ pid }})" 
                     class="absolute top-2 right-2 p-1.5 rounded-xl bg-white/90 backdrop-blur-md border border-slate-200 text-slate-400 hover:text-rose-500 transition shadow-sm" 
@@ -41,8 +54,21 @@
             </button>
         </div>
 
+        <!-- Ratings & Freshness Row -->
+        <div class="mt-2 flex items-center justify-between text-[10px] text-slate-500">
+            {% if rating and rating > 0 %}
+            <span class="flex items-center gap-1 font-bold text-amber-600 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200/60">
+                <span>★</span> {{ "%.1f"|format(rating) }}{% if reviews and reviews > 0 %} <span class="text-slate-400 font-normal">({{ reviews }})</span>{% endif %}
+            </span>
+            {% else %}
+            <span class="text-slate-400 text-[10px] font-medium">Verified Price</span>
+            {% endif %}
+            
+            <span class="text-slate-400 font-mono text-[9px]">{{ (deal.deal_time or deal.last_checked or deal.posted_at)|time_ago }}</span>
+        </div>
+
         <!-- Title -->
-        <div class="mt-2.5">
+        <div class="mt-1.5">
             <a href="{{ buy_url }}" target="_blank" rel="noopener noreferrer" 
                class="text-xs font-bold text-slate-900 hover:text-indigo-600 line-clamp-2 transition leading-snug" 
                title="{{ deal.title or '' }}">
@@ -76,10 +102,10 @@
 
         <!-- Re-Check Action Link -->
         <div class="mt-2 flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-50">
-            <span>Price changed on platform?</span>
+            <span>Price changed?</span>
             <button onclick="handleSendForReview({{ pid }}, '{{ (deal.title or '')|replace("'", "") }}', '{{ buy_url }}', {{ cp }})" 
                     class="font-semibold text-indigo-600 hover:text-indigo-800 transition">
-                Flag for Re-Check
+                Flag Re-Check
             </button>
         </div>
     </div>
