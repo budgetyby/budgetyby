@@ -13,14 +13,15 @@ async def is_on_cooldown(product_id: int) -> bool:
     3-Layer Permanent Cooldown & Deduplication Guard:
     1. Direct product_id cooldown in post_cooldowns and deals (last 24h)
     2. SKU / ASIN / Platform ID cooldown in deals (last 24h)
-    3. Title-level cooldown across same platform in deals (last 24h, prevents variant duplicate spam)
+    3. Title & Variant Prefix cooldown across same platform in deals (last 24h, prevents color/size/pack variant duplicate spam)
     """
     if not product_id:
         return False
     try:
         query = """
             WITH target_prod AS (
-                SELECT platform, platform_id, LOWER(TRIM(title)) as norm_title
+                SELECT platform, platform_id, LOWER(TRIM(title)) as norm_title,
+                       LEFT(LOWER(TRIM(title)), 30) as title_prefix
                 FROM products
                 WHERE id = $1
             )
@@ -37,13 +38,16 @@ async def is_on_cooldown(product_id: int) -> bool:
                 JOIN target_prod tp ON p.platform = tp.platform AND p.platform_id = tp.platform_id
                 WHERE d.posted_at > (NOW() - INTERVAL '24 hours')
                 UNION ALL
-                -- 3. Identical product Title posted in last 24 hours (prevents color/size variant duplicate spam)
+                -- 3. Identical product Title or variant prefix posted in last 24 hours (prevents color/size/pack variant spam)
                 SELECT 1
                 FROM deals d
                 JOIN products p ON d.product_id = p.id
-                JOIN target_prod tp ON p.platform = tp.platform AND LOWER(TRIM(p.title)) = tp.norm_title
+                JOIN target_prod tp ON p.platform = tp.platform
                 WHERE d.posted_at > (NOW() - INTERVAL '24 hours')
-                  AND length(tp.norm_title) >= 8
+                  AND (
+                      (length(tp.norm_title) >= 8 AND LOWER(TRIM(p.title)) = tp.norm_title)
+                      OR (length(tp.norm_title) >= 20 AND LEFT(LOWER(TRIM(p.title)), 30) = tp.title_prefix)
+                  )
             );
         """
         active = await database.fetchval(query, product_id)
