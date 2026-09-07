@@ -1,6 +1,6 @@
 {% extends "consumer/layout.html" %}
 
-{% block title %}24-Hour Price Drops Hub — Verified Daily Markdowns | BudgetBy{% endblock %}
+{% block title %}24-Hour Price Drops Hub — Daily Markdowns | BudgetBy{% endblock %}
 {% block description %}Track real-time 24-hour price cuts and flash drops across Amazon, Flipkart, Myntra, Ajio, and Nykaa. Filtered against 30, 60 & 120-day median and minimum price baselines.{% endblock %}
 
 {% block content %}
@@ -130,7 +130,7 @@
                             <!-- Freshness Pill -->
                             <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-white/90 border border-slate-200 text-[10px] font-medium text-emerald-700 flex items-center gap-1 shadow-sm">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                <span>Verified {{ deal.last_checked|time_ago }}</span>
+                                <span>Live {{ deal.last_checked|time_ago }}</span>
                             </div>
                         </div>
 
@@ -392,7 +392,7 @@
             const store = (deal.platform || 'amazon').toLowerCase();
             const storeCfg = STORES[store] || STORES.amazon;
             const dropPct = Math.round(deal.drop_percent || deal.discount_percent || 0);
-            const verifiedAgo = deal.last_checked ? formatTimeAgo(deal.last_checked) : 'Recently';
+            const liveAgo = deal.last_checked ? formatTimeAgo(deal.last_checked) : 'Recently';
             const inWatch = isInWatchlist(deal.id);
             const safeTitle = escapeHtml(deal.title);
             const dealLink = deal.affiliate_url || deal.product_url || '#';
@@ -437,7 +437,7 @@
                             </button>
                             <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-white/90 border border-slate-200 text-[10px] font-medium text-emerald-700 flex items-center gap-1 shadow-sm">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                <span>Verified ${verifiedAgo}</span>
+                                <span>Live ${liveAgo}</span>
                             </div>
                         </div>
 
@@ -476,7 +476,7 @@
 
                         <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100 text-[10px] text-slate-500 font-medium">
                             <span class="truncate">Price changed on the platform?</span>
-                            <button onclick="handleSendForReview(${deal.id}, '${safeTitle.replace(/'/g, "\\'")}', '${dealLink.replace(/'/g, "\\'")}', ${deal.current_price || 0})" class="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 shrink-0 transition" title="Send product for algorithmic verification">
+                            <button onclick="handleSendForReview(${deal.id}, '${safeTitle.replace(/'/g, "\\'")}', '${dealLink.replace(/'/g, "\\'")}', ${deal.current_price || 0})" class="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 shrink-0 transition" title="Send product for price re-check">
                                 <i data-lucide="help-circle" class="w-3 h-3 text-indigo-500"></i>
                                 <span>Flag for Re-Check</span>
                             </button>

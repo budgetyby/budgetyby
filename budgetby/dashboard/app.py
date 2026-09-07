@@ -1211,9 +1211,9 @@ UNIVERSAL_CATEGORIES = {
         "aliases": ["home", "kitchen", "household", "appliances_home"],
         "keywords": ["bottle", "lunch box", "pan", "cookware", "container", "dustbin", "bedsheet", "curtain", "kettle", "iron"],
         "subcategories": {
-            "bottles": {"name": "Bottles & Lunch Boxes", "icon": "🍶", "keywords": ["bottle", "water bottle", "flask", "insulated bottle", "lunch box", "sipper"], "image": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop&q=80"},
+            "bottles": {"name": "Bottles & Lunch Boxes", "icon": "🍶", "keywords": ["bottle", "water bottle", "flask", "insulated bottle", "lunch box", "sipper"], "image": "https://images.unsplash.com/photo-1570554886111-e80fcca6a029?w=600&auto=format&fit=crop&q=80"},
             "cookware": {"name": "Cookware & Pans", "icon": "🍳", "keywords": ["cookware", "frying pan", "kadhai", "tawa", "pressure cooker", "non stick", "triply"], "image": "https://images.unsplash.com/photo-1584990347449-399e8d1a1200?w=500&auto=format&fit=crop&q=80"},
-            "storage": {"name": "Storage Containers", "icon": "📦", "keywords": ["container", "containers", "airtight jar", "spice rack", "kitchen organizer", "storage box"], "image": "https://images.unsplash.com/photo-1590736969955-71cc94801759?w=500&auto=format&fit=crop&q=80"},
+            "storage": {"name": "Storage Containers", "icon": "📦", "keywords": ["container", "containers", "airtight jar", "spice rack", "kitchen organizer", "storage box"], "image": "https://images.unsplash.com/photo-1615865417491-9941019fbc00?w=600&auto=format&fit=crop&q=80"},
             "cleaning": {"name": "Cleaning & Dustbins", "icon": "🧹", "keywords": ["dustbin", "garbage bin", "mop", "spin mop", "broom", "cleaning wiper"], "image": "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=500&auto=format&fit=crop&q=80"},
             "bedding": {"name": "Bedsheets & Curtains", "icon": "🛏️", "keywords": ["bedsheet", "bed cover", "curtain", "curtains", "pillow cover", "towel", "blanket"], "image": "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=500&auto=format&fit=crop&q=80"},
             "appliances": {"name": "Kitchen Appliances", "icon": "⚡", "keywords": ["kettle", "electric kettle", "air fryer", "mixer grinder", "chopper", "sandwich maker", "induction"], "image": "https://images.unsplash.com/photo-1585515320310-259814833e62?w=500&auto=format&fit=crop&q=80"}
@@ -1261,7 +1261,7 @@ UNIVERSAL_CATEGORIES = {
             "heels": {"name": "Heels & Wedges", "icon": "👠", "keywords": ["heel", "heels", "wedge", "stilettos", "pump", "pumps", "block heel"], "image": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=500&auto=format&fit=crop&q=80"},
             "boots": {"name": "Boots & High-Tops", "icon": "👢", "keywords": ["boot", "boots", "ankle boot", "high top", "chelsea boot"], "image": "https://images.unsplash.com/photo-1520639888713-7851133b1ed0?w=500&auto=format&fit=crop&q=80"},
             "sandals": {"name": "Sandals & Floaters", "icon": "👡", "keywords": ["sandal", "sandals", "floater", "floaters", "strap sandal"], "image": "https://images.unsplash.com/photo-1562273138-f46be4ebdf33?w=500&auto=format&fit=crop&q=80"},
-            "clogs": {"name": "Clogs & Crocs", "icon": "🦶", "keywords": ["clog", "clogs", "crocs", "mule"], "image": "https://images.unsplash.com/photo-1575537302964-96cd47c06b1b?w=500&auto=format&fit=crop&q=80"}
+            "clogs": {"name": "Clogs & Crocs", "icon": "🦶", "keywords": ["clog", "clogs", "crocs", "mule"], "image": "https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=600&auto=format&fit=crop&q=80"}
         }
     },
     "watches": {
@@ -1280,8 +1280,8 @@ UNIVERSAL_CATEGORIES = {
             "menwatches": {"name": "Men's Watches", "icon": "⌚", "keywords": ["men watch", "analog watch men", "chronograph men", "leather strap watch", "sports watch men"], "image": "https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=500&auto=format&fit=crop&q=80"},
             "womenwatches": {"name": "Women's Watches", "icon": "⌚", "keywords": ["women watch", "analog watch women", "rose gold watch", "dial watch women", "ladies watch"], "image": "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=500&auto=format&fit=crop&q=80"},
             "smartwatches": {"name": "Smartwatches & Bands", "icon": "💡", "keywords": ["smartwatch", "smart watch", "fitness band", "smart band", "activity tracker", "mi band"], "image": "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=500&auto=format&fit=crop&q=80"},
-            "digital": {"name": "Digital & Sports", "icon": "🔢", "keywords": ["digital watch", "sport watch", "military watch", "casio", "g-shock"], "image": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=500&auto=format&fit=crop&q=80"},
-            "couple": {"name": "Couple Watches", "icon": "💑", "keywords": ["couple watch", "kids watch", "children watch", "kids digital watch"], "image": "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=500&auto=format&fit=crop&q=80"}
+            "digital": {"name": "Digital & Sports", "icon": "🔢", "keywords": ["digital watch", "sport watch", "military watch", "casio", "g-shock"], "image": "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=600&auto=format&fit=crop&q=80"},
+            "couple": {"name": "Couple Watches", "icon": "💑", "keywords": ["couple watch", "kids watch", "children watch", "kids digital watch"], "image": "https://images.unsplash.com/photo-1533139502658-0198f920d8e8?w=600&auto=format&fit=crop&q=80"}
         }
     },
     "bags": {
