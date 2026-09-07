@@ -1,7 +1,8 @@
 {% extends "consumer/layout.html" %}
 
 {% set cat_info = categories_taxonomy.get(current_category) if current_category and current_category in categories_taxonomy else None %}
-{% set page_heading = (cat_info.name if cat_info else 'All Deals & Offers') %}
+{% set sub_info = cat_info.subcategories.get(current_sub) if cat_info and cat_info.subcategories and current_sub else None %}
+{% set page_heading = (sub_info.name if sub_info else (cat_info.name if cat_info else 'All Deals & Offers')) %}
 
 {% block title %}{{ page_heading }} Tracker — BudgetBy{% endblock %}
 {% block description %}Browse live {{ page_heading }} across Amazon, Flipkart, Myntra, Ajio, and Nykaa. Filtered against 30, 60 & 120-day median price baselines.{% endblock %}
@@ -18,9 +19,15 @@
         <a href="/deals" class="hover:text-slate-900 transition">Deals</a>
         {% if cat_info %}
         <span class="text-slate-300">/</span>
-        <span class="text-indigo-600 font-bold flex items-center gap-1">
+        <a href="/deals?category={{ current_category }}" class="hover:text-slate-900 transition flex items-center gap-1">
             <span>{{ cat_info.icon }}</span> {{ cat_info.name }}
+        </a>
+        {% if sub_info %}
+        <span class="text-slate-300">/</span>
+        <span class="text-indigo-600 font-bold flex items-center gap-1">
+            <span>{{ sub_info.icon or '🏷️' }}</span> {{ sub_info.name }}
         </span>
+        {% endif %}
         {% endif %}
     </nav>
 
@@ -31,13 +38,16 @@
                 <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 font-bold text-xs uppercase tracking-wide border border-indigo-200 mb-2">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span>Live Deal Discovery</span>
-                    {% if cat_info %}
+                    {% if sub_info %}
+                    <span class="text-slate-400">•</span>
+                    <span class="text-slate-600">{{ sub_info.name }} Subcategory</span>
+                    {% elif cat_info %}
                     <span class="text-slate-400">•</span>
                     <span class="text-slate-600">{{ cat_info.deal_count or 'Thousands of' }} Active Deals</span>
                     {% endif %}
                 </div>
                 <h1 class="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-2">
-                    {% if cat_info %}<span>{{ cat_info.icon }}</span>{% endif %}
+                    {% if sub_info %}<span>{{ sub_info.icon or '🏷️' }}</span>{% elif cat_info %}<span>{{ cat_info.icon }}</span>{% endif %}
                     <span>{{ page_heading }}</span>
                 </h1>
                 <p class="text-xs sm:text-sm text-slate-600 mt-1">
@@ -58,15 +68,15 @@
         <div class="flex items-center justify-between mb-3">
             <h2 class="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                 <span>{{ cat_info.icon }}</span>
-                <span>Select {{ cat_info.name }} Category</span>
+                <span>Select {{ cat_info.name }} Subcategory Page</span>
             </h2>
-            <span class="text-[11px] text-indigo-600 font-bold">1-Tap Filter</span>
+            <span class="text-[11px] text-indigo-600 font-bold">Dedicated Subcategory View</span>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-4 py-1">
             
-            <!-- All in category large button card -->
-            <button onclick="onSubcategoryClick('', this)" 
-                    class="subcat-card rounded-2xl border transition-all text-left flex flex-col justify-between overflow-hidden min-h-[140px] shadow-sm {% if not current_sub %}bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-500/30{% else %}bg-white border-slate-200 text-slate-900 hover:border-indigo-400 hover:shadow-md{% endif %}">
+            <!-- All in category large link card -->
+            <a href="/deals?category={{ current_category }}" 
+               class="subcat-card rounded-2xl border transition-all text-left flex flex-col justify-between overflow-hidden min-h-[140px] shadow-sm {% if not current_sub %}bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-500/30{% else %}bg-white border-slate-200 text-slate-900 hover:border-indigo-400 hover:shadow-md{% endif %}">
                 <div class="w-full h-24 sm:h-28 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center text-4xl">
                     {{ cat_info.icon }}
                 </div>
@@ -74,12 +84,12 @@
                     <span class="text-xs sm:text-sm font-black block leading-tight">All {{ cat_info.name }}</span>
                     <span class="text-[10px] {% if not current_sub %}text-indigo-100{% else %}text-slate-500{% endif %} font-medium">Browse All Deals</span>
                 </div>
-            </button>
+            </a>
 
             {% for sub_key, sub_val in cat_info.subcategories.items() %}
-            <button onclick="onSubcategoryClick('{{ sub_key }}', this)" 
-                    data-sub-key="{{ sub_key }}"
-                    class="subcat-card relative group rounded-2xl border overflow-hidden transition-all text-left flex flex-col justify-between min-h-[140px] shadow-sm {% if current_sub == sub_key %}bg-indigo-50 border-indigo-600 ring-2 ring-indigo-500/20 shadow-md{% else %}bg-white border-slate-200 hover:border-indigo-400 hover:shadow-md{% endif %}">
+            <a href="/deals?category={{ current_category }}&sub={{ sub_key }}" 
+               data-sub-key="{{ sub_key }}"
+               class="subcat-card relative group rounded-2xl border overflow-hidden transition-all text-left flex flex-col justify-between min-h-[140px] shadow-sm {% if current_sub == sub_key %}bg-indigo-50 border-indigo-600 ring-2 ring-indigo-500/20 shadow-md{% else %}bg-white border-slate-200 hover:border-indigo-400 hover:shadow-md{% endif %}">
                 
                 <!-- Subcategory Image Thumbnail -->
                 <div class="relative w-full h-24 sm:h-28 bg-slate-100 overflow-hidden">
@@ -93,9 +103,9 @@
                     <span class="text-xs sm:text-sm font-bold text-slate-900 line-clamp-1 block leading-tight group-hover:text-indigo-600 transition">
                         {{ sub_val.name }}
                     </span>
-                    <span class="text-[10px] text-indigo-600 font-semibold mt-0.5 block">Explore ➔</span>
+                    <span class="text-[10px] text-indigo-600 font-semibold mt-0.5 block">View Dedicated Page ➔</span>
                 </div>
-            </button>
+            </a>
             {% endfor %}
         </div>
     </section>
@@ -674,6 +684,15 @@
                 }
             }
         }
-    }
+    window.addEventListener('popstate', function(e) {
+        const params = new URLSearchParams(window.location.search);
+        dealsState.category = params.get('category') || '{{ current_category }}';
+        dealsState.sub = params.get('sub') || '';
+        dealsState.gender = params.get('gender') || '';
+        dealsState.platform = params.get('platform') || '';
+        dealsState.search = params.get('search') || '';
+        dealsState.page = parseInt(params.get('page') || '1', 10);
+        loadDeals();
+    });
 </script>
 {% endblock %}
