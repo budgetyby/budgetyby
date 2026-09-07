@@ -1127,6 +1127,143 @@ async def trigger_channel_scan():
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+
+# ── Universal E-Commerce Category & Subcategory Taxonomy ────────────────────
+
+UNIVERSAL_CATEGORIES = {
+    "footwear": {
+        "name": "Footwear",
+        "icon": "👟",
+        "badge": "SHOES & FOOTWEAR",
+        "aliases": ["footwear", "shoes", "shoe"],
+        "keywords": ["shoe", "shoes", "sneaker", "sneakers", "slipper", "slippers", "flip flop", "sandal", "sandals", "boot", "boots", "heel", "heels", "loafer", "loafers", "floaters", "clog", "crocs"],
+        "subcategories": {
+            "sneakers": {"name": "Sneakers", "keywords": ["sneaker", "running shoe", "sports shoe", "training shoe", "gym shoe"]},
+            "slippers": {"name": "Slippers & Slides", "keywords": ["slipper", "flip flop", "flip-flop", "slide", "slides", "chappal", "thong"]},
+            "formal": {"name": "Formal & Loafers", "keywords": ["formal shoe", "loafer", "oxford", "derby", "monk strap", "office shoe"]},
+            "heels": {"name": "Heels & Wedges", "keywords": ["heel", "heels", "wedge", "stilettos", "pump", "pumps", "block heel"]},
+            "boots": {"name": "Boots", "keywords": ["boot", "boots", "ankle boot", "high top", "chelsea boot"]},
+            "sandals": {"name": "Sandals & Floaters", "keywords": ["sandal", "sandals", "floater", "floaters", "strap sandal"]},
+            "clogs": {"name": "Clogs & Crocs", "keywords": ["clog", "clogs", "crocs", "mule"]}
+        }
+    },
+    "electronics": {
+        "name": "Electronics",
+        "icon": "📱",
+        "badge": "GADGETS & AUDIO",
+        "aliases": ["electronics", "smartphones", "laptops", "appliances", "gadgets"],
+        "keywords": ["earphone", "headphone", "earbuds", "tws", "smartwatch", "speaker", "power bank", "charger", "smartphone", "laptop"],
+        "subcategories": {
+            "earbuds": {"name": "TWS Earbuds", "keywords": ["earbuds", "tws", "airbuds", "airdopes", "wireless earbuds", "true wireless"]},
+            "headphones": {"name": "Headphones & Neckbands", "keywords": ["headphone", "headphones", "neckband", "earphone", "earphones", "wired earphone"]},
+            "smartwatches": {"name": "Smartwatches", "keywords": ["smartwatch", "smart watch", "fitness band", "smart band", "activity tracker"]},
+            "speakers": {"name": "Bluetooth Speakers", "keywords": ["speaker", "speakers", "bluetooth speaker", "soundbar", "party speaker"]},
+            "powerbanks": {"name": "Power Banks & Chargers", "keywords": ["power bank", "powerbank", "fast charger", "adapter", "usb cable", "type-c", "charging cable"]},
+            "smartphones": {"name": "Smartphones", "keywords": ["smartphone", "mobile phone", "android phone", "iphone", "5g phone"]},
+            "laptops": {"name": "Laptops & Computing", "keywords": ["laptop", "laptops", "wireless mouse", "mechanical keyboard", "pen drive"]}
+        }
+    },
+    "beauty": {
+        "name": "Skincare & Beauty",
+        "icon": "💄",
+        "badge": "BEAUTY & SKINCARE",
+        "aliases": ["beauty", "skincare", "cosmetics", "grooming", "personal_care"],
+        "keywords": ["face wash", "sunscreen", "serum", "moisturizer", "perfume", "shampoo", "lipstick", "cream", "lotion", "deodorant"],
+        "subcategories": {
+            "facewash": {"name": "Face Wash", "keywords": ["face wash", "facewash", "cleanser", "face scrub", "foaming face wash"]},
+            "sunscreen": {"name": "Sunscreen & SPF", "keywords": ["sunscreen", "sun block", "spf 50", "spf 30", "sun screen"]},
+            "serum": {"name": "Serums & Oils", "keywords": ["serum", "face serum", "niacinamide", "salicylic acid", "vitamin c serum", "retinol"]},
+            "moisturizer": {"name": "Moisturizers", "keywords": ["moisturizer", "moisturising cream", "body lotion", "night cream", "day cream"]},
+            "perfume": {"name": "Perfumes & Deos", "keywords": ["perfume", "eau de parfum", "deodorant", "deo", "body spray", "body mist", "attar"]},
+            "haircare": {"name": "Haircare & Shampoo", "keywords": ["shampoo", "conditioner", "hair oil", "hair mask", "hair serum"]},
+            "makeup": {"name": "Lipsticks & Makeup", "keywords": ["lipstick", "kajal", "eyeliner", "foundation", "compact", "mascara"]},
+            "grooming": {"name": "Men's Grooming", "keywords": ["trimmer", "beard oil", "shaving", "razor", "after shave", "beard wash"]}
+        }
+    },
+    "fashion": {
+        "name": "Fashion & Apparel",
+        "icon": "👗",
+        "badge": "CLOTHING & WEAR",
+        "aliases": ["fashion", "clothing", "apparel", "wear"],
+        "keywords": ["t-shirt", "shirt", "kurta", "kurti", "saree", "jeans", "trouser", "dress", "top", "jacket", "hoodie", "boxer"],
+        "subcategories": {
+            "tshirts": {"name": "T-Shirts & Polos", "keywords": ["t-shirt", "tshirt", "polo", "printed t-shirt", "oversized t-shirt", "round neck"]},
+            "shirts": {"name": "Shirts", "keywords": ["shirt", "shirts", "casual shirt", "formal shirt", "spread collar", "cotton shirt"]},
+            "kurta": {"name": "Kurtas & Ethnic", "keywords": ["kurta", "kurti", "saree", "anarkali", "ethnic", "nehru jacket", "lehenga"]},
+            "jeans": {"name": "Jeans & Denim", "keywords": ["jeans", "denim", "skinny fit", "slim fit jeans", "straight fit jeans", "baggy jeans"]},
+            "trousers": {"name": "Trousers & Joggers", "keywords": ["trouser", "trousers", "chino", "cargos", "cargo pant", "track pant", "joggers"]},
+            "dresses": {"name": "Dresses & Tops", "keywords": ["dress", "dresses", "maxi dress", "top", "crop top", "jumpsuit", "tunic"]},
+            "jackets": {"name": "Jackets & Hoodies", "keywords": ["jacket", "jackets", "hoodie", "hoodies", "sweatshirt", "blazer"]}
+        }
+    },
+    "home": {
+        "name": "Home & Kitchen",
+        "icon": "🏠",
+        "badge": "HOME & ESSENTIALS",
+        "aliases": ["home", "kitchen", "household", "appliances_home"],
+        "keywords": ["bottle", "lunch box", "pan", "cookware", "container", "dustbin", "bedsheet", "curtain", "kettle", "iron"],
+        "subcategories": {
+            "bottles": {"name": "Bottles & Lunch Boxes", "keywords": ["bottle", "water bottle", "flask", "insulated bottle", "lunch box", "sipper"]},
+            "cookware": {"name": "Cookware & Pans", "keywords": ["cookware", "frying pan", "kadhai", "tawa", "pressure cooker", "non stick", "triply"]},
+            "storage": {"name": "Storage Containers", "keywords": ["container", "containers", "airtight jar", "spice rack", "kitchen organizer", "storage box"]},
+            "cleaning": {"name": "Cleaning & Dustbins", "keywords": ["dustbin", "garbage bin", "mop", "spin mop", "broom", "cleaning wiper"]},
+            "bedding": {"name": "Bedsheets & Curtains", "keywords": ["bedsheet", "bed cover", "curtain", "curtains", "pillow cover", "towel", "blanket"]},
+            "appliances": {"name": "Kitchen Appliances", "keywords": ["kettle", "electric kettle", "air fryer", "mixer grinder", "chopper", "sandwich maker", "induction"]}
+        }
+    },
+    "watches_bags": {
+        "name": "Watches & Bags",
+        "icon": "⌚",
+        "badge": "ACCESSORIES & BAGS",
+        "aliases": ["watches", "bags", "accessories", "luggage", "wallets"],
+        "keywords": ["watch", "handbag", "tote", "backpack", "wallet", "belt", "sling bag"],
+        "subcategories": {
+            "menwatches": {"name": "Men's Watches", "keywords": ["men watch", "analog watch men", "chronograph men", "leather strap watch"]},
+            "womenwatches": {"name": "Women's Watches", "keywords": ["women watch", "analog watch women", "rose gold watch", "dial watch women"]},
+            "handbags": {"name": "Handbags & Totes", "keywords": ["handbag", "tote bag", "shoulder bag", "sling bag", "satchel", "clutch"]},
+            "backpacks": {"name": "Backpacks & Duffels", "keywords": ["backpack", "laptop backpack", "school bag", "duffel bag", "travel backpack"]},
+            "wallets": {"name": "Wallets & Belts", "keywords": ["wallet", "leather wallet", "belt", "leather belt", "card holder"]}
+        }
+    },
+    "sports": {
+        "name": "Sports & Fitness",
+        "icon": "🏋️",
+        "badge": "FITNESS & SPORTS",
+        "aliases": ["sports", "fitness", "gym", "workout"],
+        "keywords": ["gym", "yoga", "dumbbell", "badminton", "cricket"],
+        "subcategories": {
+            "gym": {"name": "Gym & Weights", "keywords": ["dumbbell", "dumbbells", "resistance band", "gym shaker", "gym gloves", "weight plates"]},
+            "yoga": {"name": "Yoga & Exercise", "keywords": ["yoga mat", "exercise mat", "foam roller", "skipping rope"]},
+            "badminton": {"name": "Badminton Gear", "keywords": ["badminton", "shuttlecock", "badminton racquet", "racquet cover"]},
+            "cricket": {"name": "Cricket Gear", "keywords": ["cricket bat", "cricket ball", "batting gloves", "cricket kit"]}
+        }
+    },
+    "toys_kids": {
+        "name": "Toys & Kids",
+        "icon": "🧸",
+        "badge": "TOYS & BABY",
+        "aliases": ["toys", "baby", "kids", "games"],
+        "keywords": ["toy", "toys", "board game", "diaper", "baby"],
+        "subcategories": {
+            "boardgames": {"name": "Board Games", "keywords": ["board game", "puzzle", "monopoly", "uno", "chess", "rubik"]},
+            "toys": {"name": "Action Toys", "keywords": ["toy", "toys", "lego", "building blocks", "action figure", "remote control car", "doll"]},
+            "baby": {"name": "Baby & Diapers", "keywords": ["diaper", "diapers", "baby wipes", "baby lotion", "baby shampoo"]}
+        }
+    },
+    "automotive": {
+        "name": "Automotive",
+        "icon": "🚗",
+        "badge": "BIKE & CAR",
+        "aliases": ["automotive", "car", "bike", "auto"],
+        "keywords": ["helmet", "car", "bike", "automotive"],
+        "subcategories": {
+            "helmets": {"name": "Helmets & Riding", "keywords": ["helmet", "riding gloves", "bike face mask"]},
+            "caraccessories": {"name": "Car Accessories", "keywords": ["car mount", "mobile holder car", "car vacuum", "car charger", "tire inflator", "car perfume"]},
+            "cleaning_auto": {"name": "Covers & Care", "keywords": ["car cover", "bike cover", "microfiber cloth", "car wash shampoo"]}
+        }
+    }
+}
+
 # ── Public Storefront Endpoints ──────────────────────────────────────────────
 
 @app.get("/api/public/stats")
@@ -1845,6 +1982,8 @@ async def get_public_deals(
     platforms: str = Query("", max_length=200),
     category: str = Query("", max_length=50),
     categories: str = Query("", max_length=500),
+    sub: str = Query("", max_length=50),
+    subcategory: str = Query("", max_length=50),
     tab: str = Query("all", max_length=30),
     search: str = Query("", max_length=100),
     sort_by: str = Query("latest", max_length=30),
@@ -1865,7 +2004,27 @@ async def get_public_deals(
     - If a search has no verified deals, marks it clearly and serves all matching catalog products with price history.
     """
     try:
-        cache_key = f"deals:{platform}:{platforms}:{category}:{categories}:{tab}:{search}:{sort_by}:{min_discount}:{min_price}:{max_price}:{min_rating}:{verified_only}:{deal_type}:{ids}:{page}:{limit}"
+        page = int(page) if not hasattr(page, 'default') and str(page).isdigit() else 1
+        limit = int(limit) if not hasattr(limit, 'default') and str(limit).isdigit() else 24
+        platform = str(platform) if not hasattr(platform, 'default') else ""
+        platforms = str(platforms) if not hasattr(platforms, 'default') else ""
+        category = str(category) if not hasattr(category, 'default') else ""
+        categories = str(categories) if not hasattr(categories, 'default') else ""
+        sub = str(sub) if not hasattr(sub, 'default') else ""
+        subcategory = str(subcategory) if not hasattr(subcategory, 'default') else ""
+        tab = str(tab) if not hasattr(tab, 'default') else "all"
+        search = str(search) if not hasattr(search, 'default') else ""
+        sort_by = str(sort_by) if not hasattr(sort_by, 'default') else "latest"
+        min_discount = float(min_discount) if not hasattr(min_discount, 'default') else 0.0
+        min_price = float(min_price) if not hasattr(min_price, 'default') else 0.0
+        max_price = float(max_price) if not hasattr(max_price, 'default') else 0.0
+        min_rating = float(min_rating) if not hasattr(min_rating, 'default') else 0.0
+        verified_only = bool(verified_only) if not hasattr(verified_only, 'default') else False
+        deal_type = str(deal_type) if not hasattr(deal_type, 'default') else ""
+        ids = str(ids) if not hasattr(ids, 'default') else ""
+
+        eff_sub = (sub or subcategory or "").strip().lower()
+        cache_key = f"deals:{platform}:{platforms}:{category}:{categories}:{eff_sub}:{tab}:{search}:{sort_by}:{min_discount}:{min_price}:{max_price}:{min_rating}:{verified_only}:{deal_type}:{ids}:{page}:{limit}"
         cached = await ram_cache.get(cache_key)
         if cached is not None:
             return cached
@@ -2004,7 +2163,7 @@ async def get_public_deals(
             where_clauses.append("d.id IS NOT NULL")
             where_clauses.append("(p.mrp IS NULL OR p.mrp > p.current_price)")
 
-        # ── CATEGORY FILTER ─────────────────────────────────────────────────
+        # ── CATEGORY & SUBCATEGORY FILTER ───────────────────────────────────
         selected_categories = []
         if categories:
             selected_categories = [c.strip().lower() for c in categories.split(",") if c.strip()]
@@ -2014,7 +2173,14 @@ async def get_public_deals(
         if selected_categories:
             cat_clauses = []
             for cat in selected_categories:
-                if cat in ("general", "none", "other", "null"):
+                cat_info = UNIVERSAL_CATEGORIES.get(cat)
+                if cat_info:
+                    # Match by category aliases OR keyword matches in title
+                    sub_aliases = [f"LOWER(p.category) = '{a}'" for a in cat_info["aliases"]]
+                    kw_clauses = [f"p.title ILIKE '%{kw}%'" for kw in cat_info.get("keywords", [])[:8]]
+                    combined = " OR ".join(sub_aliases + kw_clauses)
+                    cat_clauses.append(f"({combined})")
+                elif cat in ("general", "none", "other", "null"):
                     cat_clauses.append("(p.category IS NULL OR LOWER(p.category) IN ('general', 'none', 'other') OR p.category = '')")
                 else:
                     cat_clauses.append(f"LOWER(p.category) = ${arg_idx}")
@@ -2022,6 +2188,18 @@ async def get_public_deals(
                     arg_idx += 1
             if cat_clauses:
                 where_clauses.append(f"({' OR '.join(cat_clauses)})")
+
+        # Subcategory keyword filtering
+        if eff_sub:
+            sub_kws = []
+            for cat_data in UNIVERSAL_CATEGORIES.values():
+                if eff_sub in cat_data.get("subcategories", {}):
+                    sub_kws = cat_data["subcategories"][eff_sub]["keywords"]
+                    break
+            if not sub_kws:
+                sub_kws = [eff_sub.replace("-", " "), eff_sub]
+            sub_clauses = [f"p.title ILIKE '%{kw}%'" for kw in sub_kws]
+            where_clauses.append(f"({' OR '.join(sub_clauses)})")
 
         use_fast_deals_path = (
             not search_clean 
@@ -2275,6 +2453,7 @@ def render_consumer_template(template_name: str, request: Request, context: dict
     if context is None:
         context = {}
     context["request"] = request
+    context["categories_taxonomy"] = UNIVERSAL_CATEGORIES
     try:
         return templates.TemplateResponse(request=request, name=template_name, context=context)
     except TypeError:
@@ -2292,21 +2471,45 @@ def render_consumer_template(template_name: str, request: Request, context: dict
 
 @app.get("/", response_class=HTMLResponse)
 async def page_home(request: Request):
-    """Renders the modular BudgetBy Home Hub with pre-rendered initial data (SSR)."""
+    """Renders the high-converting BudgetBy E-Commerce Purchase Storefront with dedicated category aisles."""
     initial_drops = {"drops": []}
     initial_featured = {"deals": []}
     initial_stats = {}
+    footwear_deals = {"deals": []}
+    electronics_deals = {"deals": []}
+    beauty_deals = {"deals": []}
+    fashion_deals = {"deals": []}
+    home_deals = {"deals": []}
+    watches_deals = {"deals": []}
+    
     try:
-        drops_task = get_public_price_drops(page=1, limit=14, min_drop_pct=5.0, min_drop_percent=None, platform="", category="", sort_by="drop_pct")
-        featured_task = get_public_deals(platform="", platforms="", category="", categories="", tab="featured", search="", sort_by="discount", min_discount=30.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=True, deal_type="", ids="", page=1, limit=8)
+        drops_task = get_public_price_drops(page=1, limit=12, min_drop_pct=5.0, min_drop_percent=None, platform="", category="", sort_by="drop_pct")
+        featured_task = get_public_deals(platform="", platforms="", category="", categories="", sub="", subcategory="", tab="featured", search="", sort_by="discount", min_discount=30.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
         stats_task = get_public_stats()
-        r_drops, r_featured, r_stats = await asyncio.gather(drops_task, featured_task, stats_task, return_exceptions=True)
-        if not isinstance(r_drops, Exception):
-            initial_drops = r_drops
-        if not isinstance(r_featured, Exception):
-            initial_featured = r_featured
-        if not isinstance(r_stats, Exception):
-            initial_stats = r_stats
+        
+        # Prefetch category aisles in parallel (served from RAM cache in < 1ms on repeat visits)
+        footwear_task = get_public_deals(platform="", platforms="", category="footwear", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
+        electronics_task = get_public_deals(platform="", platforms="", category="electronics", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
+        beauty_task = get_public_deals(platform="", platforms="", category="beauty", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
+        fashion_task = get_public_deals(platform="", platforms="", category="fashion", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
+        home_task = get_public_deals(platform="", platforms="", category="home", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
+        watches_task = get_public_deals(platform="", platforms="", category="watches_bags", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
+
+        results = await asyncio.gather(
+            drops_task, featured_task, stats_task, 
+            footwear_task, electronics_task, beauty_task, 
+            fashion_task, home_task, watches_task, 
+            return_exceptions=True
+        )
+        if not isinstance(results[0], Exception): initial_drops = results[0]
+        if not isinstance(results[1], Exception): initial_featured = results[1]
+        if not isinstance(results[2], Exception): initial_stats = results[2]
+        if not isinstance(results[3], Exception): footwear_deals = results[3]
+        if not isinstance(results[4], Exception): electronics_deals = results[4]
+        if not isinstance(results[5], Exception): beauty_deals = results[5]
+        if not isinstance(results[6], Exception): fashion_deals = results[6]
+        if not isinstance(results[7], Exception): home_deals = results[7]
+        if not isinstance(results[8], Exception): watches_deals = results[8]
     except Exception as e:
         logger.warning(f"Home SSR prefetch error: {e}")
 
@@ -2314,7 +2517,13 @@ async def page_home(request: Request):
         "active_page": "home",
         "initial_drops": initial_drops,
         "initial_featured": initial_featured,
-        "initial_stats": initial_stats
+        "initial_stats": initial_stats,
+        "footwear_deals": footwear_deals,
+        "electronics_deals": electronics_deals,
+        "beauty_deals": beauty_deals,
+        "fashion_deals": fashion_deals,
+        "home_deals": home_deals,
+        "watches_deals": watches_deals
     })
 
 @app.get("/drops", response_class=HTMLResponse)
@@ -2329,17 +2538,23 @@ async def page_drops(
     sort_by: str = Query("drop_pct")
 ):
     """Renders the dedicated 24-Hour Price Drops Hub with complete pre-rendered items (SSR)."""
-    eff_min_drop = min_drop_percent if min_drop_percent is not None else min_drop_pct
-    initial_data = {"drops": [], "total_drops_24h": 0, "total_pages": 1, "page": page}
+    page_num = int(page) if not hasattr(page, 'default') and str(page).isdigit() else 1
+    limit_num = int(limit) if not hasattr(limit, 'default') and str(limit).isdigit() else 24
+    plat_str = str(platform) if not hasattr(platform, 'default') else ""
+    sort_str = str(sort_by) if not hasattr(sort_by, 'default') else "drop_pct"
+    raw_min_drop = min_drop_percent if not hasattr(min_drop_percent, 'default') and min_drop_percent is not None else min_drop_pct
+    eff_min_drop = float(raw_min_drop) if not hasattr(raw_min_drop, 'default') and raw_min_drop is not None else 15.0
+
+    initial_data = {"drops": [], "total_drops_24h": 0, "total_pages": 1, "page": page_num}
     try:
         initial_data = await get_public_price_drops(
-            page=page,
-            limit=limit,
+            page=page_num,
+            limit=limit_num,
             min_drop_pct=eff_min_drop,
             min_drop_percent=None,
-            platform=platform,
+            platform=plat_str,
             category="",
-            sort_by=sort_by
+            sort_by=sort_str
         )
     except Exception as e:
         logger.warning(f"Drops SSR prefetch error: {e}")
@@ -2347,10 +2562,10 @@ async def page_drops(
     return render_consumer_template("consumer/drops.html", request, {
         "active_page": "drops",
         "initial_data": initial_data,
-        "current_page": page,
+        "current_page": page_num,
         "current_min_drop": eff_min_drop,
-        "current_platform": platform,
-        "current_sort": sort_by
+        "current_platform": plat_str,
+        "current_sort": sort_str
     })
 
 @app.get("/deals", response_class=HTMLResponse)
@@ -2361,35 +2576,53 @@ async def page_deals(
     search: str = Query(""),
     platform: str = Query(""),
     category: str = Query(""),
+    sub: str = Query(""),
+    subcategory: str = Query(""),
     tab: str = Query("all"),
     verified_only: bool = Query(True),
     sort_by: str = Query("latest"),
     min_discount: float = Query(0.0)
 ):
     """Renders the Deals Catalog with complete pre-rendered items (SSR)."""
-    # When user searches, show all matching products across catalog unless verified_only is explicitly set
-    if search and "verified_only" not in request.query_params:
-        verified_only = False
+    page_num = int(page) if not hasattr(page, 'default') and str(page).isdigit() else 1
+    limit_num = int(limit) if not hasattr(limit, 'default') and str(limit).isdigit() else 24
+    search_str = str(search) if not hasattr(search, 'default') and search is not None else ""
+    plat_str = str(platform) if not hasattr(platform, 'default') and platform is not None else ""
+    cat_str = str(category) if not hasattr(category, 'default') and category is not None else ""
+    sub_raw = str(sub) if not hasattr(sub, 'default') and sub is not None else ""
+    subcat_raw = str(subcategory) if not hasattr(subcategory, 'default') and subcategory is not None else ""
+    eff_sub_page = (sub_raw or subcat_raw or "").strip().lower()
+    tab_str = str(tab) if not hasattr(tab, 'default') and tab is not None else "all"
+    sort_str = str(sort_by) if not hasattr(sort_by, 'default') and sort_by is not None else "latest"
+    min_disc_val = float(min_discount) if not hasattr(min_discount, 'default') and min_discount is not None else 0.0
+    ver_val = bool(verified_only) if not hasattr(verified_only, 'default') and verified_only is not None else True
 
-    initial_data = {"deals": [], "total_matches": 0, "total_pages": 1, "page": page}
+    # When user searches, show all matching products across catalog unless verified_only is explicitly set
+    has_query_params = hasattr(request, "query_params")
+    if search_str and has_query_params and "verified_only" not in request.query_params:
+        ver_val = False
+
+    initial_data = {"deals": [], "total_matches": 0, "total_pages": 1, "page": page_num}
     try:
         initial_data = await get_public_deals(
-            platform=platform,
+            platform=plat_str,
             platforms="",
-            category=category,
+            category=cat_str,
             categories="",
-            tab=tab,
-            search=search,
-            sort_by=sort_by,
-            min_discount=min_discount,
+            sub=eff_sub_page,
+            subcategory="",
+            tab=tab_str,
+            search=search_str,
+            sort_by=sort_str,
+            min_discount=min_disc_val,
             min_price=0.0,
             max_price=0.0,
             min_rating=0.0,
-            verified_only=verified_only,
+            verified_only=ver_val,
             deal_type="",
             ids="",
-            page=page,
-            limit=limit
+            page=page_num,
+            limit=limit_num
         )
     except Exception as e:
         logger.warning(f"Deals SSR prefetch error: {e}")
@@ -2397,14 +2630,15 @@ async def page_deals(
     return render_consumer_template("consumer/deals.html", request, {
         "active_page": "deals",
         "initial_data": initial_data,
-        "current_page": page,
-        "current_search": search,
-        "current_platform": platform,
-        "current_category": category,
-        "current_tab": tab,
-        "current_verified_only": verified_only,
-        "current_sort": sort_by,
-        "current_min_discount": min_discount
+        "current_page": page_num,
+        "current_search": search_str,
+        "current_platform": plat_str,
+        "current_category": cat_str,
+        "current_sub": eff_sub_page,
+        "current_tab": tab_str,
+        "current_verified_only": ver_val,
+        "current_sort": sort_str,
+        "current_min_discount": min_disc_val
     })
 
 @app.get("/all-time-lows", response_class=HTMLResponse)
@@ -2415,19 +2649,32 @@ async def page_atl(
     limit: int = Query(24, ge=1, le=100),
     platform: str = Query(""),
     category: str = Query(""),
+    sub: str = Query(""),
+    subcategory: str = Query(""),
     sort_by: str = Query("latest")
 ):
     """Renders the All-Time Lows (ATL) Showcase Hub with complete pre-rendered items (SSR)."""
-    initial_data = {"deals": [], "total_matches": 0, "total_pages": 1, "page": page}
+    page_num = int(page) if not hasattr(page, 'default') and str(page).isdigit() else 1
+    limit_num = int(limit) if not hasattr(limit, 'default') and str(limit).isdigit() else 24
+    plat_str = str(platform) if not hasattr(platform, 'default') and platform is not None else ""
+    cat_str = str(category) if not hasattr(category, 'default') and category is not None else ""
+    sub_raw = str(sub) if not hasattr(sub, 'default') and sub is not None else ""
+    subcat_raw = str(subcategory) if not hasattr(subcategory, 'default') and subcategory is not None else ""
+    eff_sub_page = (sub_raw or subcat_raw or "").strip().lower()
+    sort_str = str(sort_by) if not hasattr(sort_by, 'default') and sort_by is not None else "latest"
+
+    initial_data = {"deals": [], "total_matches": 0, "total_pages": 1, "page": page_num}
     try:
         initial_data = await get_public_deals(
-            platform=platform,
+            platform=plat_str,
             platforms="",
-            category=category,
+            category=cat_str,
             categories="",
+            sub=eff_sub_page,
+            subcategory="",
             tab="atl",
             search="",
-            sort_by=sort_by,
+            sort_by=sort_str,
             min_discount=0.0,
             min_price=0.0,
             max_price=0.0,
@@ -2435,8 +2682,8 @@ async def page_atl(
             verified_only=False,
             deal_type="",
             ids="",
-            page=page,
-            limit=limit
+            page=page_num,
+            limit=limit_num
         )
     except Exception as e:
         logger.warning(f"ATL SSR prefetch error: {e}")
@@ -2444,10 +2691,11 @@ async def page_atl(
     return render_consumer_template("consumer/atl.html", request, {
         "active_page": "atl",
         "initial_data": initial_data,
-        "current_page": page,
-        "current_platform": platform,
-        "current_category": category,
-        "current_sort": sort_by
+        "current_page": page_num,
+        "current_platform": plat_str,
+        "current_category": cat_str,
+        "current_sub": eff_sub_page,
+        "current_sort": sort_str
     })
 
 @app.get("/stores", response_class=HTMLResponse)

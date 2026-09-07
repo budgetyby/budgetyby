@@ -96,13 +96,17 @@
                 <!-- Category Filter -->
                 <div>
                     <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5">Category</h2>
-                    <select id="dealsCategorySelect" onchange="onCategoryFilterChange(this.value)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500">
+                    <select id="dealsCategorySelect" onchange="onCategoryFilterChange(this.value)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-bold">
                         <option value="">All Categories</option>
-                        <option value="electronics" {% if current_category == 'electronics' %}selected{% endif %}>Electronics & Gadgets</option>
-                        <option value="fashion" {% if current_category == 'fashion' %}selected{% endif %}>Fashion & Apparel</option>
-                        <option value="footwear" {% if current_category == 'footwear' %}selected{% endif %}>Footwear</option>
-                        <option value="home" {% if current_category == 'home' %}selected{% endif %}>Home & Kitchen</option>
-                        <option value="beauty" {% if current_category == 'beauty' %}selected{% endif %}>Beauty & Personal Care</option>
+                        <option value="footwear" {% if current_category == 'footwear' %}selected{% endif %}>👟 Footwear & Shoes</option>
+                        <option value="electronics" {% if current_category == 'electronics' %}selected{% endif %}>📱 Electronics & Gadgets</option>
+                        <option value="beauty" {% if current_category == 'beauty' %}selected{% endif %}>💄 Beauty & Skincare</option>
+                        <option value="fashion" {% if current_category == 'fashion' %}selected{% endif %}>👗 Fashion & Apparel</option>
+                        <option value="home" {% if current_category == 'home' %}selected{% endif %}>🏠 Home & Kitchen</option>
+                        <option value="watches_bags" {% if current_category == 'watches_bags' %}selected{% endif %}>⌚ Watches & Bags</option>
+                        <option value="sports" {% if current_category == 'sports' %}selected{% endif %}>🏋️ Sports & Fitness</option>
+                        <option value="toys_kids" {% if current_category == 'toys_kids' %}selected{% endif %}>🧸 Toys & Kids</option>
+                        <option value="automotive" {% if current_category == 'automotive' %}selected{% endif %}>🚗 Automotive & Bike</option>
                     </select>
                 </div>
 
@@ -136,6 +140,10 @@
         <!-- ── Main Deals Feed & Toolbar ─────────────────────────────────── -->
         <section class="flex-1 min-w-0">
             
+            <!-- Top Subcategory Interactive Quick Filter Rail -->
+            <div id="dealsSubcatRail" class="mb-4 bg-white border border-slate-200/90 rounded-2xl p-2.5 shadow-sm overflow-x-auto no-scrollbar flex items-center gap-1.5 text-xs">
+                <!-- Dynamically populated by updateSubcatRail() in JS -->
+            </div>
             <!-- Toolbar: Matches Counter & Sorting -->
             <div class="bg-white border border-slate-200/90 rounded-2xl p-3.5 mb-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
                 <div class="text-xs text-slate-600 font-mono">
