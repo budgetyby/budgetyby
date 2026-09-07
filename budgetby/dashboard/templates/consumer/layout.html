@@ -228,7 +228,7 @@
         <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
             <div class="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar py-2 text-xs font-bold whitespace-nowrap">
                 
-                <!-- 1. Fashion & Apparel -->
+                <!-- 1. Fashion -->
                 <div class="relative group">
                     <a href="/deals?category=fashion" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-purple-600 transition flex items-center gap-1.5 {% if current_category == 'fashion' %}bg-purple-50 text-purple-700 border border-purple-200{% endif %}">
                         <span class="text-sm">👗</span>
@@ -250,7 +250,7 @@
                     </div>
                 </div>
 
-                <!-- 2. Beauty & Skincare -->
+                <!-- 2. Beauty -->
                 <div class="relative group">
                     <a href="/deals?category=beauty" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-rose-600 transition flex items-center gap-1.5 {% if current_category == 'beauty' %}bg-rose-50 text-rose-700 border border-rose-200{% endif %}">
                         <span class="text-sm">💄</span>
@@ -394,7 +394,61 @@
                     </div>
                 </div>
 
-                <!-- 9. Toys & Baby (DIRECT VISIBLE ON TOP NAV) -->
+                <!-- 9. Health & Nutrition (NEW) -->
+                <div class="relative group">
+                    <a href="/deals?category=health" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-emerald-600 transition flex items-center gap-1.5 {% if current_category == 'health' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %}">
+                        <span class="text-sm">💊</span>
+                        <span>Health</span>
+                        <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
+                    </a>
+                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[210px]">
+                        <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
+                            <a href="/deals?category=health" class="block px-3 py-2 rounded-xl font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100">All Health & Nutrition ➔</a>
+                            <a href="/deals?category=health&sub=protein" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💪 Whey Protein & Isolate</a>
+                            <a href="/deals?category=health&sub=creatine" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⚡ Creatine & Pre-Workout</a>
+                            <a href="/deals?category=health&sub=vitamins" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💊 Multivitamins & Omega-3</a>
+                            <a href="/deals?category=health&sub=healthfoods" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🥜 Peanut Butter & Snacks</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 10. Jewellery & Accessories (NEW) -->
+                <div class="relative group">
+                    <a href="/deals?category=jewellery" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-pink-600 transition flex items-center gap-1.5 {% if current_category == 'jewellery' %}bg-pink-50 text-pink-700 border border-pink-200{% endif %}">
+                        <span class="text-sm">💍</span>
+                        <span>Jewellery</span>
+                        <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
+                    </a>
+                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[210px]">
+                        <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
+                            <a href="/deals?category=jewellery" class="block px-3 py-2 rounded-xl font-extrabold text-pink-700 bg-pink-50 hover:bg-pink-100">All Jewellery & Accessories ➔</a>
+                            <a href="/deals?category=jewellery&sub=earrings" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">✨ Earrings & Jhumkas</a>
+                            <a href="/deals?category=jewellery&sub=necklaces" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">📿 Necklaces & Pendants</a>
+                            <a href="/deals?category=jewellery&sub=rings" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💍 Rings & Bracelets</a>
+                            <a href="/deals?category=jewellery&sub=sunglasses" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🕶️ Sunglasses & Eyewear</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 11. Gaming & PC (NEW) -->
+                <div class="relative group">
+                    <a href="/deals?category=gaming" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-violet-600 transition flex items-center gap-1.5 {% if current_category == 'gaming' %}bg-violet-50 text-violet-700 border border-violet-200{% endif %}">
+                        <span class="text-sm">🎮</span>
+                        <span>Gaming</span>
+                        <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
+                    </a>
+                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[210px]">
+                        <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
+                            <a href="/deals?category=gaming" class="block px-3 py-2 rounded-xl font-extrabold text-violet-700 bg-violet-50 hover:bg-violet-100">All Gaming & PC ➔</a>
+                            <a href="/deals?category=gaming&sub=keyboards" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⌨️ Mechanical Keyboards</a>
+                            <a href="/deals?category=gaming&sub=mice" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🖱️ Gaming Mice & Pads</a>
+                            <a href="/deals?category=gaming&sub=headsets" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎧 Gaming Headsets</a>
+                            <a href="/deals?category=gaming&sub=controllers" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎮 Controllers & Consoles</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 12. Toys & Baby -->
                 <div class="relative group">
                     <a href="/deals?category=toys_kids" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-yellow-600 transition flex items-center gap-1.5 {% if current_category == 'toys_kids' %}bg-yellow-50 text-yellow-700 border border-yellow-200{% endif %}">
                         <span class="text-sm">🧸</span>
@@ -411,7 +465,41 @@
                     </div>
                 </div>
 
-                <!-- 10. Auto & Bikes (DIRECT VISIBLE ON TOP NAV) -->
+                <!-- 13. Books & Stationery (NEW) -->
+                <div class="relative group">
+                    <a href="/deals?category=books" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-cyan-600 transition flex items-center gap-1.5 {% if current_category == 'books' %}bg-cyan-50 text-cyan-700 border border-cyan-200{% endif %}">
+                        <span class="text-sm">📚</span>
+                        <span>Books</span>
+                        <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
+                    </a>
+                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[200px]">
+                        <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
+                            <a href="/deals?category=books" class="block px-3 py-2 rounded-xl font-extrabold text-cyan-700 bg-cyan-50 hover:bg-cyan-100">All Books & Stationery ➔</a>
+                            <a href="/deals?category=books&sub=novels" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">📖 Fiction & Bestsellers</a>
+                            <a href="/deals?category=books&sub=selfhelp" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💡 Self-Help & Business</a>
+                            <a href="/deals?category=books&sub=stationery" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">✏️ Pens & Notebooks</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 14. Grocery & Gourmet (NEW) -->
+                <div class="relative group">
+                    <a href="/deals?category=grocery" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-lime-600 transition flex items-center gap-1.5 {% if current_category == 'grocery' %}bg-lime-50 text-lime-700 border border-lime-200{% endif %}">
+                        <span class="text-sm">🍵</span>
+                        <span>Grocery</span>
+                        <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
+                    </a>
+                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[200px]">
+                        <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
+                            <a href="/deals?category=grocery" class="block px-3 py-2 rounded-xl font-extrabold text-lime-700 bg-lime-50 hover:bg-lime-100">All Grocery & Gourmet ➔</a>
+                            <a href="/deals?category=grocery&sub=tea_coffee" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">☕ Tea & Coffee</a>
+                            <a href="/deals?category=grocery&sub=dryfruits" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🥜 Dry Fruits & Nuts</a>
+                            <a href="/deals?category=grocery&sub=chocolates" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🍫 Chocolates & Sweets</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 15. Auto & Bikes -->
                 <div class="relative group">
                     <a href="/deals?category=automotive" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-orange-600 transition flex items-center gap-1.5 {% if current_category == 'automotive' %}bg-orange-50 text-orange-700 border border-orange-200{% endif %}">
                         <span class="text-sm">🚗</span>
@@ -423,6 +511,23 @@
                             <a href="/deals?category=automotive" class="block px-3 py-2 rounded-xl font-extrabold text-orange-700 bg-orange-50 hover:bg-orange-100">All Auto & Bikes ➔</a>
                             <a href="/deals?category=automotive&sub=helmets" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🪖 Helmets & Riding Gear</a>
                             <a href="/deals?category=automotive&sub=caraccessories" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🚗 Car Accessories</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 16. Pet Supplies (NEW) -->
+                <div class="relative group">
+                    <a href="/deals?category=pets" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-sky-600 transition flex items-center gap-1.5 {% if current_category == 'pets' %}bg-sky-50 text-sky-700 border border-sky-200{% endif %}">
+                        <span class="text-sm">🐾</span>
+                        <span>Pets</span>
+                        <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
+                    </a>
+                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[200px]">
+                        <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
+                            <a href="/deals?category=pets" class="block px-3 py-2 rounded-xl font-extrabold text-sky-700 bg-sky-50 hover:bg-sky-100">All Pet Supplies ➔</a>
+                            <a href="/deals?category=pets&sub=dogfood" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🐕 Dog Food & Treats</a>
+                            <a href="/deals?category=pets&sub=catfood" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🐈 Cat Food & Litter</a>
+                            <a href="/deals?category=pets&sub=accessories" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎾 Grooming & Toys</a>
                         </div>
                     </div>
                 </div>

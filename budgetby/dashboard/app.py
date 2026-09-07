@@ -1305,6 +1305,63 @@ UNIVERSAL_CATEGORIES = {
             "luggage": {"name": "Trolley & Travel Bags", "icon": "🧳", "keywords": ["trolley bag", "suitcase", "cabin luggage", "travel bag", "travel organizer"], "image": "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=500&auto=format&fit=crop&q=80"}
         }
     },
+    "health": {
+        "name": "Health & Nutrition",
+        "icon": "💊",
+        "badge": "HEALTH & NUTRITION",
+        "color": "emerald",
+        "bg_gradient": "from-emerald-500/10 via-teal-500/10 to-green-500/10",
+        "border_color": "border-emerald-200 hover:border-emerald-500",
+        "tag_color": "bg-emerald-100 text-emerald-800",
+        "image": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80",
+        "deal_count": "2,400+",
+        "aliases": ["health", "nutrition", "supplements", "vitamins"],
+        "keywords": ["protein", "whey", "supplement", "vitamin", "creatine", "peanut butter", "multivitamin", "omega 3", "energy bar", "bcaa"],
+        "subcategories": {
+            "protein": {"name": "Whey Protein & Isolate", "icon": "💪", "keywords": ["whey", "protein powder", "plant protein", "isolate", "gold standard"], "image": "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=500&auto=format&fit=crop&q=80"},
+            "creatine": {"name": "Creatine & Pre-Workout", "icon": "⚡", "keywords": ["creatine", "pre workout", "bcaa", "amino", "glutamine"], "image": "https://images.unsplash.com/photo-1546483875-ad9014c88eba?w=500&auto=format&fit=crop&q=80"},
+            "vitamins": {"name": "Multivitamins & Omega-3", "icon": "💊", "keywords": ["multivitamin", "vitamin c", "vitamin d", "omega 3", "fish oil", "zinc", "calcium", "biotin"], "image": "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=500&auto=format&fit=crop&q=80"},
+            "healthfoods": {"name": "Peanut Butter & Healthy Snacks", "icon": "🥜", "keywords": ["peanut butter", "energy bar", "protein bar", "muesli", "granola", "chia seeds"], "image": "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=500&auto=format&fit=crop&q=80"}
+        }
+    },
+    "jewellery": {
+        "name": "Jewellery & Accessories",
+        "icon": "💍",
+        "badge": "JEWELLERY & FASHION",
+        "color": "pink",
+        "bg_gradient": "from-pink-500/10 via-rose-500/10 to-amber-500/10",
+        "border_color": "border-pink-200 hover:border-pink-500",
+        "tag_color": "bg-pink-100 text-pink-800",
+        "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600&auto=format&fit=crop&q=80",
+        "deal_count": "3,100+",
+        "aliases": ["jewellery", "jewelry", "accessories_fashion"],
+        "keywords": ["earring", "necklace", "ring", "jewellery", "jewelry", "pendant", "bangle", "bracelet", "silver", "gold plated", "sunglasses"],
+        "subcategories": {
+            "earrings": {"name": "Earrings & Jhumkas", "icon": "✨", "keywords": ["earring", "earrings", "jhumka", "studs", "hoops", "drop earrings"], "image": "https://images.unsplash.com/photo-1630019852942-f89202989a59?w=500&auto=format&fit=crop&q=80"},
+            "necklaces": {"name": "Necklaces & Pendants", "icon": "📿", "keywords": ["necklace", "pendant", "choker", "chain", "silver chain", "mangalsutra"], "image": "https://images.unsplash.com/photo-1599643477877-530eb83abc8e?w=500&auto=format&fit=crop&q=80"},
+            "rings": {"name": "Rings & Bracelets", "icon": "💍", "keywords": ["ring", "rings", "bracelet", "bangle", "cuff", "kada"], "image": "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=500&auto=format&fit=crop&q=80"},
+            "sunglasses": {"name": "Sunglasses & Eyewear", "icon": "🕶️", "keywords": ["sunglasses", "shades", "aviator", "wayfarer", "polarized"], "image": "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=500&auto=format&fit=crop&q=80"}
+        }
+    },
+    "gaming": {
+        "name": "Gaming & PC",
+        "icon": "🎮",
+        "badge": "GAMING & PC",
+        "color": "violet",
+        "bg_gradient": "from-violet-500/10 via-purple-500/10 to-indigo-500/10",
+        "border_color": "border-violet-200 hover:border-violet-500",
+        "tag_color": "bg-violet-100 text-violet-800",
+        "image": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+        "deal_count": "2,800+",
+        "aliases": ["gaming", "pc_gaming", "consoles"],
+        "keywords": ["gaming", "controller", "gamepad", "mechanical keyboard", "gaming mouse", "headset", "ps5", "xbox", "mouse pad", "rgb"],
+        "subcategories": {
+            "keyboards": {"name": "Mechanical Keyboards", "icon": "⌨️", "keywords": ["mechanical keyboard", "rgb keyboard", "gaming keyboard", "wireless keyboard"], "image": "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500&auto=format&fit=crop&q=80"},
+            "mice": {"name": "Gaming Mice & Pads", "icon": "🖱️", "keywords": ["gaming mouse", "mouse pad", "rgb mouse", "wireless mouse gaming"], "image": "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=500&auto=format&fit=crop&q=80"},
+            "headsets": {"name": "Gaming Headsets", "icon": "🎧", "keywords": ["gaming headset", "surround sound", "7.1 headset", "mic headset"], "image": "https://images.unsplash.com/photo-1599669454699-248893623440?w=500&auto=format&fit=crop&q=80"},
+            "controllers": {"name": "Controllers & Consoles", "icon": "🎮", "keywords": ["controller", "gamepad", "ps5", "ps4", "xbox controller", "joystick"], "image": "https://images.unsplash.com/photo-1600080972464-8e5f35f63d08?w=500&auto=format&fit=crop&q=80"}
+        }
+    },
     "toys_kids": {
         "name": "Toys & Baby",
         "icon": "🧸",
@@ -1323,6 +1380,42 @@ UNIVERSAL_CATEGORIES = {
             "baby": {"name": "Baby & Diapers", "icon": "👶", "keywords": ["diaper", "diapers", "baby wipes", "baby lotion", "baby shampoo", "baby oil"], "image": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=500&auto=format&fit=crop&q=80"}
         }
     },
+    "books": {
+        "name": "Books & Stationery",
+        "icon": "📚",
+        "badge": "BOOKS & STATIONERY",
+        "color": "cyan",
+        "bg_gradient": "from-cyan-500/10 via-blue-500/10 to-teal-500/10",
+        "border_color": "border-cyan-200 hover:border-cyan-500",
+        "tag_color": "bg-cyan-100 text-cyan-800",
+        "image": "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&auto=format&fit=crop&q=80",
+        "deal_count": "2,200+",
+        "aliases": ["books", "stationery", "novels", "reading"],
+        "keywords": ["book", "novel", "fiction", "pen", "notebook", "stationery", "diary", "planner", "academic", "exam"],
+        "subcategories": {
+            "novels": {"name": "Fiction & Bestsellers", "icon": "📖", "keywords": ["novel", "fiction", "bestseller", "thriller", "paperback", "hardcover"], "image": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=80"},
+            "selfhelp": {"name": "Self-Help & Business", "icon": "💡", "keywords": ["self help", "business book", "finance", "psychology", "biography", "productivity"], "image": "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=500&auto=format&fit=crop&q=80"},
+            "stationery": {"name": "Pens & Notebooks", "icon": "✏️", "keywords": ["pen", "fountain pen", "notebook", "diary", "sketchbook", "gel pen", "highlighter"], "image": "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=80"}
+        }
+    },
+    "grocery": {
+        "name": "Grocery & Gourmet",
+        "icon": "🍵",
+        "badge": "GROCERY & GOURMET",
+        "color": "lime",
+        "bg_gradient": "from-lime-500/10 via-emerald-500/10 to-green-500/10",
+        "border_color": "border-lime-200 hover:border-lime-500",
+        "tag_color": "bg-lime-100 text-lime-800",
+        "image": "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80",
+        "deal_count": "1,800+",
+        "aliases": ["grocery", "gourmet", "food", "beverages"],
+        "keywords": ["tea", "coffee", "dry fruit", "nuts", "chocolate", "olive oil", "snack", "honey", "green tea", "almond"],
+        "subcategories": {
+            "tea_coffee": {"name": "Tea & Coffee Blends", "icon": "☕", "keywords": ["tea", "green tea", "coffee", "instant coffee", "filter coffee", "masala tea"], "image": "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=500&auto=format&fit=crop&q=80"},
+            "dryfruits": {"name": "Dry Fruits & Nuts", "icon": "🥜", "keywords": ["dry fruit", "almond", "cashew", "walnut", "raisin", "pistachio", "trail mix"], "image": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=500&auto=format&fit=crop&q=80"},
+            "chocolates": {"name": "Chocolates & Sweets", "icon": "🍫", "keywords": ["chocolate", "dark chocolate", "cookies", "biscuit", "sweets", "wafer"], "image": "https://images.unsplash.com/photo-1511381939415-e44015466834?w=500&auto=format&fit=crop&q=80"}
+        }
+    },
     "automotive": {
         "name": "Auto & Bikes",
         "icon": "🚗",
@@ -1338,6 +1431,24 @@ UNIVERSAL_CATEGORIES = {
         "subcategories": {
             "helmets": {"name": "Helmets & Riding Gear", "icon": "🪖", "keywords": ["helmet", "riding gloves", "bike face mask", "riding jacket"], "image": "https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=500&auto=format&fit=crop&q=80"},
             "caraccessories": {"name": "Car Accessories", "icon": "🚗", "keywords": ["car mount", "mobile holder car", "car vacuum", "car charger", "tire inflator", "car perfume"], "image": "https://images.unsplash.com/photo-1563720223185-11003d516935?w=500&auto=format&fit=crop&q=80"}
+        }
+    },
+    "pets": {
+        "name": "Pet Supplies",
+        "icon": "🐾",
+        "badge": "PET SUPPLIES",
+        "color": "sky",
+        "bg_gradient": "from-sky-500/10 via-cyan-500/10 to-blue-500/10",
+        "border_color": "border-sky-200 hover:border-sky-500",
+        "tag_color": "bg-sky-100 text-sky-800",
+        "image": "https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=600&auto=format&fit=crop&q=80",
+        "deal_count": "1,500+",
+        "aliases": ["pets", "pet", "pet_supplies"],
+        "keywords": ["dog", "cat", "pet", "puppy", "kitten", "pedigree", "whiskas", "cat food", "dog food", "leash", "pet shampoo"],
+        "subcategories": {
+            "dogfood": {"name": "Dog Food & Treats", "icon": "🐕", "keywords": ["dog food", "puppy food", "pedigree", "drools", "dog biscuits", "chew bones"], "image": "https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=500&auto=format&fit=crop&q=80"},
+            "catfood": {"name": "Cat Food & Litter", "icon": "🐈", "keywords": ["cat food", "kitten food", "whiskas", "cat litter", "purepet cat", "me-o"], "image": "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=500&auto=format&fit=crop&q=80"},
+            "accessories": {"name": "Pet Grooming & Toys", "icon": "🎾", "keywords": ["pet shampoo", "leash", "collar", "dog bed", "pet toy", "grooming brush"], "image": "https://images.unsplash.com/photo-1576201836106-db1758fd1c97?w=500&auto=format&fit=crop&q=80"}
         }
     }
 }
