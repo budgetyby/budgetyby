@@ -1,3 +1,4 @@
+from budgetby.engine.classifier import classify_product
 """
 BudgetBy — Real-Time Telegram Channel Deal Monitor & Ingestion Engine
 Monitors public deal channels in parallel (bypassing ISP blocks with DoH),
@@ -248,7 +249,7 @@ async def verify_and_ingest_single_deal(channel: str, post_id: int, raw_url: str
             "platform": platform,
             "platform_id": platform_id,
             "title": title,
-            "category": "deals",
+            "category": classify_product(clean_title),
             "product_url": clean_url,
             "affiliate_url": final_deal_url,
             "image_url": image_url,
@@ -290,7 +291,7 @@ async def verify_and_ingest_single_deal(channel: str, post_id: int, raw_url: str
                     "id": pid,
                     "title": title,
                     "platform": platform,
-                    "category": "deals",
+                    "category": classify_product(clean_title),
                     "product_url": clean_url,
                     "affiliate_url": final_deal_url,
                     "image_url": image_url,
