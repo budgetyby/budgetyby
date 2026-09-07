@@ -718,7 +718,7 @@
     function startHomeAutoRefresh() {
         if (homeAutoRefreshTimer) clearInterval(homeAutoRefreshTimer);
         const settings = window.getUserSettings ? window.getUserSettings() : null;
-        const intervalSec = (settings && settings.syncInterval !== undefined) ? settings.syncInterval : 120;
+        const intervalSec = (settings && settings.syncInterval !== undefined) ? settings.syncInterval : 60;
         if (intervalSec <= 0) return;
 
         let _homeCycleCount = 0;
@@ -726,9 +726,8 @@
             if (!document.hidden) {
                 loadHomeDrops(true);
                 loadHomeFeatured(true);
-                // Only refresh metrics (heavy COUNT queries) every 5 min (every 2–5 cycles depending on interval)
                 _homeCycleCount++;
-                const metricsEveryN = Math.max(1, Math.ceil(300 / Math.max(intervalSec, 60)));
+                const metricsEveryN = Math.max(1, Math.ceil(120 / Math.max(intervalSec, 30)));
                 if (_homeCycleCount % metricsEveryN === 0) {
                     loadHomeMetrics();
                 }

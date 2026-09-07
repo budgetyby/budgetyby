@@ -1140,16 +1140,16 @@ async def get_public_stats():
         stats_row = await database.fetchrow("""
             SELECT 
                 (SELECT COUNT(*) FROM products WHERE LOWER(platform) != 'croma') as total_products,
-                (SELECT COUNT(*) FROM deals WHERE posted_mrp <= posted_price * 4.0 AND savings_pct <= 0.85) as total_deals,
-                (SELECT COUNT(*) FROM deals WHERE posted_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE AND posted_mrp <= posted_price * 4.0 AND savings_pct <= 0.85) as deals_today,
-                (SELECT COUNT(*) FROM products WHERE previous_price > current_price AND in_stock = TRUE AND previous_price <= GREATEST(COALESCE(NULLIF(mrp, 0), current_price * 1.35) * 1.15, current_price * 3.0) AND (((previous_price - current_price) / NULLIF(previous_price, 0)) * 100) <= 85.0 AND LOWER(platform) != 'croma') as drops_today,
-                (SELECT MAX(posted_at) FROM deals WHERE posted_mrp <= posted_price * 4.0) as latest_deal_time
+                (SELECT COUNT(*) FROM deals) as total_deals,
+                (SELECT COUNT(*) FROM deals WHERE posted_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE) as deals_today,
+                (SELECT COUNT(*) FROM products WHERE previous_price > current_price AND in_stock = TRUE AND LOWER(platform) != 'croma') as drops_today,
+                (SELECT MAX(posted_at) FROM deals) as latest_deal_time
         """)
         by_plat = await database.fetch("""
             SELECT platform, COUNT(*) as count, 
-                   MAX(CASE WHEN ((mrp - current_price) / NULLIF(mrp, 0)) * 100 <= 85.0 THEN ROUND(((mrp - current_price) / NULLIF(mrp, 0)) * 100) END) as max_discount
+                   MAX(CASE WHEN mrp > current_price THEN ROUND(((mrp - current_price) / NULLIF(mrp, 0)) * 100) END) as max_discount
             FROM products 
-            WHERE in_stock = TRUE AND current_price > 0 AND mrp > current_price AND mrp <= current_price * 4.5 AND LOWER(platform) != 'croma'
+            WHERE in_stock = TRUE AND current_price > 0 AND mrp > current_price AND LOWER(platform) != 'croma'
             GROUP BY platform;
         """)
 
@@ -1171,7 +1171,7 @@ async def get_public_stats():
             "platforms": ["Amazon", "Flipkart", "Myntra", "Ajio", "Nykaa"],
             "status": "live"
         }
-        await ram_cache.set("public_stats", result, ttl=300)  # 5 min — stats change slowly
+        await ram_cache.set("public_stats", result, ttl=60)  # 60s RAM cache keeps latest_deal_time fresh while protecting DB
         return result
     except Exception as e:
         logger.error(f"Error in get_public_stats: {e}", exc_info=True)
@@ -1540,7 +1540,7 @@ async def get_public_price_drops(
             "p.previous_price <= GREATEST(COALESCE(NULLIF(p.mrp, 0), p.current_price * 1.35) * 1.15, p.current_price * 3.0)",
             "LOWER(p.platform) != 'croma'",
             "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) >= $1",
-            "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) <= 85.0"
+            "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) <= 95.0"
         ]
         args = [min_drop_pct]
         arg_idx = 2
@@ -1679,7 +1679,7 @@ async def get_public_price_drops(
             "min_drop_pct": min_drop_pct,
             "drops": drops
         }
-        await ram_cache.set(cache_key, result, ttl=120)  # 2 min — synced with HTTP Cache-Control
+        await ram_cache.set(cache_key, result, ttl=30)  # 30s RAM cache ensures fresh drops appear promptly
         return result
     except Exception as e:
         logger.error(f"Error in get_public_price_drops: {e}", exc_info=True)
@@ -1882,8 +1882,7 @@ async def get_public_deals(
             "p.status = 'ACTIVE'",
             "p.current_price > 0",
             "LOWER(p.platform) != 'croma'",
-            "(p.mrp IS NULL OR p.mrp <= p.current_price * 4.0)",
-            "(d.id IS NULL OR (d.posted_mrp <= d.posted_price * 4.0 AND d.savings_pct <= 0.85))"
+            "(d.id IS NOT NULL OR p.mrp IS NULL OR p.mrp <= p.current_price * 25.0)"
         ]
         args = []
         arg_idx = 1
@@ -2255,7 +2254,7 @@ async def get_public_deals(
             "search_query": search_clean,
             "deals": deals
         }
-        await ram_cache.set(cache_key, result, ttl=120)  # 2 min — synced with HTTP Cache-Control
+        await ram_cache.set(cache_key, result, ttl=30)  # 30s RAM cache ensures fresh Telegram deals appear within 30s
         return result
     except Exception as e:
         logger.error(f"Error in get_public_deals: {e}", exc_info=True)
