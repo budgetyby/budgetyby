@@ -1,451 +1,387 @@
 {% extends "consumer/layout.html" %}
 
-{% block title %}BudgetBy — Verified Deals, Live Price Drops & Historical Lows | Amazon, Flipkart & More{% endblock %}
+{% block title %}BudgetBy — Verified Deals, 24h Price Drops & All-Time Lows | Amazon, Flipkart & More{% endblock %}
+{% block description %}Discover 100% verified deals and price drops across India's top retailers: Amazon, Flipkart, Myntra, Ajio, and Nykaa. Filtered against 30-day price baselines to eliminate fake discounts.{% endblock %}
 
 {% block content %}
 <main class="w-full">
-    <!-- ── Hero Banner with Trust Metrics ─────────────────────────────────── -->
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-8 sm:pt-12 pb-6">
-        <div class="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-6 sm:p-10 shadow-xl">
-            <div class="max-w-3xl">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/15 text-indigo-400 font-bold text-[11px] tracking-wide uppercase border border-indigo-500/30 mb-4">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    India's Independent Price Tracker
+    <!-- ── Hero Banner & Live Catalog Metrics ───────────────────────────── -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-6 pb-4">
+        <div class="relative overflow-hidden rounded-3xl bg-white border border-slate-200/90 p-6 sm:p-10 shadow-sm">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
+                <div class="max-w-2xl">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 font-bold text-xs uppercase tracking-wide border border-indigo-200 mb-4">
+                        <span class="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span>
+                        Independent Price Tracking
+                    </div>
+                    <h1 class="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 leading-[1.15]">
+                        Never Fall for <span class="text-indigo-600">Fake Discounts</span> Again.
+                    </h1>
+                    <p class="mt-3 text-sm sm:text-base text-slate-600 leading-relaxed max-w-xl">
+                        BudgetBy continuously tracks over 100,000 product prices across Amazon, Flipkart, Myntra, Ajio, and Nykaa. We calculate genuine savings against true 30-day historical prices.
+                    </p>
+
+                    <!-- Fast Quick Filters -->
+                    <div class="mt-6 flex flex-wrap items-center gap-2">
+                        <a href="/deals?category=electronics" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition flex items-center gap-1.5">
+                            <span>💻</span> Electronics
+                        </a>
+                        <a href="/deals?category=fashion" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition flex items-center gap-1.5">
+                            <span>👗</span> Fashion
+                        </a>
+                        <a href="/deals?category=footwear" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition flex items-center gap-1.5">
+                            <span>👟</span> Footwear
+                        </a>
+                        <a href="/deals?category=home" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition flex items-center gap-1.5">
+                            <span>🍳</span> Home & Kitchen
+                        </a>
+                        <a href="/deals?category=beauty" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition flex items-center gap-1.5">
+                            <span>💄</span> Beauty
+                        </a>
+                    </div>
                 </div>
 
-                <h1 class="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
-                    Track Real Price Drops. <br/>
-                    <span class="text-indigo-400">
-                        Never Fall for Fake Discounts.
-                    </span>
-                </h1>
-
-                <p class="mt-3.5 text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">
-                    BudgetBy tracks <span class="text-white font-bold" id="heroProductCount">100,000+</span> products 24/7 across Amazon, Flipkart, Myntra, Ajio, and Nykaa. We compare every price cut against 30-day historical baselines to verify genuine savings.
-                </p>
-
-                <!-- Hero Search Bar -->
-                <div class="mt-6 max-w-2xl">
-                    <form action="/deals" method="GET" class="relative group" autocomplete="off">
-                        <div class="relative flex items-center">
-                            <i data-lucide="search" class="w-5 h-5 text-slate-400 group-focus-within:text-indigo-400 absolute left-4 pointer-events-none transition"></i>
-                            <input 
-                                type="text" 
-                                name="search" 
-                                id="heroSearchInput"
-                                placeholder="Search 100,000+ products (e.g. 'smartwatch', 'boat earphone', 'running shoes')..."
-                                class="w-full pl-12 pr-28 py-3.5 bg-slate-950 hover:bg-slate-900 border border-slate-700/80 focus:border-indigo-500 rounded-2xl text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-lg transition"
-                            />
-                            <button type="submit" class="absolute right-2 px-4 sm:px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-md shadow-indigo-600/30 flex items-center gap-1.5">
-                                <span>Search</span>
-                                <i data-lucide="arrow-right" class="w-3.5 h-3.5 hidden sm:inline"></i>
-                            </button>
+                <!-- Live Metrics Summary Box -->
+                <div class="grid grid-cols-2 gap-3 sm:gap-4 shrink-0 lg:w-80">
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center">
+                        <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tracked Items</div>
+                        <div id="heroTrackedCount" class="text-2xl sm:text-3xl font-black text-slate-900 font-mono mt-1">100,000+</div>
+                        <div class="text-[10px] text-emerald-600 font-bold mt-0.5">● Real-time Active</div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center">
+                        <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Deals Live</div>
+                        <div id="heroDealsCount" class="text-2xl sm:text-3xl font-black text-indigo-600 font-mono mt-1">{{ stats.total_deals_live if stats and stats.total_deals_live else '4,200+' }}</div>
+                        <div class="text-[10px] text-indigo-600 font-bold mt-0.5">Verified Cuts</div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center col-span-2">
+                        <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Supported Stores</div>
+                        <div class="flex items-center justify-center gap-3 mt-2 font-bold text-xs text-slate-700">
+                            <span class="text-[#FF9900]">Amazon</span>
+                            <span>•</span>
+                            <span class="text-[#2874F0]">Flipkart</span>
+                            <span>•</span>
+                            <span class="text-[#FF3F6C]">Myntra</span>
+                            <span>•</span>
+                            <span class="text-[#D99814]">Ajio</span>
+                            <span>•</span>
+                            <span class="text-[#FC2779]">Nykaa</span>
                         </div>
-                    </form>
-                    <!-- Quick Search Trending Pills -->
-                    <div class="mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        <span class="text-slate-400 font-semibold text-[11px]">Trending:</span>
-                        <a href="/deals?search=smartwatch" class="px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition text-[11px] font-medium flex items-center gap-1">⌚ Smartwatches</a>
-                        <a href="/deals?search=shoes%20under%201000" class="px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition text-[11px] font-medium flex items-center gap-1">👟 Shoes &lt; ₹1k</a>
-                        <a href="/deals?search=boat%20earphone" class="px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition text-[11px] font-medium flex items-center gap-1">🎧 boAt Earphones</a>
-                        <a href="/deals?search=t-shirt" class="px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition text-[11px] font-medium flex items-center gap-1">👕 T-Shirts</a>
-                        <a href="/deals?search=laptop" class="px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition text-[11px] font-medium flex items-center gap-1">💻 Laptops</a>
-                    </div>
-                </div>
-
-                <!-- Quick Action Buttons -->
-                <div class="mt-6 flex flex-wrap items-center gap-3">
-                    <a href="/drops" class="px-5 py-3 rounded-2xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-2 shadow-md transition hover:scale-[1.02] active:scale-[0.98]">
-                        <span>🔥 Today's Price Drops</span>
-                        <span id="heroDropsBtnBadge" class="px-2 py-0.5 rounded-full bg-white/20 text-white font-mono text-[10px]">{{ initial_stats.drops_today|format_inr|replace('₹', '') if initial_stats and initial_stats.drops_today else '--' }}</span>
-                    </a>
-                    <a href="/deals" class="px-5 py-3 rounded-2xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-2 shadow-md transition hover:scale-[1.02] active:scale-[0.98]">
-                        <span>🎯 Browse All Deals</span>
-                    </a>
-                    <a href="/all-time-lows" class="px-5 py-3 rounded-2xl text-xs font-bold bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 flex items-center gap-2 transition">
-                        <span>👑 All-Time Lows</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Live Metrics Counter Strip -->
-            <div class="mt-8 pt-6 border-t border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-4">
-                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">📦 Tracked Products</div>
-                    <div id="statHeroTotalProds" class="text-xl sm:text-2xl font-black text-white font-mono mt-1">{{ initial_stats.total_products|format_inr|replace('₹', '') if initial_stats and initial_stats.total_products else '--' }}</div>
-                    <div class="text-[10px] text-slate-500 mt-0.5">Scanned continuously 24/7</div>
-                </div>
-                <a href="/deals?tab=verified" class="block bg-slate-950/80 hover:bg-slate-850 border border-slate-800/80 hover:border-indigo-500/40 rounded-2xl p-4 transition group">
-                    <div class="flex items-center justify-between">
-                        <div class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider group-hover:text-indigo-300 transition">🎯 Active Verified Deals</div>
-                        <span class="text-[10px] text-indigo-400 font-bold group-hover:translate-x-0.5 transition-transform">View →</span>
-                    </div>
-                    <div id="statHeroTotalDeals" class="text-xl sm:text-2xl font-black text-indigo-400 font-mono mt-1">{{ initial_stats.total_deals|format_inr|replace('₹', '') if initial_stats and initial_stats.total_deals else '--' }}</div>
-                    <div class="text-[10px] text-slate-500 mt-0.5">In-stock & verified vs 30d baseline</div>
-                </a>
-                <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-4">
-                    <div class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">⚡ 24H Price Drops</div>
-                    <div id="statHeroDropsToday" class="text-xl sm:text-2xl font-black text-emerald-400 font-mono mt-1">{{ initial_stats.drops_today|format_inr|replace('₹', '') if initial_stats and initial_stats.drops_today else '--' }}</div>
-                    <div class="text-[10px] text-slate-500 mt-0.5">Price cuts detected today</div>
-                </div>
-                <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-4">
-                    <div class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider">🏪 Supported Stores</div>
-                    <div class="text-xl sm:text-2xl font-black text-cyan-400 font-mono mt-1">5 Stores</div>
-                    <div class="text-[10px] text-slate-500 mt-0.5">Amazon, Flipkart, Myntra & More</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ── How BudgetBy Works (3-Step Trust Card Section) ───────────────── -->
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full my-8">
-        <div class="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 sm:p-8">
-            <div class="text-center max-w-2xl mx-auto mb-8">
-                <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">Transparency First</span>
-                <h2 class="text-xl sm:text-2xl font-black text-white mt-2">How BudgetBy Protects You from Fake Discounts</h2>
-                <p class="text-xs text-slate-400 mt-1">Unlike generic deal blogs, every price point on BudgetBy is verified with mathematical price histories.</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Step 1 -->
-                <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-5 relative flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="w-8 h-8 rounded-xl bg-indigo-600/20 text-indigo-400 font-black text-sm flex items-center justify-center border border-indigo-500/30">1</span>
-                            <span class="text-xl">🔍</span>
-                        </div>
-                        <h3 class="text-sm font-bold text-white mb-1">Continuous 24/7 Scraping</h3>
-                        <p class="text-xs text-slate-400 leading-relaxed">
-                            Our price monitoring engine scans product pages across Amazon, Flipkart, Myntra, Ajio, and Nykaa round the clock, recording every single price fluctuation.
-                        </p>
-                    </div>
-                    <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-indigo-400 font-semibold flex items-center gap-1">
-                        <i data-lucide="check" class="w-3.5 h-3.5"></i> Zero manual deal entry
-                    </div>
-                </div>
-
-                <!-- Step 2 -->
-                <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-5 relative flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="w-8 h-8 rounded-xl bg-emerald-600/20 text-emerald-400 font-black text-sm flex items-center justify-center border border-emerald-500/30">2</span>
-                            <span class="text-xl">📉</span>
-                        </div>
-                        <h3 class="text-sm font-bold text-white mb-1">30-Day Historical Baseline</h3>
-                        <p class="text-xs text-slate-400 leading-relaxed">
-                            We check whether today's "sale" price is genuinely lower than what the product sold for over the past 30 days. We weed out artificial MRP hikes.
-                        </p>
-                    </div>
-                    <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
-                        <i data-lucide="check" class="w-3.5 h-3.5"></i> Mathematical verification
-                    </div>
-                </div>
-
-                <!-- Step 3 -->
-                <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-5 relative flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="w-8 h-8 rounded-xl bg-amber-600/20 text-amber-400 font-black text-sm flex items-center justify-center border border-amber-500/30">3</span>
-                            <span class="text-xl">🛍️</span>
-                        </div>
-                        <h3 class="text-sm font-bold text-white mb-1">Direct Store Checkout</h3>
-                        <p class="text-xs text-slate-400 leading-relaxed">
-                            Clicking any deal takes you straight to the official store product page. You complete your purchase safely on Amazon or Flipkart with full buyer protection.
-                        </p>
-                    </div>
-                    <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-amber-400 font-semibold flex items-center gap-1">
-                        <i data-lucide="check" class="w-3.5 h-3.5"></i> 100% secure official retailer checkout
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- ── 24-Hour Massive Price Drops Spotlight ────────────────────────── -->
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full my-8">
-        <div class="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-5 sm:p-6 shadow-xl">
-            <!-- Header Row -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
-                <div>
-                    <div class="flex items-center gap-2">
-                        <span class="px-2.5 py-1 rounded-full bg-rose-500/15 text-rose-400 font-bold text-[10px] tracking-wide uppercase border border-rose-500/30 flex items-center gap-1.5">
-                            <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
-                            🔥 TODAY'S 24H PRICE DROPS
-                        </span>
-                        <span id="dropsCountPill" class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700">
-                            {{ initial_drops.total_drops_24h if initial_drops and initial_drops.total_drops_24h else (initial_stats.drops_today if initial_stats and initial_stats.drops_today else '--') }} Drops Today
-                        </span>
-                    </div>
-                    <h2 class="text-lg sm:text-2xl font-black text-white mt-1.5 tracking-tight flex items-center gap-2">
-                        Steepest 24-Hour Price Drops
-                        <span id="homeDropsMaxPill" class="text-xs font-semibold text-rose-300 bg-rose-950/80 px-2 py-0.5 rounded-lg border border-rose-800/60 hidden md:inline">Live 24h Drops</span>
-                    </h2>
-                    <p class="text-xs text-slate-400 mt-0.5">Real price cuts detected in the last 24 hours against verified store baseline prices.</p>
+    <!-- ── 24-Hour Verified Price Drops Carousel ────────────────────────── -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-8 pb-6">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <div class="flex items-center gap-2">
+                    <h2 class="text-xl sm:text-2xl font-black text-slate-900">24-Hour Price Drops</h2>
+                    <span class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold font-mono">LIVE</span>
                 </div>
-
-                <!-- Carousel Controls & View All Hub Link -->
-                <div class="flex items-center gap-2 self-start sm:self-auto shrink-0">
-                    <button onclick="scrollHomeDrops(-1)" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition" title="Previous Drops">
-                        <i data-lucide="chevron-left" class="w-4 h-4"></i>
-                    </button>
-                    <button onclick="scrollHomeDrops(1)" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition" title="Next Drops">
-                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                    </button>
-                    <a href="/drops" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-1.5 shadow-md transition">
-                        <span>View All Drops (<span id="dropsTotalHeaderCount">{{ initial_drops.total_drops_24h if initial_drops and initial_drops.total_drops_24h else (initial_stats.drops_today if initial_stats and initial_stats.drops_today else '--') }}</span>)</span>
-                        <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-                    </a>
-                </div>
+                <p class="text-xs text-slate-500 mt-0.5">Products whose prices dropped within the past 24 hours compared to their 30-day baseline.</p>
             </div>
+            <a href="/drops" class="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 shrink-0">
+                <span>View All Drops</span>
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </a>
+        </div>
 
-            <!-- Horizontal Carousel Strip -->
-            <div id="homeDropsStrip" class="mt-4 flex gap-4 overflow-x-auto no-scrollbar py-2 scroll-smooth">
-                {% if initial_drops and initial_drops.drops %}
-                    {% for d in initial_drops.drops %}
-                    <div data-deal-id="{{ d.product_id or d.deal_id }}" class="w-64 sm:w-72 shrink-0 snap-start bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative">
-                        <div>
-                            <!-- Image & Badges -->
-                            <div class="relative w-full aspect-square bg-white rounded-xl overflow-hidden p-3 mb-3 flex items-center justify-center border border-slate-800">
-                                <img src="{{ d.image_url or '/static/placeholder.png' }}" alt="{{ d.title }}" class="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300" loading="lazy" onerror="this.src='/static/placeholder.png'" />
-                                <div class="absolute top-2 left-2 flex items-center gap-1">
-                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-lg border {{ d.platform|store_badge }}">{{ d.platform|store_name }}</span>
-                                </div>
-                                <div class="absolute top-2 right-2">
-                                    <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-600 text-white shadow-sm">-{{ d.drop_pct|round_int }}% DROP</span>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-1.5 flex-wrap mb-1.5">
-                                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-rose-500/15 text-rose-300 border border-rose-500/30">24H DROP</span>
-                                <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold capitalize truncate max-w-[100px]">{{ d.category or 'General' }}</span>
-                            </div>
-                            <h3 class="text-xs font-bold text-slate-100 line-clamp-2 leading-relaxed group-hover:text-rose-300 transition" title="{{ d.title }}">{{ d.title }}</h3>
-                        </div>
-                        <div class="mt-3 pt-2.5 border-t border-slate-800">
-                            <div class="flex items-baseline justify-between mb-1">
-                                <div class="flex items-baseline gap-2">
-                                    <span class="text-lg font-black text-white font-mono">{{ d.current_price|format_inr }}</span>
-                                    {% if d.previous_price and d.previous_price > d.current_price %}
-                                    <span class="text-xs text-slate-500 line-through font-mono">{{ d.previous_price|format_inr }}</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            {% if d.drop_amount and d.drop_amount > 0 %}
-                            <div class="text-[11px] text-emerald-400 font-bold mb-3">💥 Save {{ d.drop_amount|format_inr }} today</div>
+        <!-- Horizontal Scrollable Deals Carousel -->
+        <div id="homeDropsCarousel" class="flex gap-4 overflow-x-auto pb-4 pt-1 no-scrollbar scroll-smooth">
+            {% if initial_drops and initial_drops.drops %}
+                {% for deal in initial_drops.drops %}
+                <div class="w-64 sm:w-72 shrink-0 bg-white border border-slate-200/90 hover:border-indigo-400 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-md group relative">
+                    <div>
+                        <!-- Store Badge & Drop % -->
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider {{ deal.platform|store_badge }}">
+                                {{ deal.platform|store_name }}
+                            </span>
+                            {% if deal.drop_pct and deal.drop_pct > 0 %}
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 font-mono">
+                                -{{ deal.drop_pct|round_int }}% DROP
+                            </span>
                             {% endif %}
-                            <a href="{{ d.affiliate_url or d.product_url or '#' }}" target="_blank" rel="noopener noreferrer" class="w-full py-2 px-3 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center gap-1.5 shadow-sm transition">
-                                <span>Check Deal on {{ d.platform|store_name }}</span>
+                        </div>
+
+                        <!-- Product Image Area -->
+                        <div class="relative w-full h-44 rounded-xl bg-slate-50 p-2 flex items-center justify-center overflow-hidden border border-slate-100">
+                            <img src="{{ deal.image_url or '/static/placeholder.png' }}" 
+                                 alt="{{ deal.title }}" 
+                                 class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                                 loading="lazy"
+                                 onerror="this.src='/static/placeholder.png'" />
+                            
+                            <!-- Watchlist Quick Toggle -->
+                            <button onclick="handleHomeWatchlist(this, {{ deal.product_id or deal.id }})" 
+                                    class="absolute top-2 right-2 p-1.5 rounded-xl bg-white/90 backdrop-blur-md border border-slate-200 text-slate-400 hover:text-rose-500 transition shadow-sm" 
+                                    title="Save to Watchlist">
+                                <i data-lucide="heart" class="w-4 h-4"></i>
+                            </button>
+
+                            <!-- Freshness Pill -->
+                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-white/90 border border-slate-200 text-[10px] font-medium text-emerald-700 flex items-center gap-1 shadow-sm">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                <span>Verified {{ deal.last_checked|time_ago }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Product Title -->
+                        <div class="mt-3">
+                            <a href="{{ deal.affiliate_url or deal.product_url or '#' }}" target="_blank" rel="noopener noreferrer" 
+                               class="text-xs font-bold text-slate-900 hover:text-indigo-600 line-clamp-2 transition leading-snug" 
+                               title="{{ deal.title }}">
+                                {{ deal.title }}
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Price & Action Footer -->
+                    <div class="mt-3 pt-3 border-t border-slate-100">
+                        <div class="flex items-baseline justify-between gap-1 mb-2">
+                            <div>
+                                {% set cp = deal.current_price or deal.deal_price or 0 %}
+                                <span class="text-lg font-black text-slate-900 font-mono">{{ cp|format_inr }}</span>
+                                {% if deal.mrp and deal.mrp > cp %}
+                                <span class="text-xs text-slate-400 line-through ml-1.5 font-mono">{{ deal.mrp|format_inr }}</span>
+                                {% endif %}
+                            </div>
+                            {% if deal.mrp and deal.mrp > cp %}
+                            <div class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-mono">
+                                Save {{ (deal.mrp - cp)|format_inr }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Card Action Buttons -->
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="handleHomeShare({{ deal.product_id or deal.id }})" 
+                                    class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center transition shrink-0" 
+                                    title="Share Deal">
+                                <i data-lucide="share-2" class="w-4 h-4 text-indigo-600"></i>
+                            </button>
+                            <a href="{{ deal.affiliate_url or deal.product_url or '#' }}" target="_blank" rel="noopener noreferrer" 
+                               class="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-sm shadow-indigo-600/20 hover:scale-[1.02] active:scale-[0.98] transition">
+                                <span>Get Deal</span>
                                 <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
                             </a>
                         </div>
                     </div>
-                    {% endfor %}
-                {% endif %}
-            </div>
-        </div>
-    </section>
-
-    <!-- ── Top Stores Spotlight Directory ────────────────────────────────── -->
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full my-10">
-        <div class="flex items-center justify-between mb-4">
-            <div>
-                <h2 class="text-lg sm:text-xl font-black text-white flex items-center gap-2">
-                    <span>🏪</span> Shop Verified Deals by Store
-                </h2>
-                <p class="text-xs text-slate-400 mt-0.5">Explore deals and real-time discounts across India's top 5 online retailers.</p>
-            </div>
-            <a href="/stores" class="text-xs text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1 transition">
-                <span>View All Stores</span>
-                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-            </a>
-        </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-            <!-- Amazon -->
-            <a href="/stores/amazon" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-amber-500/50 rounded-2xl p-4 flex flex-col justify-between transition group">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="w-3 h-3 rounded-full bg-[#FF9900]"></span>
-                    <span class="text-[10px] font-mono font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/20">LIVE</span>
-                </div>
-                <h3 class="text-sm font-black text-white group-hover:text-amber-300 transition">Amazon India</h3>
-                <p class="text-[11px] text-slate-400 mt-1">Electronics, Mobiles, Fashion & Daily Needs</p>
-                <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-semibold text-amber-400">
-                    <span>Browse Deals</span>
-                    <i data-lucide="arrow-right" class="w-3 h-3 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </a>
-
-            <!-- Flipkart -->
-            <a href="/stores/flipkart" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-blue-500/50 rounded-2xl p-4 flex flex-col justify-between transition group">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="w-3 h-3 rounded-full bg-[#2874F0]"></span>
-                    <span class="text-[10px] font-mono font-bold text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-md border border-blue-400/20">LIVE</span>
-                </div>
-                <h3 class="text-sm font-black text-white group-hover:text-blue-300 transition">Flipkart</h3>
-                <p class="text-[11px] text-slate-400 mt-1">Appliances, TVs, Fashion & Electronics</p>
-                <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-semibold text-blue-400">
-                    <span>Browse Deals</span>
-                    <i data-lucide="arrow-right" class="w-3 h-3 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </a>
-
-            <!-- Myntra -->
-            <a href="/stores/myntra" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-pink-500/50 rounded-2xl p-4 flex flex-col justify-between transition group">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="w-3 h-3 rounded-full bg-[#FF3F6C]"></span>
-                    <span class="text-[10px] font-mono font-bold text-pink-400 bg-pink-400/10 px-2 py-0.5 rounded-md border border-pink-400/20">LIVE</span>
-                </div>
-                <h3 class="text-sm font-black text-white group-hover:text-pink-300 transition">Myntra</h3>
-                <p class="text-[11px] text-slate-400 mt-1">Fashion, Footwear, Watches & Accessories</p>
-                <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-semibold text-pink-400">
-                    <span>Browse Deals</span>
-                    <i data-lucide="arrow-right" class="w-3 h-3 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </a>
-
-            <!-- Ajio -->
-            <a href="/stores/ajio" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-yellow-500/50 rounded-2xl p-4 flex flex-col justify-between transition group">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="w-3 h-3 rounded-full bg-[#D99814]"></span>
-                    <span class="text-[10px] font-mono font-bold text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded-md border border-yellow-400/20">LIVE</span>
-                </div>
-                <h3 class="text-sm font-black text-white group-hover:text-yellow-300 transition">Ajio</h3>
-                <p class="text-[11px] text-slate-400 mt-1">Trends, Premium Clothing & Footwear</p>
-                <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-semibold text-yellow-400">
-                    <span>Browse Deals</span>
-                    <i data-lucide="arrow-right" class="w-3 h-3 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </a>
-
-            <!-- Nykaa -->
-            <a href="/stores/nykaa" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-rose-500/50 rounded-2xl p-4 flex flex-col justify-between transition group col-span-2 sm:col-span-1">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="w-3 h-3 rounded-full bg-[#FC2779]"></span>
-                    <span class="text-[10px] font-mono font-bold text-rose-400 bg-rose-400/10 px-2 py-0.5 rounded-md border border-rose-400/20">LIVE</span>
-                </div>
-                <h3 class="text-sm font-black text-white group-hover:text-rose-300 transition">Nykaa</h3>
-                <p class="text-[11px] text-slate-400 mt-1">Beauty, Fragrances, Skincare & Wellness</p>
-                <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-semibold text-rose-400">
-                    <span>Browse Deals</span>
-                    <i data-lucide="arrow-right" class="w-3 h-3 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </a>
-        </div>
-    </section>
-
-    <!-- ── Featured Verified Deals Spotlight ─────────────────────────────── -->
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full my-10">
-        <div class="flex items-center justify-between mb-4">
-            <div>
-                <h2 class="text-lg sm:text-xl font-black text-white flex items-center gap-2">
-                    <span>🎯</span> Verified Featured Deals
-                </h2>
-                <p class="text-xs text-slate-400 mt-0.5">Top verified price cuts checked against historical averages.</p>
-            </div>
-            <a href="/deals?tab=featured" class="text-xs text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1 transition">
-                <span>See All Deals</span>
-                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-            </a>
-        </div>
-
-        <div id="homeFeaturedGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {% if initial_featured and initial_featured.deals %}
-                {% for d in initial_featured.deals %}
-                <div data-deal-id="{{ d.product_id or d.deal_id }}" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between transition-all duration-200 group relative">
-                    <div>
-                        <div class="relative w-full aspect-square bg-white rounded-xl overflow-hidden p-3 mb-3 flex items-center justify-center border border-slate-800">
-                            <img src="{{ d.image_url or '/static/placeholder.png' }}" alt="{{ d.title }}" class="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300" loading="lazy" onerror="this.src='/static/placeholder.png'" />
-                            <div class="absolute top-2 left-2">
-                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-lg border {{ d.platform|store_badge }}">{{ d.platform|store_name }}</span>
-                            </div>
-                            {% if d.discount_pct and d.discount_pct > 0 %}
-                            <div class="absolute top-2 right-2">
-                                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-600 text-white">-{{ d.discount_pct|round_int }}%</span>
-                            </div>
-                            {% endif %}
-                        </div>
-                        <div class="flex items-center gap-1.5 flex-wrap mb-1.5">
-                            <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">VERIFIED DEAL</span>
-                            <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold capitalize truncate max-w-[100px]">{{ d.category or 'General' }}</span>
-                        </div>
-                        <h3 class="text-xs font-bold text-slate-100 line-clamp-2 leading-relaxed group-hover:text-indigo-300 transition" title="{{ d.title }}">{{ d.title }}</h3>
-                        {% if d.rating and d.rating >= 1.0 %}
-                        <div class="flex items-center gap-1.5 mt-1.5">
-                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold font-mono">
-                                <span class="text-amber-400">★</span> {{ d.rating }}
-                            </span>
-                            {% if d.review_count and d.review_count > 0 %}
-                            <span class="text-[10px] text-slate-400 font-mono">({{ d.review_count }})</span>
-                            {% endif %}
-                        </div>
-                        {% endif %}
-                    </div>
-                    <div class="mt-3 pt-2.5 border-t border-slate-800">
-                        <div class="flex items-baseline justify-between mb-2">
-                            <div class="flex items-baseline gap-2 font-mono">
-                                {% set cp = d.current_price or d.deal_price or 0 %}
-                                <span class="text-lg font-black text-white">{{ cp|format_inr }}</span>
-                                {% if d.mrp and d.mrp > cp %}
-                                <span class="text-xs text-slate-500 line-through">{{ d.mrp|format_inr }}</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <a href="{{ d.affiliate_url or d.product_url or '#' }}" target="_blank" rel="noopener noreferrer" class="w-full py-2 px-3 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center gap-1.5 shadow-sm transition">
-                            <span>Check Deal on {{ d.platform|store_name }}</span>
-                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                        </a>
-                    </div>
                 </div>
                 {% endfor %}
+            {% else %}
+                <div class="w-full py-12 text-center text-xs text-slate-500">
+                    Scanning deals catalog in real time... Please refresh in a moment.
+                </div>
             {% endif %}
         </div>
     </section>
 
-    <!-- ── Frequently Asked Questions / Consumer Confidence ─────────────── -->
-    <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 w-full my-16">
-        <div class="text-center mb-8">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">Common Questions</span>
-            <h2 class="text-xl sm:text-2xl font-black text-white mt-2">Frequently Asked Questions</h2>
-            <p class="text-xs text-slate-400 mt-1">Everything you need to know about how BudgetBy works and keeps shopping honest.</p>
+    <!-- ── How BudgetBy Protects Shoppers (3-Step Trust Explainer) ───────── -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-8">
+        <div class="text-center max-w-2xl mx-auto mb-8">
+            <h2 class="text-2xl sm:text-3xl font-black text-slate-900">How BudgetBy Protects You from Fake Discounts</h2>
+            <p class="text-xs sm:text-sm text-slate-600 mt-2">
+                Online stores frequently inflate MRPs right before a sale to make fake discounts look huge. Here is how our automated algorithm guarantees authenticity:
+            </p>
         </div>
 
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- Step 1 -->
+            <div class="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm">
+                <div class="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center text-xl font-bold mb-4">
+                    1
+                </div>
+                <h3 class="text-base font-bold text-slate-900 mb-2">24/7 Automated Scraping</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Our distributed crawler engines scan prices across 100,000+ products on Amazon, Flipkart, Myntra, Ajio, and Nykaa in 30–60 minute intervals.
+                </p>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm">
+                <div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center text-xl font-bold mb-4">
+                    2
+                </div>
+                <h3 class="text-base font-bold text-slate-900 mb-2">30-Day Baseline Verification</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Every claimed discount is checked against the rolling 30-day median price. If a seller bumped their price yesterday to advertise a "50% drop" today, we flag or discard it.
+                </p>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm">
+                <div class="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center text-xl font-bold mb-4">
+                    3
+                </div>
+                <h3 class="text-base font-bold text-slate-900 mb-2">Direct Official Checkout</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    BudgetBy never collects payments, debit/credit cards, or passwords. Every "Get Deal" button takes you straight to the official retailer's verified checkout.
+                </p>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ── Featured Verified Deals Grid ─────────────────────────────────── -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-8">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 class="text-xl sm:text-2xl font-black text-slate-900">Featured Verified Deals</h2>
+                <p class="text-xs text-slate-500 mt-0.5">Top-rated items with confirmed 30%+ price cuts.</p>
+            </div>
+            <a href="/deals" class="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+                <span>Explore All Deals</span>
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </a>
+        </div>
+
+        <div id="homeFeaturedGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {% if initial_featured and initial_featured.deals %}
+                {% for deal in initial_featured.deals %}
+                <div class="bg-white border border-slate-200/90 hover:border-indigo-400 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-md group relative">
+                    <div>
+                        <!-- Store Badge & Discount Meta -->
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider {{ deal.platform|store_badge }}">
+                                {{ deal.platform|store_name }}
+                            </span>
+                            {% if deal.discount_pct and deal.discount_pct > 0 %}
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono">
+                                {{ deal.discount_pct|round_int }}% OFF
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Image Area -->
+                        <div class="relative w-full h-44 rounded-xl bg-slate-50 p-2 flex items-center justify-center overflow-hidden border border-slate-100">
+                            <img src="{{ deal.image_url or '/static/placeholder.png' }}" 
+                                 alt="{{ deal.title }}" 
+                                 class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" 
+                                 loading="lazy" 
+                                 onerror="this.src='/static/placeholder.png'" />
+                            
+                            <!-- Watchlist Toggle -->
+                            <button onclick="handleHomeWatchlist(this, {{ deal.product_id or deal.id }})" 
+                                    class="absolute top-2 right-2 p-1.5 rounded-xl bg-white/90 backdrop-blur-md border border-slate-200 text-slate-400 hover:text-rose-500 transition shadow-sm" 
+                                    title="Save to Watchlist">
+                                <i data-lucide="heart" class="w-4 h-4"></i>
+                            </button>
+
+                            <!-- Freshness Pill -->
+                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-white/90 border border-slate-200 text-[10px] font-medium text-emerald-700 flex items-center gap-1 shadow-sm">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                <span>Verified {{ deal.last_checked|time_ago }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Product Title -->
+                        <div class="mt-3">
+                            <a href="{{ deal.affiliate_url or deal.product_url or '#' }}" target="_blank" rel="noopener noreferrer" 
+                               class="text-xs font-bold text-slate-900 hover:text-indigo-600 line-clamp-2 transition leading-snug" 
+                               title="{{ deal.title }}">
+                                {{ deal.title }}
+                            </a>
+                            {% if deal.rating and deal.rating >= 1.0 %}
+                            <div class="flex items-center gap-1.5 mt-1.5">
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-900 text-[10px] font-bold font-mono">
+                                    <span class="text-amber-500">★</span> {{ deal.rating }}
+                                </span>
+                                {% if deal.review_count and deal.review_count > 0 %}
+                                <span class="text-[10px] text-slate-500 font-mono">({{ deal.review_count }})</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Price & Action Footer -->
+                    <div class="mt-3 pt-3 border-t border-slate-100">
+                        <div class="flex items-baseline justify-between gap-1 mb-2">
+                            <div>
+                                {% set cp = deal.current_price or deal.deal_price or 0 %}
+                                <span class="text-lg font-black text-slate-900 font-mono">{{ cp|format_inr }}</span>
+                                {% if deal.mrp and deal.mrp > cp %}
+                                <span class="text-xs text-slate-400 line-through ml-1.5 font-mono">{{ deal.mrp|format_inr }}</span>
+                                {% endif %}
+                            </div>
+                            {% if deal.mrp and deal.mrp > cp %}
+                            <div class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-mono">
+                                Save {{ (deal.mrp - cp)|format_inr }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Card Action Buttons -->
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="handleHomeShare({{ deal.product_id or deal.id }})" 
+                                    class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center transition shrink-0" 
+                                    title="Share Deal">
+                                <i data-lucide="share-2" class="w-4 h-4 text-indigo-600"></i>
+                            </button>
+                            <a href="{{ deal.affiliate_url or deal.product_url or '#' }}" target="_blank" rel="noopener noreferrer" 
+                               class="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-sm shadow-indigo-600/20 hover:scale-[1.02] active:scale-[0.98] transition">
+                                <span>Get Deal</span>
+                                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-span-full py-12 text-center text-xs text-slate-500">
+                    Featured deals are updating. Browse the complete catalog via the search bar above.
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- ── Frequently Asked Questions (FAQ) ─────────────────────────────── -->
+    <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-12">
+        <h2 class="text-2xl font-black text-slate-900 text-center mb-6">Frequently Asked Questions</h2>
         <div class="space-y-3">
-            <details class="group bg-slate-900 border border-slate-800 rounded-2xl p-4 transition [&_summary::-webkit-details-marker]:hidden">
-                <summary class="flex items-center justify-between cursor-pointer font-bold text-xs sm:text-sm text-white">
-                    <span>How does BudgetBy determine if a price drop is real?</span>
-                    <span class="ml-2 text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+            
+            <details class="bg-white border border-slate-200/90 rounded-2xl p-4 transition group shadow-sm">
+                <summary class="font-bold text-slate-900 text-xs sm:text-sm cursor-pointer list-none flex items-center justify-between">
+                    <span>How does BudgetBy verify that discounts are genuine?</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
                 </summary>
-                <p class="mt-3 text-xs text-slate-400 leading-relaxed pt-2 border-t border-slate-800">
-                    Many e-commerce sellers artificially inflate MRPs before applying fake discounts. BudgetBy continuously logs the actual selling price of 100,000+ products across multiple stores. When a price drops, we compare it against the product's 30-day median selling price rather than the inflated MRP.
+                <p class="text-xs text-slate-600 mt-3 leading-relaxed">
+                    We log price changes every 30 to 60 minutes. When a deal is posted, we calculate the discount against the product's 30-day median price, not just the seller's claimed MRP. If the seller raised the price just before the sale, our algorithm rejects the fake discount.
                 </p>
             </details>
 
-            <details class="group bg-slate-900 border border-slate-800 rounded-2xl p-4 transition [&_summary::-webkit-details-marker]:hidden">
-                <summary class="flex items-center justify-between cursor-pointer font-bold text-xs sm:text-sm text-white">
-                    <span>Is BudgetBy completely free for shoppers?</span>
-                    <span class="ml-2 text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+            <details class="bg-white border border-slate-200/90 rounded-2xl p-4 transition group shadow-sm">
+                <summary class="font-bold text-slate-900 text-xs sm:text-sm cursor-pointer list-none flex items-center justify-between">
+                    <span>Is BudgetBy 100% free to use?</span>
+                    <summary class="hidden"></summary>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
                 </summary>
-                <p class="mt-3 text-xs text-slate-400 leading-relaxed pt-2 border-t border-slate-800">
-                    Yes, 100% free! You don't even need to create an account. You can search, browse price drops, and save items to your personal watchlist completely free of charge.
+                <p class="text-xs text-slate-600 mt-3 leading-relaxed">
+                    Yes. BudgetBy is completely free for shoppers. We earn a small affiliate commission from merchant partners when you complete a purchase through our links, with zero added cost to you.
                 </p>
             </details>
 
-            <details class="group bg-slate-900 border border-slate-800 rounded-2xl p-4 transition [&_summary::-webkit-details-marker]:hidden">
-                <summary class="flex items-center justify-between cursor-pointer font-bold text-xs sm:text-sm text-white">
-                    <span>How do affiliate links work on BudgetBy?</span>
-                    <span class="ml-2 text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+            <details class="bg-white border border-slate-200/90 rounded-2xl p-4 transition group shadow-sm">
+                <summary class="font-bold text-slate-900 text-xs sm:text-sm cursor-pointer list-none flex items-center justify-between">
+                    <span>Do I need to sign up or create an account to save deals?</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
                 </summary>
-                <p class="mt-3 text-xs text-slate-400 leading-relaxed pt-2 border-t border-slate-800">
-                    When you click "Check Deal" and make a purchase on Amazon, Flipkart, Myntra, Ajio, or Nykaa, we may receive a small referral commission from the retailer at zero additional cost to you. This supports our server costs and 24/7 price scanning crawlers.
+                <p class="text-xs text-slate-600 mt-3 leading-relaxed">
+                    No account is required. When you click the heart icon on any deal, it is saved securely to your browser's local storage so you can easily access your shortlist anytime without sharing any personal information.
                 </p>
             </details>
 
-            <details class="group bg-slate-900 border border-slate-800 rounded-2xl p-4 transition [&_summary::-webkit-details-marker]:hidden">
-                <summary class="flex items-center justify-between cursor-pointer font-bold text-xs sm:text-sm text-white">
-                    <span>Do I enter my payment or credit card details on BudgetBy?</span>
-                    <span class="ml-2 text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+            <details class="bg-white border border-slate-200/90 rounded-2xl p-4 transition group shadow-sm">
+                <summary class="font-bold text-slate-900 text-xs sm:text-sm cursor-pointer list-none flex items-center justify-between">
+                    <span>Which stores are currently tracked on BudgetBy?</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
                 </summary>
-                <p class="mt-3 text-xs text-slate-400 leading-relaxed pt-2 border-t border-slate-800">
-                    Never. BudgetBy is strictly a price tracker and deal discovery portal. All transactions, payments, deliveries, and customer service take place directly on the official retailer websites (e.g. Amazon.in or Flipkart.com).
+                <p class="text-xs text-slate-600 mt-3 leading-relaxed">
+                    We track 5 major platforms in India: Amazon India, Flipkart, Myntra, Ajio, and Nykaa. We focus exclusively on verified retailers with dependable customer return policies.
                 </p>
             </details>
         </div>
@@ -469,239 +405,84 @@
     async function loadHomeMetrics() {
         try {
             const res = await fetch('/api/public/stats');
-            if (!res.ok) return;
             const data = await res.json();
-            const prods = data.total_products ? Number(data.total_products).toLocaleString('en-IN') : '--';
-            const deals = data.total_deals ? Number(data.total_deals).toLocaleString('en-IN') : '--';
-            const drops = data.drops_today !== undefined ? Number(data.drops_today).toLocaleString('en-IN') : '--';
+            if (data.total_tracked) {
+                const el = document.getElementById('heroTrackedCount');
+                if (el) el.innerText = data.total_tracked.toLocaleString('en-IN') + '+';
+            }
+            if (data.total_deals_live) {
+                const el = document.getElementById('heroDealsCount');
+                if (el) el.innerText = data.total_deals_live.toLocaleString('en-IN') + '+';
+            }
+        } catch(e) {}
+    }
 
-            const elProds = document.getElementById('statHeroTotalProds');
-            const elDeals = document.getElementById('statHeroTotalDeals');
-            const elDrops = document.getElementById('statHeroDropsToday');
-            const elBadge = document.getElementById('heroDropsBtnBadge');
-            const elHeroProd = document.getElementById('heroProductCount');
+    function handleHomeWatchlist(btn, id) {
+        // Find deal from initial array or DOM
+        const card = btn.closest('[class*="group"]');
+        if (!card) return;
+        
+        const titleEl = card.querySelector('a[title]');
+        const priceEl = card.querySelector('.font-mono.font-black');
+        const imgEl = card.querySelector('img');
+        const linkEl = card.querySelector('a[href*="http"], a[href^="/"]');
+        
+        const deal = {
+            id: id,
+            title: titleEl ? titleEl.title : 'Product Deal',
+            current_price: priceEl ? parseInt(priceEl.innerText.replace(/[^0-9]/g, '')) : 0,
+            image_url: imgEl ? imgEl.src : '',
+            affiliate_url: linkEl ? linkEl.href : window.location.href,
+            platform: 'amazon'
+        };
 
-            if (elProds) elProds.innerText = prods;
-            if (elDeals) elDeals.innerText = deals;
-            if (elDrops) elDrops.innerText = drops;
-            if (elBadge) elBadge.innerText = `${drops}`;
-            if (elHeroProd) elHeroProd.innerText = `${prods}`;
-        } catch (e) {
-            console.warn('Home metrics note:', e);
+        const added = toggleWatchlist(deal);
+        const icon = btn.querySelector('svg');
+        if (icon) {
+            if (added) {
+                icon.classList.add('fill-rose-500', 'text-rose-500');
+            } else {
+                icon.classList.remove('fill-rose-500', 'text-rose-500');
+            }
         }
     }
 
-    async function loadHomeDrops() {
-        const strip = document.getElementById('homeDropsStrip');
-        if (!strip) return;
-        try {
-            const res = await fetch('/api/public/price-drops?limit=14&min_drop_pct=5');
-            if (!res.ok) return;
-            const data = await res.json();
-            homeDrops = data.drops || [];
-            const total = data.total_drops_24h || homeDrops.length;
-            const elPill = document.getElementById('dropsCountPill');
-            const elTotalHdr = document.getElementById('dropsTotalHeaderCount');
-            if (elPill) elPill.innerText = `${total} Drops Today`;
-            if (elTotalHdr) elTotalHdr.innerText = `${total}`;
+    function handleHomeShare(id) {
+        // Build deal object for modal
+        const card = event.target.closest('[class*="group"]');
+        if (!card) return;
+        const titleEl = card.querySelector('a[title]');
+        const priceEl = card.querySelector('.font-mono.font-black');
+        const imgEl = card.querySelector('img');
+        const linkEl = card.querySelector('a[href*="http"], a[href^="/"]');
 
-            if (homeDrops.length > 0) {
-                const maxDrop = Math.max(...homeDrops.map(d => d.drop_pct || 0));
-                const pill = document.getElementById('homeDropsMaxPill');
-                if (pill && maxDrop > 0) pill.innerText = `Up to ${Math.round(maxDrop)}% Off`;
-            }
-
-            if (homeDrops.length === 0) {
-                strip.innerHTML = '<div class="p-6 text-xs text-slate-400">No price drops recorded right now. Check back shortly!</div>';
-                return;
-            }
-
-            let html = '';
-            homeDrops.forEach(d => {
-                const store = STORE_CONFIG[d.platform] || { name: d.platform, pill: 'bg-slate-800 text-slate-300 border-slate-700', btn: 'bg-indigo-600 hover:bg-indigo-500 text-white font-bold' };
-                const productImg = d.image_url || `/static/placeholder.png`;
-                const dropPct = Math.round(d.drop_pct || 0);
-                const dropAmt = Math.round(d.drop_amount || 0);
-                const isSaved = isProductInWatchlist(d.product_id);
-                const safeTitle = escapeHtml(d.title || 'Product Deal');
-                const buyUrl = d.affiliate_url || d.product_url || '#';
-                const dealJsonStr = encodeURIComponent(JSON.stringify({ id: d.product_id, title: d.title, deal_price: d.current_price, mrp: d.mrp, platform: d.platform, image_url: d.image_url, affiliate_url: buyUrl }));
-
-                html += `
-                    <div class="w-64 sm:w-72 shrink-0 snap-start bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative">
-                        <div>
-                            <!-- Image & Badges -->
-                            <div class="relative w-full aspect-square bg-white rounded-xl overflow-hidden p-3 mb-3 flex items-center justify-center border border-slate-800">
-                                <img src="${productImg}" alt="${safeTitle}" class="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300" loading="lazy" onerror="this.src='/static/placeholder.png'" />
-                                <div class="absolute top-2 left-2 flex items-center gap-1">
-                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-lg border ${store.pill}">${store.name}</span>
-                                </div>
-                                <div class="absolute top-2 right-2">
-                                    <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-600 text-white shadow-sm">-${dropPct}% DROP</span>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-1.5 flex-wrap mb-1.5">
-                                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-rose-500/15 text-rose-300 border border-rose-500/30">24H DROP</span>
-                                <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold capitalize truncate max-w-[100px]">${d.category || 'General'}</span>
-                            </div>
-                            <h3 class="text-xs font-bold text-slate-100 line-clamp-2 leading-relaxed group-hover:text-rose-300 transition" title="${safeTitle}">${safeTitle}</h3>
-                        </div>
-                        <div class="mt-3 pt-2.5 border-t border-slate-800">
-                            <div class="flex items-baseline justify-between mb-1">
-                                <div class="flex items-baseline gap-2">
-                                    <span class="text-lg font-black text-white font-mono">₹${Number(d.current_price).toLocaleString('en-IN')}</span>
-                                    ${d.previous_price ? `<span class="text-xs text-slate-500 line-through font-mono">₹${Number(d.previous_price).toLocaleString('en-IN')}</span>` : ''}
-                                </div>
-                            </div>
-                            <div class="text-[11px] text-emerald-400 font-bold mb-3">💥 Save ₹${dropAmt.toLocaleString('en-IN')} today</div>
-                            <div class="flex items-center gap-2">
-                                <a href="${buyUrl}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold ${store.btn} flex items-center justify-center gap-1.5 shadow-sm transition">
-                                    <span>Check Deal</span>
-                                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                                </a>
-                                <button onclick="toggleWatchlistDeal('${dealJsonStr}')" data-watchlist-id="${d.product_id}" class="p-2 rounded-xl bg-slate-850 hover:bg-slate-800 text-slate-300 transition ${isSaved ? 'text-rose-500' : ''}" title="Save to Watchlist">
-                                    ${isSaved ? '❤️' : '🤍'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            strip.innerHTML = html;
-            if (window.lucide) lucide.createIcons();
-        } catch (e) {
-            console.warn('Home drops load error:', e);
-        }
-    }
-
-    async function loadHomeFeaturedDeals() {
-        const grid = document.getElementById('homeFeaturedGrid');
-        if (!grid) return;
-        try {
-            let res = await fetch('/api/public/deals?tab=featured&min_discount=50&limit=8');
-            if (!res.ok) return;
-            let data = await res.json();
-            let deals = data.deals || [];
-            if (deals.length === 0) {
-                res = await fetch('/api/public/deals?limit=8');
-                if (res.ok) {
-                    data = await res.json();
-                    deals = data.deals || [];
-                }
-            }
-            if (deals.length === 0) {
-                grid.innerHTML = '<div class="col-span-full py-8 text-center text-xs text-slate-400">No discounted deals available right now.</div>';
-                return;
-            }
-
-            let html = '';
-            const seenPids = new Set();
-            const seenUrls = new Set();
-            deals.forEach(d => {
-                const pid = d.product_id || d.id;
-                const link = (d.affiliate_url || d.product_url || '').split('?')[0].toLowerCase();
-                if (seenPids.has(pid) || (link && seenUrls.has(link))) {
-                    return;
-                }
-                seenPids.add(pid);
-                if (link) seenUrls.add(link);
-
-                const store = STORE_CONFIG[d.platform] || { name: d.platform, pill: 'bg-slate-800 text-slate-300 border-slate-700', btn: 'bg-indigo-600 hover:bg-indigo-500 text-white font-bold' };
-                const productImg = d.image_url || `/static/placeholder.png`;
-                const isSaved = isProductInWatchlist(d.product_id);
-                const safeTitle = escapeHtml(d.title || 'Product Deal');
-                const buyUrl = d.affiliate_url || d.product_url || '#';
-                const hasValidRating = d.rating && typeof d.rating === 'number' && d.rating >= 1.0 && d.rating <= 5.0;
-                const ratingHtml = hasValidRating ? `
-                    <div class="flex items-center gap-1.5 mt-1.5">
-                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold font-mono">
-                            <span class="text-amber-400">★</span> ${d.rating.toFixed(1)}
-                        </span>
-                        ${d.review_count && d.review_count > 0 ? `
-                            <span class="text-[10px] text-slate-400 font-mono">(${Number(d.review_count).toLocaleString('en-IN')})</span>
-                        ` : ''}
-                    </div>
-                ` : '';
-                const dealJsonStr = encodeURIComponent(JSON.stringify({ id: d.product_id, title: d.title, deal_price: d.deal_price, mrp: d.mrp, platform: d.platform, image_url: d.image_url, affiliate_url: buyUrl }));
-
-                html += `
-                    <div class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between transition-all duration-200 group relative">
-                        <div>
-                            <div class="relative w-full aspect-square bg-white rounded-xl overflow-hidden p-3 mb-3 flex items-center justify-center border border-slate-800">
-                                <img src="${productImg}" alt="${safeTitle}" class="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300" loading="lazy" onerror="this.src='/static/placeholder.png'" />
-                                <div class="absolute top-2 left-2">
-                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-lg border ${store.pill}">${store.name}</span>
-                                </div>
-                                <div class="absolute top-2 right-2">
-                                    <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-600 text-white">-${d.discount_pct}%</span>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-1.5 flex-wrap mb-1.5">
-                                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">VERIFIED DEAL</span>
-                                <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold capitalize truncate max-w-[100px]">${d.category || 'General'}</span>
-                            </div>
-                            <h3 class="text-xs font-bold text-slate-100 line-clamp-2 leading-relaxed group-hover:text-indigo-300 transition" title="${safeTitle}">${safeTitle}</h3>
-                            ${ratingHtml}
-                        </div>
-                        <div class="mt-3 pt-2.5 border-t border-slate-800">
-                            <div class="flex items-baseline justify-between mb-2">
-                                <div class="flex items-baseline gap-2 font-mono">
-                                    <span class="text-lg font-black text-white">₹${Number(d.deal_price).toLocaleString('en-IN')}</span>
-                                    ${d.mrp ? `<span class="text-xs text-slate-500 line-through">₹${Number(d.mrp).toLocaleString('en-IN')}</span>` : ''}
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <a href="${buyUrl}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold ${store.btn} flex items-center justify-center gap-1.5 shadow-sm transition">
-                                    <span>Check Deal</span>
-                                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                                </a>
-                                <button onclick="toggleWatchlistDeal('${dealJsonStr}')" data-watchlist-id="${d.product_id}" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 transition ${isSaved ? 'text-rose-500' : ''}" title="Save to Watchlist">
-                                    ${isSaved ? '❤️' : '🤍'}
-                                </button>
-                                <button onclick="openShareModal('${dealJsonStr}')" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 transition" title="Share Deal">
-                                    <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            grid.innerHTML = html;
-            if (window.lucide) lucide.createIcons();
-        } catch (e) {
-            console.warn('Home featured load error:', e);
-        }
-    }
-
-    function scrollHomeDrops(direction) {
-        const strip = document.getElementById('homeDropsStrip');
-        if (!strip) return;
-        const scrollAmt = direction * (strip.clientWidth * 0.75);
-        strip.scrollBy({ left: scrollAmt, behavior: 'smooth' });
-    }
-
-    let homeAutoRefreshTimer = null;
-    function startHomeAutoRefresh() {
-        if (homeAutoRefreshTimer) clearInterval(homeAutoRefreshTimer);
-        const settings = window.getUserSettings ? window.getUserSettings() : null;
-        const intervalSec = (settings && settings.syncInterval !== undefined) ? settings.syncInterval : 30;
-        if (intervalSec <= 0) return;
-        homeAutoRefreshTimer = setInterval(() => {
-            if (!document.hidden) {
-                loadHomeMetrics();
-                loadHomeDrops();
-                loadHomeFeaturedDeals();
-            }
-        }, intervalSec * 1000);
+        const deal = {
+            id: id,
+            title: titleEl ? titleEl.title : 'Verified Deal on BudgetBy',
+            current_price: priceEl ? parseInt(priceEl.innerText.replace(/[^0-9]/g, '')) : 0,
+            image_url: imgEl ? imgEl.src : '',
+            affiliate_url: linkEl ? linkEl.href : window.location.href,
+            platform: 'amazon'
+        };
+        openShareModal(deal);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        if (window.lucide) lucide.createIcons();
-        startHomeAutoRefresh();
-    });
-
-    window.addEventListener('budgetby:syncRateChanged', () => {
-        startHomeAutoRefresh();
+        loadHomeMetrics();
+        // Sync watchlist hearts
+        document.querySelectorAll('#homeDropsCarousel [class*="group"], #homeFeaturedGrid [class*="group"]').forEach(card => {
+            const btn = card.querySelector('button[title="Save to Watchlist"]');
+            const img = card.querySelector('img');
+            // Check if matches in watchlist
+            const list = getWatchlist();
+            if (list.length > 0 && img) {
+                const match = list.some(item => item.image_url === img.src);
+                if (match && btn) {
+                    const icon = btn.querySelector('svg');
+                    if (icon) icon.classList.add('fill-rose-500', 'text-rose-500');
+                }
+            }
+        });
     });
 </script>
 {% endblock %}

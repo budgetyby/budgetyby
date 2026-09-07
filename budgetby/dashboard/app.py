@@ -97,13 +97,13 @@ def jinja_time_ago(val):
 def jinja_store_badge(platform):
     plat = (platform or "").lower()
     badges = {
-        "amazon": "bg-amber-500/20 text-amber-300 border border-amber-500/40",
-        "flipkart": "bg-blue-500/20 text-blue-300 border border-blue-500/40",
-        "myntra": "bg-pink-500/20 text-pink-300 border border-pink-500/40",
-        "ajio": "bg-yellow-500/20 text-yellow-300 border border-yellow-500/40",
-        "nykaa": "bg-rose-500/20 text-rose-300 border border-rose-500/40",
+        "amazon": "bg-amber-50 text-amber-900 border border-amber-300 font-bold",
+        "flipkart": "bg-blue-50 text-blue-700 border border-blue-300 font-bold",
+        "myntra": "bg-pink-50 text-pink-700 border border-pink-300 font-bold",
+        "ajio": "bg-yellow-50 text-yellow-800 border border-yellow-300 font-bold",
+        "nykaa": "bg-rose-50 text-rose-700 border border-rose-300 font-bold",
     }
-    return badges.get(plat, "bg-slate-800 text-slate-300 border border-slate-700")
+    return badges.get(plat, "bg-slate-100 text-slate-700 border border-slate-200 font-bold")
 
 def jinja_store_name(platform):
     plat = (platform or "").lower()
