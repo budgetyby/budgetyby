@@ -30,18 +30,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         path = request.url.path
-        if path.startswith("/api/public/stats"):
-            # Stats: counts change slowly, cache 5 min browser-side
-            response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=60"
-        elif path.startswith("/api/public/categories"):
-            # Categories barely change — cache 10 min browser-side
-            response.headers["Cache-Control"] = "public, max-age=600, stale-while-revalidate=120"
-        elif path.startswith("/api/public/price-drops") or path.startswith("/api/public/deals"):
-            # Deals/drops: cache 2 min browser-side — still feels live
-            response.headers["Cache-Control"] = "public, max-age=120, stale-while-revalidate=30"
-        elif path.startswith("/api/public/"):
-            # Other public endpoints: 60s cache
-            response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=30"
+        if path.startswith("/api/public/"):
+            # No browser-side cache — server RAM cache handles egress reduction.
+            # Browser must always ask the server, but server replies from RAM (no DB hit).
+            # This keeps data fresh (within server cache TTL) while eliminating egress.
+            response.headers["Cache-Control"] = "no-cache, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
         elif path.startswith("/api/deal/redirect/"):
             response.headers["Cache-Control"] = "public, max-age=30"
         elif path.startswith("/api/"):
