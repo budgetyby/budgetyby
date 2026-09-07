@@ -1,7 +1,7 @@
 {% extends "consumer/layout.html" %}
 
 {% block title %}BudgetBy — Verified Deals, 24h Price Drops & All-Time Lows | Amazon, Flipkart & More{% endblock %}
-{% block description %}Discover 100% verified deals and price drops across India's top retailers: Amazon, Flipkart, Myntra, Ajio, and Nykaa. Filtered against 30-day price baselines to eliminate fake discounts.{% endblock %}
+{% block description %}Discover 100% verified deals and price drops across India's top retailers: Amazon, Flipkart, Myntra, Ajio, and Nykaa. Filtered against 30, 60 & 120-day median and minimum price baselines.{% endblock %}
 
 {% block content %}
 <main class="w-full">
@@ -18,7 +18,7 @@
                         Never Fall for <span class="text-indigo-600">Fake Discounts</span> Again.
                     </h1>
                     <p class="mt-3 text-sm sm:text-base text-slate-600 leading-relaxed max-w-xl">
-                        BudgetBy continuously tracks over 100,000 product prices across Amazon, Flipkart, Myntra, Ajio, and Nykaa. We calculate genuine savings against true 30-day historical prices.
+                        BudgetBy continuously tracks over 100,000 product prices across Amazon, Flipkart, Myntra, Ajio, and Nykaa. We calculate genuine savings against rolling 30, 60 & 120-day median and minimum price baselines.
                     </p>
 
                     <!-- Fast Quick Filters -->
@@ -80,7 +80,7 @@
                     <h2 class="text-xl sm:text-2xl font-black text-slate-900">24-Hour Price Drops</h2>
                     <span class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold font-mono">LIVE</span>
                 </div>
-                <p class="text-xs text-slate-500 mt-0.5">Products whose prices dropped within the past 24 hours compared to their 30-day baseline.</p>
+                <p class="text-xs text-slate-500 mt-0.5">Products whose prices dropped within the past 24 hours compared to their 30, 60 & 120-day historical baseline.</p>
             </div>
             <a href="/drops" class="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 shrink-0">
                 <span>View All Drops</span>
@@ -136,6 +136,13 @@
                                 {{ deal.title }}
                             </a>
                         </div>
+
+                        <!-- Posted on Channel Date & Time Badge -->
+                        <div class="flex items-center gap-1.5 text-[10px] text-slate-600 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200 mt-2 font-medium">
+                            <i data-lucide="send" class="w-3 h-3 text-indigo-500 shrink-0"></i>
+                            <span>Posted on Channel:</span>
+                            <span class="font-bold text-slate-900 font-mono ml-auto">{{ (deal.posted_at or deal.deal_time or deal.last_checked)|format_posted_time }}</span>
+                        </div>
                     </div>
 
                     <!-- Price & Action Footer -->
@@ -184,7 +191,7 @@
         <div class="text-center max-w-2xl mx-auto mb-8">
             <h2 class="text-2xl sm:text-3xl font-black text-slate-900">How BudgetBy Protects You from Fake Discounts</h2>
             <p class="text-xs sm:text-sm text-slate-600 mt-2">
-                Online stores frequently inflate MRPs right before a sale to make fake discounts look huge. Here is how our automated algorithm guarantees authenticity:
+                Online stores frequently inflate MRPs right before a sale to make fake discounts look huge. Here is how our automated multi-window verification guarantees authenticity:
             </p>
         </div>
 
@@ -206,9 +213,9 @@
                 <div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center text-xl font-bold mb-4">
                     2
                 </div>
-                <h3 class="text-base font-bold text-slate-900 mb-2">30-Day Baseline Verification</h3>
+                <h3 class="text-base font-bold text-slate-900 mb-2">30, 60 & 120-Day Baseline Verification</h3>
                 <p class="text-xs text-slate-600 leading-relaxed">
-                    Every claimed discount is checked against the rolling 30-day median price. If a seller bumped their price yesterday to advertise a "50% drop" today, we flag or discard it.
+                    Every claimed discount is checked against 30, 60, and 120-day rolling median prices as well as historical minimum prices. If a seller bumped their price yesterday to advertise a fake 50% drop, our algorithm flags or discards it.
                 </p>
             </div>
 
@@ -296,6 +303,13 @@
                             </div>
                             {% endif %}
                         </div>
+
+                        <!-- Posted on Channel Date & Time Badge -->
+                        <div class="flex items-center gap-1.5 text-[10px] text-slate-600 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200 mt-2 font-medium">
+                            <i data-lucide="send" class="w-3 h-3 text-indigo-500 shrink-0"></i>
+                            <span>Posted on Channel:</span>
+                            <span class="font-bold text-slate-900 font-mono ml-auto">{{ (deal.posted_at or deal.deal_time or deal.last_checked)|format_posted_time }}</span>
+                        </div>
                     </div>
 
                     <!-- Price & Action Footer -->
@@ -350,7 +364,7 @@
                     <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
                 </summary>
                 <p class="text-xs text-slate-600 mt-3 leading-relaxed">
-                    We log price changes every 30 to 60 minutes. When a deal is posted, we calculate the discount against the product's 30-day median price, not just the seller's claimed MRP. If the seller raised the price just before the sale, our algorithm rejects the fake discount.
+                    We log price changes continuously. When a deal is posted, we calculate the discount against the product's 30, 60, and 120-day rolling median prices as well as its historical minimum recorded price, not just the seller's claimed MRP. If the seller raised the price just before the sale, our multi-tier baseline algorithm rejects the fake discount.
                 </p>
             </details>
 
@@ -418,7 +432,6 @@
     }
 
     function handleHomeWatchlist(btn, id) {
-        // Find deal from initial array or DOM
         const card = btn.closest('[class*="group"]');
         if (!card) return;
         
@@ -426,6 +439,7 @@
         const priceEl = card.querySelector('.font-mono.font-black');
         const imgEl = card.querySelector('img');
         const linkEl = card.querySelector('a[href*="http"], a[href^="/"]');
+        const postedEl = card.querySelector('.font-mono.ml-auto');
         
         const deal = {
             id: id,
@@ -433,6 +447,7 @@
             current_price: priceEl ? parseInt(priceEl.innerText.replace(/[^0-9]/g, '')) : 0,
             image_url: imgEl ? imgEl.src : '',
             affiliate_url: linkEl ? linkEl.href : window.location.href,
+            posted_at: postedEl ? postedEl.innerText : '',
             platform: 'amazon'
         };
 
@@ -448,13 +463,13 @@
     }
 
     function handleHomeShare(id) {
-        // Build deal object for modal
         const card = event.target.closest('[class*="group"]');
         if (!card) return;
         const titleEl = card.querySelector('a[title]');
         const priceEl = card.querySelector('.font-mono.font-black');
         const imgEl = card.querySelector('img');
         const linkEl = card.querySelector('a[href*="http"], a[href^="/"]');
+        const postedEl = card.querySelector('.font-mono.ml-auto');
 
         const deal = {
             id: id,
@@ -462,6 +477,7 @@
             current_price: priceEl ? parseInt(priceEl.innerText.replace(/[^0-9]/g, '')) : 0,
             image_url: imgEl ? imgEl.src : '',
             affiliate_url: linkEl ? linkEl.href : window.location.href,
+            posted_at: postedEl ? postedEl.innerText : '',
             platform: 'amazon'
         };
         openShareModal(deal);
@@ -469,11 +485,9 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         loadHomeMetrics();
-        // Sync watchlist hearts
         document.querySelectorAll('#homeDropsCarousel [class*="group"], #homeFeaturedGrid [class*="group"]').forEach(card => {
             const btn = card.querySelector('button[title="Save to Watchlist"]');
             const img = card.querySelector('img');
-            // Check if matches in watchlist
             const list = getWatchlist();
             if (list.length > 0 && img) {
                 const match = list.some(item => item.image_url === img.src);

@@ -122,11 +122,27 @@ def jinja_round_int(val):
     except Exception:
         return 0
 
+def jinja_format_posted_time(val):
+    if not val:
+        return "Recently posted"
+    try:
+        if isinstance(val, str):
+            val = datetime.datetime.fromisoformat(val.replace("Z", "+00:00"))
+        ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+        if hasattr(val, "astimezone"):
+            val_ist = val.astimezone(ist)
+        else:
+            val_ist = val
+        return val_ist.strftime("%d %b, %I:%M %p")
+    except Exception:
+        return "Recently posted"
+
 templates.env.filters["format_inr"] = jinja_format_inr
 templates.env.filters["time_ago"] = jinja_time_ago
 templates.env.filters["store_badge"] = jinja_store_badge
 templates.env.filters["store_name"] = jinja_store_name
 templates.env.filters["round_int"] = jinja_round_int
+templates.env.filters["format_posted_time"] = jinja_format_posted_time
 
 ADMIN_TEMPLATE_PATH = os.path.join(TEMPLATES_DIR, "index.html")
 EXPLORER_TEMPLATE_PATH = os.path.join(TEMPLATES_DIR, "explorer.html")
@@ -1643,7 +1659,8 @@ async def get_public_price_drops(
                 "affiliate_url": aff_url,
                 "rating": round(float(r["rating"]), 1) if r["rating"] is not None and 1.0 <= float(r["rating"]) <= 5.0 else None,
                 "review_count": int(r["review_count"]) if r.get("review_count") and int(r["review_count"]) > 0 else None,
-                "last_price_change": r["last_price_change"].isoformat() if hasattr(r["last_price_change"], "isoformat") else str(r["last_price_change"]) if r["last_price_change"] else None
+                "last_price_change": r["last_price_change"].isoformat() if hasattr(r["last_price_change"], "isoformat") else str(r["last_price_change"]) if r["last_price_change"] else None,
+                "posted_at": r["last_price_change"].isoformat() if hasattr(r["last_price_change"], "isoformat") else str(r["last_price_change"]) if r.get("last_price_change") else None
             })
 
         result = {

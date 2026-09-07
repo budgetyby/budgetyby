@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}BudgetBy — Verified Deals & Live Price Drops | Amazon, Flipkart & More{% endblock %}</title>
-    <meta name="description" content="{% block description %}Discover verified deals, 24-hour price drops, and promotional discounts across Amazon, Flipkart, Myntra, Ajio, and Nykaa. Zero fake discounts.{% endblock %}">
+    <meta name="description" content="{% block description %}Discover verified deals, 24-hour price drops, and promotional discounts across Amazon, Flipkart, Myntra, Ajio, and Nykaa. Filtered against 30, 60 & 120-day median and minimum price baselines.{% endblock %}">
     <meta property="og:title" content="BudgetBy — India's Independent Price Tracker & Deal Discovery">
     <meta property="og:description" content="Real price drops & verified deals across India's top online stores.">
     <meta property="og:type" content="website">
@@ -70,9 +70,9 @@
     <!-- ── Top Global Alert & Transparency Ticker ────────────────────────── -->
     <aside aria-label="Announcement" class="bg-slate-900 text-xs py-2 px-4 text-center text-slate-200 flex items-center justify-center gap-2">
         <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 font-bold text-[10px] tracking-wide border border-emerald-500/30">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Live Deals
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Live Channel Radar
         </span>
-        <span class="truncate">Verified discounts tracked against 30-day price baselines on Amazon, Flipkart, Myntra, Ajio & Nykaa.</span>
+        <span class="truncate">Verified discounts tracked against 30, 60 & 120-day median and minimum price baselines on Amazon, Flipkart, Myntra, Ajio & Nykaa.</span>
         <a href="https://t.me/DealPulse_Deals" target="_blank" rel="noopener noreferrer" class="hidden sm:inline-flex items-center text-emerald-400 hover:text-emerald-300 font-bold underline underline-offset-2 ml-1">
             Join Telegram Channel ↗
         </a>
@@ -216,7 +216,7 @@
             <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 px-2">
                 <span class="flex items-center gap-1 font-semibold text-emerald-600">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Continuous Price Tracking
+                    Continuous Channel Sync
                 </span>
                 <a href="https://t.me/DealPulse_Deals" target="_blank" rel="noopener noreferrer" class="text-indigo-600 font-bold">Telegram Alerts ↗</a>
             </div>
@@ -241,9 +241,9 @@
                         <i data-lucide="shield-check" class="w-5 h-5"></i>
                     </div>
                     <div>
-                        <h2 class="font-bold text-white text-sm">Verified Discounts Only</h2>
+                        <h2 class="font-bold text-white text-sm">30, 60 & 120-Day Baseline Audit</h2>
                         <p class="text-slate-400 text-xs mt-1 leading-relaxed">
-                            Every price drop is verified against 30-day historical medians to eliminate fake marked-up discounts.
+                            Every price drop is verified against 30-day, 60-day, and 120-day rolling medians and historical minimum prices to eliminate fake marked-up discounts.
                         </p>
                     </div>
                 </div>
@@ -342,7 +342,7 @@
             <div>
                 <h3 class="font-bold text-white text-xs uppercase tracking-wider mb-3">Price Methodology</h3>
                 <p class="text-slate-400 text-xs leading-relaxed mb-3">
-                    BudgetBy calculates genuine savings against the lowest rolling 30-day price, rather than manufacturer MRP which is often inflated by marketplace sellers.
+                    BudgetBy calculates genuine savings against rolling 30, 60 & 120-day median prices and all-time minimum historical baselines, rather than manufacturer MRP which is often inflated by marketplace sellers.
                 </p>
                 <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400">
                     <span class="text-emerald-400 font-bold block mb-0.5">● Real-Time Sync</span>
@@ -497,6 +497,24 @@
             }
         }
 
+        // Exact Date and Time Posted helper (e.g. "07 Sep, 02:45 PM")
+        function formatPostedDateTime(dateStr) {
+            if (!dateStr) return 'Recently posted';
+            try {
+                const dt = new Date(dateStr);
+                if (isNaN(dt.getTime())) return 'Recently posted';
+                return dt.toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                });
+            } catch (e) {
+                return 'Recently posted';
+            }
+        }
+
         // Web Audio Synthesizer Chime
         function playDealChime() {
             try {
@@ -597,6 +615,7 @@
                     platform: product.platform,
                     image_url: product.image_url,
                     affiliate_url: product.affiliate_url || product.product_url,
+                    posted_at: product.posted_at || product.deal_time || product.last_checked,
                     saved_at: new Date().toISOString()
                 });
                 added = true;
@@ -637,6 +656,7 @@
 
             container.innerHTML = list.map(item => {
                 const storeCfg = STORES[item.platform?.toLowerCase()] || STORES.amazon;
+                const postedTimeStr = formatPostedDateTime(item.posted_at || item.saved_at);
                 return `
                     <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex gap-3 items-center justify-between group">
                         <div class="w-14 h-14 rounded-lg bg-white p-1 flex items-center justify-center shrink-0 border border-slate-200 overflow-hidden">
@@ -653,6 +673,7 @@
                                 <span class="text-sm font-black text-slate-900 font-mono">${formatINR(item.current_price)}</span>
                                 ${item.mrp && item.mrp > item.current_price ? `<span class="text-[11px] text-slate-400 line-through font-mono">${formatINR(item.mrp)}</span>` : ''}
                             </div>
+                            <div class="text-[10px] text-slate-500 font-mono mt-0.5">📢 ${postedTimeStr}</div>
                         </div>
                         <div class="flex flex-col items-end gap-1.5">
                             <button onclick="removeWatchlistItem('${item.id}')" class="text-slate-400 hover:text-rose-600 p-1 transition" title="Remove">
@@ -707,6 +728,7 @@
             const container = document.getElementById('shareModalContent');
             const storeCfg = STORES[deal.platform?.toLowerCase()] || STORES.amazon;
             const dealUrl = deal.affiliate_url || deal.product_url || window.location.href;
+            const postedTimeStr = formatPostedDateTime(deal.posted_at || deal.deal_time || deal.last_checked);
             
             container.innerHTML = `
                 <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex gap-3 items-center mb-3">
@@ -717,12 +739,13 @@
                         <span class="px-1.5 py-0.2 rounded text-[9px] font-bold ${storeCfg.badge}">${storeCfg.name}</span>
                         <div class="font-bold text-slate-900 truncate mt-0.5">${escapeHtml(deal.title)}</div>
                         <div class="font-black text-emerald-700 font-mono text-sm">${formatINR(deal.current_price)}</div>
+                        <div class="text-[10px] text-slate-500 mt-0.5">📢 Posted on Channel: ${postedTimeStr}</div>
                     </div>
                 </div>
             `;
 
             // Setup WhatsApp link
-            const waText = encodeURIComponent(`🔥 Check out this verified deal on BudgetBy:
+            const waText = encodeURIComponent(`🔥 Check out this verified deal on BudgetBy (Posted: ${postedTimeStr}):
 ${deal.title}
 💰 Deal Price: ${formatINR(deal.current_price)}
 🔗 Link: ${dealUrl}`);
@@ -848,6 +871,7 @@ ${deal.title}
                 list.innerHTML = deals.map(d => {
                     const storeCfg = STORES[d.platform?.toLowerCase()] || STORES.amazon;
                     const link = d.affiliate_url || d.product_url || `/deals?search=${encodeURIComponent(query)}`;
+                    const postedTimeStr = formatPostedDateTime(d.posted_at || d.deal_time || d.last_checked);
                     return `
                         <a href="${link}" target="_blank" rel="noopener noreferrer" class="p-2.5 flex items-center gap-3 hover:bg-slate-50 transition group">
                             <div class="w-10 h-10 rounded-lg bg-white p-1 flex items-center justify-center border border-slate-200 shrink-0">
@@ -856,6 +880,7 @@ ${deal.title}
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-1.5 mb-0.5">
                                     <span class="px-1.5 py-0.2 rounded text-[9px] font-bold ${storeCfg.badge}">${storeCfg.name}</span>
+                                    <span class="text-[10px] text-slate-400 font-mono">📢 ${postedTimeStr}</span>
                                 </div>
                                 <div class="font-bold text-slate-900 truncate group-hover:text-indigo-600 transition">${escapeHtml(d.title)}</div>
                             </div>
