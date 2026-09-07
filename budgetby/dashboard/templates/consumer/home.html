@@ -651,7 +651,7 @@
 
     async function loadHomeDrops(isBackground = false) {
         try {
-            const res = await fetch(`/api/public/price-drops?limit=12&_t=${Date.now()}`, { cache: 'no-store' });
+            const res = await fetch(`/api/public/price-drops?limit=12`);
             if (!res.ok) return;
             const data = await res.json();
             const drops = data.drops || [];
@@ -684,7 +684,7 @@
 
     async function loadHomeFeatured(isBackground = false) {
         try {
-            const res = await fetch(`/api/public/deals?min_discount=30&limit=12&_t=${Date.now()}`, { cache: 'no-store' });
+            const res = await fetch(`/api/public/deals?min_discount=30&limit=12`);
             if (!res.ok) return;
             const data = await res.json();
             const deals = data.deals || [];
@@ -702,7 +702,7 @@
 
     async function loadHomeMetrics() {
         try {
-            const res = await fetch(`/api/public/stats?_t=${Date.now()}`, { cache: 'no-store' });
+            const res = await fetch(`/api/public/stats`);
             const data = await res.json();
             if (data.total_tracked) {
                 const el = document.getElementById('heroTrackedCount');
@@ -718,14 +718,20 @@
     function startHomeAutoRefresh() {
         if (homeAutoRefreshTimer) clearInterval(homeAutoRefreshTimer);
         const settings = window.getUserSettings ? window.getUserSettings() : null;
-        const intervalSec = (settings && settings.syncInterval !== undefined) ? settings.syncInterval : 20;
+        const intervalSec = (settings && settings.syncInterval !== undefined) ? settings.syncInterval : 120;
         if (intervalSec <= 0) return;
 
+        let _homeCycleCount = 0;
         homeAutoRefreshTimer = setInterval(() => {
             if (!document.hidden) {
                 loadHomeDrops(true);
                 loadHomeFeatured(true);
-                loadHomeMetrics();
+                // Only refresh metrics (heavy COUNT queries) every 5 min (every 2–5 cycles depending on interval)
+                _homeCycleCount++;
+                const metricsEveryN = Math.max(1, Math.ceil(300 / Math.max(intervalSec, 60)));
+                if (_homeCycleCount % metricsEveryN === 0) {
+                    loadHomeMetrics();
+                }
             }
         }, intervalSec * 1000);
     }

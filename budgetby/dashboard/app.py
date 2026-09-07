@@ -30,12 +30,25 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         path = request.url.path
-        if path.startswith("/api/public/") or path.startswith("/api/"):
+        if path.startswith("/api/public/stats"):
+            # Stats: counts change slowly, cache 5 min browser-side
+            response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=60"
+        elif path.startswith("/api/public/categories"):
+            # Categories barely change — cache 10 min browser-side
+            response.headers["Cache-Control"] = "public, max-age=600, stale-while-revalidate=120"
+        elif path.startswith("/api/public/price-drops") or path.startswith("/api/public/deals"):
+            # Deals/drops: cache 2 min browser-side — still feels live
+            response.headers["Cache-Control"] = "public, max-age=120, stale-while-revalidate=30"
+        elif path.startswith("/api/public/"):
+            # Other public endpoints: 60s cache
+            response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=30"
+        elif path.startswith("/api/deal/redirect/"):
+            response.headers["Cache-Control"] = "public, max-age=30"
+        elif path.startswith("/api/"):
+            # Admin/internal: never cache
             response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
-        elif path.startswith("/api/deal/redirect/"):
-            response.headers["Cache-Control"] = "public, max-age=30"
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)
@@ -1083,7 +1096,7 @@ async def search_products(
             d = dict(r)
             d["affiliate_url"] = resolve_deal_button_url(d.get("platform"), None, d.get("affiliate_url"), d.get("product_url"), product_id=d.get("id"))
             res.append(d)
-        await ram_cache.set(cache_key, res, ttl=60)
+        await ram_cache.set(cache_key, res, ttl=300)  # 5 min — search results stable
         return res
     except Exception as e:
         logger.error(f"Search error: {e}")
@@ -1164,7 +1177,7 @@ async def get_public_stats():
             "platforms": ["Amazon", "Flipkart", "Myntra", "Ajio", "Nykaa"],
             "status": "live"
         }
-        await ram_cache.set("public_stats", result, ttl=10)
+        await ram_cache.set("public_stats", result, ttl=300)  # 5 min — stats change slowly
         return result
     except Exception as e:
         logger.error(f"Error in get_public_stats: {e}", exc_info=True)
@@ -1219,7 +1232,7 @@ async def get_public_categories():
             LIMIT 25;
         """)
         res = [dict(r) for r in rows]
-        await ram_cache.set("public_categories", res, ttl=300)
+        await ram_cache.set("public_categories", res, ttl=1800)  # 30 min — categories barely change
         return res
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -1672,7 +1685,7 @@ async def get_public_price_drops(
             "min_drop_pct": min_drop_pct,
             "drops": drops
         }
-        await ram_cache.set(cache_key, result, ttl=10)
+        await ram_cache.set(cache_key, result, ttl=120)  # 2 min — synced with HTTP Cache-Control
         return result
     except Exception as e:
         logger.error(f"Error in get_public_price_drops: {e}", exc_info=True)
@@ -2248,7 +2261,7 @@ async def get_public_deals(
             "search_query": search_clean,
             "deals": deals
         }
-        await ram_cache.set(cache_key, result, ttl=10)
+        await ram_cache.set(cache_key, result, ttl=120)  # 2 min — synced with HTTP Cache-Control
         return result
     except Exception as e:
         logger.error(f"Error in get_public_deals: {e}", exc_info=True)

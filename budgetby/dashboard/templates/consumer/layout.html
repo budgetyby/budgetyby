@@ -514,9 +514,9 @@
                     <label class="font-bold text-slate-800 block mb-1">Live Deal Sync Frequency</label>
                     <p class="text-slate-500 text-[11px] mb-2">How often BudgetBy refreshes price drops in background.</p>
                     <select id="prefSyncInterval" onchange="updateSyncInterval(this.value)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-mono">
-                        <option value="15">Every 15 seconds (High Frequency)</option>
-                        <option value="30" selected>Every 30 seconds (Recommended)</option>
                         <option value="60">Every 60 seconds</option>
+                        <option value="120" selected>Every 2 minutes (Recommended)</option>
+                        <option value="300">Every 5 minutes (Low Data)</option>
                         <option value="0">Manual Refresh Only</option>
                     </select>
                 </div>
@@ -615,9 +615,9 @@
         function getUserSettings() {
             try {
                 const saved = localStorage.getItem('budgetby_user_settings');
-                return saved ? JSON.parse(saved) : { syncInterval: 30, soundEnabled: true };
+                return saved ? JSON.parse(saved) : { syncInterval: 120, soundEnabled: true };
             } catch(e) {
-                return { syncInterval: 30, soundEnabled: true };
+                return { syncInterval: 120, soundEnabled: true };
             }
         }
         function saveUserSettings(settings) {
@@ -1048,7 +1048,7 @@ ${deal.title}
                     clearTimeout(searchDebounceTimer);
                     searchDebounceTimer = setTimeout(async () => {
                         try {
-                            const res = await fetch(`/api/public/deals?search=${encodeURIComponent(q)}&limit=5&_t=${Date.now()}`, { cache: 'no-store' });
+                            const res = await fetch(`/api/public/deals?search=${encodeURIComponent(q)}&limit=5`);
                             const data = await res.json();
                             const deals = data.deals || data.items || [];
                             renderSearchSuggestions(deals, q);

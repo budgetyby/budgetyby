@@ -395,7 +395,7 @@
             if (dealsState.maxPrice > 0) params.append('max_price', dealsState.maxPrice);
 
             params.append('_t', Date.now());
-            const res = await fetch(`/api/public/deals?${params.toString()}`, { cache: 'no-store' });
+            const res = await fetch(`/api/public/deals?${params.toString()}`);
             const data = await res.json();
 
             dealsState.items = (data.deals || data.items || []).map(d => ({
