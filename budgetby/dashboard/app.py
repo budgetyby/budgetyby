@@ -1168,7 +1168,7 @@ UNIVERSAL_CATEGORIES = {
         "keywords": ["face wash", "sunscreen", "face serum", "moisturizer", "perfume", "shampoo", "lipstick", "body lotion", "deodorant", "hair oil"],
         "subcategories": {
             "sunscreen": {"name": "Sunscreen & SPF 50", "icon": "☀️", "keywords": ["sunscreen", "sun block", "spf 50", "spf 30", "sun screen"], "image": "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=500&auto=format&fit=crop&q=80"},
-            "facewash": {"name": "Face Wash & Cleansers", "icon": "🧼", "keywords": ["face wash", "facewash", "cleanser", "face scrub", "foaming face wash"], "image": "https://images.unsplash.com/photo-1556228722-d0b714578b88?w=500&auto=format&fit=crop&q=80"},
+            "facewash": {"name": "Face Wash & Cleansers", "icon": "🧼", "keywords": ["face wash", "facewash", "cleanser", "face scrub", "foaming face wash"], "image": "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=500&auto=format&fit=crop&q=80"},
             "serum": {"name": "Serums & Face Oils", "icon": "💧", "keywords": ["face serum", "niacinamide serum", "salicylic acid", "vitamin c serum", "retinol serum"], "image": "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=500&auto=format&fit=crop&q=80"},
             "moisturizer": {"name": "Moisturizers & Creams", "icon": "🧴", "keywords": ["moisturizer", "moisturising cream", "body lotion", "night cream", "day cream"], "image": "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=500&auto=format&fit=crop&q=80"},
             "perfume": {"name": "Perfumes & Deos", "icon": "🌸", "keywords": ["perfume", "eau de parfum", "deodorant", "body spray", "body mist", "attar"], "image": "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=500&auto=format&fit=crop&q=80"},
@@ -1193,7 +1193,7 @@ UNIVERSAL_CATEGORIES = {
             "earbuds": {"name": "TWS Earbuds", "icon": "🎧", "keywords": ["earbuds", "tws", "airbuds", "airdopes", "wireless earbuds", "true wireless"], "image": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500&auto=format&fit=crop&q=80"},
             "headphones": {"name": "Headphones & Neckbands", "icon": "🎧", "keywords": ["headphone", "headphones", "neckband", "earphones", "wired earphones", "over ear"], "image": "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=500&auto=format&fit=crop&q=80"},
             "speakers": {"name": "Bluetooth Speakers", "icon": "🔊", "keywords": ["bluetooth speaker", "soundbar", "party speaker", "portable speaker", "audio speaker"], "image": "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=500&auto=format&fit=crop&q=80"},
-            "powerbanks": {"name": "Power Banks & Fast Chargers", "icon": "🔋", "keywords": ["power bank", "powerbank", "fast charger", "type-c charger", "charging cable", "usb adapter"], "image": "https://images.unsplash.com/photo-1609592807664-9b5a2bf4eec8?w=500&auto=format&fit=crop&q=80"},
+            "powerbanks": {"name": "Power Banks & Fast Chargers", "icon": "🔋", "keywords": ["power bank", "powerbank", "fast charger", "type-c charger", "charging cable", "usb adapter"], "image": "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=500&auto=format&fit=crop&q=80"},
             "smartphones": {"name": "Smartphones", "icon": "📱", "keywords": ["smartphone", "mobile phone", "android phone", "iphone", "5g phone"], "image": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500&auto=format&fit=crop&q=80"},
             "laptops": {"name": "Laptops & Computing", "icon": "💻", "keywords": ["laptop", "notebook pc", "wireless mouse", "mechanical keyboard", "pen drive", "tablet pc"], "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500&auto=format&fit=crop&q=80"}
         }
@@ -1212,7 +1212,7 @@ UNIVERSAL_CATEGORIES = {
         "keywords": ["water bottle", "lunch box", "frying pan", "cookware", "storage container", "dustbin", "bedsheet", "curtain", "electric kettle"],
         "subcategories": {
             "bottles": {"name": "Bottles & Lunch Boxes", "icon": "🍶", "keywords": ["water bottle", "flask bottle", "insulated bottle", "lunch box", "sipper bottle", "stainless steel bottle"], "image": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=600&auto=format&fit=crop&q=80"},
-            "cookware": {"name": "Cookware & Pans", "icon": "🍳", "keywords": ["cookware set", "frying pan", "kadhai", "tawa pan", "pressure cooker", "non stick pan", "triply"], "image": "https://images.unsplash.com/photo-1584990347449-399e8d1a1200?w=500&auto=format&fit=crop&q=80"},
+            "cookware": {"name": "Cookware & Pans", "icon": "🍳", "keywords": ["cookware set", "frying pan", "kadhai", "tawa pan", "pressure cooker", "non stick pan", "triply"], "image": "https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?w=500&auto=format&fit=crop&q=80"},
             "storage": {"name": "Storage Containers", "icon": "📦", "keywords": ["storage container", "airtight jar", "spice rack", "kitchen organizer", "storage box", "food container"], "image": "https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=600&auto=format&fit=crop&q=80"},
             "cleaning": {"name": "Cleaning & Dustbins", "icon": "🧹", "keywords": ["dustbin", "garbage bin", "spin mop", "cleaning broom", "cleaning wiper", "trash can"], "image": "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=500&auto=format&fit=crop&q=80"},
             "bedding": {"name": "Bedsheets & Curtains", "icon": "🛏️", "keywords": ["bedsheet", "bed cover", "window curtain", "door curtain", "pillow cover", "bath towel", "cotton blanket"], "image": "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=500&auto=format&fit=crop&q=80"},
@@ -2389,10 +2389,9 @@ async def get_public_deals(
                 if cat in ("miscellaneous", "other", "general", "misc", "more", "null", "none"):
                     cat_clauses.append("(p.category IS NULL OR LOWER(p.category) IN ('miscellaneous', 'other', 'general', 'misc', 'more', 'none', '') OR p.category = '')")
                 elif cat_info:
-                    # Match by category aliases OR unambiguous keyword phrases in title
+                    # Match ONLY on the p.category column — DB is accurately categorized, no ILIKE title scans
                     sub_aliases = [f"LOWER(p.category) = '{a}'" for a in cat_info["aliases"]]
-                    kw_clauses = [f"p.title ILIKE '%{kw}%'" for kw in cat_info.get("keywords", [])[:8]]
-                    combined = " OR ".join(sub_aliases + kw_clauses)
+                    combined = " OR ".join(sub_aliases)
                     cat_clauses.append(f"({combined})")
                 else:
                     cat_clauses.append(f"LOWER(p.category) = ${arg_idx}")
@@ -2484,7 +2483,7 @@ async def get_public_deals(
                     d.posted_at as deal_time,
                     0 as relevance_score,
                     COUNT(*) OVER() as total_matches,
-                    COUNT(d.id) OVER() as verified_matches
+                    COUNT(*) OVER() as verified_matches
                 FROM deals d
                 JOIN products p ON d.product_id = p.id
                 {where_sql}
@@ -2560,7 +2559,7 @@ async def get_public_deals(
                     COALESCE(d.posted_at, p.last_price_change, p.created_at) as deal_time,
                     {relevance_select},
                     COUNT(*) OVER() as total_matches,
-                    COUNT(d.id) OVER() as verified_matches
+                    SUM(CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) OVER() as verified_matches
                 FROM products p
                 LEFT JOIN deals d ON d.product_id = p.id
                 {where_sql}
@@ -2658,7 +2657,10 @@ async def get_public_deals(
             "search_query": search_clean,
             "deals": deals
         }
-        await ram_cache.set(cache_key, result, ttl=30)  # 30s RAM cache ensures fresh Telegram deals appear within 30s
+        # Search queries expire fast (30s) so keyword results stay fresh.
+        # Category/browse pages cache for 180s — products don't change every 30s.
+        cache_ttl = 30 if search_clean else 180
+        await ram_cache.set(cache_key, result, ttl=cache_ttl)
         return result
     except Exception as e:
         logger.error(f"Error in get_public_deals: {e}", exc_info=True)
@@ -2675,17 +2677,21 @@ STORE_DISPLAY_NAMES = {
     "nykaa": "Nykaa"
 }
 
-def render_consumer_template(template_name: str, request: Request, context: dict = None):
+def render_consumer_template(template_name: str, request: Request, context: dict = None, cache_seconds: int = 60):
     if context is None:
         context = {}
     context["request"] = request
     context["categories_taxonomy"] = UNIVERSAL_CATEGORIES
     try:
-        return templates.TemplateResponse(request=request, name=template_name, context=context)
+        response = templates.TemplateResponse(request=request, name=template_name, context=context)
+        response.headers["Cache-Control"] = f"public, max-age={cache_seconds}, stale-while-revalidate=30"
+        return response
     except TypeError:
         # Fallback for older Starlette signature: TemplateResponse(name, context)
         try:
-            return templates.TemplateResponse(template_name, context)
+            response = templates.TemplateResponse(template_name, context)
+            response.headers["Cache-Control"] = f"public, max-age={cache_seconds}, stale-while-revalidate=30"
+            return response
         except Exception as e:
             logger.error(f"Fallback render error for {template_name}: {e}", exc_info=True)
             import traceback
@@ -2726,7 +2732,7 @@ async def page_home(request: Request):
         "just_dropped": just_dropped,
         "atl_mini": atl_mini,
         "initial_stats": initial_stats
-    })
+    }, cache_seconds=30)
 
 @app.get("/drops", response_class=HTMLResponse)
 @app.get("/price-drops", response_class=HTMLResponse)
