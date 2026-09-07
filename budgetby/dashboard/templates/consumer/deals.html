@@ -1,15 +1,15 @@
 {% extends "consumer/layout.html" %}
 
-{% block title %}All Deals & Price Catalog — BudgetBy{% endblock %}
+{% block title %}All Deals & Verified Price Catalog — BudgetBy{% endblock %}
 {% block description %}Search and filter verified deals across Amazon, Flipkart, Myntra, Ajio, and Nykaa with live price verification and historical baselines.{% endblock %}
 
 {% block content %}
 <main class="w-full">
     <!-- ── Deals Catalog Container ──────────────────────────────────────── -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-4 pb-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-6 pb-16">
         
         <!-- Breadcrumbs & Quick Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-4 border-b border-slate-800/80">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-4 border-b border-slate-800">
             <div>
                 <nav class="flex items-center gap-2 text-xs text-slate-400 mb-1" aria-label="Breadcrumb">
                     <a href="/" class="hover:text-white transition flex items-center gap-1">
@@ -25,9 +25,9 @@
                     </span>
                 </nav>
                 <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-                    Verified Deals & Catalog Feed
-                    <span id="dealsLivePill" class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 font-mono hidden sm:inline">
-                        Live Sync
+                    Verified Deals Catalog
+                    <span id="dealsLivePill" class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-mono hidden sm:inline">
+                        ● 24/7 Verified
                     </span>
                 </h1>
             </div>
@@ -45,14 +45,14 @@
         <!-- ── Main 2-Column Layout (Faceted Sidebar + Products Grid) ──────── -->
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
             
-            <!-- ── Left Column: Amazon & Flipkart Style Faceted Filter Bar ─── -->
-            <aside id="facetSidebar" class="hidden lg:block lg:col-span-1 bg-[#090d16]/90 border border-slate-800/90 rounded-3xl p-5 sticky top-24 z-20 shadow-xl space-y-6">
+            <!-- ── Left Column: Faceted Filter Bar ──────────────────────────── -->
+            <aside id="facetSidebar" class="hidden lg:block lg:col-span-1 bg-slate-900 border border-slate-800 rounded-3xl p-5 sticky top-24 z-20 shadow-lg space-y-6">
                 
                 <!-- Filter Header & Reset -->
-                <div class="flex items-center justify-between pb-3 border-b border-slate-800/80">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800">
                     <div class="flex items-center gap-2">
                         <i data-lucide="sliders-horizontal" class="w-4 h-4 text-indigo-400"></i>
-                        <span class="text-xs font-black uppercase tracking-wider text-white">Filters</span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-white">Filters</span>
                     </div>
                     <button onclick="resetAllDealsFilters()" class="text-[11px] font-bold text-rose-400 hover:text-rose-300 transition">
                         Reset All
@@ -78,40 +78,40 @@
                 <div>
                     <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">Stores</label>
                     <div class="space-y-1.5">
-                        <label class="flex items-center justify-between text-xs text-slate-300 hover:text-white p-1.5 rounded-xl hover:bg-slate-900/60 cursor-pointer transition">
+                        <label class="flex items-center justify-between text-xs text-slate-300 hover:text-white p-1.5 rounded-xl hover:bg-slate-850 cursor-pointer transition">
                             <div class="flex items-center gap-2">
-                                <input type="checkbox" value="amazon" onchange="applyFilterChange()" class="store-facet-cb rounded border-slate-700 text-indigo-600 focus:ring-0 focus:ring-offset-0 bg-slate-900">
+                                <input type="checkbox" value="amazon" onchange="applyFilterChange()" class="store-facet-cb rounded border-slate-700 text-indigo-600 focus:ring-0 bg-slate-950">
                                 <span class="font-semibold text-slate-200">Amazon India</span>
                             </div>
-                            <span class="w-2 h-2 rounded-full bg-[#FF9900]"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#FF9900]"></span>
                         </label>
-                        <label class="flex items-center justify-between text-xs text-slate-300 hover:text-white p-1.5 rounded-xl hover:bg-slate-900/60 cursor-pointer transition">
+                        <label class="flex items-center justify-between text-xs text-slate-300 hover:text-white p-1.5 rounded-xl hover:bg-slate-850 cursor-pointer transition">
                             <div class="flex items-center gap-2">
-                                <input type="checkbox" value="flipkart" onchange="applyFilterChange()" class="store-facet-cb rounded border-slate-700 text-indigo-600 focus:ring-0 focus:ring-offset-0 bg-slate-900">
+                                <input type="checkbox" value="flipkart" onchange="applyFilterChange()" class="store-facet-cb rounded border-slate-700 text-indigo-600 focus:ring-0 bg-slate-950">
                                 <span class="font-semibold text-slate-200">Flipkart</span>
                             </div>
-                            <span class="w-2 h-2 rounded-full bg-[#2874F0]"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#2874F0]"></span>
                         </label>
-                        <label class="flex items-center justify-between text-xs text-slate-300 hover:text-white p-1.5 rounded-xl hover:bg-slate-900/60 cursor-pointer transition">
+                        <label class="flex items-center justify-between text-xs text-slate-300 hover:text-white p-1.5 rounded-xl hover:bg-slate-850 cursor-pointer transition">
                             <div class="flex items-center gap-2">
-                                <input type="checkbox" value="myntra" onchange="applyFilterChange()" class="store-facet-cb rounded border-slate-700 text-indigo-600 focus:ring-0 focus:ring-offset-0 bg-slate-900">
+                                <input type="checkbox" value="myntra" onchange="applyFilterChange()" class="store-facet-cb rounded border-slate-700 text-indigo-600 focus:ring-0 bg-slate-950">
                                 <span class="font-semibold text-slate-200">Myntra</span>
                             </div>
-                            <span class="w-2 h-2 rounded-full bg-[#FF3F6C]"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#FF3F6C]"></span>
                         </label>
-                        <label class="flex items-center justify-between text-xs text-slate-300 hover:text-white p-1.5 rounded-xl hover:bg-slate-900/60 cursor-pointer transition">
+                        <label class="flex items-center justify-between text-xs text-slate-300 hover:text-white p-1.5 rounded-xl hover:bg-slate-850 cursor-pointer transition">
                             <div class="flex items-center gap-2">
-                                <input type="checkbox" value="ajio" onchange="applyFilterChange()" class="store-facet-cb rounded border-slate-700 text-indigo-600 focus:ring-0 focus:ring-offset-0 bg-slate-900">
+                                <input type="checkbox" value="ajio" onchange="applyFilterChange()" class="store-facet-cb rounded border-slate-700 text-indigo-600 focus:ring-0 bg-slate-950">
                                 <span class="font-semibold text-slate-200">Ajio</span>
                             </div>
-                            <span class="w-2 h-2 rounded-full bg-[#D99814]"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#D99814]"></span>
                         </label>
-                        <label class="flex items-center justify-between text-xs text-slate-300 hover:text-white p-1.5 rounded-xl hover:bg-slate-900/60 cursor-pointer transition">
+                        <label class="flex items-center justify-between text-xs text-slate-300 hover:text-white p-1.5 rounded-xl hover:bg-slate-850 cursor-pointer transition">
                             <div class="flex items-center gap-2">
-                                <input type="checkbox" value="nykaa" onchange="applyFilterChange()" class="store-facet-cb rounded border-slate-700 text-indigo-600 focus:ring-0 focus:ring-offset-0 bg-slate-900">
+                                <input type="checkbox" value="nykaa" onchange="applyFilterChange()" class="store-facet-cb rounded border-slate-700 text-indigo-600 focus:ring-0 bg-slate-950">
                                 <span class="font-semibold text-slate-200">Nykaa</span>
                             </div>
-                            <span class="w-2 h-2 rounded-full bg-[#FC2779]"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#FC2779]"></span>
                         </label>
                     </div>
                 </div>
@@ -129,7 +129,7 @@
                     </select>
                 </div>
 
-                <!-- 4. Price Range Facet (Min/Max inputs + Brackets) -->
+                <!-- 4. Price Range Facet -->
                 <div>
                     <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Price (₹)</label>
                     <div class="grid grid-cols-2 gap-2 mb-2.5">
@@ -142,17 +142,17 @@
                             <input type="number" id="facetMaxPrice" placeholder="Max" class="w-full pl-6 pr-2 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono" />
                         </div>
                     </div>
-                    <button onclick="applyFilterChange()" class="w-full py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition">
+                    <button onclick="applyFilterChange()" class="w-full py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-bold transition">
                         Apply Price
                     </button>
 
                     <!-- Quick Price Brackets -->
                     <div class="mt-2.5 space-y-1 text-xs text-slate-400">
-                        <button onclick="setQuickPrice(0, 499)" class="w-full text-left p-1.5 rounded-lg hover:bg-slate-900 hover:text-white transition">Under ₹499</button>
-                        <button onclick="setQuickPrice(500, 999)" class="w-full text-left p-1.5 rounded-lg hover:bg-slate-900 hover:text-white transition">₹500 - ₹999</button>
-                        <button onclick="setQuickPrice(1000, 2499)" class="w-full text-left p-1.5 rounded-lg hover:bg-slate-900 hover:text-white transition">₹1,000 - ₹2,499</button>
-                        <button onclick="setQuickPrice(2500, 4999)" class="w-full text-left p-1.5 rounded-lg hover:bg-slate-900 hover:text-white transition">₹2,500 - ₹4,999</button>
-                        <button onclick="setQuickPrice(5000, 0)" class="w-full text-left p-1.5 rounded-lg hover:bg-slate-900 hover:text-white transition">₹5,000 & Above</button>
+                        <button onclick="setQuickPrice(0, 499)" class="w-full text-left p-1.5 rounded-lg hover:bg-slate-800 hover:text-white transition">Under ₹499</button>
+                        <button onclick="setQuickPrice(500, 999)" class="w-full text-left p-1.5 rounded-lg hover:bg-slate-800 hover:text-white transition">₹500 - ₹999</button>
+                        <button onclick="setQuickPrice(1000, 2499)" class="w-full text-left p-1.5 rounded-lg hover:bg-slate-800 hover:text-white transition">₹1,000 - ₹2,499</button>
+                        <button onclick="setQuickPrice(2500, 4999)" class="w-full text-left p-1.5 rounded-lg hover:bg-slate-800 hover:text-white transition">₹2,500 - ₹4,999</button>
+                        <button onclick="setQuickPrice(5000, 0)" class="w-full text-left p-1.5 rounded-lg hover:bg-slate-800 hover:text-white transition">₹5,000 & Above</button>
                     </div>
                 </div>
 
@@ -160,7 +160,7 @@
                 <div>
                     <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Minimum Discount</label>
                     <div class="grid grid-cols-3 gap-1.5 text-[11px]">
-                        <button onclick="setMinDiscount(0)" id="discBtn0" class="disc-pill py-1.5 rounded-lg bg-indigo-600 text-white font-extrabold transition">All</button>
+                        <button onclick="setMinDiscount(0)" id="discBtn0" class="disc-pill py-1.5 rounded-lg bg-indigo-600 text-white font-bold transition">All</button>
                         <button onclick="setMinDiscount(30)" id="discBtn30" class="disc-pill py-1.5 rounded-lg bg-slate-950 hover:bg-slate-850 text-slate-300 border border-slate-800 transition">30%+</button>
                         <button onclick="setMinDiscount(50)" id="discBtn50" class="disc-pill py-1.5 rounded-lg bg-slate-950 hover:bg-slate-850 text-slate-300 border border-slate-800 transition">50%+</button>
                         <button onclick="setMinDiscount(60)" id="discBtn60" class="disc-pill py-1.5 rounded-lg bg-slate-950 hover:bg-slate-850 text-slate-300 border border-slate-800 transition">60%+</button>
@@ -170,7 +170,7 @@
                 </div>
 
                 <!-- 6. Verified Deals Only Toggle -->
-                <div class="pt-2 border-t border-slate-800/80">
+                <div class="pt-2 border-t border-slate-800">
                     <label class="flex items-center justify-between cursor-pointer">
                         <div class="text-xs">
                             <div class="font-bold text-white flex items-center gap-1.5">
@@ -179,7 +179,7 @@
                             </div>
                             <div class="text-[10px] text-slate-400">Verified price check active</div>
                         </div>
-                        <input type="checkbox" id="facetVerifiedOnly" checked onchange="applyFilterChange()" class="rounded border-slate-700 text-emerald-500 focus:ring-0 bg-slate-900" />
+                        <input type="checkbox" id="facetVerifiedOnly" checked onchange="applyFilterChange()" class="rounded border-slate-700 text-emerald-500 focus:ring-0 bg-slate-950" />
                     </label>
                 </div>
             </aside>
@@ -189,7 +189,7 @@
                 
                 <!-- Floating Toast for New Deals (when user scrolled down) -->
                 <div id="newDealsToast" class="fixed top-24 left-1/2 -translate-x-1/2 z-40 hidden">
-                    <button onclick="applyNewDeals()" class="px-4 py-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black shadow-2xl border border-indigo-400 flex items-center gap-2 transition hover:scale-105 active:scale-95 animate-pulse cursor-pointer">
+                    <button onclick="applyNewDeals()" class="px-4 py-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xl border border-indigo-400 flex items-center gap-2 transition hover:scale-105 active:scale-95 animate-pulse cursor-pointer">
                         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
                         <span>⚡ Fresh verified deals arrived!</span>
                         <span class="underline ml-1">View Latest ↑</span>
@@ -197,7 +197,7 @@
                 </div>
 
                 <!-- Control Strip: Active Filter Tags & Sort Bar -->
-                <div class="bg-[#090d16]/90 border border-slate-800/80 rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
                     <!-- Left: Result Count & Active Filter Tags -->
                     <div class="flex items-center gap-2 flex-wrap">
                         <div class="text-xs text-slate-400 font-mono">
@@ -217,7 +217,7 @@
                             <span id="liveRefreshLabel">Live (30s)</span>
                         </button>
                         <label for="dealsSortSelect" class="text-xs text-slate-400 font-semibold hidden sm:inline">Sort:</label>
-                        <select id="dealsSortSelect" onchange="onDealsSortChange(this.value)" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition">
+                        <select id="dealsSortSelect" onchange="onDealsSortChange(this.value)" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition">
                             <option value="latest" {% if current_sort == 'latest' %}selected{% endif %}>Most Recently Verified</option>
                             <option value="discount" {% if current_sort == 'discount' %}selected{% endif %}>Highest Discount %</option>
                             <option value="price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
@@ -230,38 +230,38 @@
                 <!-- Quick Filter Pills -->
                 <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
                     <span class="text-[11px] font-bold text-slate-400 shrink-0 uppercase tracking-wider">Quick:</span>
-                    <button onclick="setQuickPrice(0, 499)" class="px-3 py-1 rounded-full text-[11px] font-semibold bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 shrink-0 transition">Under ₹499</button>
-                    <button onclick="setQuickPrice(0, 999)" class="px-3 py-1 rounded-full text-[11px] font-semibold bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 shrink-0 transition">Under ₹999</button>
-                    <button onclick="setQuickPrice(0, 1999)" class="px-3 py-1 rounded-full text-[11px] font-semibold bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 shrink-0 transition">Under ₹1,999</button>
-                    <button onclick="setMinDiscount(40)" class="px-3 py-1 rounded-full text-[11px] font-semibold bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 shrink-0 transition">40%+ Off</button>
-                    <button onclick="setMinDiscount(60)" class="px-3 py-1 rounded-full text-[11px] font-semibold bg-slate-900/90 hover:bg-slate-800 text-emerald-300 border border-emerald-500/30 shrink-0 transition">60%+ Off</button>
-                    <button onclick="setMinDiscount(75)" class="px-3 py-1 rounded-full text-[11px] font-semibold bg-slate-900/90 hover:bg-slate-800 text-rose-300 border border-rose-500/30 shrink-0 transition">🔥 75%+ Off</button>
+                    <button onclick="setQuickPrice(0, 499)" class="px-3 py-1 rounded-full text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 shrink-0 transition">Under ₹499</button>
+                    <button onclick="setQuickPrice(0, 999)" class="px-3 py-1 rounded-full text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 shrink-0 transition">Under ₹999</button>
+                    <button onclick="setQuickPrice(0, 1999)" class="px-3 py-1 rounded-full text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 shrink-0 transition">Under ₹1,999</button>
+                    <button onclick="setMinDiscount(40)" class="px-3 py-1 rounded-full text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 shrink-0 transition">40%+ Off</button>
+                    <button onclick="setMinDiscount(60)" class="px-3 py-1 rounded-full text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-emerald-500/30 shrink-0 transition">60%+ Off</button>
+                    <button onclick="setMinDiscount(75)" class="px-3 py-1 rounded-full text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-rose-300 border border-rose-500/30 shrink-0 transition">🔥 75%+ Off</button>
                 </div>
 
                 <!-- Products Grid -->
                 <div id="dealsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 transition-opacity duration-200">
                     {% if initial_data and initial_data.deals %}
                         {% for deal in initial_data.deals %}
-                        <div data-deal-id="{{ deal.product_id or deal.id }}" class="bg-[#0c101c]/95 border border-slate-800/80 hover:border-slate-700/90 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative hover:shadow-xl hover:shadow-indigo-950/20">
+                        <div data-deal-id="{{ deal.product_id or deal.id }}" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative">
                             <div>
                                 <!-- Store Badge & Discount Meta -->
                                 <div class="flex items-center justify-between gap-2 mb-2">
-                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider {{ deal.platform|store_badge }}">
+                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider {{ deal.platform|store_badge }}">
                                         {{ deal.platform|store_name }}
                                     </span>
                                     {% if deal.drop_pct and deal.drop_pct >= 10 %}
-                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono">
+                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-600 text-white font-mono">
                                         📉 -{{ deal.drop_pct|round_int }}% DROP
                                     </span>
                                     {% elif deal.discount_pct and deal.discount_pct > 0 %}
-                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
+                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 text-white font-mono">
                                         {{ deal.discount_pct|round_int }}% OFF
                                     </span>
                                     {% endif %}
                                 </div>
 
                                 <!-- Image Area -->
-                                <div class="relative w-full h-44 rounded-xl bg-[#090d16] p-2 flex items-center justify-center overflow-hidden border border-slate-800/60 group-hover:border-slate-700 transition">
+                                <div class="relative w-full h-44 rounded-xl bg-white p-2 flex items-center justify-center overflow-hidden border border-slate-800">
                                     <img src="{{ deal.image_url or '/static/placeholder.png' }}" 
                                          alt="{{ deal.title }}" 
                                          class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
@@ -276,7 +276,7 @@
                                     </button>
 
                                     <!-- Freshness Pill -->
-                                    <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800/80 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
+                                    <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
                                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                                         <span>Verified {{ deal.last_checked|time_ago }}</span>
                                     </div>
@@ -303,7 +303,7 @@
                             </div>
 
                             <!-- Price & Action Footer -->
-                            <div class="mt-3 pt-3 border-t border-slate-800/80">
+                            <div class="mt-3 pt-3 border-t border-slate-800">
                                 <div class="flex items-baseline justify-between gap-1 mb-2">
                                     <div>
                                         {% set cp = deal.current_price or deal.deal_price or 0 %}
@@ -313,7 +313,7 @@
                                         {% endif %}
                                     </div>
                                     {% if deal.mrp and deal.mrp > cp %}
-                                    <div class="text-[10px] font-extrabold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60 font-mono">
+                                    <div class="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60 font-mono">
                                         Save {{ (deal.mrp - cp)|format_inr }}
                                     </div>
                                     {% endif %}
@@ -322,13 +322,13 @@
                                 <!-- Card Buttons -->
                                 <div class="flex items-center gap-1.5">
                                     <button onclick="handleDealsCardShare({{ deal.product_id or deal.id }})" 
-                                            class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition shrink-0" 
+                                            class="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition shrink-0" 
                                             title="Share Deal">
                                         <i data-lucide="share-2" class="w-4 h-4 text-cyan-400"></i>
                                     </button>
                                     <a href="{{ deal.affiliate_url or deal.product_url or '#' }}" target="_blank" rel="noopener noreferrer" 
-                                       class="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-lg shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98] transition">
-                                        <span>Grab Deal</span>
+                                       class="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-sm transition">
+                                        <span>Check Deal on {{ deal.platform|store_name }}</span>
                                         <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
                                     </a>
                                 </div>
@@ -339,7 +339,7 @@
                 </div>
 
                 <!-- Empty State -->
-                <div id="dealsEmptyState" class="{% if initial_data and initial_data.deals and initial_data.deals|length > 0 %}hidden{% endif %} text-center py-20 px-4 bg-[#090d16]/60 border border-slate-800/80 rounded-3xl">
+                <div id="dealsEmptyState" class="{% if initial_data and initial_data.deals and initial_data.deals|length > 0 %}hidden{% endif %} text-center py-20 px-4 bg-slate-900/60 border border-slate-800 rounded-3xl">
                     <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-3xl mx-auto mb-4">
                         🛍️
                     </div>
@@ -353,7 +353,7 @@
                 </div>
 
                 <!-- Pagination Strip -->
-                <div id="dealsPaginationStrip" class="{% if not initial_data or not initial_data.deals or initial_data.deals|length == 0 %}hidden{% endif %} mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-[#090d16]/80 border border-slate-800/80">
+                <div id="dealsPaginationStrip" class="{% if not initial_data or not initial_data.deals or initial_data.deals|length == 0 %}hidden{% endif %} mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900 border border-slate-800">
                     <div class="text-xs text-slate-400">
                         Page <span id="dealsPageNum" class="font-bold text-white">{{ initial_data.page if initial_data and initial_data.page else 1 }}</span> of <span id="dealsTotalPageNum" class="font-bold text-white">{{ initial_data.total_pages if initial_data and initial_data.total_pages else 1 }}</span>
                     </div>
@@ -362,7 +362,7 @@
                         <button onclick="changeDealsPage(-1)" id="dealsPrevBtn" {% if not initial_data or initial_data.page <= 1 %}disabled{% endif %} class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none text-slate-200 transition">
                             ← Previous
                         </button>
-                        <button onclick="changeDealsPage(1)" id="dealsNextBtn" {% if not initial_data or initial_data.page >= initial_data.total_pages %}disabled{% endif %} class="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:pointer-events-none text-white transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/30">
+                        <button onclick="changeDealsPage(1)" id="dealsNextBtn" {% if not initial_data or initial_data.page >= initial_data.total_pages %}disabled{% endif %} class="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:pointer-events-none text-white transition flex items-center gap-1.5 shadow-sm">
                             <span>Next Page</span>
                             <span>→</span>
                         </button>
@@ -376,7 +376,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script id="initial-deals-data" type="application/json">{{ initial_data|tojson|safe }}</script>
+<script id="initial-deals-data" type="application/json">{{ (initial_data or {})|tojson|safe }}</script>
 <script>
     const dealsState = {
         page: {{ current_page if current_page else 1 }},
@@ -472,7 +472,7 @@
                         }
                     });
                     renderActiveFilterTags();
-                    lucide.createIcons();
+                    if (window.lucide) lucide.createIcons();
                     usedInitial = true;
                 }
             } catch (e) {
@@ -594,12 +594,10 @@
                 if (currentFirstId !== newFirstId || countChanged) {
                     dealsState.lastTotalCount = totalCount;
 
-                    // Play audio chime alert if user enabled sound
                     if (window.isSoundAlertEnabled && window.isSoundAlertEnabled()) {
                         window.playDealChime && window.playDealChime();
                     }
 
-                    // Native browser notification if enabled
                     const userPref = window.getUserSettings ? window.getUserSettings() : null;
                     if (userPref && userPref.desktopNotify && ("Notification" in window) && Notification.permission === 'granted') {
                         try {
@@ -609,13 +607,11 @@
                         } catch(e) {}
                     }
 
-                    // If user is near top of page, seamlessly update
                     if (window.scrollY < 380) {
                         dealsState.items = incomingItems;
                         dealsState.totalPages = data.total_pages || 1;
                         document.getElementById('dealsTotalFound').innerText = totalCount.toLocaleString('en-IN');
                         renderDealsCards(dealsState.items);
-                        // Flash the live dot to cyan briefly
                         const dot = document.getElementById('liveRefreshDot');
                         if (dot) {
                             dot.classList.remove('bg-emerald-400');
@@ -626,7 +622,6 @@
                             }, 1200);
                         }
                     } else {
-                        // User has scrolled down, show floating toast
                         pendingNewDealsData = {
                             items: incomingItems,
                             totalPages: data.total_pages || 1,
@@ -712,26 +707,26 @@
             ` : '';
 
             return `
-                <div class="bg-[#0c101c]/95 border border-slate-800/80 hover:border-slate-700/90 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative hover:shadow-xl hover:shadow-indigo-950/20">
+                <div class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative">
                     <div>
                         <!-- Store Badge & Discount Meta -->
                         <div class="flex items-center justify-between gap-2 mb-2">
-                            <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider ${storeCfg.badge}">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${storeCfg.badge}">
                                 ${storeCfg.name}
                             </span>
                             ${dropPct >= 10 ? `
-                                <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono">
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-600 text-white font-mono">
                                     📉 -${dropPct}% DROP
                                 </span>
                             ` : (discPct > 0 ? `
-                                <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 text-white font-mono">
                                     ${discPct}% OFF
                                 </span>
                             ` : '')}
                         </div>
 
                         <!-- Image Area -->
-                        <div class="relative w-full h-44 rounded-xl bg-[#090d16] p-2 flex items-center justify-center overflow-hidden border border-slate-800/60 group-hover:border-slate-700 transition">
+                        <div class="relative w-full h-44 rounded-xl bg-white p-2 flex items-center justify-center overflow-hidden border border-slate-800">
                             <img src="${deal.image_url || '/static/placeholder.png'}" 
                                  alt="${safeTitle}" 
                                  class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
@@ -746,7 +741,7 @@
                             </button>
 
                             <!-- Freshness Pill -->
-                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800/80 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
+                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                                 <span>Verified ${verifiedAgo}</span>
                             </div>
@@ -764,7 +759,7 @@
                     </div>
 
                     <!-- Price & Action Footer -->
-                    <div class="mt-3 pt-3 border-t border-slate-800/80">
+                    <div class="mt-3 pt-3 border-t border-slate-800">
                         <div class="flex items-baseline justify-between gap-1 mb-2">
                             <div>
                                 <span class="text-lg font-black text-white font-mono">${formatINR(deal.current_price)}</span>
@@ -772,23 +767,25 @@
                                     <span class="text-xs text-slate-500 line-through ml-1.5 font-mono">${formatINR(deal.mrp)}</span>
                                 ` : ''}
                             </div>
+                            {% raw %}
                             ${deal.mrp && deal.mrp > deal.current_price ? `
-                                <div class="text-[10px] font-extrabold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60 font-mono">
+                                <div class="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60 font-mono">
                                     Save ${formatINR(Math.round(deal.mrp - deal.current_price))}
                                 </div>
                             ` : ''}
+                            {% endraw %}
                         </div>
 
                         <!-- Card Buttons -->
                         <div class="flex items-center gap-1.5">
                             <button onclick="handleDealsCardShare(${deal.id})" 
-                                    class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition shrink-0" 
+                                    class="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition shrink-0" 
                                     title="Share Deal">
                                 <i data-lucide="share-2" class="w-4 h-4 text-cyan-400"></i>
                             </button>
                             <a href="${dealLink}" target="_blank" rel="noopener noreferrer" 
-                               class="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-lg shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98] transition">
-                                <span>Get Deal</span>
+                               class="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-sm transition">
+                                <span>Check Deal on ${storeCfg.name}</span>
                                 <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
                             </a>
                         </div>
@@ -797,7 +794,7 @@
             `;
         }).join('');
 
-        lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
     }
 
     function toggleMobileFilters() {
@@ -805,10 +802,10 @@
         if (!sb) return;
         if (sb.classList.contains('hidden')) {
             sb.classList.remove('hidden');
-            sb.classList.add('fixed', 'inset-x-3', 'top-16', 'bottom-4', 'z-50', 'overflow-y-auto', 'bg-[#090d16]', 'p-6', 'border', 'border-indigo-500/50', 'shadow-2xl');
+            sb.classList.add('fixed', 'inset-x-3', 'top-16', 'bottom-4', 'z-50', 'overflow-y-auto', 'bg-slate-900', 'p-6', 'border', 'border-indigo-500/50', 'shadow-2xl');
         } else {
             sb.classList.add('hidden');
-            sb.classList.remove('fixed', 'inset-x-3', 'top-16', 'bottom-4', 'z-50', 'overflow-y-auto', 'bg-[#090d16]', 'p-6', 'border', 'border-indigo-500/50', 'shadow-2xl');
+            sb.classList.remove('fixed', 'inset-x-3', 'top-16', 'bottom-4', 'z-50', 'overflow-y-auto', 'bg-slate-900', 'p-6', 'border', 'border-indigo-500/50', 'shadow-2xl');
         }
     }
 
@@ -866,7 +863,6 @@
         }
     }
 
-
     function applyFilterChange() {
         dealsState.search = document.getElementById('facetSearchInput').value.trim();
         dealsState.category = document.getElementById('facetCategorySelect').value;
@@ -874,7 +870,6 @@
         dealsState.maxPrice = parseFloat(document.getElementById('facetMaxPrice').value) || 0;
         dealsState.verifiedOnly = document.getElementById('facetVerifiedOnly').checked;
 
-        // Selected stores
         const checkedStores = Array.from(document.querySelectorAll('.store-facet-cb:checked')).map(cb => cb.value);
         dealsState.platform = checkedStores.length === 1 ? checkedStores[0] : (checkedStores.length > 1 ? checkedStores.join(',') : '');
 
@@ -895,7 +890,7 @@
         });
         const activeBtn = document.getElementById(`discBtn${pct}`);
         if (activeBtn) {
-            activeBtn.className = 'disc-pill py-1.5 rounded-lg bg-indigo-600 text-white font-extrabold transition';
+            activeBtn.className = 'disc-pill py-1.5 rounded-lg bg-indigo-600 text-white font-bold transition';
         }
         dealsState.page = 1;
         loadDeals();

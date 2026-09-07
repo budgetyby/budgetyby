@@ -18,12 +18,12 @@
             </span>
         </nav>
 
-        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-950/40 via-slate-900/90 to-indigo-950/30 border border-amber-500/30 p-6 sm:p-8 shadow-2xl">
+        <div class="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-6 sm:p-8 shadow-xl">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
                 <div class="max-w-2xl">
-                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 text-amber-400 font-extrabold text-[11px] tracking-wider uppercase border border-amber-500/30 mb-3">
-                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-                        HISTORICAL ROCK-BOTTOM PRICING
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 text-amber-400 font-bold text-[11px] tracking-wide uppercase border border-amber-500/30 mb-3">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                        Historical Rock-Bottom Pricing
                     </div>
                     <h1 class="text-2xl sm:text-4xl font-black tracking-tight text-white leading-tight">
                         All-Time Low Deals
@@ -35,17 +35,17 @@
 
                 <!-- Header Stats Summary -->
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 shrink-0">
-                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 text-center min-w-[110px]">
-                        <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Active ATLs</div>
+                    <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3.5 text-center min-w-[110px]">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active ATLs</div>
                         <div id="statAtlTotal" class="text-xl sm:text-2xl font-black text-amber-400 font-mono mt-0.5">{{ initial_data.total_matches if initial_data and initial_data.total_matches else '--' }}</div>
                     </div>
-                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 text-center min-w-[110px]">
-                        <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Avg Savings</div>
+                    <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3.5 text-center min-w-[110px]">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Avg Savings</div>
                         <div id="statAtlAvgSavings" class="text-xl sm:text-2xl font-black text-emerald-400 font-mono mt-0.5">--%</div>
                     </div>
-                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 text-center min-w-[110px] col-span-2 sm:col-span-1">
-                        <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Guarantee</div>
-                        <div class="text-xs font-black text-amber-300 font-mono mt-2">Zero Fake Sales</div>
+                    <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3.5 text-center min-w-[110px] col-span-2 sm:col-span-1">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Verification</div>
+                        <div class="text-xs font-bold text-emerald-400 font-mono mt-2">Zero Fake Sales</div>
                     </div>
                 </div>
             </div>
@@ -53,28 +53,28 @@
     </section>
 
     <!-- ── Filter & Navigation Bar ───────────────────────────────────────── -->
-    <section class="w-full sticky top-16 z-30 bg-[#070a11]/95 backdrop-blur-xl border-b border-slate-800/80 shadow-lg">
+    <section class="w-full sticky top-16 z-30 bg-[#0B0F19]/95 backdrop-blur-md border-b border-slate-800 shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <!-- Store Selector Pills -->
                 <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                     <span class="text-xs font-bold text-slate-400 mr-1 hidden sm:inline">Store:</span>
-                    <button onclick="setAtlStore('')" id="storePillAll" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-600 text-slate-950 transition font-mono">
+                    <button onclick="setAtlStoreFilter('')" id="atlStoreAll" class="atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-600 text-slate-950 transition font-mono">
                         All Stores
                     </button>
-                    <button onclick="setAtlStore('amazon')" id="storePillAmazon" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                    <button onclick="setAtlStoreFilter('amazon')" id="atlStoreAmazon" class="atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
                         <span class="text-[#FF9900]">Amazon</span>
                     </button>
-                    <button onclick="setAtlStore('flipkart')" id="storePillFlipkart" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                    <button onclick="setAtlStoreFilter('flipkart')" id="atlStoreFlipkart" class="atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
                         <span class="text-[#2874F0]">Flipkart</span>
                     </button>
-                    <button onclick="setAtlStore('myntra')" id="storePillMyntra" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                    <button onclick="setAtlStoreFilter('myntra')" id="atlStoreMyntra" class="atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
                         <span class="text-[#FF3F6C]">Myntra</span>
                     </button>
-                    <button onclick="setAtlStore('ajio')" id="storePillAjio" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                    <button onclick="setAtlStoreFilter('ajio')" id="atlStoreAjio" class="atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
                         <span class="text-[#D99814]">Ajio</span>
                     </button>
-                    <button onclick="setAtlStore('nykaa')" id="storePillNykaa" class="store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
+                    <button onclick="setAtlStoreFilter('nykaa')" id="atlStoreNykaa" class="atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
                         <span class="text-[#FC2779]">Nykaa</span>
                     </button>
                 </div>
@@ -106,20 +106,20 @@
         <div id="atlGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 transition-opacity duration-200">
             {% if initial_data and initial_data.deals %}
                 {% for deal in initial_data.deals %}
-                <div data-deal-id="{{ deal.product_id or deal.id }}" class="bg-[#0c101c]/95 border border-amber-500/30 hover:border-amber-400/60 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative hover:shadow-xl hover:shadow-amber-950/20">
+                <div data-deal-id="{{ deal.product_id or deal.id }}" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative">
                     <div>
                         <!-- Top Badges -->
                         <div class="flex items-center justify-between gap-2 mb-2">
-                            <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider {{ deal.platform|store_badge }}">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider {{ deal.platform|store_badge }}">
                                 {{ deal.platform|store_name }}
                             </span>
-                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono flex items-center gap-1 shadow-sm">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono flex items-center gap-1">
                                 👑 ALL-TIME LOW
                             </span>
                         </div>
 
                         <!-- Product Image Area -->
-                        <div class="relative w-full h-44 rounded-xl bg-[#090d16] p-2 flex items-center justify-center overflow-hidden border border-slate-800/60 group-hover:border-slate-700 transition">
+                        <div class="relative w-full h-44 rounded-xl bg-white p-2 flex items-center justify-center overflow-hidden border border-slate-800">
                             <img src="{{ deal.image_url or '/static/placeholder.png' }}" 
                                  alt="{{ deal.title }}" 
                                  class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
@@ -134,7 +134,7 @@
                             </button>
 
                             <!-- Freshness Pill -->
-                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800/80 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
+                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                                 <span>Verified {{ deal.last_checked|time_ago }}</span>
                             </div>
@@ -161,17 +161,17 @@
                     </div>
 
                     <!-- Price & Action Footer -->
-                    <div class="mt-3 pt-3 border-t border-slate-800/80">
+                    <div class="mt-3 pt-3 border-t border-slate-800">
                         <div class="flex items-baseline justify-between gap-1 mb-2">
                             <div>
                                 {% set cp = deal.current_price or deal.deal_price or 0 %}
-                                <span class="text-lg font-black text-amber-400 font-mono">{{ cp|format_inr }}</span>
+                                <span class="text-lg font-black text-white font-mono">{{ cp|format_inr }}</span>
                                 {% if deal.mrp and deal.mrp > cp %}
                                 <span class="text-xs text-slate-500 line-through ml-1.5 font-mono">{{ deal.mrp|format_inr }}</span>
                                 {% endif %}
                             </div>
                             {% if deal.discount_pct and deal.discount_pct > 0 %}
-                            <div class="text-[10px] font-extrabold text-amber-300 bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-800/60 font-mono">
+                            <div class="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60 font-mono">
                                 {{ deal.discount_pct|round_int }}% OFF
                             </div>
                             {% endif %}
@@ -180,13 +180,13 @@
                         <!-- Card Action Buttons Row -->
                         <div class="flex items-center gap-1.5">
                             <button onclick="handleAtlCardShare({{ deal.product_id or deal.id }})" 
-                                    class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition shrink-0" 
+                                    class="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition shrink-0" 
                                     title="Share Deal">
                                 <i data-lucide="share-2" class="w-4 h-4 text-cyan-400"></i>
                             </button>
                             <a href="{{ deal.affiliate_url or deal.product_url or '#' }}" target="_blank" rel="noopener noreferrer" 
-                               class="flex-1 py-2 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 text-xs font-extrabold flex items-center justify-center gap-1 shadow-lg shadow-amber-600/30 hover:scale-[1.02] active:scale-[0.98] transition">
-                                <span>Get ATL Deal</span>
+                               class="flex-1 py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold flex items-center justify-center gap-1 shadow-sm transition">
+                                <span>Check Deal on {{ deal.platform|store_name }}</span>
                                 <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
                             </a>
                         </div>
@@ -197,7 +197,7 @@
         </div>
 
         <!-- Empty State -->
-        <div id="atlEmptyState" class="{% if initial_data and initial_data.deals and initial_data.deals|length > 0 %}hidden{% endif %} text-center py-16 px-4 bg-[#090d16]/60 border border-slate-800/80 rounded-3xl">
+        <div id="atlEmptyState" class="{% if initial_data and initial_data.deals and initial_data.deals|length > 0 %}hidden{% endif %} text-center py-16 px-4 bg-slate-900/60 border border-slate-800 rounded-3xl">
             <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-3xl mx-auto mb-4">
                 👑
             </div>
@@ -211,7 +211,7 @@
         </div>
 
         <!-- Pagination Controls -->
-        <div id="atlPaginationBar" class="{% if not initial_data or not initial_data.deals or initial_data.deals|length == 0 %}hidden{% endif %} mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80">
+        <div id="atlPaginationBar" class="{% if not initial_data or not initial_data.deals or initial_data.deals|length == 0 %}hidden{% endif %} mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900 border border-slate-800">
             <div class="text-xs text-slate-400">
                 Page <span id="atlCurrentPage" class="font-bold text-white">{{ initial_data.page if initial_data and initial_data.page else 1 }}</span> of <span id="atlTotalPages" class="font-bold text-white">{{ initial_data.total_pages if initial_data and initial_data.total_pages else 1 }}</span>
             </div>
@@ -220,7 +220,7 @@
                 <button onclick="changeAtlPage(-1)" id="atlPrevBtn" {% if not initial_data or initial_data.page <= 1 %}disabled{% endif %} class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none text-slate-200 transition">
                     ← Previous
                 </button>
-                <button onclick="changeAtlPage(1)" id="atlNextBtn" {% if not initial_data or initial_data.page >= initial_data.total_pages %}disabled{% endif %} class="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:pointer-events-none text-white transition flex items-center gap-1.5 shadow-lg shadow-amber-600/30">
+                <button onclick="changeAtlPage(1)" id="atlNextBtn" {% if not initial_data or initial_data.page >= initial_data.total_pages %}disabled{% endif %} class="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:pointer-events-none text-slate-950 transition flex items-center gap-1.5 shadow-sm">
                     <span>Next Page</span>
                     <span>→</span>
                 </button>
@@ -231,7 +231,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script id="initial-atl-data" type="application/json">{{ initial_data|tojson|safe }}</script>
+<script id="initial-atl-data" type="application/json">{{ (initial_data or {})|tojson|safe }}</script>
 <script>
     const atlState = {
         page: {{ current_page if current_page else 1 }},
@@ -293,7 +293,7 @@
                         if (avgElem) avgElem.innerText = `${avg}%`;
                     }
 
-                    lucide.createIcons();
+                    if (window.lucide) lucide.createIcons();
                     usedInitial = true;
                 }
             } catch (e) {
@@ -425,20 +425,20 @@
             ` : '';
 
             return `
-                <div class="bg-[#0c101c]/95 border border-amber-500/30 hover:border-amber-400/60 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative hover:shadow-xl hover:shadow-amber-950/20">
+                <div class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative">
                     <div>
                         <!-- Top Badges -->
                         <div class="flex items-center justify-between gap-2 mb-2">
-                            <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider ${storeCfg.badge}">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${storeCfg.badge}">
                                 ${storeCfg.name}
                             </span>
-                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono flex items-center gap-1 shadow-sm">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono flex items-center gap-1">
                                 👑 ALL-TIME LOW
                             </span>
                         </div>
 
                         <!-- Product Image Area -->
-                        <div class="relative w-full h-44 rounded-xl bg-[#090d16] p-2 flex items-center justify-center overflow-hidden border border-slate-800/60 group-hover:border-slate-700 transition">
+                        <div class="relative w-full h-44 rounded-xl bg-white p-2 flex items-center justify-center overflow-hidden border border-slate-800">
                             <img src="${deal.image_url || '/static/placeholder.png'}" 
                                  alt="${safeTitle}" 
                                  class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
@@ -453,7 +453,7 @@
                             </button>
 
                             <!-- Freshness Pill -->
-                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800/80 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
+                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                                 <span>Verified ${verifiedAgo}</span>
                             </div>
@@ -471,31 +471,33 @@
                     </div>
 
                     <!-- Price & Action Footer -->
-                    <div class="mt-3 pt-3 border-t border-slate-800/80">
+                    <div class="mt-3 pt-3 border-t border-slate-800">
                         <div class="flex items-baseline justify-between gap-1 mb-2">
                             <div>
-                                <span class="text-lg font-black text-amber-400 font-mono">${formatINR(deal.current_price)}</span>
+                                <span class="text-lg font-black text-white font-mono">${formatINR(deal.current_price)}</span>
                                 ${deal.mrp && deal.mrp > deal.current_price ? `
                                     <span class="text-xs text-slate-500 line-through ml-1.5 font-mono">${formatINR(deal.mrp)}</span>
                                 ` : ''}
                             </div>
+                            {% raw %}
                             ${discPct > 0 ? `
-                                <div class="text-[10px] font-extrabold text-amber-300 bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-800/60 font-mono">
+                                <div class="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60 font-mono">
                                     ${discPct}% OFF
                                 </div>
                             ` : ''}
+                            {% endraw %}
                         </div>
 
                         <!-- Card Action Buttons Row -->
                         <div class="flex items-center gap-1.5">
                             <button onclick="handleAtlCardShare(${deal.id})" 
-                                    class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition shrink-0" 
+                                    class="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition shrink-0" 
                                     title="Share Deal">
                                 <i data-lucide="share-2" class="w-4 h-4 text-cyan-400"></i>
                             </button>
                             <a href="${buyUrl}" target="_blank" rel="noopener noreferrer" 
-                               class="flex-1 py-2 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 text-xs font-extrabold flex items-center justify-center gap-1 shadow-lg shadow-amber-600/30 hover:scale-[1.02] active:scale-[0.98] transition">
-                                <span>Get ATL Deal</span>
+                               class="flex-1 py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold flex items-center justify-center gap-1 shadow-sm transition">
+                                <span>Check Deal on ${storeCfg.name}</span>
                                 <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
                             </a>
                         </div>
@@ -504,19 +506,19 @@
             `;
         }).join('');
 
-        lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
     }
 
     function setAtlStoreFilter(store) {
         atlState.store = store;
         atlState.page = 1;
         document.querySelectorAll('.atl-store-pill').forEach(btn => {
-            btn.className = 'atl-store-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition';
+            btn.className = 'atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition';
         });
         const activeId = store ? `atlStore${store.charAt(0).toUpperCase() + store.slice(1)}` : 'atlStoreAll';
         const activeBtn = document.getElementById(activeId);
         if (activeBtn) {
-            activeBtn.className = 'atl-store-pill px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-600 text-white shadow-sm shadow-amber-600/30 transition';
+            activeBtn.className = 'atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 transition font-mono';
         }
         loadAtlDeals();
     }

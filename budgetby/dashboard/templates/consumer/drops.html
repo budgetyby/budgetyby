@@ -18,33 +18,33 @@
             </span>
         </nav>
 
-        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-rose-950/40 via-slate-900/90 to-amber-950/30 border border-rose-500/30 p-6 sm:p-8 shadow-2xl">
+        <div class="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-6 sm:p-8 shadow-xl">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
                 <div class="max-w-2xl">
-                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/15 text-rose-400 font-extrabold text-[11px] tracking-wider uppercase border border-rose-500/30 mb-3">
-                        <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
-                        LIVE PRICE CUT SCANNER
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/15 text-rose-400 font-bold text-[11px] tracking-wide uppercase border border-rose-500/30 mb-3">
+                        <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                        Live Price Cut Scanner
                     </div>
                     <h1 class="text-2xl sm:text-4xl font-black tracking-tight text-white leading-tight">
                         Steepest 24-Hour Price Drops
                     </h1>
                     <p class="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
-                        Every single item below has suffered an actual price reduction in the last 24 hours. We compare today's price against the product's verified 30-day baseline to filter out inflated retail prices.
+                        Every single item below has undergone an actual price reduction in the last 24 hours. We compare today's price against the product's verified 30-day baseline to filter out inflated retail prices.
                     </p>
                 </div>
 
                 <!-- Header Stats Summary -->
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 shrink-0">
-                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 text-center min-w-[110px]">
-                        <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Drops Today</div>
+                    <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3.5 text-center min-w-[110px]">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Drops Today</div>
                         <div id="statDropsTotal" class="text-xl sm:text-2xl font-black text-rose-400 font-mono mt-0.5">{{ initial_data.total_drops_24h if initial_data and initial_data.total_drops_24h else '--' }}</div>
                     </div>
-                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 text-center min-w-[110px]">
-                        <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Top Drop</div>
+                    <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3.5 text-center min-w-[110px]">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Top Drop</div>
                         <div id="statTopDrop" class="text-xl sm:text-2xl font-black text-emerald-400 font-mono mt-0.5">-76%</div>
                     </div>
-                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 text-center min-w-[110px] col-span-2 sm:col-span-1">
-                        <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Stores Tracked</div>
+                    <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3.5 text-center min-w-[110px] col-span-2 sm:col-span-1">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Stores Tracked</div>
                         <div class="text-xl sm:text-2xl font-black text-cyan-400 font-mono mt-0.5">5 Stores</div>
                     </div>
                 </div>
@@ -53,7 +53,7 @@
     </section>
 
     <!-- ── Filter & Navigation Bar ───────────────────────────────────────── -->
-    <section class="w-full sticky top-16 z-30 bg-[#070a11]/95 backdrop-blur-xl border-b border-slate-800/80 shadow-lg">
+    <section class="w-full sticky top-16 z-30 bg-[#0B0F19]/95 backdrop-blur-md border-b border-slate-800 shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <div class="flex flex-col gap-3">
                 <!-- Row 1: Drop Depth Pills & Sort Dropdown -->
@@ -61,7 +61,7 @@
                     <!-- Drop Depth Filter Pills -->
                     <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                         <span class="text-xs font-bold text-slate-400 mr-1 hidden sm:inline">Drop Depth:</span>
-                        <button onclick="setDropDepth(15)" id="pillDrop15" class="drop-depth-pill px-3 py-1.5 rounded-xl text-xs font-extrabold bg-rose-600 text-white shadow-sm shadow-rose-600/30 transition">
+                        <button onclick="setDropDepth(15)" id="pillDrop15" class="drop-depth-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-600 text-white shadow-sm transition">
                             🔥 All Drops (15%+)
                         </button>
                         <button onclick="setDropDepth(30)" id="pillDrop30" class="drop-depth-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition">
@@ -92,7 +92,7 @@
                 </div>
 
                 <!-- Row 2: Store Pills & Active Match Counter -->
-                <div class="flex items-center justify-between gap-3 pt-2 border-t border-slate-800/60 overflow-x-auto no-scrollbar">
+                <div class="flex items-center justify-between gap-3 pt-2 border-t border-slate-800/80 overflow-x-auto no-scrollbar">
                     <!-- Store Filters -->
                     <div class="flex items-center gap-1.5 shrink-0">
                         <span class="text-xs font-bold text-slate-400 mr-1 hidden sm:inline">Store:</span>
@@ -131,20 +131,20 @@
         <div id="dropsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 transition-opacity duration-200">
             {% if initial_data and initial_data.drops %}
                 {% for deal in initial_data.drops %}
-                <div data-deal-id="{{ deal.product_id }}" class="bg-[#0c101c]/95 border border-slate-800/80 hover:border-slate-700/90 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative hover:shadow-xl hover:shadow-rose-950/20">
+                <div data-deal-id="{{ deal.product_id }}" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative">
                     <div>
                         <!-- Top Meta Row -->
                         <div class="flex items-center justify-between gap-2 mb-2">
-                            <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider {{ deal.platform|store_badge }}">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider {{ deal.platform|store_badge }}">
                                 {{ deal.platform|store_name }}
                             </span>
-                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-600 text-white font-mono">
                                 📉 -{{ deal.drop_pct|round_int }}% DROP
                             </span>
                         </div>
 
                         <!-- Product Image Area -->
-                        <div class="relative w-full h-44 rounded-xl bg-[#090d16] p-2 flex items-center justify-center overflow-hidden border border-slate-800/60 group-hover:border-slate-700 transition">
+                        <div class="relative w-full h-44 rounded-xl bg-white p-2 flex items-center justify-center overflow-hidden border border-slate-800">
                             <img src="{{ deal.image_url or '/static/placeholder.png' }}" 
                                  alt="{{ deal.title }}" 
                                  class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
@@ -159,7 +159,7 @@
                             </button>
 
                             <!-- Freshness Pill -->
-                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800/80 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
+                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                                 <span>Verified {{ deal.last_price_change|time_ago }}</span>
                             </div>
@@ -186,7 +186,7 @@
                     </div>
 
                     <!-- Price & Action Footer -->
-                    <div class="mt-3 pt-3 border-t border-slate-800/80">
+                    <div class="mt-3 pt-3 border-t border-slate-800">
                         <div class="flex items-baseline justify-between gap-1 mb-2">
                             <div>
                                 <span class="text-lg font-black text-white font-mono">{{ deal.current_price|format_inr }}</span>
@@ -195,7 +195,7 @@
                                 {% endif %}
                             </div>
                             {% if deal.previous_price and deal.current_price and deal.previous_price > deal.current_price %}
-                            <div class="text-[10px] font-extrabold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60 font-mono">
+                            <div class="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60 font-mono">
                                 Cut {{ (deal.previous_price - deal.current_price)|format_inr }}
                             </div>
                             {% endif %}
@@ -204,13 +204,13 @@
                         <!-- Card Action Buttons Row -->
                         <div class="flex items-center gap-1.5">
                             <button onclick="handleDropsCardShare({{ deal.product_id }})" 
-                                    class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition shrink-0" 
+                                    class="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition shrink-0" 
                                     title="Share Deal">
                                 <i data-lucide="share-2" class="w-4 h-4 text-cyan-400"></i>
                             </button>
                             <a href="{{ deal.affiliate_url or deal.product_url or '#' }}" target="_blank" rel="noopener noreferrer" 
-                               class="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-lg shadow-rose-600/30 hover:scale-[1.02] active:scale-[0.98] transition">
-                                <span>Get Deal</span>
+                               class="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-sm transition">
+                                <span>Check Deal on {{ deal.platform|store_name }}</span>
                                 <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
                             </a>
                         </div>
@@ -221,7 +221,7 @@
         </div>
 
         <!-- Empty State (Hidden by default) -->
-        <div id="dropsEmptyState" class="{% if initial_data and initial_data.drops and initial_data.drops|length > 0 %}hidden{% endif %} text-center py-16 px-4">
+        <div id="dropsEmptyState" class="{% if initial_data and initial_data.drops and initial_data.drops|length > 0 %}hidden{% endif %} text-center py-16 px-4 bg-slate-900/60 border border-slate-800 rounded-3xl">
             <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-2xl mx-auto mb-4">
                 🔍
             </div>
@@ -235,7 +235,7 @@
         </div>
 
         <!-- Load More / Pagination Bar -->
-        <div id="dropsPaginationBar" class="{% if not initial_data or not initial_data.drops or initial_data.drops|length == 0 %}hidden{% endif %} mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80">
+        <div id="dropsPaginationBar" class="{% if not initial_data or not initial_data.drops or initial_data.drops|length == 0 %}hidden{% endif %} mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900 border border-slate-800">
             <div class="text-xs text-slate-400">
                 Page <span id="dropsCurrentPage" class="font-bold text-white">{{ initial_data.page if initial_data and initial_data.page else 1 }}</span> of <span id="dropsTotalPages" class="font-bold text-white">{{ initial_data.total_pages if initial_data and initial_data.total_pages else 1 }}</span>
                 (<span id="dropsLoadedCount" class="font-mono text-slate-300">{{ initial_data.drops|length if initial_data and initial_data.drops else 0 }}</span> loaded)
@@ -245,7 +245,7 @@
                 <button onclick="changeDropsPage(-1)" id="dropsPrevBtn" {% if not initial_data or initial_data.page <= 1 %}disabled{% endif %} class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none text-slate-200 transition">
                     ← Previous
                 </button>
-                <button onclick="changeDropsPage(1)" id="dropsNextBtn" {% if not initial_data or initial_data.page >= initial_data.total_pages %}disabled{% endif %} class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:pointer-events-none text-white transition flex items-center gap-1.5 shadow-lg shadow-rose-600/30">
+                <button onclick="changeDropsPage(1)" id="dropsNextBtn" {% if not initial_data or initial_data.page >= initial_data.total_pages %}disabled{% endif %} class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:pointer-events-none text-white transition flex items-center gap-1.5 shadow-sm">
                     <span>Next Page</span>
                     <span>→</span>
                 </button>
@@ -256,7 +256,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script id="initial-drops-data" type="application/json">{{ initial_data|tojson|safe }}</script>
+<script id="initial-drops-data" type="application/json">{{ (initial_data or {})|tojson|safe }}</script>
 <script>
     // State management for 24H Price Drops Hub
     const dropsState = {
@@ -311,7 +311,7 @@
                             if (heart) heart.classList.add('fill-rose-500', 'text-rose-500');
                         }
                     });
-                    lucide.createIcons();
+                    if (window.lucide) lucide.createIcons();
                     usedInitial = true;
                 }
             } catch (e) {
@@ -458,15 +458,15 @@
 
             if (dropsState.viewMode === 'compact') {
                 return `
-                    <div class="bg-[#0c101c]/90 border border-slate-800/80 hover:border-slate-700 rounded-2xl p-3 flex items-center justify-between gap-4 transition group">
+                    <div class="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-3 flex items-center justify-between gap-4 transition group">
                         <div class="flex items-center gap-3 min-w-0">
-                            <div class="w-14 h-14 rounded-xl bg-white/5 p-1 shrink-0 flex items-center justify-center overflow-hidden border border-slate-800">
+                            <div class="w-14 h-14 rounded-xl bg-white p-1 shrink-0 flex items-center justify-center overflow-hidden border border-slate-800">
                                 <img src="${deal.image_url || '/static/placeholder.png'}" alt="${safeTitle}" class="w-full h-full object-contain" loading="lazy" onerror="this.src='/static/placeholder.png'"/>
                             </div>
                             <div class="min-w-0">
                                 <div class="flex items-center gap-2 text-[10px] flex-wrap">
-                                    <span class="px-1.5 py-0.5 rounded font-extrabold uppercase ${storeCfg.badge}">${storeCfg.name}</span>
-                                    <span class="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-extrabold font-mono">-${dropPct}% DROP</span>
+                                    <span class="px-1.5 py-0.5 rounded font-bold uppercase ${storeCfg.badge}">${storeCfg.name}</span>
+                                    <span class="px-1.5 py-0.5 rounded bg-rose-600 text-white font-bold font-mono">-${dropPct}% DROP</span>
                                     ${hasValidRating ? `<span class="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded font-mono"><span class="text-amber-400">★</span> ${deal.rating.toFixed(1)}</span>` : ''}
                                     <span class="text-slate-500 hidden sm:inline">Verified ${verifiedAgo}</span>
                                 </div>
@@ -481,7 +481,7 @@
                                 ${deal.previous_price ? `<div class="text-[10px] text-slate-500 line-through font-mono">${formatINR(deal.previous_price)}</div>` : ''}
                             </div>
                             <a href="${buyUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white transition">
-                                Buy ↗
+                                Buy on ${storeCfg.name} ↗
                             </a>
                         </div>
                     </div>
@@ -489,20 +489,20 @@
             }
 
             return `
-                <div class="bg-[#0c101c]/95 border border-slate-800/80 hover:border-slate-700/90 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative hover:shadow-xl hover:shadow-rose-950/20">
+                <div class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative">
                     <div>
                         <!-- Top Meta Row -->
                         <div class="flex items-center justify-between gap-2 mb-2">
-                            <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider ${storeCfg.badge}">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${storeCfg.badge}">
                                 ${storeCfg.name}
                             </span>
-                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-600 text-white font-mono">
                                 📉 -${dropPct}% DROP
                             </span>
                         </div>
 
                         <!-- Product Image Area -->
-                        <div class="relative w-full h-44 rounded-xl bg-[#090d16] p-2 flex items-center justify-center overflow-hidden border border-slate-800/60 group-hover:border-slate-700 transition">
+                        <div class="relative w-full h-44 rounded-xl bg-white p-2 flex items-center justify-center overflow-hidden border border-slate-800">
                             <img src="${deal.image_url || '/static/placeholder.png'}" 
                                  alt="${safeTitle}" 
                                  class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
@@ -517,7 +517,7 @@
                             </button>
 
                             <!-- Freshness Pill -->
-                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800/80 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
+                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                                 <span>Verified ${verifiedAgo}</span>
                             </div>
@@ -535,29 +535,31 @@
                     </div>
 
                     <!-- Price & Action Footer -->
-                    <div class="mt-3 pt-3 border-t border-slate-800/80">
+                    <div class="mt-3 pt-3 border-t border-slate-800">
                         <div class="flex items-baseline justify-between gap-1 mb-2">
                             <div>
                                 <span class="text-lg font-black text-white font-mono">${formatINR(deal.current_price)}</span>
+                                {% raw %}
                                 ${deal.previous_price ? `<span class="text-xs text-slate-500 line-through ml-1.5 font-mono">${formatINR(deal.previous_price)}</span>` : ''}
                             </div>
                             ${savedDropVal ? `
-                                <div class="text-[10px] font-extrabold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60 font-mono">
+                                <div class="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60 font-mono">
                                     Cut ${savedDropVal}
                                 </div>
                             ` : ''}
+                            {% endraw %}
                         </div>
 
                         <!-- Card Action Buttons Row -->
                         <div class="flex items-center gap-1.5">
                             <button onclick="handleDropsCardShare(${deal.id})" 
-                                    class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition shrink-0" 
+                                    class="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition shrink-0" 
                                     title="Share Deal">
                                 <i data-lucide="share-2" class="w-4 h-4 text-cyan-400"></i>
                             </button>
                             <a href="${buyUrl}" target="_blank" rel="noopener noreferrer" 
-                               class="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-lg shadow-rose-600/30 hover:scale-[1.02] active:scale-[0.98] transition">
-                                <span>Get Deal</span>
+                               class="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-sm transition">
+                                <span>Check Deal on ${storeCfg.name}</span>
                                 <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
                             </a>
                         </div>
@@ -566,7 +568,7 @@
             `;
         }).join('');
 
-        lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
     }
 
     // Filter handlers
@@ -578,7 +580,7 @@
         });
         const activeBtn = document.getElementById(`pillDrop${pct}`);
         if (activeBtn) {
-            activeBtn.className = 'drop-depth-pill px-3 py-1.5 rounded-xl text-xs font-extrabold bg-rose-600 text-white shadow-sm shadow-rose-600/30 transition';
+            activeBtn.className = 'drop-depth-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-600 text-white shadow-sm transition';
         }
         loadDrops();
     }

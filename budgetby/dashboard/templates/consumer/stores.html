@@ -2,7 +2,7 @@
 
 {% block title %}
     {% if store_name %}
-        {{ store_name }} Verified Deals & Discounts — BudgetBy
+        {{ store_name }} Verified Deals & Price Cuts — BudgetBy
     {% else %}
         Stores Directory — Amazon, Flipkart, Myntra, Ajio & Nykaa | BudgetBy
     {% endif %}
@@ -10,9 +10,9 @@
 
 {% block description %}
     {% if store_name %}
-        Browse all verified deals, live price cuts, and historical price baselines for {{ store_name }} on BudgetBy.
+        Browse all verified deals, live price cuts, and historical price baselines for {{ store_name }} on BudgetBy. 100% free with direct official store checkout.
     {% else %}
-        Discover real-time verified price drops across India's top online retailers: Amazon, Flipkart, Myntra, Ajio, and Nykaa.
+        Discover real-time verified price drops across India's top online retailers: Amazon, Flipkart, Myntra, Ajio, and Nykaa. Direct affiliate checkout and verified savings.
     {% endif %}
 {% endblock %}
 
@@ -29,23 +29,23 @@
                 <span>🏠</span> Home
             </a>
             <span class="text-slate-600">/</span>
-            <span class="text-cyan-400 font-semibold flex items-center gap-1">
+            <span class="text-indigo-400 font-semibold flex items-center gap-1">
                 <span>🏪</span> Stores Directory
             </span>
         </nav>
 
         <!-- Hub Header -->
-        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-cyan-950/40 via-slate-900/90 to-indigo-950/30 border border-cyan-500/30 p-6 sm:p-8 shadow-2xl mb-8">
+        <div class="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-6 sm:p-8 shadow-xl mb-8">
             <div class="max-w-2xl">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-400 font-extrabold text-[11px] tracking-wider uppercase border border-cyan-500/30 mb-3">
-                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-                    5 VERIFIED RETAIL PLATFORMS
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/15 text-indigo-400 font-bold text-[11px] tracking-wide uppercase border border-indigo-500/30 mb-3">
+                    <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
+                    5 Verified Retail Platforms
                 </div>
                 <h1 class="text-2xl sm:text-4xl font-black tracking-tight text-white leading-tight">
                     Shop Verified Deals by Store
                 </h1>
                 <p class="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
-                    We continuously monitor millions of price points across India's premier online stores. Click any store to inspect real-time price drops, loot deals, and all-time lows.
+                    We continuously monitor millions of price points across India's premier online stores. Click any store to inspect real-time price drops, verified discounts, and historical all-time lows.
                 </p>
             </div>
         </div>
@@ -54,8 +54,8 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             
             <!-- Amazon Card -->
-            <div class="bg-[#090d16]/90 border border-slate-800 hover:border-[#FF9900]/50 rounded-3xl p-6 flex flex-col justify-between transition group hover:shadow-2xl hover:shadow-[#FF9900]/10 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-[#FF9900]/10 rounded-full blur-2xl pointer-events-none"></div>
+            <div class="bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-[#FF9900]/50 rounded-2xl p-6 flex flex-col justify-between transition group hover:shadow-xl hover:shadow-[#FF9900]/10 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-[#FF9900]/5 rounded-full blur-2xl pointer-events-none"></div>
                 <div>
                     <div class="flex items-center justify-between gap-3 mb-4">
                         <div class="w-12 h-12 rounded-2xl bg-[#FF9900]/15 border border-[#FF9900]/30 flex items-center justify-center text-xl font-black text-[#FF9900]">
@@ -66,27 +66,30 @@
                         </span>
                     </div>
                     <h2 class="text-xl font-black text-white group-hover:text-[#FF9900] transition">Amazon India</h2>
-                    <p class="text-xs text-slate-400 mt-1">Electronics, Gadgets, Kitchenware, Appliances, Books & Household Daily Needs.</p>
+                    <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">Electronics, Gadgets, Kitchenware, Appliances, Books & Household Daily Needs.</p>
                     <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
-                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-                            <span class="text-[10px] text-slate-500 block uppercase">Deals Live</span>
-                            <span id="storeCntAmazon" class="text-sm font-bold text-white font-mono">1,500+</span>
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block uppercase font-bold">Deals Live</span>
+                            <span id="storeCntAmazon" class="text-sm font-black text-white font-mono">1,500+</span>
                         </div>
-                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-                            <span class="text-[10px] text-slate-500 block uppercase">Max Cut</span>
-                            <span id="storeCutAmazon" class="text-sm font-bold text-emerald-400 font-mono">-75%</span>
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block uppercase font-bold">Max Cut</span>
+                            <span id="storeCutAmazon" class="text-sm font-black text-emerald-400 font-mono">-75%</span>
                         </div>
                     </div>
                 </div>
-                <a href="/stores/amazon" class="mt-6 w-full py-2.5 rounded-xl bg-[#FF9900] hover:bg-[#FFaa33] text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-[#FF9900]/20 transition">
-                    <span>Explore Amazon Deals</span>
-                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                </a>
+                <div class="mt-6">
+                    <div class="text-[10px] text-slate-500 mb-2 font-medium">Official Amazon Associates Direct Links</div>
+                    <a href="/stores/amazon" class="w-full py-2.5 rounded-xl bg-[#FF9900] hover:bg-[#FFaa33] text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#FF9900]/20 transition">
+                        <span>Explore Amazon Deals</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
             </div>
 
             <!-- Flipkart Card -->
-            <div class="bg-[#090d16]/90 border border-slate-800 hover:border-[#2874F0]/50 rounded-3xl p-6 flex flex-col justify-between transition group hover:shadow-2xl hover:shadow-[#2874F0]/10 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-[#2874F0]/10 rounded-full blur-2xl pointer-events-none"></div>
+            <div class="bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-[#2874F0]/50 rounded-2xl p-6 flex flex-col justify-between transition group hover:shadow-xl hover:shadow-[#2874F0]/10 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-[#2874F0]/5 rounded-full blur-2xl pointer-events-none"></div>
                 <div>
                     <div class="flex items-center justify-between gap-3 mb-4">
                         <div class="w-12 h-12 rounded-2xl bg-[#2874F0]/15 border border-[#2874F0]/30 flex items-center justify-center text-xl font-black text-[#2874F0]">
@@ -97,27 +100,30 @@
                         </span>
                     </div>
                     <h2 class="text-xl font-black text-white group-hover:text-[#2874F0] transition">Flipkart</h2>
-                    <p class="text-xs text-slate-400 mt-1">Smartphones, Laptops, Television, Smart Home & Big Billion Deals.</p>
+                    <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">Smartphones, Laptops, Television, Smart Home & Big Billion Days Discounts.</p>
                     <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
-                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-                            <span class="text-[10px] text-slate-500 block uppercase">Deals Live</span>
-                            <span id="storeCntFlipkart" class="text-sm font-bold text-white font-mono">1,800+</span>
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block uppercase font-bold">Deals Live</span>
+                            <span id="storeCntFlipkart" class="text-sm font-black text-white font-mono">1,800+</span>
                         </div>
-                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-                            <span class="text-[10px] text-slate-500 block uppercase">Max Cut</span>
-                            <span id="storeCutFlipkart" class="text-sm font-bold text-emerald-400 font-mono">-76%</span>
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block uppercase font-bold">Max Cut</span>
+                            <span id="storeCutFlipkart" class="text-sm font-black text-emerald-400 font-mono">-76%</span>
                         </div>
                     </div>
                 </div>
-                <a href="/stores/flipkart" class="mt-6 w-full py-2.5 rounded-xl bg-[#2874F0] hover:bg-[#4B8DF8] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-[#2874F0]/20 transition">
-                    <span>Explore Flipkart Deals</span>
-                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                </a>
+                <div class="mt-6">
+                    <div class="text-[10px] text-slate-500 mb-2 font-medium">Official Flipkart Affiliate Direct Links</div>
+                    <a href="/stores/flipkart" class="w-full py-2.5 rounded-xl bg-[#2874F0] hover:bg-[#4B8DF8] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#2874F0]/20 transition">
+                        <span>Explore Flipkart Deals</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
             </div>
 
             <!-- Myntra Card -->
-            <div class="bg-[#090d16]/90 border border-slate-800 hover:border-[#FF3F6C]/50 rounded-3xl p-6 flex flex-col justify-between transition group hover:shadow-2xl hover:shadow-[#FF3F6C]/10 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-[#FF3F6C]/10 rounded-full blur-2xl pointer-events-none"></div>
+            <div class="bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-[#FF3F6C]/50 rounded-2xl p-6 flex flex-col justify-between transition group hover:shadow-xl hover:shadow-[#FF3F6C]/10 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-[#FF3F6C]/5 rounded-full blur-2xl pointer-events-none"></div>
                 <div>
                     <div class="flex items-center justify-between gap-3 mb-4">
                         <div class="w-12 h-12 rounded-2xl bg-[#FF3F6C]/15 border border-[#FF3F6C]/30 flex items-center justify-center text-xl font-black text-[#FF3F6C]">
@@ -128,27 +134,30 @@
                         </span>
                     </div>
                     <h2 class="text-xl font-black text-white group-hover:text-[#FF3F6C] transition">Myntra</h2>
-                    <p class="text-xs text-slate-400 mt-1">Trendy Men & Women Fashion, Premium Footwear, Accessories & Fragrances.</p>
+                    <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">Trendy Men & Women Fashion, Premium Footwear, Accessories & Fragrances.</p>
                     <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
-                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-                            <span class="text-[10px] text-slate-500 block uppercase">Deals Live</span>
-                            <span id="storeCntMyntra" class="text-sm font-bold text-white font-mono">600+</span>
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block uppercase font-bold">Deals Live</span>
+                            <span id="storeCntMyntra" class="text-sm font-black text-white font-mono">600+</span>
                         </div>
-                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-                            <span class="text-[10px] text-slate-500 block uppercase">Max Cut</span>
-                            <span id="storeCutMyntra" class="text-sm font-bold text-emerald-400 font-mono">-70%</span>
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block uppercase font-bold">Max Cut</span>
+                            <span id="storeCutMyntra" class="text-sm font-black text-emerald-400 font-mono">-70%</span>
                         </div>
                     </div>
                 </div>
-                <a href="/stores/myntra" class="mt-6 w-full py-2.5 rounded-xl bg-[#FF3F6C] hover:bg-[#FF658B] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-[#FF3F6C]/20 transition">
-                    <span>Explore Myntra Deals</span>
-                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                </a>
+                <div class="mt-6">
+                    <div class="text-[10px] text-slate-500 mb-2 font-medium">Direct Retailer Checkout Verified</div>
+                    <a href="/stores/myntra" class="w-full py-2.5 rounded-xl bg-[#FF3F6C] hover:bg-[#FF658B] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#FF3F6C]/20 transition">
+                        <span>Explore Myntra Deals</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
             </div>
 
             <!-- Ajio Card -->
-            <div class="bg-[#090d16]/90 border border-slate-800 hover:border-[#D99814]/50 rounded-3xl p-6 flex flex-col justify-between transition group hover:shadow-2xl hover:shadow-[#D99814]/10 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-[#D99814]/10 rounded-full blur-2xl pointer-events-none"></div>
+            <div class="bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-[#D99814]/50 rounded-2xl p-6 flex flex-col justify-between transition group hover:shadow-xl hover:shadow-[#D99814]/10 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-[#D99814]/5 rounded-full blur-2xl pointer-events-none"></div>
                 <div>
                     <div class="flex items-center justify-between gap-3 mb-4">
                         <div class="w-12 h-12 rounded-2xl bg-[#D99814]/15 border border-[#D99814]/30 flex items-center justify-center text-xl font-black text-[#D99814]">
@@ -159,27 +168,30 @@
                         </span>
                     </div>
                     <h2 class="text-xl font-black text-white group-hover:text-[#D99814] transition">Ajio</h2>
-                    <p class="text-xs text-slate-400 mt-1">Trendy Indie & International Fashion, Sneakers, Athleisure & Denim.</p>
+                    <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">Trendy Indie & International Fashion, Sneakers, Athleisure & Denim.</p>
                     <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
-                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-                            <span class="text-[10px] text-slate-500 block uppercase">Deals Live</span>
-                            <span id="storeCntAjio" class="text-sm font-bold text-white font-mono">500+</span>
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block uppercase font-bold">Deals Live</span>
+                            <span id="storeCntAjio" class="text-sm font-black text-white font-mono">500+</span>
                         </div>
-                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-                            <span class="text-[10px] text-slate-500 block uppercase">Max Cut</span>
-                            <span id="storeCutAjio" class="text-sm font-bold text-emerald-400 font-mono">-65%</span>
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block uppercase font-bold">Max Cut</span>
+                            <span id="storeCutAjio" class="text-sm font-black text-emerald-400 font-mono">-65%</span>
                         </div>
                     </div>
                 </div>
-                <a href="/stores/ajio" class="mt-6 w-full py-2.5 rounded-xl bg-[#D99814] hover:bg-[#F5B027] text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-[#D99814]/20 transition">
-                    <span>Explore Ajio Deals</span>
-                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                </a>
+                <div class="mt-6">
+                    <div class="text-[10px] text-slate-500 mb-2 font-medium">Direct Retailer Checkout Verified</div>
+                    <a href="/stores/ajio" class="w-full py-2.5 rounded-xl bg-[#D99814] hover:bg-[#F5B027] text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#D99814]/20 transition">
+                        <span>Explore Ajio Deals</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
             </div>
 
             <!-- Nykaa Card -->
-            <div class="bg-[#090d16]/90 border border-slate-800 hover:border-[#FC2779]/50 rounded-3xl p-6 flex flex-col justify-between transition group hover:shadow-2xl hover:shadow-[#FC2779]/10 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-[#FC2779]/10 rounded-full blur-2xl pointer-events-none"></div>
+            <div class="bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-[#FC2779]/50 rounded-2xl p-6 flex flex-col justify-between transition group hover:shadow-xl hover:shadow-[#FC2779]/10 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-[#FC2779]/5 rounded-full blur-2xl pointer-events-none"></div>
                 <div>
                     <div class="flex items-center justify-between gap-3 mb-4">
                         <div class="w-12 h-12 rounded-2xl bg-[#FC2779]/15 border border-[#FC2779]/30 flex items-center justify-center text-xl font-black text-[#FC2779]">
@@ -190,24 +202,49 @@
                         </span>
                     </div>
                     <h2 class="text-xl font-black text-white group-hover:text-[#FC2779] transition">Nykaa</h2>
-                    <p class="text-xs text-slate-400 mt-1">Cosmetics, Skincare, Hair Care, Fragrance & Wellness Essentials.</p>
+                    <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">Cosmetics, Skincare, Hair Care, Fragrance & Wellness Essentials.</p>
                     <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
-                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-                            <span class="text-[10px] text-slate-500 block uppercase">Deals Live</span>
-                            <span id="storeCntNykaa" class="text-sm font-bold text-white font-mono">400+</span>
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block uppercase font-bold">Deals Live</span>
+                            <span id="storeCntNykaa" class="text-sm font-black text-white font-mono">400+</span>
                         </div>
-                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-                            <span class="text-[10px] text-slate-500 block uppercase">Max Cut</span>
-                            <span id="storeCutNykaa" class="text-sm font-bold text-emerald-400 font-mono">-60%</span>
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block uppercase font-bold">Max Cut</span>
+                            <span id="storeCutNykaa" class="text-sm font-black text-emerald-400 font-mono">-60%</span>
                         </div>
                     </div>
                 </div>
-                <a href="/stores/nykaa" class="mt-6 w-full py-2.5 rounded-xl bg-[#FC2779] hover:bg-[#FD5797] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-[#FC2779]/20 transition">
-                    <span>Explore Nykaa Deals</span>
-                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                </a>
+                <div class="mt-6">
+                    <div class="text-[10px] text-slate-500 mb-2 font-medium">Direct Retailer Checkout Verified</div>
+                    <a href="/stores/nykaa" class="w-full py-2.5 rounded-xl bg-[#FC2779] hover:bg-[#FD5797] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#FC2779]/20 transition">
+                        <span>Explore Nykaa Deals</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
             </div>
 
+        </div>
+
+        <!-- How We Track Trust Section -->
+        <div class="mt-12 rounded-2xl bg-slate-900 border border-slate-800 p-6 sm:p-8">
+            <h2 class="text-lg font-bold text-white mb-2">How BudgetBy Verifies Store Pricing</h2>
+            <p class="text-xs text-slate-400 mb-6 max-w-3xl">
+                Every deal listed on BudgetBy undergoes automated validation against historical pricing records. We do not accept paid promotions from third-party sellers that artificially inflate discounts.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <div class="text-indigo-400 font-bold mb-1">1. Direct Store Scraping</div>
+                    <div class="text-slate-400">Our ingest engines scan retailer listings in 30–60 minute intervals to ensure price tags are accurate at the time of discovery.</div>
+                </div>
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <div class="text-emerald-400 font-bold mb-1">2. 30-Day Median Check</div>
+                    <div class="text-slate-400">Discounts are calculated against the true 30-day rolling baseline price, filtering out inflated fake MRPs.</div>
+                </div>
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <div class="text-amber-400 font-bold mb-1">3. Direct Store Checkout</div>
+                    <div class="text-slate-400">All links redirect directly to the official retailer checkout. We never process payments or collect personal billing data.</div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -230,25 +267,28 @@
         </nav>
 
         <!-- Store Branded Header -->
-        <div class="relative overflow-hidden rounded-3xl bg-[#090d16] border border-slate-800 p-6 sm:p-8 shadow-2xl mb-6">
+        <div class="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-6 sm:p-8 shadow-xl mb-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div class="flex items-center gap-4">
-                    <div class="w-16 h-16 rounded-2xl p-1 bg-white/5 border border-slate-700 flex items-center justify-center text-3xl font-black text-white">
+                    <div class="w-14 h-14 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center text-2xl font-black text-white shrink-0">
                         {{ store_name[0] }}
                     </div>
                     <div>
                         <div class="flex items-center gap-2">
                             <h1 class="text-2xl sm:text-3xl font-black text-white">{{ store_name }} Deals & Price Tracker</h1>
-                            <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
-                                Verified
+                            <span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                                Verified Retailer
                             </span>
                         </div>
-                        <p class="text-xs text-slate-400 mt-1">Real-time verified price cuts and discounts on {{ store_name }}.</p>
+                        <p class="text-xs text-slate-400 mt-1">Real-time verified price cuts and discounts on {{ store_name }}. Direct official checkout.</p>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-3">
-                    <a href="/deals?platform={{ store_id }}" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-white transition flex items-center gap-1.5">
+                <div class="flex items-center gap-2 shrink-0">
+                    <a href="/stores" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 transition">
+                        All Stores
+                    </a>
+                    <a href="/deals?platform={{ store_id }}" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20">
                         <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
                         <span>Advanced Filters</span>
                     </a>
@@ -257,13 +297,13 @@
         </div>
 
         <!-- Store Deals Filter Bar -->
-        <div class="bg-[#090d16]/95 border border-slate-800 rounded-2xl p-3.5 mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 mb-6 flex flex-wrap items-center justify-between gap-3 shadow-md">
             <div class="flex items-center gap-2">
                 <span class="text-xs text-slate-400 font-mono">Found <span id="storeTotalCount" class="font-bold text-white">{{ initial_data.total_matches if initial_data and initial_data.total_matches else 0 }}</span> active deals</span>
             </div>
 
             <div class="flex items-center gap-2">
-                <select id="storeCategorySelect" onchange="onStoreCatChange(this.value)" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <select id="storeCategorySelect" onchange="onStoreCatChange(this.value)" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition">
                     <option value="">All Categories</option>
                     <option value="electronics">Electronics</option>
                     <option value="fashion">Fashion</option>
@@ -272,7 +312,7 @@
                     <option value="beauty">Beauty</option>
                 </select>
 
-                <select id="storeSortSelect" onchange="onStoreSortChange(this.value)" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <select id="storeSortSelect" onchange="onStoreSortChange(this.value)" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition">
                     <option value="latest">Recently Verified</option>
                     <option value="discount">Highest Discount %</option>
                     <option value="price_asc">Price: Low to High</option>
@@ -285,22 +325,22 @@
         <div id="storeDealsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 transition-opacity duration-200">
             {% if initial_data and initial_data.deals %}
                 {% for deal in initial_data.deals %}
-                <div data-deal-id="{{ deal.product_id or deal.id }}" class="bg-[#0c101c]/95 border border-slate-800/80 hover:border-slate-700/90 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative hover:shadow-xl hover:shadow-indigo-950/20">
+                <div data-deal-id="{{ deal.product_id or deal.id }}" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 group relative">
                     <div>
                         <!-- Store Badge & Discount Meta -->
                         <div class="flex items-center justify-between gap-2 mb-2">
-                            <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider {{ deal.platform|store_badge }}">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider {{ deal.platform|store_badge }}">
                                 {{ deal.platform|store_name }}
                             </span>
                             {% if deal.discount_pct and deal.discount_pct > 0 %}
-                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono">
                                 {{ deal.discount_pct|round_int }}% OFF
                             </span>
                             {% endif %}
                         </div>
 
                         <!-- Image Area -->
-                        <div class="relative w-full h-44 rounded-xl bg-[#090d16] p-2 flex items-center justify-center overflow-hidden border border-slate-800/60 group-hover:border-slate-700 transition">
+                        <div class="relative w-full h-44 rounded-xl bg-white p-2 flex items-center justify-center overflow-hidden border border-slate-800">
                             <img src="{{ deal.image_url or '/static/placeholder.png' }}" 
                                  alt="{{ deal.title }}" 
                                  class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" 
@@ -309,13 +349,13 @@
                             
                             <!-- Watchlist Toggle -->
                             <button onclick="handleStoreWatchlist(this, {{ deal.product_id or deal.id }})" 
-                                    class="absolute top-2 right-2 p-1.5 rounded-xl bg-slate-950/80 border border-slate-800 text-slate-400 hover:text-rose-400 transition" 
+                                    class="absolute top-2 right-2 p-1.5 rounded-xl bg-slate-950/80 backdrop-blur-md border border-slate-800 text-slate-400 hover:text-rose-400 transition" 
                                     title="Save to Watchlist">
                                 <i data-lucide="heart" class="w-4 h-4"></i>
                             </button>
 
                             <!-- Freshness Pill -->
-                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800/80 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
+                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                                 <span>Verified {{ deal.last_checked|time_ago }}</span>
                             </div>
@@ -342,7 +382,7 @@
                     </div>
 
                     <!-- Price & Action Footer -->
-                    <div class="mt-3 pt-3 border-t border-slate-800/80">
+                    <div class="mt-3 pt-3 border-t border-slate-800">
                         <div class="flex items-baseline justify-between gap-1 mb-2">
                             <div>
                                 {% set cp = deal.current_price or deal.deal_price or 0 %}
@@ -352,7 +392,7 @@
                                 {% endif %}
                             </div>
                             {% if deal.mrp and deal.mrp > cp %}
-                            <div class="text-[10px] font-extrabold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60 font-mono">
+                            <div class="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60 font-mono">
                                 Save {{ (deal.mrp - cp)|format_inr }}
                             </div>
                             {% endif %}
@@ -361,12 +401,12 @@
                         <!-- Card Action Buttons -->
                         <div class="flex items-center gap-1.5">
                             <button onclick="handleStoreShare({{ deal.product_id or deal.id }})" 
-                                    class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition shrink-0" 
+                                    class="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition shrink-0" 
                                     title="Share Deal">
-                                <i data-lucide="share-2" class="w-4 h-4 text-cyan-400"></i>
+                                <i data-lucide="share-2" class="w-4 h-4 text-indigo-400"></i>
                             </button>
                             <a href="{{ deal.affiliate_url or deal.product_url or '#' }}" target="_blank" rel="noopener noreferrer" 
-                               class="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-lg shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98] transition">
+                               class="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-md shadow-indigo-600/20 hover:scale-[1.02] active:scale-[0.98] transition">
                                 <span>Get Deal</span>
                                 <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
                             </a>
@@ -382,16 +422,16 @@
         </div>
 
         <!-- Pagination Bar -->
-        <div id="storePaginationBar" class="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80">
+        <div id="storePaginationBar" class="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900 border border-slate-800">
             <div class="text-xs text-slate-400">
                 Page <span id="storeCurrentPage" class="font-bold text-white">{{ initial_data.page if initial_data and initial_data.page else 1 }}</span> of <span id="storeTotalPages" class="font-bold text-white">{{ initial_data.total_pages if initial_data and initial_data.total_pages else 1 }}</span>
             </div>
 
             <div class="flex items-center gap-2">
-                <button onclick="changeStorePage(-1)" id="storePrevBtn" disabled class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none text-slate-200 transition">
+                <button onclick="changeStorePage(-1)" id="storePrevBtn" disabled class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-950 hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none text-slate-300 border border-slate-800 transition">
                     ← Previous
                 </button>
-                <button onclick="changeStorePage(1)" id="storeNextBtn" {% if not initial_data or initial_data.total_pages <= 1 %}disabled{% endif %} class="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:pointer-events-none text-white transition flex items-center gap-1.5">
+                <button onclick="changeStorePage(1)" id="storeNextBtn" {% if not initial_data or initial_data.total_pages <= 1 %}disabled{% endif %} class="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:pointer-events-none text-white transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20">
                     <span>Next Page</span>
                     <span>→</span>
                 </button>
@@ -403,7 +443,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script id="initial-store-data" type="application/json">{{ initial_data|tojson|safe }}</script>
+<script id="initial-store-data" type="application/json">{{ (initial_data or {})|tojson|safe }}</script>
 <script>
     {% if store_id %}
     const storeState = {
@@ -581,26 +621,34 @@
                 </div>
             ` : '';
 
+            const cp = deal.current_price || 0;
+            const mrp = deal.mrp || 0;
+            const savingsHtml = (mrp > cp) ? `
+                <div class="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/60 font-mono">
+                    Save ${formatINR(mrp - cp)}
+                </div>
+            ` : '';
+
             return `
-                <div class="bg-[#0c101c]/95 border border-slate-800/80 hover:border-slate-700/90 rounded-2xl p-3.5 flex flex-col justify-between transition group relative">
+                <div class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between transition group relative">
                     <div>
                         <div class="flex items-center justify-between gap-2 mb-2">
-                            <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase ${storeCfg.badge}">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${storeCfg.badge}">
                                 ${storeCfg.name}
                             </span>
                             ${discPct > 0 ? `
-                                <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-500/20 text-emerald-300 font-mono">
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono">
                                     ${discPct}% OFF
                                 </span>
                             ` : ''}
                         </div>
 
-                        <div class="relative w-full h-44 rounded-xl bg-[#090d16] p-2 flex items-center justify-center overflow-hidden border border-slate-800">
+                        <div class="relative w-full h-44 rounded-xl bg-white p-2 flex items-center justify-center overflow-hidden border border-slate-800">
                             <img src="${deal.image_url || '/static/placeholder.png'}" alt="${safeTitle}" class="w-full h-full object-contain group-hover:scale-105 transition" loading="lazy" onerror="this.src='/static/placeholder.png'"/>
-                            <button onclick="handleStoreWatchlist(this, ${deal.id})" class="absolute top-2 right-2 p-1.5 rounded-xl bg-slate-950/80 border border-slate-800 text-slate-400 hover:text-rose-400 transition">
+                            <button onclick="handleStoreWatchlist(this, ${deal.id})" class="absolute top-2 right-2 p-1.5 rounded-xl bg-slate-950/80 backdrop-blur-md border border-slate-800 text-slate-400 hover:text-rose-400 transition" title="Save to Watchlist">
                                 <i data-lucide="heart" class="w-4 h-4 ${inWatch ? 'fill-rose-500 text-rose-500' : ''}"></i>
                             </button>
-                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800/80 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
+                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/90 border border-slate-800 text-[10px] font-medium text-emerald-400 flex items-center gap-1 backdrop-blur-sm">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                                 <span>Verified ${verifiedAgo}</span>
                             </div>
@@ -614,17 +662,20 @@
                         </div>
                     </div>
 
-                    <div class="mt-3 pt-3 border-t border-slate-800/80">
+                    <div class="mt-3 pt-3 border-t border-slate-800">
                         <div class="flex items-baseline justify-between gap-1 mb-2">
-                            <span class="text-lg font-black text-white font-mono">${formatINR(deal.current_price)}</span>
-                            ${deal.mrp && deal.mrp > deal.current_price ? `<span class="text-xs text-slate-500 line-through font-mono">${formatINR(deal.mrp)}</span>` : ''}
+                            <div>
+                                <span class="text-lg font-black text-white font-mono">${formatINR(deal.current_price)}</span>
+                                ${mrp > cp ? `<span class="text-xs text-slate-500 line-through ml-1.5 font-mono">${formatINR(mrp)}</span>` : ''}
+                            </div>
+                            ${savingsHtml}
                         </div>
 
                         <div class="flex items-center gap-1.5">
-                            <button onclick="handleStoreShare(${deal.id})" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition shrink-0" title="Share Deal">
-                                <i data-lucide="share-2" class="w-4 h-4 text-cyan-400"></i>
+                            <button onclick="handleStoreShare(${deal.id})" class="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center transition shrink-0" title="Share Deal">
+                                <i data-lucide="share-2" class="w-4 h-4 text-indigo-400"></i>
                             </button>
-                            <a href="${dealLink}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-lg transition">
+                            <a href="${dealLink}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-md shadow-indigo-600/20 hover:scale-[1.02] active:scale-[0.98] transition">
                                 <span>Get Deal</span>
                                 <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
                             </a>
