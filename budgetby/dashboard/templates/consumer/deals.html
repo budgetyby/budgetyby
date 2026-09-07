@@ -62,15 +62,35 @@
         </div>
     </div>
 
-    <!-- ── Visual Subcategories Card Showcase (5 in a Row Large Cards) ─── -->
-    {% if cat_info and cat_info.subcategories %}
+    <!-- ── Compact Top Subcategory Navigation Bar (When viewing a specific subcategory) ── -->
+    {% if cat_info and cat_info.subcategories and current_sub %}
+    <div class="bg-white border border-slate-200/90 rounded-2xl p-2.5 mb-5 shadow-sm flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <span class="text-xs font-black text-slate-700 uppercase tracking-wider shrink-0 px-2 flex items-center gap-1">
+            <span>{{ cat_info.icon }}</span>
+            <span class="hidden sm:inline">Subcategories:</span>
+        </span>
+        <a href="/deals?category={{ current_category }}" class="px-3 py-1 rounded-xl text-xs font-bold shrink-0 transition bg-slate-100 text-slate-700 hover:bg-slate-200">
+            All {{ cat_info.name }}
+        </a>
+        {% for s_key, s_val in cat_info.subcategories.items() %}
+        <a href="/deals?category={{ current_category }}&sub={{ s_key }}" 
+           class="px-3 py-1 rounded-xl text-xs font-bold shrink-0 transition flex items-center gap-1.5 {% if current_sub == s_key %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+            <span>{{ s_val.icon }}</span>
+            <span>{{ s_val.name }}</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ── Visual Subcategories Card Showcase (Shown ONLY on main category page, hidden on dedicated subcategory pages) ─── -->
+    {% if cat_info and cat_info.subcategories and not current_sub %}
     <section class="mb-6">
         <div class="flex items-center justify-between mb-3">
             <h2 class="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                 <span>{{ cat_info.icon }}</span>
-                <span>Select {{ cat_info.name }} Subcategory Page</span>
+                <span>Select {{ cat_info.name }} Subcategory</span>
             </h2>
-            <span class="text-[11px] text-indigo-600 font-bold">Dedicated Subcategory View</span>
+            <span class="text-[11px] text-indigo-600 font-bold">1-Tap Filter</span>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-4 py-1">
             
