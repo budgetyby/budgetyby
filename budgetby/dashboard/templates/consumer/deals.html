@@ -82,167 +82,57 @@
     </section>
     {% endif %}
 
-    <!-- ── Audience & Gender Filter Bar ─────────────────────────────────── -->
-    <div class="bg-white border border-slate-200/90 rounded-2xl p-3 mb-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div class="flex items-center gap-2">
-            <span class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
-                <span>👥</span>
-                <span>Audience:</span>
-            </span>
-            <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                <button onclick="onGenderFilterChange('', this)" class="gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition {% if not current_gender %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
-                    🌟 All
-                </button>
-                <button onclick="onGenderFilterChange('men', this)" class="gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition {% if current_gender == 'men' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
-                    👨 Men
-                </button>
-                <button onclick="onGenderFilterChange('women', this)" class="gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition {% if current_gender == 'women' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
-                    👩 Women
-                </button>
-                <button onclick="onGenderFilterChange('boys', this)" class="gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition {% if current_gender == 'boys' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
-                    👦 Boys
-                </button>
-                <button onclick="onGenderFilterChange('girls', this)" class="gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition {% if current_gender == 'girls' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
-                    👧 Girls
-                </button>
-                <button onclick="onGenderFilterChange('kids', this)" class="gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition {% if current_gender == 'kids' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
-                    👶 Kids / Unisex
-                </button>
-            </div>
-        </div>
-
-        <!-- Quick 70% Off and Under 499 Badges -->
-        <div class="flex items-center gap-2 self-start sm:self-auto shrink-0">
-            <button onclick="setMinDiscount(70)" class="px-2.5 py-1 rounded-xl text-[11px] font-black bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition flex items-center gap-1">
-                <span>🔥</span> 70%+ Loot
-            </button>
-            <button onclick="onPriceQuickFilter(499)" class="px-2.5 py-1 rounded-xl text-[11px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition flex items-center gap-1">
-                <span>⚡</span> Under ₹499
-            </button>
-        </div>
-    </div>
-
-    <!-- Main Layout: Sidebar Filters + Products Grid -->
-    <div class="flex flex-col lg:flex-row gap-6">
+    <!-- ── Main Deals Feed & Toolbar ─────────────────────────────────── -->
+    <section class="w-full min-w-0">
         
-        <!-- ── Filter Sidebar ───────────────────────────────────────────── -->
-        <aside class="w-full lg:w-64 shrink-0 space-y-4">
-            <div class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm space-y-6">
-                
-                <!-- Filter Header -->
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                    <div class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
-                        <i data-lucide="sliders-horizontal" class="w-4 h-4 text-indigo-600"></i>
-                        <span>Filters</span>
-                    </div>
-                    <button onclick="resetAllFilters()" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition">
-                        Reset All
-                    </button>
-                </div>
+        <!-- Toolbar: Filter Products Collapsible Button, Matches Counter & Sorting -->
+        <div class="bg-white border border-slate-200/90 rounded-2xl p-3.5 mb-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+            <div class="flex items-center gap-2.5">
+                <!-- Filter Products Collapsible Button -->
+                <button onclick="toggleFilterModal()" 
+                        id="filterModalTriggerBtn" 
+                        class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-extrabold text-xs shadow-md shadow-indigo-600/20 transition flex items-center gap-2 shrink-0">
+                    <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                    <span>Filter Products</span>
+                    <span id="activeFilterBadge" class="hidden px-1.5 py-0.5 rounded-full bg-white text-indigo-700 font-extrabold text-[10px]">0</span>
+                </button>
 
-                <!-- Stores Filter -->
                 <div>
-                    <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5">Store</h2>
-                    <div class="space-y-1.5 text-xs">
-                        <label class="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-50 transition">
-                            <input type="radio" name="storeFilter" value="" onchange="onStoreFilterChange('')" class="text-indigo-600 focus:ring-indigo-500 rounded border-slate-300" {% if not current_platform %}checked{% endif %}>
-                            <span class="font-medium text-slate-700">All 5 Stores</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-50 transition">
-                            <input type="radio" name="storeFilter" value="amazon" onchange="onStoreFilterChange('amazon')" class="text-indigo-600 focus:ring-indigo-500 rounded border-slate-300" {% if current_platform == 'amazon' %}checked{% endif %}>
-                            <span class="w-2.5 h-2.5 rounded-full bg-[#FF9900]"></span>
-                            <span class="font-medium text-slate-700">Amazon India</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-50 transition">
-                            <input type="radio" name="storeFilter" value="flipkart" onchange="onStoreFilterChange('flipkart')" class="text-indigo-600 focus:ring-indigo-500 rounded border-slate-300" {% if current_platform == 'flipkart' %}checked{% endif %}>
-                            <span class="w-2.5 h-2.5 rounded-full bg-[#2874F0]"></span>
-                            <span class="font-medium text-slate-700">Flipkart</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-50 transition">
-                            <input type="radio" name="storeFilter" value="myntra" onchange="onStoreFilterChange('myntra')" class="text-indigo-600 focus:ring-indigo-500 rounded border-slate-300" {% if current_platform == 'myntra' %}checked{% endif %}>
-                            <span class="w-2.5 h-2.5 rounded-full bg-[#FF3F6C]"></span>
-                            <span class="font-medium text-slate-700">Myntra</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-50 transition">
-                            <input type="radio" name="storeFilter" value="ajio" onchange="onStoreFilterChange('ajio')" class="text-indigo-600 focus:ring-indigo-500 rounded border-slate-300" {% if current_platform == 'ajio' %}checked{% endif %}>
-                            <span class="w-2.5 h-2.5 rounded-full bg-[#D99814]"></span>
-                            <span class="font-medium text-slate-700">Ajio</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-50 transition">
-                            <input type="radio" name="storeFilter" value="nykaa" onchange="onStoreFilterChange('nykaa')" class="text-indigo-600 focus:ring-indigo-500 rounded border-slate-300" {% if current_platform == 'nykaa' %}checked{% endif %}>
-                            <span class="w-2.5 h-2.5 rounded-full bg-[#FC2779]"></span>
-                            <span class="font-medium text-slate-700">Nykaa</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Min Discount Filter -->
-                <div>
-                    <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5">Minimum Discount</h2>
-                    <div class="grid grid-cols-2 gap-1.5 text-xs">
-                        <button onclick="setMinDiscount(0)" id="discChip0" class="disc-chip px-2.5 py-1.5 rounded-lg font-bold bg-indigo-600 text-white transition">Any %</button>
-                        <button onclick="setMinDiscount(20)" id="discChip20" class="disc-chip px-2.5 py-1.5 rounded-lg font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">20%+ OFF</button>
-                        <button onclick="setMinDiscount(40)" id="discChip40" class="disc-chip px-2.5 py-1.5 rounded-lg font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">40%+ OFF</button>
-                        <button onclick="setMinDiscount(60)" id="discChip60" class="disc-chip px-2.5 py-1.5 rounded-lg font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">60%+ OFF</button>
-                    </div>
-                </div>
-
-                <!-- Price Range Filter -->
-                <div>
-                    <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5">Price Range (₹)</h2>
-                    <div class="flex items-center gap-2">
-                        <input type="number" id="minPriceInput" placeholder="Min" class="w-1/2 bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-mono" />
-                        <span class="text-slate-400 text-xs">-</span>
-                        <input type="number" id="maxPriceInput" placeholder="Max" class="w-1/2 bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-mono" />
-                    </div>
-                    <button onclick="applyPriceRange()" class="mt-2 w-full py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs border border-slate-200 transition">
-                        Apply Price
-                    </button>
-                </div>
-
-            </div>
-        </aside>
-
-        <!-- ── Main Deals Feed & Toolbar ─────────────────────────────────── -->
-        <section class="flex-1 min-w-0">
-            
-            <!-- Toolbar: Header Title, Matches Counter & Sorting -->
-            <div class="bg-white border border-slate-200/90 rounded-2xl p-3.5 mb-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
-                <div>
-                    <h2 id="dealsSectionTitle" class="text-sm sm:text-base font-black text-slate-900">
-                        {% if cat_info %}All of Our {{ cat_info.name }}{% else %}All Live Deals & Offers{% endif %}
+                    <h2 id="dealsSectionTitle" class="text-sm sm:text-base font-black text-slate-900 leading-tight">
+                        {% if sub_info %}{{ sub_info.name }}{% elif cat_info %}All {{ cat_info.name }}{% else %}All Live Deals & Offers{% endif %}
                     </h2>
-                    <span class="text-xs text-slate-500 font-mono">
-                        Showing <span id="dealsMatchesCount" class="font-bold text-slate-900">{{ initial_data.total_matches if initial_data and initial_data.total_matches else 0 }}</span> deals found
+                    <span class="text-[11px] text-slate-500 font-mono">
+                        Showing <span id="dealsMatchesCount" class="font-bold text-slate-900">{{ initial_data.total_matches if initial_data and initial_data.total_matches else 0 }}</span> products
                     </span>
                 </div>
+            </div>
 
-                <div class="flex items-center gap-2">
-                    <label for="dealsSortSelect" class="text-xs font-bold text-slate-500 hidden sm:inline">Sort By:</label>
-                    <select id="dealsSortSelect" onchange="onSortChange(this.value)" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 transition font-bold">
-                        <option value="latest">⚡ Recently Added</option>
-                        <option value="discount">🔥 Highest Discount %</option>
-                        <option value="price_asc">💰 Price: Low to High</option>
-                        <option value="price_desc">💎 Price: High to Low</option>
-                    </select>
+            <div class="flex items-center gap-2">
+                <label for="dealsSortSelect" class="text-xs font-bold text-slate-500 hidden sm:inline">Sort By:</label>
+                <select id="dealsSortSelect" onchange="onSortChange(this.value)" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 transition font-bold">
+                    <option value="latest">⚡ Recently Added</option>
+                    <option value="discount">🔥 Highest Discount %</option>
+                    <option value="price_asc">💰 Price: Low to High</option>
+                    <option value="price_desc">💎 Price: High to Low</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Products Grid Container -->
+        <div id="dealsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 transition-opacity duration-200">
+            {% if initial_data and initial_data.deals %}
+                {% for deal in initial_data.deals %}
+                {% include "consumer/partials/product_card.html" %}
+                {% endfor %}
+            {% else %}
+                <div class="col-span-full py-16 text-center text-xs text-slate-500 bg-white rounded-2xl border border-slate-200 p-8">
+                    <span class="text-3xl mb-2 block">🔍</span>
+                    <span class="font-bold text-slate-800 text-sm">No deals found matching your selected criteria.</span>
+                    <p class="text-slate-500 mt-1">Try resetting your filters or selecting a different category.</p>
+                    <button onclick="resetAllFilters()" class="mt-4 px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs">Reset All Filters</button>
                 </div>
-            </div>
-
-            <!-- Products Grid Container -->
-            <div id="dealsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 transition-opacity duration-200">
-                {% if initial_data and initial_data.deals %}
-                    {% for deal in initial_data.deals %}
-                    {% include "consumer/partials/product_card.html" %}
-                    {% endfor %}
-                {% else %}
-                    <div class="col-span-full py-16 text-center text-xs text-slate-500 bg-white rounded-2xl border border-slate-200 p-8">
-                        <span class="text-3xl mb-2 block">🔍</span>
-                        <span class="font-bold text-slate-800 text-sm">No deals found matching your selected criteria.</span>
-                        <p class="text-slate-500 mt-1">Try resetting your filters or selecting a different category.</p>
-                        <button onclick="resetAllFilters()" class="mt-4 px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs">Reset All Filters</button>
-                    </div>
-                {% endif %}
-            </div>
+            {% endif %}
+        </div>
 
             <!-- Pagination Bar -->
             <div id="dealsPaginationBar" class="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-slate-200/90 shadow-sm">
@@ -262,8 +152,143 @@
             </div>
 
         </section>
-    </div>
 </main>
+
+<!-- ── Filter Products Slide-Over Drawer Modal ────────────────────────────── -->
+<div id="filterProductsModal" class="hidden fixed inset-0 z-50 overflow-hidden">
+    <!-- Backdrop -->
+    <div onclick="closeFilterModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300"></div>
+
+    <!-- Slide-over Container -->
+    <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
+        <div class="w-screen max-w-md bg-white shadow-2xl flex flex-col justify-between">
+            
+            <!-- Modal Header -->
+            <div class="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shadow-md shadow-indigo-600/20">
+                        <i data-lucide="sliders-horizontal" class="w-4.5 h-4.5"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-black text-slate-900">Filter Products</h2>
+                        <p class="text-xs text-slate-500">Refine by audience, store, price & discount</p>
+                    </div>
+                </div>
+                <button onclick="closeFilterModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition" title="Close filters">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body (Scrollable) -->
+            <div class="p-5 overflow-y-auto custom-scrollbar space-y-6 flex-1">
+                
+                <!-- Audience / Gender Filter -->
+                <div>
+                    <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                        <span>👥</span> Audience / Gender
+                    </h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <button onclick="onGenderFilterChange('', this); closeFilterModal();" class="gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition text-center {% if not current_gender %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                            🌟 All
+                        </button>
+                        <button onclick="onGenderFilterChange('men', this); closeFilterModal();" class="gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition text-center {% if current_gender == 'men' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                            👨 Men
+                        </button>
+                        <button onclick="onGenderFilterChange('women', this); closeFilterModal();" class="gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition text-center {% if current_gender == 'women' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                            👩 Women
+                        </button>
+                        <button onclick="onGenderFilterChange('boys', this); closeFilterModal();" class="gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition text-center {% if current_gender == 'boys' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                            👦 Boys
+                        </button>
+                        <button onclick="onGenderFilterChange('girls', this); closeFilterModal();" class="gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition text-center {% if current_gender == 'girls' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                            👧 Girls
+                        </button>
+                        <button onclick="onGenderFilterChange('kids', this); closeFilterModal();" class="gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition text-center {% if current_gender == 'kids' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                            👶 Kids
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Store / Platform Filter -->
+                <div>
+                    <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                        <span>🏪</span> Store / Platform
+                    </h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="onStoreFilterChange(''); closeFilterModal();" class="px-3 py-2.5 rounded-xl text-xs font-bold transition text-left border {% if not current_platform %}bg-indigo-50 border-indigo-600 text-indigo-700 ring-1 ring-indigo-500/20{% else %}bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100{% endif %}">
+                            All 5 Stores
+                        </button>
+                        <button onclick="onStoreFilterChange('amazon'); closeFilterModal();" class="px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 border {% if current_platform == 'amazon' %}bg-amber-50 border-amber-500 text-amber-900 ring-1 ring-amber-500/20{% else %}bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100{% endif %}">
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#FF9900]"></span>
+                            <span>Amazon</span>
+                        </button>
+                        <button onclick="onStoreFilterChange('flipkart'); closeFilterModal();" class="px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 border {% if current_platform == 'flipkart' %}bg-blue-50 border-blue-500 text-blue-900 ring-1 ring-blue-500/20{% else %}bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100{% endif %}">
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#2874F0]"></span>
+                            <span>Flipkart</span>
+                        </button>
+                        <button onclick="onStoreFilterChange('myntra'); closeFilterModal();" class="px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 border {% if current_platform == 'myntra' %}bg-pink-50 border-pink-500 text-pink-900 ring-1 ring-pink-500/20{% else %}bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100{% endif %}">
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#FF3F6C]"></span>
+                            <span>Myntra</span>
+                        </button>
+                        <button onclick="onStoreFilterChange('ajio'); closeFilterModal();" class="px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 border {% if current_platform == 'ajio' %}bg-amber-50 border-amber-500 text-amber-900 ring-1 ring-amber-500/20{% else %}bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100{% endif %}">
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#D99814]"></span>
+                            <span>Ajio</span>
+                        </button>
+                        <button onclick="onStoreFilterChange('nykaa'); closeFilterModal();" class="px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 border {% if current_platform == 'nykaa' %}bg-rose-50 border-rose-500 text-rose-900 ring-1 ring-rose-500/20{% else %}bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100{% endif %}">
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#FC2779]"></span>
+                            <span>Nykaa</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Minimum Discount Filter -->
+                <div>
+                    <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                        <span>🔥</span> Minimum Discount
+                    </h3>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <button onclick="setMinDiscount(0); closeFilterModal();" id="discChip0" class="disc-chip px-3 py-2.5 rounded-xl font-bold bg-indigo-600 text-white transition text-center">Any %</button>
+                        <button onclick="setMinDiscount(20); closeFilterModal();" id="discChip20" class="disc-chip px-3 py-2.5 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-center">20%+ OFF</button>
+                        <button onclick="setMinDiscount(40); closeFilterModal();" id="discChip40" class="disc-chip px-3 py-2.5 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-center">40%+ OFF</button>
+                        <button onclick="setMinDiscount(60); closeFilterModal();" id="discChip60" class="disc-chip px-3 py-2.5 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-center">60%+ OFF</button>
+                        <button onclick="setMinDiscount(70); closeFilterModal();" id="discChip70" class="disc-chip col-span-2 px-3 py-2.5 rounded-xl font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition text-center">🔥 70%+ Off Loot</button>
+                    </div>
+                </div>
+
+                <!-- Custom Price Range & Quick Price Filters -->
+                <div>
+                    <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                        <span>💰</span> Price Range (₹)
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <input type="number" id="minPriceInput" placeholder="Min ₹" class="w-1/2 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-mono" />
+                        <span class="text-slate-400 text-xs">-</span>
+                        <input type="number" id="maxPriceInput" placeholder="Max ₹" class="w-1/2 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-mono" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mt-2">
+                        <button onclick="onPriceQuickFilter(499); closeFilterModal();" class="px-3 py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition text-center">⚡ Under ₹499</button>
+                        <button onclick="onPriceQuickFilter(999); closeFilterModal();" class="px-3 py-2 rounded-xl text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition text-center">⚡ Under ₹999</button>
+                    </div>
+                    <button onclick="applyPriceRange(); closeFilterModal();" class="mt-2.5 w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-sm">
+                        Apply Custom Price Range
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center gap-3">
+                <button onclick="resetAllFilters(); closeFilterModal();" class="w-1/3 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-200 transition text-center">
+                    Reset All
+                </button>
+                <button onclick="closeFilterModal()" class="w-2/3 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs transition shadow-md shadow-indigo-600/20 text-center">
+                    Show Products ➔
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -382,6 +407,7 @@
             if (nextBtn) nextBtn.disabled = (dealsState.page >= dealsState.totalPages);
 
             renderDealsCards(dealsState.items);
+            updateActiveFilterBadge();
         } catch (err) {
             if (grid && (!dealsState.items || dealsState.items.length === 0)) {
                 grid.innerHTML = '<div class="col-span-full py-12 text-center text-xs text-rose-600 font-semibold">Unable to load deals. Please check your connection.</div>';
@@ -659,6 +685,38 @@
                 }
             }
         }
+    function toggleFilterModal() {
+        const modal = document.getElementById('filterProductsModal');
+        if (modal) {
+            modal.classList.toggle('hidden');
+        }
+    }
+
+    function closeFilterModal() {
+        const modal = document.getElementById('filterProductsModal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    function updateActiveFilterBadge() {
+        let count = 0;
+        if (dealsState.gender) count++;
+        if (dealsState.platform) count++;
+        if (dealsState.minDiscount > 0) count++;
+        if (dealsState.minPrice > 0 || dealsState.maxPrice > 0) count++;
+        
+        const badge = document.getElementById('activeFilterBadge');
+        if (badge) {
+            if (count > 0) {
+                badge.textContent = count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+    }
+
     window.addEventListener('popstate', function(e) {
         const params = new URLSearchParams(window.location.search);
         dealsState.category = params.get('category') || '{{ current_category }}';
