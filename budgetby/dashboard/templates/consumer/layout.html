@@ -100,7 +100,13 @@
 
             <!-- Primary Navigation Links (Desktop) -->
             <nav class="hidden lg:flex items-center gap-1 text-xs font-bold" aria-label="Main Navigation">
-                <a href="/deals" class="px-3 py-1.5 rounded-lg text-slate-700 hover:text-indigo-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+                
+            <button onclick="openReviewModal(); toggleMobileMenu();" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-indigo-700 bg-indigo-50 hover:bg-indigo-100 text-xs font-bold transition text-left">
+                <i data-lucide="plus-circle" class="w-4 h-4 text-indigo-600"></i>
+                <span>Submit Product for Review</span>
+            </button>
+
+            <a href="/deals" class="px-3 py-1.5 rounded-lg text-slate-700 hover:text-indigo-600 hover:bg-slate-100 transition flex items-center gap-1.5">
                     <i data-lucide="tag" class="w-4 h-4 text-indigo-600"></i>
                     <span>All Deals</span>
                 </a>
@@ -416,6 +422,76 @@
                     <i data-lucide="copy" class="w-4 h-4"></i>
                     <span id="shareCopyLinkText">Copy Verified Deal Link</span>
                 </button>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- ── Send Product for Review Modal ────────────────────────────────────── -->
+    <div id="reviewModalOverlay" onclick="closeReviewModal()" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-200 opacity-0 pointer-events-none">
+        <div onclick="event.stopPropagation()" class="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 shadow-2xl text-slate-900 relative">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-600 flex items-center justify-center shrink-0">
+                        <i data-lucide="clipboard-check" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-slate-900 text-base">Send Product for Review</h3>
+                        <p class="text-[11px] text-slate-500">Crowdsourced Algorithmic Price Audit</p>
+                    </div>
+                </div>
+                <button onclick="closeReviewModal()" class="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-600 mb-4 leading-relaxed">
+                Did our 30, 60 & 120-day baseline algorithm miss a price drop, or did you spot a cheaper price on Amazon, Flipkart, Myntra, Ajio, or Nykaa? Submit the product and our automated scrapers will immediately prioritize an algorithmic re-scan.
+            </p>
+
+            <form id="reviewModalForm" onsubmit="submitReviewForm(event)" class="space-y-3">
+                <input type="hidden" id="reviewProductId" value="">
+                
+                <div>
+                    <label for="reviewProductTitle" class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Product Title</label>
+                    <input type="text" id="reviewProductTitle" placeholder="e.g. Sony WH-1000XM5 Wireless Headphones" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 transition font-medium" />
+                </div>
+
+                <div>
+                    <label for="reviewProductUrl" class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Product URL <span class="text-rose-500">*</span></label>
+                    <input type="url" id="reviewProductUrl" required placeholder="https://www.amazon.in/dp/... or Flipkart link" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 transition font-mono" />
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="reviewObservedPrice" class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Observed Price (₹)</label>
+                        <input type="number" id="reviewObservedPrice" placeholder="e.g. 19999" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 transition font-mono" />
+                    </div>
+                    <div>
+                        <label for="reviewNotes" class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Note (Optional)</label>
+                        <input type="text" id="reviewNotes" placeholder="e.g. Lightning deal / coupon" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 transition" />
+                    </div>
+                </div>
+
+                <div id="reviewModalFeedback" class="hidden text-xs rounded-xl p-3 font-medium"></div>
+
+                <div class="flex items-center gap-2 pt-2">
+                    <button type="button" onclick="closeReviewModal()" class="flex-1 py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border border-slate-200 transition">
+                        Cancel
+                    </button>
+                    <button type="submit" id="reviewSubmitBtn" class="flex-1 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm shadow-indigo-600/20 transition">
+                        <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                        <span id="reviewSubmitBtnText">Submit for Review</span>
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                <span>Prefer Telegram?</span>
+                <a href="https://t.me/Deal_pulse_alert_bot" target="_blank" rel="noopener noreferrer" class="font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                    <span>Send to @Deal_pulse_alert_bot</span>
+                    <i data-lucide="external-link" class="w-3 h-3"></i>
+                </a>
             </div>
         </div>
     </div>

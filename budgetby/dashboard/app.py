@@ -1727,6 +1727,111 @@ async def report_product_price(product_id: int):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+
+@app.post("/api/public/submit-review")
+async def submit_product_review(request: Request):
+    """
+    Public endpoint to submit any product (existing ID or external URL) for algorithmic review.
+    Prioritizes the product in the verification and scraping queue.
+    """
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+
+    product_id = data.get("product_id")
+    url = (data.get("url") or "").strip()
+    title = (data.get("title") or "").strip()
+    observed_price = data.get("observed_price")
+    notes = (data.get("notes") or "").strip()
+
+    if product_id:
+        try:
+            pid = int(product_id)
+            exists = await database.fetchval("SELECT id FROM products WHERE id = $1;", pid)
+            if exists:
+                await database.execute("""
+                    UPDATE products 
+                    SET last_checked = '2000-01-01'::timestamptz,
+                        priority_tier = 1,
+                        next_check = NOW()
+                    WHERE id = $1;
+                """, pid)
+                return {
+                    "status": "success",
+                    "product_id": pid,
+                    "message": "Product queued for immediate algorithmic verification."
+                }
+        except Exception as e:
+            logger.error(f"Error resetting product by ID: {e}")
+
+    if not url or not (url.startswith("http://") or url.startswith("https://")):
+        raise HTTPException(status_code=400, detail="A valid product URL is required.")
+
+    # Detect platform
+    plat = "amazon"
+    url_lower = url.lower()
+    if "flipkart.com" in url_lower or "fkrt.it" in url_lower:
+        plat = "flipkart"
+    elif "myntra.com" in url_lower:
+        plat = "myntra"
+    elif "ajio.com" in url_lower:
+        plat = "ajio"
+    elif "nykaa.com" in url_lower:
+        plat = "nykaa"
+    elif "croma.com" in url_lower:
+        plat = "croma"
+
+    # Check if exists by URL
+    existing_id = await database.fetchval(
+        "SELECT id FROM products WHERE product_url = $1 OR affiliate_url = $1 LIMIT 1;", url
+    )
+
+    if existing_id:
+        await database.execute("""
+            UPDATE products 
+            SET last_checked = '2000-01-01'::timestamptz,
+                priority_tier = 1,
+                next_check = NOW()
+            WHERE id = $1;
+        """, existing_id)
+        return {
+            "status": "success",
+            "product_id": existing_id,
+            "message": "Product found in catalog and queued for immediate re-verification."
+        }
+
+    # Queue new product
+    import hashlib
+    platform_id = hashlib.md5(url.encode()).hexdigest()[:16]
+    clean_title = title if title else f"Submitted {plat.capitalize()} Deal"
+    try:
+        new_id = await database.fetchval("""
+            INSERT INTO products (
+                platform, platform_id, title, category, product_url, affiliate_url,
+                current_price, status, priority_tier, next_check, last_checked
+            ) VALUES (
+                $1, $2, $3, 'general', $4, $4,
+                $5, 'ACTIVE', 1, NOW(), '2000-01-01'::timestamptz
+            )
+            ON CONFLICT (platform, platform_id) DO UPDATE 
+            SET priority_tier = 1, next_check = NOW(), last_checked = '2000-01-01'::timestamptz
+            RETURNING id;
+        """, plat, platform_id, clean_title, url, float(observed_price) if observed_price else 0)
+
+        return {
+            "status": "success",
+            "product_id": new_id,
+            "message": "New product added to catalog and queued for priority verification."
+        }
+    except Exception as e:
+        logger.error(f"Error ingesting submitted review product: {e}")
+        return {
+            "status": "success",
+            "message": "Product received and queued for review."
+        }
+
+
 @app.get("/api/public/deals")
 async def get_public_deals(
     platform: str = Query("", max_length=50),

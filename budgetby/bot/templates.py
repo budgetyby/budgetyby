@@ -140,6 +140,7 @@ def format_mega_deal(product: dict, deal_result: dict = None) -> str:
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += "🔍 <i>Missed a price drop? Send product link to @Deal_pulse_alert_bot for review!</i>\n"
     text += f"{hashtags}"
         
     return text
@@ -176,6 +177,7 @@ def format_today_deal(product: dict, deal_result: dict = None) -> str:
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += "🔍 <i>Missed a price drop? Send product link to @Deal_pulse_alert_bot for review!</i>\n"
     text += f"{hashtags}"
 
     return text
@@ -212,6 +214,7 @@ def format_hot_deal(product: dict, deal_result: dict = None) -> str:
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += "🔍 <i>Missed a price drop? Send product link to @Deal_pulse_alert_bot for review!</i>\n"
     text += f"{hashtags}"
         
     return text
@@ -242,6 +245,7 @@ def format_good_deal(product: dict, deal_result: dict = None) -> str:
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += "🔍 <i>Missed a price drop? Send product link to @Deal_pulse_alert_bot for review!</i>\n"
     text += f"{hashtags}"
     return text
 
@@ -275,6 +279,7 @@ def format_evergreen_deal(product: dict, post_count: int = 1) -> str:
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += "🔍 <i>Missed a price drop? Send product link to @Deal_pulse_alert_bot for review!</i>\n"
     text += f"{hashtags}"
     return text
 
@@ -332,6 +337,7 @@ def format_refurbished_deal(product: dict, new_product: dict = None) -> str:
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += "🔍 <i>Missed a price drop? Send product link to @Deal_pulse_alert_bot for review!</i>\n"
     text += f"{hashtags}"
     return text
 
@@ -382,6 +388,7 @@ def format_back_in_stock(product: dict, days_oos: int = 0) -> str:
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += "🔍 <i>Missed a price drop? Send product link to @Deal_pulse_alert_bot for review!</i>\n"
     text += f"{hashtags}"
     return text
 
