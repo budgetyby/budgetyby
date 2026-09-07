@@ -1,10 +1,10 @@
 {% extends "consumer/layout.html" %}
 
 {% set cat_info = categories_taxonomy.get(current_category) if current_category and current_category in categories_taxonomy else None %}
-{% set page_heading = (cat_info.name if cat_info else 'All Verified Deals & Offers') %}
+{% set page_heading = (cat_info.name if cat_info else 'All Deals & Offers') %}
 
 {% block title %}{{ page_heading }} Tracker — BudgetBy{% endblock %}
-{% block description %}Browse live, verified {{ page_heading }} across Amazon, Flipkart, Myntra, Ajio, and Nykaa. Filtered against 30, 60 & 120-day median baselines.{% endblock %}
+{% block description %}Browse live {{ page_heading }} across Amazon, Flipkart, Myntra, Ajio, and Nykaa. Filtered against 30, 60 & 120-day median price baselines.{% endblock %}
 
 {% block content %}
 <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full pt-4 pb-16">
@@ -52,41 +52,48 @@
         </div>
     </div>
 
-    <!-- ── Visual Subcategories Card Showcase (When Category is Selected) ─ -->
+    <!-- ── Visual Subcategories Card Showcase (5 in a Row Large Cards) ─── -->
     {% if cat_info and cat_info.subcategories %}
     <section class="mb-6">
-        <div class="flex items-center justify-between mb-2.5">
-            <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Explore {{ cat_info.name }} Subcategories</h2>
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                <span>{{ cat_info.icon }}</span>
+                <span>Select {{ cat_info.name }} Category</span>
+            </h2>
             <span class="text-[11px] text-indigo-600 font-bold">1-Tap Filter</span>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 sm:gap-3 overflow-x-auto no-scrollbar py-1">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-4 py-1">
             
-            <!-- All in category button card -->
+            <!-- All in category large button card -->
             <button onclick="onSubcategoryClick('', this)" 
-                    class="subcat-card p-2.5 rounded-2xl border transition-all text-center flex flex-col items-center justify-between min-h-[95px] {% if not current_sub %}bg-indigo-600 text-white border-indigo-600 shadow-md{% else %}bg-white border-slate-200 text-slate-800 hover:border-indigo-400{% endif %}">
-                <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl mb-1">
+                    class="subcat-card rounded-2xl border transition-all text-left flex flex-col justify-between overflow-hidden min-h-[140px] shadow-sm {% if not current_sub %}bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-500/30{% else %}bg-white border-slate-200 text-slate-900 hover:border-indigo-400 hover:shadow-md{% endif %}">
+                <div class="w-full h-24 sm:h-28 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center text-4xl">
                     {{ cat_info.icon }}
                 </div>
-                <span class="text-[11px] font-black leading-tight">All {{ cat_info.name.split(' ')[0] }}</span>
+                <div class="p-2.5 sm:p-3">
+                    <span class="text-xs sm:text-sm font-black block leading-tight">All {{ cat_info.name }}</span>
+                    <span class="text-[10px] {% if not current_sub %}text-indigo-100{% else %}text-slate-500{% endif %} font-medium">Browse All Deals</span>
+                </div>
             </button>
 
             {% for sub_key, sub_val in cat_info.subcategories.items() %}
             <button onclick="onSubcategoryClick('{{ sub_key }}', this)" 
                     data-sub-key="{{ sub_key }}"
-                    class="subcat-card relative group rounded-2xl border overflow-hidden transition-all text-left flex flex-col justify-between min-h-[95px] {% if current_sub == sub_key %}bg-indigo-50 border-indigo-600 ring-2 ring-indigo-500/20 shadow-md{% else %}bg-white border-slate-200 hover:border-indigo-400 hover:shadow-sm{% endif %}">
+                    class="subcat-card relative group rounded-2xl border overflow-hidden transition-all text-left flex flex-col justify-between min-h-[140px] shadow-sm {% if current_sub == sub_key %}bg-indigo-50 border-indigo-600 ring-2 ring-indigo-500/20 shadow-md{% else %}bg-white border-slate-200 hover:border-indigo-400 hover:shadow-md{% endif %}">
                 
                 <!-- Subcategory Image Thumbnail -->
-                <div class="relative w-full h-14 bg-slate-100 overflow-hidden">
-                    <img src="{{ sub_val.image }}" alt="{{ sub_val.name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy" />
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                    <span class="absolute bottom-1 left-1.5 text-sm">{{ sub_val.icon }}</span>
+                <div class="relative w-full h-24 sm:h-28 bg-slate-100 overflow-hidden">
+                    <img src="{{ sub_val.image }}" alt="{{ sub_val.name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
+                    <span class="absolute bottom-2 left-2 text-lg drop-shadow">{{ sub_val.icon }}</span>
                 </div>
 
                 <!-- Subcategory Name Inside Box -->
-                <div class="p-1.5 sm:p-2">
-                    <span class="text-[11px] font-bold text-slate-900 line-clamp-1 block leading-tight group-hover:text-indigo-600 transition">
+                <div class="p-2.5 sm:p-3 bg-white">
+                    <span class="text-xs sm:text-sm font-bold text-slate-900 line-clamp-1 block leading-tight group-hover:text-indigo-600 transition">
                         {{ sub_val.name }}
                     </span>
+                    <span class="text-[10px] text-indigo-600 font-semibold mt-0.5 block">Explore ➔</span>
                 </div>
             </button>
             {% endfor %}
@@ -188,24 +195,6 @@
                     </div>
                 </div>
 
-                <!-- Category Switcher Filter -->
-                <div>
-                    <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5">Switch Department</h2>
-                    <select id="dealsCategorySelect" onchange="onCategoryFilterChange(this.value)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-bold">
-                        <option value="">All Departments</option>
-                        <option value="fashion" {% if current_category == 'fashion' %}selected{% endif %}>👗 Fashion & Apparel</option>
-                        <option value="beauty" {% if current_category == 'beauty' %}selected{% endif %}>💄 Beauty & Skincare</option>
-                        <option value="electronics" {% if current_category == 'electronics' %}selected{% endif %}>📱 Electronics & Gadgets</option>
-                        <option value="home" {% if current_category == 'home' %}selected{% endif %}>🏠 Home & Kitchen</option>
-                        <option value="sports" {% if current_category == 'sports' %}selected{% endif %}>🏋️ Sports & Fitness</option>
-                        <option value="footwear" {% if current_category == 'footwear' %}selected{% endif %}>👟 Footwear & Shoes</option>
-                        <option value="watches" {% if current_category == 'watches' %}selected{% endif %}>⌚ Watches</option>
-                        <option value="bags" {% if current_category == 'bags' %}selected{% endif %}>👜 Bags & Luggage</option>
-                        <option value="toys_kids" {% if current_category == 'toys_kids' %}selected{% endif %}>🧸 Toys & Kids</option>
-                        <option value="automotive" {% if current_category == 'automotive' %}selected{% endif %}>🚗 Auto & Bikes</option>
-                    </select>
-                </div>
-
                 <!-- Min Discount Filter -->
                 <div>
                     <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5">Minimum Discount</h2>
@@ -240,17 +229,17 @@
             <div class="bg-white border border-slate-200/90 rounded-2xl p-3.5 mb-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
                 <div>
                     <h2 id="dealsSectionTitle" class="text-sm sm:text-base font-black text-slate-900">
-                        {% if cat_info %}All of Our {{ cat_info.name }}{% else %}All Live Verified Deals{% endif %}
+                        {% if cat_info %}All of Our {{ cat_info.name }}{% else %}All Live Deals & Offers{% endif %}
                     </h2>
                     <span class="text-xs text-slate-500 font-mono">
-                        Showing <span id="dealsMatchesCount" class="font-bold text-slate-900">{{ initial_data.total_matches if initial_data and initial_data.total_matches else 0 }}</span> verified items
+                        Showing <span id="dealsMatchesCount" class="font-bold text-slate-900">{{ initial_data.total_matches if initial_data and initial_data.total_matches else 0 }}</span> deals found
                     </span>
                 </div>
 
                 <div class="flex items-center gap-2">
                     <label for="dealsSortSelect" class="text-xs font-bold text-slate-500 hidden sm:inline">Sort By:</label>
                     <select id="dealsSortSelect" onchange="onSortChange(this.value)" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 transition font-bold">
-                        <option value="latest">⚡ Recently Verified</option>
+                        <option value="latest">⚡ Recently Added</option>
                         <option value="discount">🔥 Highest Discount %</option>
                         <option value="price_asc">💰 Price: Low to High</option>
                         <option value="price_desc">💎 Price: High to Low</option>
@@ -268,7 +257,7 @@
                     <div class="col-span-full py-16 text-center text-xs text-slate-500 bg-white rounded-2xl border border-slate-200 p-8">
                         <span class="text-3xl mb-2 block">🔍</span>
                         <span class="font-bold text-slate-800 text-sm">No deals found matching your selected criteria.</span>
-                        <p class="text-slate-500 mt-1">Try resetting your filters or selecting a different subcategory.</p>
+                        <p class="text-slate-500 mt-1">Try resetting your filters or selecting a different category.</p>
                         <button onclick="resetAllFilters()" class="mt-4 px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs">Reset All Filters</button>
                     </div>
                 {% endif %}
@@ -430,8 +419,8 @@
             grid.innerHTML = `
                 <div class="col-span-full py-16 text-center text-xs text-slate-500 bg-white rounded-2xl border border-slate-200 p-8">
                     <span class="text-3xl mb-2 block">🔍</span>
-                    <span class="font-bold text-slate-800 text-sm">No verified deals match your filter criteria.</span>
-                    <p class="text-slate-500 mt-1">Try resetting your filters or selecting another subcategory.</p>
+                    <span class="font-bold text-slate-800 text-sm">No deals found matching your selected criteria.</span>
+                    <p class="text-slate-500 mt-1">Try resetting your filters or selecting another category.</p>
                     <button onclick="resetAllFilters()" class="mt-4 px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs">Reset All Filters</button>
                 </div>
             `;
@@ -512,7 +501,7 @@
                             ${rating > 0 ? `
                             <span class="flex items-center gap-1 font-bold text-amber-600 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200/60">
                                 <span>★</span> ${rating.toFixed(1)} ${reviews > 0 ? `<span class="text-slate-400 font-normal">(${reviews})</span>` : ''}
-                            </span>` : `<span class="text-slate-400 text-[10px] font-medium">Verified Price</span>`}
+                            </span>` : `<span class="text-slate-400 text-[10px] font-medium">Live Price</span>`}
                             <span class="text-slate-400 font-mono text-[9px]">${deal.deal_time ? 'Recently' : 'Live'}</span>
                         </div>
 
@@ -544,6 +533,15 @@
                             <span>Buy on ${storeCfg.name}</span>
                             <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
                         </a>
+
+                        <!-- Report Price Change -->
+                        <div class="mt-2 flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-50">
+                            <span>Price changed?</span>
+                            <button onclick="handleSendForReview(${deal.product_id || deal.id}, '${safeTitle.replace(/'/g, "\'")}', '${dealLink.replace(/'/g, "\'")}', ${cp})" 
+                                    class="font-semibold text-indigo-600 hover:text-indigo-800 transition">
+                                Report Change
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -556,10 +554,10 @@
         dealsState.sub = subKey;
         dealsState.page = 1;
         document.querySelectorAll('.subcat-card').forEach(c => {
-            c.className = 'subcat-card relative group rounded-2xl border overflow-hidden transition-all text-left flex flex-col justify-between min-h-[95px] bg-white border-slate-200 hover:border-indigo-400 hover:shadow-sm';
+            c.className = 'subcat-card relative group rounded-2xl border overflow-hidden transition-all text-left flex flex-col justify-between min-h-[140px] shadow-sm bg-white border-slate-200 hover:border-indigo-400 hover:shadow-md';
         });
         if (btn) {
-            btn.className = 'subcat-card relative group rounded-2xl border overflow-hidden transition-all text-left flex flex-col justify-between min-h-[95px] bg-indigo-50 border-indigo-600 ring-2 ring-indigo-500/20 shadow-md';
+            btn.className = 'subcat-card relative group rounded-2xl border overflow-hidden transition-all text-left flex flex-col justify-between min-h-[140px] shadow-sm bg-indigo-50 border-indigo-600 ring-2 ring-indigo-500/20 shadow-md';
         }
         loadDeals();
     }
@@ -589,14 +587,6 @@
         dealsState.platform = plat;
         dealsState.page = 1;
         loadDeals();
-    }
-
-    function onCategoryFilterChange(cat) {
-        if (cat) {
-            window.location.href = `/deals?category=${encodeURIComponent(cat)}`;
-        } else {
-            window.location.href = '/deals';
-        }
     }
 
     function setMinDiscount(pct) {

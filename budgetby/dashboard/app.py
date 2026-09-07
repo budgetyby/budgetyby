@@ -1144,14 +1144,14 @@ UNIVERSAL_CATEGORIES = {
         "aliases": ["fashion", "clothing", "apparel", "wear"],
         "keywords": ["t-shirt", "shirt", "kurta", "kurti", "saree", "jeans", "trouser", "dress", "top", "jacket", "hoodie", "boxer", "lehenga", "ethnic"],
         "subcategories": {
-            "tshirts": {"name": "T-Shirts & Polos", "icon": "👕", "keywords": ["t-shirt", "tshirt", "polo", "printed t-shirt", "oversized t-shirt", "round neck"], "image": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=400&auto=format&fit=crop&q=80"},
-            "shirts": {"name": "Casual & Formal Shirts", "icon": "👔", "keywords": ["shirt", "shirts", "casual shirt", "formal shirt", "spread collar", "cotton shirt"], "image": "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400&auto=format&fit=crop&q=80"},
-            "kurta": {"name": "Kurtas & Ethnic Wear", "icon": "✨", "keywords": ["kurta", "kurti", "saree", "anarkali", "ethnic", "nehru jacket", "lehenga", "sherwani"], "image": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&auto=format&fit=crop&q=80"},
-            "jeans": {"name": "Jeans & Denim", "icon": "👖", "keywords": ["jeans", "denim", "skinny fit", "slim fit jeans", "straight fit jeans", "baggy jeans"], "image": "https://images.unsplash.com/photo-1542272604-780c96856592?w=400&auto=format&fit=crop&q=80"},
-            "trousers": {"name": "Trousers & Joggers", "icon": "👖", "keywords": ["trouser", "trousers", "chino", "cargos", "cargo pant", "track pant", "joggers"], "image": "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=400&auto=format&fit=crop&q=80"},
-            "dresses": {"name": "Dresses & Tops", "icon": "👗", "keywords": ["dress", "dresses", "maxi dress", "top", "crop top", "jumpsuit", "tunic"], "image": "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&auto=format&fit=crop&q=80"},
-            "jackets": {"name": "Jackets & Hoodies", "icon": "🧥", "keywords": ["jacket", "jackets", "hoodie", "hoodies", "sweatshirt", "blazer"], "image": "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&auto=format&fit=crop&q=80"},
-            "innerwear": {"name": "Innerwear & Loungewear", "icon": "🩲", "keywords": ["boxer", "brief", "innerwear", "trunks", "bra", "nightsuit", "pyjama", "lounge wear"], "image": "https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=400&auto=format&fit=crop&q=80"}
+            "tshirts": {"name": "T-Shirts & Polos", "icon": "👕", "keywords": ["t-shirt", "tshirt", "polo", "printed t-shirt", "oversized t-shirt", "round neck"], "image": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80"},
+            "shirts": {"name": "Casual & Formal Shirts", "icon": "👔", "keywords": ["shirt", "shirts", "casual shirt", "formal shirt", "spread collar", "cotton shirt"], "image": "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=500&auto=format&fit=crop&q=80"},
+            "kurta": {"name": "Kurtas & Ethnic Wear", "icon": "✨", "keywords": ["kurta", "kurti", "saree", "anarkali", "ethnic", "nehru jacket", "lehenga", "sherwani"], "image": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=500&auto=format&fit=crop&q=80"},
+            "jeans": {"name": "Jeans & Denim", "icon": "👖", "keywords": ["jeans", "denim", "skinny fit", "slim fit jeans", "straight fit jeans", "baggy jeans"], "image": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=500&auto=format&fit=crop&q=80"},
+            "trousers": {"name": "Trousers & Joggers", "icon": "👖", "keywords": ["trouser", "trousers", "chino", "cargos", "cargo pant", "track pant", "joggers"], "image": "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=500&auto=format&fit=crop&q=80"},
+            "dresses": {"name": "Dresses & Tops", "icon": "👗", "keywords": ["dress", "dresses", "maxi dress", "top", "crop top", "jumpsuit", "tunic"], "image": "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=500&auto=format&fit=crop&q=80"},
+            "jackets": {"name": "Jackets & Hoodies", "icon": "🧥", "keywords": ["jacket", "jackets", "hoodie", "hoodies", "sweatshirt", "blazer"], "image": "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=500&auto=format&fit=crop&q=80"},
+            "innerwear": {"name": "Innerwear & Loungewear", "icon": "🩲", "keywords": ["boxer", "brief", "innerwear", "trunks", "bra", "nightsuit", "pyjama", "lounge wear"], "image": "https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=500&auto=format&fit=crop&q=80"}
         }
     },
     "beauty": {
@@ -1167,14 +1167,14 @@ UNIVERSAL_CATEGORIES = {
         "aliases": ["beauty", "skincare", "cosmetics", "grooming", "personal_care"],
         "keywords": ["face wash", "sunscreen", "serum", "moisturizer", "perfume", "shampoo", "lipstick", "cream", "lotion", "deodorant"],
         "subcategories": {
-            "sunscreen": {"name": "Sunscreen & SPF 50", "icon": "☀️", "keywords": ["sunscreen", "sun block", "spf 50", "spf 30", "sun screen"], "image": "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&auto=format&fit=crop&q=80"},
-            "facewash": {"name": "Face Wash & Cleansers", "icon": "🧼", "keywords": ["face wash", "facewash", "cleanser", "face scrub", "foaming face wash"], "image": "https://images.unsplash.com/photo-1556228722-d0b714578b88?w=400&auto=format&fit=crop&q=80"},
-            "serum": {"name": "Serums & Face Oils", "icon": "💧", "keywords": ["serum", "face serum", "niacinamide", "salicylic acid", "vitamin c serum", "retinol"], "image": "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&auto=format&fit=crop&q=80"},
-            "moisturizer": {"name": "Moisturizers & Creams", "icon": "🧴", "keywords": ["moisturizer", "moisturising cream", "body lotion", "night cream", "day cream"], "image": "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=400&auto=format&fit=crop&q=80"},
-            "perfume": {"name": "Perfumes & Deos", "icon": "🌸", "keywords": ["perfume", "eau de parfum", "deodorant", "deo", "body spray", "body mist", "attar"], "image": "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=400&auto=format&fit=crop&q=80"},
-            "haircare": {"name": "Shampoos & Haircare", "icon": "💆", "keywords": ["shampoo", "conditioner", "hair oil", "hair mask", "hair serum"], "image": "https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&auto=format&fit=crop&q=80"},
-            "makeup": {"name": "Lipsticks & Makeup", "icon": "💋", "keywords": ["lipstick", "kajal", "eyeliner", "foundation", "compact", "mascara", "blush"], "image": "https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=400&auto=format&fit=crop&q=80"},
-            "grooming": {"name": "Men's Grooming", "icon": "🪒", "keywords": ["trimmer", "beard oil", "shaving", "razor", "after shave", "beard wash"], "image": "https://images.unsplash.com/photo-1621607512214-68297480165e?w=400&auto=format&fit=crop&q=80"}
+            "sunscreen": {"name": "Sunscreen & SPF 50", "icon": "☀️", "keywords": ["sunscreen", "sun block", "spf 50", "spf 30", "sun screen"], "image": "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=500&auto=format&fit=crop&q=80"},
+            "facewash": {"name": "Face Wash & Cleansers", "icon": "🧼", "keywords": ["face wash", "facewash", "cleanser", "face scrub", "foaming face wash"], "image": "https://images.unsplash.com/photo-1556228722-d0b714578b88?w=500&auto=format&fit=crop&q=80"},
+            "serum": {"name": "Serums & Face Oils", "icon": "💧", "keywords": ["serum", "face serum", "niacinamide", "salicylic acid", "vitamin c serum", "retinol"], "image": "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=500&auto=format&fit=crop&q=80"},
+            "moisturizer": {"name": "Moisturizers & Creams", "icon": "🧴", "keywords": ["moisturizer", "moisturising cream", "body lotion", "night cream", "day cream"], "image": "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=500&auto=format&fit=crop&q=80"},
+            "perfume": {"name": "Perfumes & Deos", "icon": "🌸", "keywords": ["perfume", "eau de parfum", "deodorant", "deo", "body spray", "body mist", "attar"], "image": "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=500&auto=format&fit=crop&q=80"},
+            "haircare": {"name": "Shampoos & Haircare", "icon": "💆", "keywords": ["shampoo", "conditioner", "hair oil", "hair mask", "hair serum"], "image": "https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=500&auto=format&fit=crop&q=80"},
+            "makeup": {"name": "Lipsticks & Makeup", "icon": "💋", "keywords": ["lipstick", "kajal", "eyeliner", "foundation", "compact", "mascara", "blush"], "image": "https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=500&auto=format&fit=crop&q=80"},
+            "grooming": {"name": "Men's Grooming", "icon": "🪒", "keywords": ["trimmer", "beard oil", "shaving", "razor", "after shave", "beard wash"], "image": "https://images.unsplash.com/photo-1621607512214-68297480165e?w=500&auto=format&fit=crop&q=80"}
         }
     },
     "electronics": {
@@ -1190,12 +1190,12 @@ UNIVERSAL_CATEGORIES = {
         "aliases": ["electronics", "smartphones", "laptops", "appliances", "gadgets"],
         "keywords": ["earphone", "headphone", "earbuds", "tws", "speaker", "power bank", "charger", "smartphone", "laptop", "tablet"],
         "subcategories": {
-            "earbuds": {"name": "TWS Earbuds", "icon": "🎧", "keywords": ["earbuds", "tws", "airbuds", "airdopes", "wireless earbuds", "true wireless"], "image": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400&auto=format&fit=crop&q=80"},
-            "headphones": {"name": "Headphones & Neckbands", "icon": "🎧", "keywords": ["headphone", "headphones", "neckband", "earphone", "earphones", "wired earphone"], "image": "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400&auto=format&fit=crop&q=80"},
-            "speakers": {"name": "Bluetooth Speakers", "icon": "🔊", "keywords": ["speaker", "speakers", "bluetooth speaker", "soundbar", "party speaker"], "image": "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&auto=format&fit=crop&q=80"},
-            "powerbanks": {"name": "Power Banks & Fast Chargers", "icon": "🔋", "keywords": ["power bank", "powerbank", "fast charger", "adapter", "usb cable", "type-c", "charging cable"], "image": "https://images.unsplash.com/photo-1609592807664-9b5a2bf4eec8?w=400&auto=format&fit=crop&q=80"},
-            "smartphones": {"name": "Smartphones", "icon": "📱", "keywords": ["smartphone", "mobile phone", "android phone", "iphone", "5g phone"], "image": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&auto=format&fit=crop&q=80"},
-            "laptops": {"name": "Laptops & Computing", "icon": "💻", "keywords": ["laptop", "laptops", "wireless mouse", "mechanical keyboard", "pen drive", "tablet"], "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&auto=format&fit=crop&q=80"}
+            "earbuds": {"name": "TWS Earbuds", "icon": "🎧", "keywords": ["earbuds", "tws", "airbuds", "airdopes", "wireless earbuds", "true wireless"], "image": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500&auto=format&fit=crop&q=80"},
+            "headphones": {"name": "Headphones & Neckbands", "icon": "🎧", "keywords": ["headphone", "headphones", "neckband", "earphone", "earphones", "wired earphone"], "image": "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=500&auto=format&fit=crop&q=80"},
+            "speakers": {"name": "Bluetooth Speakers", "icon": "🔊", "keywords": ["speaker", "speakers", "bluetooth speaker", "soundbar", "party speaker"], "image": "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=500&auto=format&fit=crop&q=80"},
+            "powerbanks": {"name": "Power Banks & Fast Chargers", "icon": "🔋", "keywords": ["power bank", "powerbank", "fast charger", "adapter", "usb cable", "type-c", "charging cable"], "image": "https://images.unsplash.com/photo-1609592807664-9b5a2bf4eec8?w=500&auto=format&fit=crop&q=80"},
+            "smartphones": {"name": "Smartphones", "icon": "📱", "keywords": ["smartphone", "mobile phone", "android phone", "iphone", "5g phone"], "image": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500&auto=format&fit=crop&q=80"},
+            "laptops": {"name": "Laptops & Computing", "icon": "💻", "keywords": ["laptop", "laptops", "wireless mouse", "mechanical keyboard", "pen drive", "tablet"], "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500&auto=format&fit=crop&q=80"}
         }
     },
     "home": {
@@ -1211,12 +1211,12 @@ UNIVERSAL_CATEGORIES = {
         "aliases": ["home", "kitchen", "household", "appliances_home"],
         "keywords": ["bottle", "lunch box", "pan", "cookware", "container", "dustbin", "bedsheet", "curtain", "kettle", "iron"],
         "subcategories": {
-            "bottles": {"name": "Bottles & Lunch Boxes", "icon": "🍶", "keywords": ["bottle", "water bottle", "flask", "insulated bottle", "lunch box", "sipper"], "image": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&auto=format&fit=crop&q=80"},
-            "cookware": {"name": "Cookware & Pans", "icon": "🍳", "keywords": ["cookware", "frying pan", "kadhai", "tawa", "pressure cooker", "non stick", "triply"], "image": "https://images.unsplash.com/photo-1584990347449-399e8d1a1200?w=400&auto=format&fit=crop&q=80"},
-            "storage": {"name": "Storage Containers", "icon": "📦", "keywords": ["container", "containers", "airtight jar", "spice rack", "kitchen organizer", "storage box"], "image": "https://images.unsplash.com/photo-1615865417491-9941019fbc00?w=400&auto=format&fit=crop&q=80"},
-            "cleaning": {"name": "Cleaning & Dustbins", "icon": "🧹", "keywords": ["dustbin", "garbage bin", "mop", "spin mop", "broom", "cleaning wiper"], "image": "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&auto=format&fit=crop&q=80"},
-            "bedding": {"name": "Bedsheets & Curtains", "icon": "🛏️", "keywords": ["bedsheet", "bed cover", "curtain", "curtains", "pillow cover", "towel", "blanket"], "image": "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=400&auto=format&fit=crop&q=80"},
-            "appliances": {"name": "Kitchen Appliances", "icon": "⚡", "keywords": ["kettle", "electric kettle", "air fryer", "mixer grinder", "chopper", "sandwich maker", "induction"], "image": "https://images.unsplash.com/photo-1585515320310-259814833e62?w=400&auto=format&fit=crop&q=80"}
+            "bottles": {"name": "Bottles & Lunch Boxes", "icon": "🍶", "keywords": ["bottle", "water bottle", "flask", "insulated bottle", "lunch box", "sipper"], "image": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop&q=80"},
+            "cookware": {"name": "Cookware & Pans", "icon": "🍳", "keywords": ["cookware", "frying pan", "kadhai", "tawa", "pressure cooker", "non stick", "triply"], "image": "https://images.unsplash.com/photo-1584990347449-399e8d1a1200?w=500&auto=format&fit=crop&q=80"},
+            "storage": {"name": "Storage Containers", "icon": "📦", "keywords": ["container", "containers", "airtight jar", "spice rack", "kitchen organizer", "storage box"], "image": "https://images.unsplash.com/photo-1590736969955-71cc94801759?w=500&auto=format&fit=crop&q=80"},
+            "cleaning": {"name": "Cleaning & Dustbins", "icon": "🧹", "keywords": ["dustbin", "garbage bin", "mop", "spin mop", "broom", "cleaning wiper"], "image": "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=500&auto=format&fit=crop&q=80"},
+            "bedding": {"name": "Bedsheets & Curtains", "icon": "🛏️", "keywords": ["bedsheet", "bed cover", "curtain", "curtains", "pillow cover", "towel", "blanket"], "image": "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=500&auto=format&fit=crop&q=80"},
+            "appliances": {"name": "Kitchen Appliances", "icon": "⚡", "keywords": ["kettle", "electric kettle", "air fryer", "mixer grinder", "chopper", "sandwich maker", "induction"], "image": "https://images.unsplash.com/photo-1585515320310-259814833e62?w=500&auto=format&fit=crop&q=80"}
         }
     },
     "sports": {
@@ -1230,13 +1230,16 @@ UNIVERSAL_CATEGORIES = {
         "image": "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=600&auto=format&fit=crop&q=80",
         "deal_count": "8,000+",
         "aliases": ["sports", "fitness", "gym", "workout"],
-        "keywords": ["gym", "yoga", "dumbbell", "badminton", "cricket", "cycling", "football", "fitness"],
+        "keywords": ["gym", "yoga", "dumbbell", "badminton", "cricket", "cycling", "football", "fitness", "running", "swimming"],
         "subcategories": {
-            "gym": {"name": "Gym & Weights", "icon": "💪", "keywords": ["dumbbell", "dumbbells", "resistance band", "gym shaker", "gym gloves", "weight plates", "barbell"], "image": "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400&auto=format&fit=crop&q=80"},
-            "yoga": {"name": "Yoga & Exercise", "icon": "🧘", "keywords": ["yoga mat", "exercise mat", "foam roller", "skipping rope", "ab roller"], "image": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&auto=format&fit=crop&q=80"},
-            "badminton": {"name": "Badminton Gear", "icon": "🏸", "keywords": ["badminton", "shuttlecock", "badminton racquet", "squash", "table tennis"], "image": "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=400&auto=format&fit=crop&q=80"},
-            "cricket": {"name": "Cricket Equipment", "icon": "🏏", "keywords": ["cricket bat", "cricket ball", "batting gloves", "cricket kit", "cricket helmet"], "image": "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=400&auto=format&fit=crop&q=80"},
-            "cycling": {"name": "Cycling & Outdoors", "icon": "🚴", "keywords": ["cycle", "bicycle", "cycling gloves", "cycle lock", "tent", "trekking"], "image": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=400&auto=format&fit=crop&q=80"}
+            "gym": {"name": "Gym & Weights", "icon": "💪", "keywords": ["dumbbell", "dumbbells", "resistance band", "gym shaker", "gym gloves", "weight plates", "barbell"], "image": "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=500&auto=format&fit=crop&q=80"},
+            "yoga": {"name": "Yoga & Exercise", "icon": "🧘", "keywords": ["yoga mat", "exercise mat", "foam roller", "skipping rope", "ab roller"], "image": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=500&auto=format&fit=crop&q=80"},
+            "badminton": {"name": "Badminton & Racket", "icon": "🏸", "keywords": ["badminton", "shuttlecock", "badminton racquet", "squash", "table tennis", "tennis"], "image": "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=500&auto=format&fit=crop&q=80"},
+            "cricket": {"name": "Cricket Gear", "icon": "🏏", "keywords": ["cricket bat", "cricket ball", "batting gloves", "cricket kit", "cricket helmet"], "image": "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=500&auto=format&fit=crop&q=80"},
+            "football": {"name": "Football & Team Sports", "icon": "⚽", "keywords": ["football", "soccer", "basketball", "volleyball", "shin guards", "goalkeeper", "jersey"], "image": "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=500&auto=format&fit=crop&q=80"},
+            "cycling": {"name": "Cycling & Outdoors", "icon": "🚴", "keywords": ["cycle", "bicycle", "cycling gloves", "cycle lock", "tent", "trekking"], "image": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=500&auto=format&fit=crop&q=80"},
+            "running": {"name": "Running & Athletics", "icon": "🏃", "keywords": ["running shoe", "sports shoe", "sports bra", "compression", "track suit", "jogging"], "image": "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=500&auto=format&fit=crop&q=80"},
+            "swimming": {"name": "Swimming & Water Sports", "icon": "🏊", "keywords": ["swimming", "swimsuit", "swim cap", "goggles", "swim wear", "water sports"], "image": "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=500&auto=format&fit=crop&q=80"}
         }
     },
     "footwear": {
@@ -1252,13 +1255,13 @@ UNIVERSAL_CATEGORIES = {
         "aliases": ["footwear", "shoes", "shoe"],
         "keywords": ["shoe", "shoes", "sneaker", "sneakers", "slipper", "slippers", "flip flop", "sandal", "sandals", "boot", "boots", "heel", "heels", "loafer", "loafers", "floaters", "clog", "crocs"],
         "subcategories": {
-            "sneakers": {"name": "Sneakers & Running", "icon": "👟", "keywords": ["sneaker", "running shoe", "sports shoe", "training shoe", "gym shoe", "casual sneaker"], "image": "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=400&auto=format&fit=crop&q=80"},
-            "slippers": {"name": "Slippers & Slides", "icon": "🩴", "keywords": ["slipper", "flip flop", "flip-flop", "slide", "slides", "chappal", "thong"], "image": "https://images.unsplash.com/photo-1603487742131-4160ec999306?w=400&auto=format&fit=crop&q=80"},
-            "formal": {"name": "Formal & Loafers", "icon": "👞", "keywords": ["formal shoe", "loafer", "oxford", "derby", "monk strap", "office shoe"], "image": "https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?w=400&auto=format&fit=crop&q=80"},
-            "heels": {"name": "Heels & Wedges", "icon": "👠", "keywords": ["heel", "heels", "wedge", "stilettos", "pump", "pumps", "block heel"], "image": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=400&auto=format&fit=crop&q=80"},
-            "boots": {"name": "Boots & High-Tops", "icon": "👢", "keywords": ["boot", "boots", "ankle boot", "high top", "chelsea boot"], "image": "https://images.unsplash.com/photo-1520639888713-7851133b1ed0?w=400&auto=format&fit=crop&q=80"},
-            "sandals": {"name": "Sandals & Floaters", "icon": "👡", "keywords": ["sandal", "sandals", "floater", "floaters", "strap sandal"], "image": "https://images.unsplash.com/photo-1562273138-f46be4ebdf33?w=400&auto=format&fit=crop&q=80"},
-            "clogs": {"name": "Clogs & Crocs", "icon": "🦶", "keywords": ["clog", "clogs", "crocs", "mule"], "image": "https://images.unsplash.com/photo-1575537302964-96cd47c06b1b?w=400&auto=format&fit=crop&q=80"}
+            "sneakers": {"name": "Sneakers & Running", "icon": "👟", "keywords": ["sneaker", "running shoe", "sports shoe", "training shoe", "gym shoe", "casual sneaker"], "image": "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=500&auto=format&fit=crop&q=80"},
+            "slippers": {"name": "Slippers & Slides", "icon": "🩴", "keywords": ["slipper", "flip flop", "flip-flop", "slide", "slides", "chappal", "thong"], "image": "https://images.unsplash.com/photo-1603487742131-4160ec999306?w=500&auto=format&fit=crop&q=80"},
+            "formal": {"name": "Formal & Loafers", "icon": "👞", "keywords": ["formal shoe", "loafer", "oxford", "derby", "monk strap", "office shoe"], "image": "https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?w=500&auto=format&fit=crop&q=80"},
+            "heels": {"name": "Heels & Wedges", "icon": "👠", "keywords": ["heel", "heels", "wedge", "stilettos", "pump", "pumps", "block heel"], "image": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=500&auto=format&fit=crop&q=80"},
+            "boots": {"name": "Boots & High-Tops", "icon": "👢", "keywords": ["boot", "boots", "ankle boot", "high top", "chelsea boot"], "image": "https://images.unsplash.com/photo-1520639888713-7851133b1ed0?w=500&auto=format&fit=crop&q=80"},
+            "sandals": {"name": "Sandals & Floaters", "icon": "👡", "keywords": ["sandal", "sandals", "floater", "floaters", "strap sandal"], "image": "https://images.unsplash.com/photo-1562273138-f46be4ebdf33?w=500&auto=format&fit=crop&q=80"},
+            "clogs": {"name": "Clogs & Crocs", "icon": "🦶", "keywords": ["clog", "clogs", "crocs", "mule"], "image": "https://images.unsplash.com/photo-1575537302964-96cd47c06b1b?w=500&auto=format&fit=crop&q=80"}
         }
     },
     "watches": {
@@ -1274,11 +1277,11 @@ UNIVERSAL_CATEGORIES = {
         "aliases": ["watches", "watch", "wristwatch"],
         "keywords": ["watch", "wrist watch", "analog watch", "digital watch", "chronograph", "smartwatch", "smart watch"],
         "subcategories": {
-            "menwatches": {"name": "Men's Watches", "icon": "⌚", "keywords": ["men watch", "analog watch men", "chronograph men", "leather strap watch", "sports watch men"], "image": "https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=400&auto=format&fit=crop&q=80"},
-            "womenwatches": {"name": "Women's Watches", "icon": "⌚", "keywords": ["women watch", "analog watch women", "rose gold watch", "dial watch women", "ladies watch"], "image": "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=400&auto=format&fit=crop&q=80"},
-            "smartwatches": {"name": "Smartwatches & Bands", "icon": "💡", "keywords": ["smartwatch", "smart watch", "fitness band", "smart band", "activity tracker", "mi band"], "image": "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=400&auto=format&fit=crop&q=80"},
-            "digital": {"name": "Digital & Sports", "icon": "🔢", "keywords": ["digital watch", "sport watch", "military watch", "casio", "g-shock"], "image": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&auto=format&fit=crop&q=80"},
-            "couple": {"name": "Couple Watches", "icon": "💑", "keywords": ["couple watch", "kids watch", "children watch", "kids digital watch"], "image": "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&auto=format&fit=crop&q=80"}
+            "menwatches": {"name": "Men's Watches", "icon": "⌚", "keywords": ["men watch", "analog watch men", "chronograph men", "leather strap watch", "sports watch men"], "image": "https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=500&auto=format&fit=crop&q=80"},
+            "womenwatches": {"name": "Women's Watches", "icon": "⌚", "keywords": ["women watch", "analog watch women", "rose gold watch", "dial watch women", "ladies watch"], "image": "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=500&auto=format&fit=crop&q=80"},
+            "smartwatches": {"name": "Smartwatches & Bands", "icon": "💡", "keywords": ["smartwatch", "smart watch", "fitness band", "smart band", "activity tracker", "mi band"], "image": "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=500&auto=format&fit=crop&q=80"},
+            "digital": {"name": "Digital & Sports", "icon": "🔢", "keywords": ["digital watch", "sport watch", "military watch", "casio", "g-shock"], "image": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=500&auto=format&fit=crop&q=80"},
+            "couple": {"name": "Couple Watches", "icon": "💑", "keywords": ["couple watch", "kids watch", "children watch", "kids digital watch"], "image": "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=500&auto=format&fit=crop&q=80"}
         }
     },
     "bags": {
@@ -1294,12 +1297,12 @@ UNIVERSAL_CATEGORIES = {
         "aliases": ["bags", "bag", "luggage", "wallets", "accessories"],
         "keywords": ["handbag", "tote", "backpack", "wallet", "belt", "sling bag", "clutch", "luggage", "trolley bag", "gym bag"],
         "subcategories": {
-            "handbags": {"name": "Handbags & Totes", "icon": "👜", "keywords": ["handbag", "tote bag", "shoulder bag", "satchel", "structured bag"], "image": "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=400&auto=format&fit=crop&q=80"},
-            "slingbags": {"name": "Sling & Crossbody", "icon": "👝", "keywords": ["sling bag", "crossbody", "side bag", "mini bag"], "image": "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&auto=format&fit=crop&q=80"},
-            "backpacks": {"name": "Backpacks & Duffels", "icon": "🎒", "keywords": ["backpack", "laptop backpack", "school bag", "duffel bag", "travel backpack", "rucksack"], "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&auto=format&fit=crop&q=80"},
-            "wallets": {"name": "Wallets & Cardholders", "icon": "👛", "keywords": ["wallet", "leather wallet", "card holder", "purse", "money clip"], "image": "https://images.unsplash.com/photo-1627123424574-724758594e93?w=400&auto=format&fit=crop&q=80"},
-            "belts": {"name": "Belts", "icon": "🪙", "keywords": ["belt", "leather belt", "formal belt", "casual belt", "reversible belt"], "image": "https://images.unsplash.com/photo-1624222247344-550fb60583dc?w=400&auto=format&fit=crop&q=80"},
-            "luggage": {"name": "Trolley & Travel Bags", "icon": "🧳", "keywords": ["trolley bag", "suitcase", "cabin luggage", "travel bag", "travel organizer"], "image": "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&auto=format&fit=crop&q=80"}
+            "handbags": {"name": "Handbags & Totes", "icon": "👜", "keywords": ["handbag", "tote bag", "shoulder bag", "satchel", "structured bag"], "image": "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=500&auto=format&fit=crop&q=80"},
+            "slingbags": {"name": "Sling & Crossbody", "icon": "👝", "keywords": ["sling bag", "crossbody", "side bag", "mini bag"], "image": "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=500&auto=format&fit=crop&q=80"},
+            "backpacks": {"name": "Backpacks & Duffels", "icon": "🎒", "keywords": ["backpack", "laptop backpack", "school bag", "duffel bag", "travel backpack", "rucksack"], "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500&auto=format&fit=crop&q=80"},
+            "wallets": {"name": "Wallets & Cardholders", "icon": "👛", "keywords": ["wallet", "leather wallet", "card holder", "purse", "money clip"], "image": "https://images.unsplash.com/photo-1627123424574-724758594e93?w=500&auto=format&fit=crop&q=80"},
+            "belts": {"name": "Belts", "icon": "🪙", "keywords": ["belt", "leather belt", "formal belt", "casual belt", "reversible belt"], "image": "https://images.unsplash.com/photo-1624222247344-550fb60583dc?w=500&auto=format&fit=crop&q=80"},
+            "luggage": {"name": "Trolley & Travel Bags", "icon": "🧳", "keywords": ["trolley bag", "suitcase", "cabin luggage", "travel bag", "travel organizer"], "image": "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=500&auto=format&fit=crop&q=80"}
         }
     },
     "toys_kids": {
@@ -1315,9 +1318,9 @@ UNIVERSAL_CATEGORIES = {
         "aliases": ["toys", "baby", "kids", "games"],
         "keywords": ["toy", "toys", "board game", "diaper", "baby", "puzzle", "kids"],
         "subcategories": {
-            "boardgames": {"name": "Board Games & Puzzles", "icon": "🎲", "keywords": ["board game", "puzzle", "monopoly", "uno", "chess", "rubik", "card game"], "image": "https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?w=400&auto=format&fit=crop&q=80"},
-            "toys": {"name": "Action Toys & LEGO", "icon": "🧸", "keywords": ["toy", "toys", "lego", "building blocks", "action figure", "remote control car", "doll"], "image": "https://images.unsplash.com/photo-1558877385-81a1c7e67d72?w=400&auto=format&fit=crop&q=80"},
-            "baby": {"name": "Baby & Diapers", "icon": "👶", "keywords": ["diaper", "diapers", "baby wipes", "baby lotion", "baby shampoo", "baby oil"], "image": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&auto=format&fit=crop&q=80"}
+            "boardgames": {"name": "Board Games & Puzzles", "icon": "🎲", "keywords": ["board game", "puzzle", "monopoly", "uno", "chess", "rubik", "card game"], "image": "https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?w=500&auto=format&fit=crop&q=80"},
+            "toys": {"name": "Action Toys & LEGO", "icon": "🧸", "keywords": ["toy", "toys", "lego", "building blocks", "action figure", "remote control car", "doll"], "image": "https://images.unsplash.com/photo-1558877385-81a1c7e67d72?w=500&auto=format&fit=crop&q=80"},
+            "baby": {"name": "Baby & Diapers", "icon": "👶", "keywords": ["diaper", "diapers", "baby wipes", "baby lotion", "baby shampoo", "baby oil"], "image": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=500&auto=format&fit=crop&q=80"}
         }
     },
     "automotive": {
@@ -1333,8 +1336,8 @@ UNIVERSAL_CATEGORIES = {
         "aliases": ["automotive", "car", "bike", "auto"],
         "keywords": ["helmet", "car", "bike", "automotive", "tyre", "engine"],
         "subcategories": {
-            "helmets": {"name": "Helmets & Riding Gear", "icon": "🪖", "keywords": ["helmet", "riding gloves", "bike face mask", "riding jacket"], "image": "https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=400&auto=format&fit=crop&q=80"},
-            "caraccessories": {"name": "Car Accessories", "icon": "🚗", "keywords": ["car mount", "mobile holder car", "car vacuum", "car charger", "tire inflator", "car perfume"], "image": "https://images.unsplash.com/photo-1563720223185-11003d516935?w=400&auto=format&fit=crop&q=80"}
+            "helmets": {"name": "Helmets & Riding Gear", "icon": "🪖", "keywords": ["helmet", "riding gloves", "bike face mask", "riding jacket"], "image": "https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=500&auto=format&fit=crop&q=80"},
+            "caraccessories": {"name": "Car Accessories", "icon": "🚗", "keywords": ["car mount", "mobile holder car", "car vacuum", "car charger", "tire inflator", "car perfume"], "image": "https://images.unsplash.com/photo-1563720223185-11003d516935?w=500&auto=format&fit=crop&q=80"}
         }
     }
 }

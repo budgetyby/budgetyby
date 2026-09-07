@@ -61,7 +61,7 @@
                 <span>★</span> {{ "%.1f"|format(rating) }}{% if reviews and reviews > 0 %} <span class="text-slate-400 font-normal">({{ reviews }})</span>{% endif %}
             </span>
             {% else %}
-            <span class="text-slate-400 text-[10px] font-medium">Verified Price</span>
+            <span class="text-slate-400 text-[10px] font-medium">Live Price</span>
             {% endif %}
             
             <span class="text-slate-400 font-mono text-[9px]">{{ (deal.deal_time or deal.last_checked or deal.posted_at)|time_ago }}</span>
@@ -100,12 +100,12 @@
             <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
         </a>
 
-        <!-- Re-Check Action Link -->
+        <!-- Price Change Reporting -->
         <div class="mt-2 flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-50">
             <span>Price changed?</span>
             <button onclick="handleSendForReview({{ pid }}, '{{ (deal.title or '')|replace("'", "") }}', '{{ buy_url }}', {{ cp }})" 
                     class="font-semibold text-indigo-600 hover:text-indigo-800 transition">
-                Flag Re-Check
+                Report Change
             </button>
         </div>
     </div>
