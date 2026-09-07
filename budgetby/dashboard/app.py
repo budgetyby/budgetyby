@@ -1136,17 +1136,22 @@ UNIVERSAL_CATEGORIES = {
         "icon": "👗",
         "badge": "CLOTHING & WEAR",
         "color": "purple",
+        "bg_gradient": "from-purple-500/10 via-pink-500/10 to-rose-500/10",
+        "border_color": "border-purple-200 hover:border-purple-500",
+        "tag_color": "bg-purple-100 text-purple-800",
+        "image": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=600&auto=format&fit=crop&q=80",
+        "deal_count": "29,000+",
         "aliases": ["fashion", "clothing", "apparel", "wear"],
         "keywords": ["t-shirt", "shirt", "kurta", "kurti", "saree", "jeans", "trouser", "dress", "top", "jacket", "hoodie", "boxer", "lehenga", "ethnic"],
         "subcategories": {
-            "tshirts": {"name": "T-Shirts & Polos", "keywords": ["t-shirt", "tshirt", "polo", "printed t-shirt", "oversized t-shirt", "round neck"]},
-            "shirts": {"name": "Shirts", "keywords": ["shirt", "shirts", "casual shirt", "formal shirt", "spread collar", "cotton shirt"]},
-            "kurta": {"name": "Kurtas & Ethnic", "keywords": ["kurta", "kurti", "saree", "anarkali", "ethnic", "nehru jacket", "lehenga", "sherwani"]},
-            "jeans": {"name": "Jeans & Denim", "keywords": ["jeans", "denim", "skinny fit", "slim fit jeans", "straight fit jeans", "baggy jeans"]},
-            "trousers": {"name": "Trousers & Joggers", "keywords": ["trouser", "trousers", "chino", "cargos", "cargo pant", "track pant", "joggers"]},
-            "dresses": {"name": "Dresses & Tops", "keywords": ["dress", "dresses", "maxi dress", "top", "crop top", "jumpsuit", "tunic"]},
-            "jackets": {"name": "Jackets & Hoodies", "keywords": ["jacket", "jackets", "hoodie", "hoodies", "sweatshirt", "blazer"]},
-            "innerwear": {"name": "Innerwear & Loungewear", "keywords": ["boxer", "brief", "innerwear", "trunks", "bra", "nightsuit", "pyjama", "lounge wear"]}
+            "tshirts": {"name": "T-Shirts & Polos", "icon": "👕", "keywords": ["t-shirt", "tshirt", "polo", "printed t-shirt", "oversized t-shirt", "round neck"], "image": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=400&auto=format&fit=crop&q=80"},
+            "shirts": {"name": "Casual & Formal Shirts", "icon": "👔", "keywords": ["shirt", "shirts", "casual shirt", "formal shirt", "spread collar", "cotton shirt"], "image": "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400&auto=format&fit=crop&q=80"},
+            "kurta": {"name": "Kurtas & Ethnic Wear", "icon": "✨", "keywords": ["kurta", "kurti", "saree", "anarkali", "ethnic", "nehru jacket", "lehenga", "sherwani"], "image": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&auto=format&fit=crop&q=80"},
+            "jeans": {"name": "Jeans & Denim", "icon": "👖", "keywords": ["jeans", "denim", "skinny fit", "slim fit jeans", "straight fit jeans", "baggy jeans"], "image": "https://images.unsplash.com/photo-1542272604-780c96856592?w=400&auto=format&fit=crop&q=80"},
+            "trousers": {"name": "Trousers & Joggers", "icon": "👖", "keywords": ["trouser", "trousers", "chino", "cargos", "cargo pant", "track pant", "joggers"], "image": "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=400&auto=format&fit=crop&q=80"},
+            "dresses": {"name": "Dresses & Tops", "icon": "👗", "keywords": ["dress", "dresses", "maxi dress", "top", "crop top", "jumpsuit", "tunic"], "image": "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&auto=format&fit=crop&q=80"},
+            "jackets": {"name": "Jackets & Hoodies", "icon": "🧥", "keywords": ["jacket", "jackets", "hoodie", "hoodies", "sweatshirt", "blazer"], "image": "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&auto=format&fit=crop&q=80"},
+            "innerwear": {"name": "Innerwear & Loungewear", "icon": "🩲", "keywords": ["boxer", "brief", "innerwear", "trunks", "bra", "nightsuit", "pyjama", "lounge wear"], "image": "https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=400&auto=format&fit=crop&q=80"}
         }
     },
     "beauty": {
@@ -1154,17 +1159,22 @@ UNIVERSAL_CATEGORIES = {
         "icon": "💄",
         "badge": "BEAUTY & SKINCARE",
         "color": "rose",
+        "bg_gradient": "from-rose-500/10 via-pink-500/10 to-red-500/10",
+        "border_color": "border-rose-200 hover:border-rose-500",
+        "tag_color": "bg-rose-100 text-rose-800",
+        "image": "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=600&auto=format&fit=crop&q=80",
+        "deal_count": "14,500+",
         "aliases": ["beauty", "skincare", "cosmetics", "grooming", "personal_care"],
         "keywords": ["face wash", "sunscreen", "serum", "moisturizer", "perfume", "shampoo", "lipstick", "cream", "lotion", "deodorant"],
         "subcategories": {
-            "facewash": {"name": "Face Wash & Cleansers", "keywords": ["face wash", "facewash", "cleanser", "face scrub", "foaming face wash"]},
-            "sunscreen": {"name": "Sunscreen & SPF", "keywords": ["sunscreen", "sun block", "spf 50", "spf 30", "sun screen"]},
-            "serum": {"name": "Serums & Oils", "keywords": ["serum", "face serum", "niacinamide", "salicylic acid", "vitamin c serum", "retinol"]},
-            "moisturizer": {"name": "Moisturizers & Creams", "keywords": ["moisturizer", "moisturising cream", "body lotion", "night cream", "day cream"]},
-            "perfume": {"name": "Perfumes & Deos", "keywords": ["perfume", "eau de parfum", "deodorant", "deo", "body spray", "body mist", "attar"]},
-            "haircare": {"name": "Haircare & Shampoo", "keywords": ["shampoo", "conditioner", "hair oil", "hair mask", "hair serum"]},
-            "makeup": {"name": "Lipsticks & Makeup", "keywords": ["lipstick", "kajal", "eyeliner", "foundation", "compact", "mascara", "blush"]},
-            "grooming": {"name": "Men's Grooming", "keywords": ["trimmer", "beard oil", "shaving", "razor", "after shave", "beard wash"]}
+            "sunscreen": {"name": "Sunscreen & SPF 50", "icon": "☀️", "keywords": ["sunscreen", "sun block", "spf 50", "spf 30", "sun screen"], "image": "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&auto=format&fit=crop&q=80"},
+            "facewash": {"name": "Face Wash & Cleansers", "icon": "🧼", "keywords": ["face wash", "facewash", "cleanser", "face scrub", "foaming face wash"], "image": "https://images.unsplash.com/photo-1556228722-d0b714578b88?w=400&auto=format&fit=crop&q=80"},
+            "serum": {"name": "Serums & Face Oils", "icon": "💧", "keywords": ["serum", "face serum", "niacinamide", "salicylic acid", "vitamin c serum", "retinol"], "image": "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&auto=format&fit=crop&q=80"},
+            "moisturizer": {"name": "Moisturizers & Creams", "icon": "🧴", "keywords": ["moisturizer", "moisturising cream", "body lotion", "night cream", "day cream"], "image": "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=400&auto=format&fit=crop&q=80"},
+            "perfume": {"name": "Perfumes & Deos", "icon": "🌸", "keywords": ["perfume", "eau de parfum", "deodorant", "deo", "body spray", "body mist", "attar"], "image": "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=400&auto=format&fit=crop&q=80"},
+            "haircare": {"name": "Shampoos & Haircare", "icon": "💆", "keywords": ["shampoo", "conditioner", "hair oil", "hair mask", "hair serum"], "image": "https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&auto=format&fit=crop&q=80"},
+            "makeup": {"name": "Lipsticks & Makeup", "icon": "💋", "keywords": ["lipstick", "kajal", "eyeliner", "foundation", "compact", "mascara", "blush"], "image": "https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=400&auto=format&fit=crop&q=80"},
+            "grooming": {"name": "Men's Grooming", "icon": "🪒", "keywords": ["trimmer", "beard oil", "shaving", "razor", "after shave", "beard wash"], "image": "https://images.unsplash.com/photo-1621607512214-68297480165e?w=400&auto=format&fit=crop&q=80"}
         }
     },
     "electronics": {
@@ -1172,16 +1182,20 @@ UNIVERSAL_CATEGORIES = {
         "icon": "📱",
         "badge": "GADGETS & AUDIO",
         "color": "blue",
+        "bg_gradient": "from-blue-500/10 via-cyan-500/10 to-indigo-500/10",
+        "border_color": "border-blue-200 hover:border-blue-500",
+        "tag_color": "bg-blue-100 text-blue-800",
+        "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80",
+        "deal_count": "13,000+",
         "aliases": ["electronics", "smartphones", "laptops", "appliances", "gadgets"],
         "keywords": ["earphone", "headphone", "earbuds", "tws", "speaker", "power bank", "charger", "smartphone", "laptop", "tablet"],
         "subcategories": {
-            "earbuds": {"name": "TWS Earbuds", "keywords": ["earbuds", "tws", "airbuds", "airdopes", "wireless earbuds", "true wireless"]},
-            "headphones": {"name": "Headphones & Neckbands", "keywords": ["headphone", "headphones", "neckband", "earphone", "earphones", "wired earphone"]},
-            "speakers": {"name": "Bluetooth Speakers", "keywords": ["speaker", "speakers", "bluetooth speaker", "soundbar", "party speaker"]},
-            "powerbanks": {"name": "Power Banks & Chargers", "keywords": ["power bank", "powerbank", "fast charger", "adapter", "usb cable", "type-c", "charging cable"]},
-            "smartphones": {"name": "Smartphones", "keywords": ["smartphone", "mobile phone", "android phone", "iphone", "5g phone"]},
-            "laptops": {"name": "Laptops & Computing", "keywords": ["laptop", "laptops", "wireless mouse", "mechanical keyboard", "pen drive", "tablet"]},
-            "cameras": {"name": "Cameras & Accessories", "keywords": ["camera", "action camera", "gopro", "dslr", "webcam", "tripod", "memory card"]}
+            "earbuds": {"name": "TWS Earbuds", "icon": "🎧", "keywords": ["earbuds", "tws", "airbuds", "airdopes", "wireless earbuds", "true wireless"], "image": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400&auto=format&fit=crop&q=80"},
+            "headphones": {"name": "Headphones & Neckbands", "icon": "🎧", "keywords": ["headphone", "headphones", "neckband", "earphone", "earphones", "wired earphone"], "image": "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400&auto=format&fit=crop&q=80"},
+            "speakers": {"name": "Bluetooth Speakers", "icon": "🔊", "keywords": ["speaker", "speakers", "bluetooth speaker", "soundbar", "party speaker"], "image": "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&auto=format&fit=crop&q=80"},
+            "powerbanks": {"name": "Power Banks & Fast Chargers", "icon": "🔋", "keywords": ["power bank", "powerbank", "fast charger", "adapter", "usb cable", "type-c", "charging cable"], "image": "https://images.unsplash.com/photo-1609592807664-9b5a2bf4eec8?w=400&auto=format&fit=crop&q=80"},
+            "smartphones": {"name": "Smartphones", "icon": "📱", "keywords": ["smartphone", "mobile phone", "android phone", "iphone", "5g phone"], "image": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&auto=format&fit=crop&q=80"},
+            "laptops": {"name": "Laptops & Computing", "icon": "💻", "keywords": ["laptop", "laptops", "wireless mouse", "mechanical keyboard", "pen drive", "tablet"], "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&auto=format&fit=crop&q=80"}
         }
     },
     "home": {
@@ -1189,16 +1203,20 @@ UNIVERSAL_CATEGORIES = {
         "icon": "🏠",
         "badge": "HOME & ESSENTIALS",
         "color": "amber",
+        "bg_gradient": "from-amber-500/10 via-orange-500/10 to-yellow-500/10",
+        "border_color": "border-amber-200 hover:border-amber-500",
+        "tag_color": "bg-amber-100 text-amber-800",
+        "image": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=600&auto=format&fit=crop&q=80",
+        "deal_count": "12,500+",
         "aliases": ["home", "kitchen", "household", "appliances_home"],
         "keywords": ["bottle", "lunch box", "pan", "cookware", "container", "dustbin", "bedsheet", "curtain", "kettle", "iron"],
         "subcategories": {
-            "bottles": {"name": "Bottles & Lunch Boxes", "keywords": ["bottle", "water bottle", "flask", "insulated bottle", "lunch box", "sipper"]},
-            "cookware": {"name": "Cookware & Pans", "keywords": ["cookware", "frying pan", "kadhai", "tawa", "pressure cooker", "non stick", "triply"]},
-            "storage": {"name": "Storage Containers", "keywords": ["container", "containers", "airtight jar", "spice rack", "kitchen organizer", "storage box"]},
-            "cleaning": {"name": "Cleaning & Dustbins", "keywords": ["dustbin", "garbage bin", "mop", "spin mop", "broom", "cleaning wiper"]},
-            "bedding": {"name": "Bedsheets & Curtains", "keywords": ["bedsheet", "bed cover", "curtain", "curtains", "pillow cover", "towel", "blanket"]},
-            "appliances": {"name": "Kitchen Appliances", "keywords": ["kettle", "electric kettle", "air fryer", "mixer grinder", "chopper", "sandwich maker", "induction"]},
-            "decor": {"name": "Home Decor", "keywords": ["photo frame", "wall art", "vase", "candle", "fairy lights", "indoor plant", "showpiece"]}
+            "bottles": {"name": "Bottles & Lunch Boxes", "icon": "🍶", "keywords": ["bottle", "water bottle", "flask", "insulated bottle", "lunch box", "sipper"], "image": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&auto=format&fit=crop&q=80"},
+            "cookware": {"name": "Cookware & Pans", "icon": "🍳", "keywords": ["cookware", "frying pan", "kadhai", "tawa", "pressure cooker", "non stick", "triply"], "image": "https://images.unsplash.com/photo-1584990347449-399e8d1a1200?w=400&auto=format&fit=crop&q=80"},
+            "storage": {"name": "Storage Containers", "icon": "📦", "keywords": ["container", "containers", "airtight jar", "spice rack", "kitchen organizer", "storage box"], "image": "https://images.unsplash.com/photo-1615865417491-9941019fbc00?w=400&auto=format&fit=crop&q=80"},
+            "cleaning": {"name": "Cleaning & Dustbins", "icon": "🧹", "keywords": ["dustbin", "garbage bin", "mop", "spin mop", "broom", "cleaning wiper"], "image": "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&auto=format&fit=crop&q=80"},
+            "bedding": {"name": "Bedsheets & Curtains", "icon": "🛏️", "keywords": ["bedsheet", "bed cover", "curtain", "curtains", "pillow cover", "towel", "blanket"], "image": "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=400&auto=format&fit=crop&q=80"},
+            "appliances": {"name": "Kitchen Appliances", "icon": "⚡", "keywords": ["kettle", "electric kettle", "air fryer", "mixer grinder", "chopper", "sandwich maker", "induction"], "image": "https://images.unsplash.com/photo-1585515320310-259814833e62?w=400&auto=format&fit=crop&q=80"}
         }
     },
     "sports": {
@@ -1206,15 +1224,19 @@ UNIVERSAL_CATEGORIES = {
         "icon": "🏋️",
         "badge": "FITNESS & SPORTS",
         "color": "green",
+        "bg_gradient": "from-emerald-500/10 via-green-500/10 to-teal-500/10",
+        "border_color": "border-green-200 hover:border-green-500",
+        "tag_color": "bg-green-100 text-green-800",
+        "image": "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=600&auto=format&fit=crop&q=80",
+        "deal_count": "8,000+",
         "aliases": ["sports", "fitness", "gym", "workout"],
         "keywords": ["gym", "yoga", "dumbbell", "badminton", "cricket", "cycling", "football", "fitness"],
         "subcategories": {
-            "gym": {"name": "Gym & Weights", "keywords": ["dumbbell", "dumbbells", "resistance band", "gym shaker", "gym gloves", "weight plates", "barbell"]},
-            "yoga": {"name": "Yoga & Exercise", "keywords": ["yoga mat", "exercise mat", "foam roller", "skipping rope", "ab roller"]},
-            "badminton": {"name": "Badminton & Racket Sports", "keywords": ["badminton", "shuttlecock", "badminton racquet", "squash", "table tennis"]},
-            "cricket": {"name": "Cricket Gear", "keywords": ["cricket bat", "cricket ball", "batting gloves", "cricket kit", "cricket helmet"]},
-            "cycling": {"name": "Cycling & Outdoors", "keywords": ["cycle", "bicycle", "cycling gloves", "cycle lock", "tent", "trekking"]},
-            "sportswear": {"name": "Sportswear & Shoes", "keywords": ["sports shoe", "running shoe", "training shoe", "sports bra", "compression", "track suit"]}
+            "gym": {"name": "Gym & Weights", "icon": "💪", "keywords": ["dumbbell", "dumbbells", "resistance band", "gym shaker", "gym gloves", "weight plates", "barbell"], "image": "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400&auto=format&fit=crop&q=80"},
+            "yoga": {"name": "Yoga & Exercise", "icon": "🧘", "keywords": ["yoga mat", "exercise mat", "foam roller", "skipping rope", "ab roller"], "image": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&auto=format&fit=crop&q=80"},
+            "badminton": {"name": "Badminton Gear", "icon": "🏸", "keywords": ["badminton", "shuttlecock", "badminton racquet", "squash", "table tennis"], "image": "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=400&auto=format&fit=crop&q=80"},
+            "cricket": {"name": "Cricket Equipment", "icon": "🏏", "keywords": ["cricket bat", "cricket ball", "batting gloves", "cricket kit", "cricket helmet"], "image": "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=400&auto=format&fit=crop&q=80"},
+            "cycling": {"name": "Cycling & Outdoors", "icon": "🚴", "keywords": ["cycle", "bicycle", "cycling gloves", "cycle lock", "tent", "trekking"], "image": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=400&auto=format&fit=crop&q=80"}
         }
     },
     "footwear": {
@@ -1222,16 +1244,21 @@ UNIVERSAL_CATEGORIES = {
         "icon": "👟",
         "badge": "SHOES & FOOTWEAR",
         "color": "indigo",
+        "bg_gradient": "from-indigo-500/10 via-blue-500/10 to-violet-500/10",
+        "border_color": "border-indigo-200 hover:border-indigo-500",
+        "tag_color": "bg-indigo-100 text-indigo-800",
+        "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=80",
+        "deal_count": "9,300+",
         "aliases": ["footwear", "shoes", "shoe"],
         "keywords": ["shoe", "shoes", "sneaker", "sneakers", "slipper", "slippers", "flip flop", "sandal", "sandals", "boot", "boots", "heel", "heels", "loafer", "loafers", "floaters", "clog", "crocs"],
         "subcategories": {
-            "sneakers": {"name": "Sneakers & Running", "keywords": ["sneaker", "running shoe", "sports shoe", "training shoe", "gym shoe", "casual sneaker"]},
-            "slippers": {"name": "Slippers & Slides", "keywords": ["slipper", "flip flop", "flip-flop", "slide", "slides", "chappal", "thong"]},
-            "formal": {"name": "Formal & Loafers", "keywords": ["formal shoe", "loafer", "oxford", "derby", "monk strap", "office shoe"]},
-            "heels": {"name": "Heels & Wedges", "keywords": ["heel", "heels", "wedge", "stilettos", "pump", "pumps", "block heel"]},
-            "boots": {"name": "Boots & Ankle Boots", "keywords": ["boot", "boots", "ankle boot", "high top", "chelsea boot"]},
-            "sandals": {"name": "Sandals & Floaters", "keywords": ["sandal", "sandals", "floater", "floaters", "strap sandal"]},
-            "clogs": {"name": "Clogs & Crocs", "keywords": ["clog", "clogs", "crocs", "mule"]}
+            "sneakers": {"name": "Sneakers & Running", "icon": "👟", "keywords": ["sneaker", "running shoe", "sports shoe", "training shoe", "gym shoe", "casual sneaker"], "image": "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=400&auto=format&fit=crop&q=80"},
+            "slippers": {"name": "Slippers & Slides", "icon": "🩴", "keywords": ["slipper", "flip flop", "flip-flop", "slide", "slides", "chappal", "thong"], "image": "https://images.unsplash.com/photo-1603487742131-4160ec999306?w=400&auto=format&fit=crop&q=80"},
+            "formal": {"name": "Formal & Loafers", "icon": "👞", "keywords": ["formal shoe", "loafer", "oxford", "derby", "monk strap", "office shoe"], "image": "https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?w=400&auto=format&fit=crop&q=80"},
+            "heels": {"name": "Heels & Wedges", "icon": "👠", "keywords": ["heel", "heels", "wedge", "stilettos", "pump", "pumps", "block heel"], "image": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=400&auto=format&fit=crop&q=80"},
+            "boots": {"name": "Boots & High-Tops", "icon": "👢", "keywords": ["boot", "boots", "ankle boot", "high top", "chelsea boot"], "image": "https://images.unsplash.com/photo-1520639888713-7851133b1ed0?w=400&auto=format&fit=crop&q=80"},
+            "sandals": {"name": "Sandals & Floaters", "icon": "👡", "keywords": ["sandal", "sandals", "floater", "floaters", "strap sandal"], "image": "https://images.unsplash.com/photo-1562273138-f46be4ebdf33?w=400&auto=format&fit=crop&q=80"},
+            "clogs": {"name": "Clogs & Crocs", "icon": "🦶", "keywords": ["clog", "clogs", "crocs", "mule"], "image": "https://images.unsplash.com/photo-1575537302964-96cd47c06b1b?w=400&auto=format&fit=crop&q=80"}
         }
     },
     "watches": {
@@ -1239,14 +1266,19 @@ UNIVERSAL_CATEGORIES = {
         "icon": "⌚",
         "badge": "WATCHES & WEARABLES",
         "color": "slate",
+        "bg_gradient": "from-slate-500/10 via-zinc-500/10 to-neutral-500/10",
+        "border_color": "border-slate-200 hover:border-slate-500",
+        "tag_color": "bg-slate-100 text-slate-800",
+        "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80",
+        "deal_count": "2,500+",
         "aliases": ["watches", "watch", "wristwatch"],
         "keywords": ["watch", "wrist watch", "analog watch", "digital watch", "chronograph", "smartwatch", "smart watch"],
         "subcategories": {
-            "menwatches": {"name": "Men's Watches", "keywords": ["men watch", "analog watch men", "chronograph men", "leather strap watch", "sports watch men"]},
-            "womenwatches": {"name": "Women's Watches", "keywords": ["women watch", "analog watch women", "rose gold watch", "dial watch women", "ladies watch"]},
-            "smartwatches": {"name": "Smartwatches & Bands", "keywords": ["smartwatch", "smart watch", "fitness band", "smart band", "activity tracker", "mi band"]},
-            "digital": {"name": "Digital & Sports", "keywords": ["digital watch", "sport watch", "military watch", "casio", "g-shock"]},
-            "couple": {"name": "Couple & Kids Watches", "keywords": ["couple watch", "kids watch", "children watch", "kids digital watch"]}
+            "menwatches": {"name": "Men's Watches", "icon": "⌚", "keywords": ["men watch", "analog watch men", "chronograph men", "leather strap watch", "sports watch men"], "image": "https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=400&auto=format&fit=crop&q=80"},
+            "womenwatches": {"name": "Women's Watches", "icon": "⌚", "keywords": ["women watch", "analog watch women", "rose gold watch", "dial watch women", "ladies watch"], "image": "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=400&auto=format&fit=crop&q=80"},
+            "smartwatches": {"name": "Smartwatches & Bands", "icon": "💡", "keywords": ["smartwatch", "smart watch", "fitness band", "smart band", "activity tracker", "mi band"], "image": "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=400&auto=format&fit=crop&q=80"},
+            "digital": {"name": "Digital & Sports", "icon": "🔢", "keywords": ["digital watch", "sport watch", "military watch", "casio", "g-shock"], "image": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&auto=format&fit=crop&q=80"},
+            "couple": {"name": "Couple Watches", "icon": "💑", "keywords": ["couple watch", "kids watch", "children watch", "kids digital watch"], "image": "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&auto=format&fit=crop&q=80"}
         }
     },
     "bags": {
@@ -1254,16 +1286,20 @@ UNIVERSAL_CATEGORIES = {
         "icon": "👜",
         "badge": "BAGS & LUGGAGE",
         "color": "teal",
+        "bg_gradient": "from-teal-500/10 via-emerald-500/10 to-cyan-500/10",
+        "border_color": "border-teal-200 hover:border-teal-500",
+        "tag_color": "bg-teal-100 text-teal-800",
+        "image": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600&auto=format&fit=crop&q=80",
+        "deal_count": "2,600+",
         "aliases": ["bags", "bag", "luggage", "wallets", "accessories"],
         "keywords": ["handbag", "tote", "backpack", "wallet", "belt", "sling bag", "clutch", "luggage", "trolley bag", "gym bag"],
         "subcategories": {
-            "handbags": {"name": "Handbags & Totes", "keywords": ["handbag", "tote bag", "shoulder bag", "satchel", "structured bag"]},
-            "slingbags": {"name": "Sling & Crossbody", "keywords": ["sling bag", "crossbody", "side bag", "mini bag"]},
-            "backpacks": {"name": "Backpacks & Duffels", "keywords": ["backpack", "laptop backpack", "school bag", "duffel bag", "travel backpack", "rucksack"]},
-            "wallets": {"name": "Wallets & Cardholders", "keywords": ["wallet", "leather wallet", "card holder", "purse", "money clip"]},
-            "belts": {"name": "Belts", "keywords": ["belt", "leather belt", "formal belt", "casual belt", "reversible belt"]},
-            "luggage": {"name": "Trolley & Travel Bags", "keywords": ["trolley bag", "suitcase", "cabin luggage", "travel bag", "travel organizer"]},
-            "clutches": {"name": "Clutches & Evening Bags", "keywords": ["clutch", "evening bag", "party bag", "wristlet"]}
+            "handbags": {"name": "Handbags & Totes", "icon": "👜", "keywords": ["handbag", "tote bag", "shoulder bag", "satchel", "structured bag"], "image": "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=400&auto=format&fit=crop&q=80"},
+            "slingbags": {"name": "Sling & Crossbody", "icon": "👝", "keywords": ["sling bag", "crossbody", "side bag", "mini bag"], "image": "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&auto=format&fit=crop&q=80"},
+            "backpacks": {"name": "Backpacks & Duffels", "icon": "🎒", "keywords": ["backpack", "laptop backpack", "school bag", "duffel bag", "travel backpack", "rucksack"], "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&auto=format&fit=crop&q=80"},
+            "wallets": {"name": "Wallets & Cardholders", "icon": "👛", "keywords": ["wallet", "leather wallet", "card holder", "purse", "money clip"], "image": "https://images.unsplash.com/photo-1627123424574-724758594e93?w=400&auto=format&fit=crop&q=80"},
+            "belts": {"name": "Belts", "icon": "🪙", "keywords": ["belt", "leather belt", "formal belt", "casual belt", "reversible belt"], "image": "https://images.unsplash.com/photo-1624222247344-550fb60583dc?w=400&auto=format&fit=crop&q=80"},
+            "luggage": {"name": "Trolley & Travel Bags", "icon": "🧳", "keywords": ["trolley bag", "suitcase", "cabin luggage", "travel bag", "travel organizer"], "image": "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&auto=format&fit=crop&q=80"}
         }
     },
     "toys_kids": {
@@ -1271,13 +1307,17 @@ UNIVERSAL_CATEGORIES = {
         "icon": "🧸",
         "badge": "TOYS & BABY",
         "color": "yellow",
+        "bg_gradient": "from-yellow-500/10 via-amber-500/10 to-orange-500/10",
+        "border_color": "border-yellow-200 hover:border-yellow-500",
+        "tag_color": "bg-yellow-100 text-yellow-800",
+        "image": "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&auto=format&fit=crop&q=80",
+        "deal_count": "5,000+",
         "aliases": ["toys", "baby", "kids", "games"],
         "keywords": ["toy", "toys", "board game", "diaper", "baby", "puzzle", "kids"],
         "subcategories": {
-            "boardgames": {"name": "Board & Card Games", "keywords": ["board game", "puzzle", "monopoly", "uno", "chess", "rubik", "card game"]},
-            "toys": {"name": "Action Toys & LEGO", "keywords": ["toy", "toys", "lego", "building blocks", "action figure", "remote control car", "doll"]},
-            "baby": {"name": "Baby & Diapers", "keywords": ["diaper", "diapers", "baby wipes", "baby lotion", "baby shampoo", "baby oil"]},
-            "stationery": {"name": "School & Stationery", "keywords": ["pencil", "pen", "notebook", "school bag", "geometry box", "crayon", "color pencil"]}
+            "boardgames": {"name": "Board Games & Puzzles", "icon": "🎲", "keywords": ["board game", "puzzle", "monopoly", "uno", "chess", "rubik", "card game"], "image": "https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?w=400&auto=format&fit=crop&q=80"},
+            "toys": {"name": "Action Toys & LEGO", "icon": "🧸", "keywords": ["toy", "toys", "lego", "building blocks", "action figure", "remote control car", "doll"], "image": "https://images.unsplash.com/photo-1558877385-81a1c7e67d72?w=400&auto=format&fit=crop&q=80"},
+            "baby": {"name": "Baby & Diapers", "icon": "👶", "keywords": ["diaper", "diapers", "baby wipes", "baby lotion", "baby shampoo", "baby oil"], "image": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&auto=format&fit=crop&q=80"}
         }
     },
     "automotive": {
@@ -1285,16 +1325,19 @@ UNIVERSAL_CATEGORIES = {
         "icon": "🚗",
         "badge": "BIKE & CAR",
         "color": "orange",
+        "bg_gradient": "from-orange-500/10 via-red-500/10 to-amber-500/10",
+        "border_color": "border-orange-200 hover:border-orange-500",
+        "tag_color": "bg-orange-100 text-orange-800",
+        "image": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=600&auto=format&fit=crop&q=80",
+        "deal_count": "3,000+",
         "aliases": ["automotive", "car", "bike", "auto"],
         "keywords": ["helmet", "car", "bike", "automotive", "tyre", "engine"],
         "subcategories": {
-            "helmets": {"name": "Helmets & Riding Gear", "keywords": ["helmet", "riding gloves", "bike face mask", "riding jacket"]},
-            "caraccessories": {"name": "Car Accessories", "keywords": ["car mount", "mobile holder car", "car vacuum", "car charger", "tire inflator", "car perfume"]},
-            "bikescare": {"name": "Bike Care & Covers", "keywords": ["car cover", "bike cover", "microfiber cloth", "car wash shampoo", "bike lock"]}
+            "helmets": {"name": "Helmets & Riding Gear", "icon": "🪖", "keywords": ["helmet", "riding gloves", "bike face mask", "riding jacket"], "image": "https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=400&auto=format&fit=crop&q=80"},
+            "caraccessories": {"name": "Car Accessories", "icon": "🚗", "keywords": ["car mount", "mobile holder car", "car vacuum", "car charger", "tire inflator", "car perfume"], "image": "https://images.unsplash.com/photo-1563720223185-11003d516935?w=400&auto=format&fit=crop&q=80"}
         }
     }
 }
-
 # ── Public Storefront Endpoints ──────────────────────────────────────────────
 
 @app.get("/api/public/stats")
@@ -2015,6 +2058,7 @@ async def get_public_deals(
     categories: str = Query("", max_length=500),
     sub: str = Query("", max_length=50),
     subcategory: str = Query("", max_length=50),
+    gender: str = Query("", max_length=50),
     tab: str = Query("all", max_length=30),
     search: str = Query("", max_length=100),
     sort_by: str = Query("latest", max_length=30),
@@ -2043,6 +2087,7 @@ async def get_public_deals(
         categories = str(categories) if not hasattr(categories, 'default') else ""
         sub = str(sub) if not hasattr(sub, 'default') else ""
         subcategory = str(subcategory) if not hasattr(subcategory, 'default') else ""
+        gender = str(gender) if not hasattr(gender, 'default') else ""
         tab = str(tab) if not hasattr(tab, 'default') else "all"
         search = str(search) if not hasattr(search, 'default') else ""
         sort_by = str(sort_by) if not hasattr(sort_by, 'default') else "latest"
@@ -2055,7 +2100,7 @@ async def get_public_deals(
         ids = str(ids) if not hasattr(ids, 'default') else ""
 
         eff_sub = (sub or subcategory or "").strip().lower()
-        cache_key = f"deals:{platform}:{platforms}:{category}:{categories}:{eff_sub}:{tab}:{search}:{sort_by}:{min_discount}:{min_price}:{max_price}:{min_rating}:{verified_only}:{deal_type}:{ids}:{page}:{limit}"
+        cache_key = f"deals:{platform}:{platforms}:{category}:{categories}:{eff_sub}:{gender}:{tab}:{search}:{sort_by}:{min_discount}:{min_price}:{max_price}:{min_rating}:{verified_only}:{deal_type}:{ids}:{page}:{limit}"
         cached = await ram_cache.get(cache_key)
         if cached is not None:
             return cached
@@ -2224,7 +2269,21 @@ async def get_public_deals(
             if cat_clauses:
                 where_clauses.append(f"({' OR '.join(cat_clauses)})")
 
-        # Subcategory keyword filtering
+        
+        # ── AUDIENCE / GENDER FILTER ────────────────────────────────────────
+        gender_clean = (gender or "").strip().lower()
+        if gender_clean and gender_clean != "all":
+            if gender_clean == "men":
+                where_clauses.append("(p.title ILIKE '% men%' OR p.title ILIKE '%men %' OR p.title ILIKE '%mens%' OR p.title ILIKE '%male%' OR p.title ILIKE '%gentlemen%')")
+            elif gender_clean == "women":
+                where_clauses.append("(p.title ILIKE '% women%' OR p.title ILIKE '%women %' OR p.title ILIKE '%womens%' OR p.title ILIKE '%female%' OR p.title ILIKE '%ladies%' OR p.title ILIKE '%saree%' OR p.title ILIKE '%kurti%' OR p.title ILIKE '%heels%' OR p.title ILIKE '%bra%')")
+            elif gender_clean in ("boy", "boys"):
+                where_clauses.append("(p.title ILIKE '%boy%' OR p.title ILIKE '%boys%')")
+            elif gender_clean in ("girl", "girls"):
+                where_clauses.append("(p.title ILIKE '%girl%' OR p.title ILIKE '%girls%' OR p.title ILIKE '%frock%')")
+            elif gender_clean in ("kid", "kids", "children"):
+                where_clauses.append("(p.title ILIKE '%kid%' OR p.title ILIKE '%kids%' OR p.title ILIKE '%baby%' OR p.title ILIKE '%infant%' OR p.title ILIKE '%toddler%' OR p.title ILIKE '%children%')")
+# Subcategory keyword filtering
         if eff_sub:
             sub_kws = []
             for cat_data in UNIVERSAL_CATEGORIES.values():
@@ -2506,55 +2565,26 @@ def render_consumer_template(template_name: str, request: Request, context: dict
 
 @app.get("/", response_class=HTMLResponse)
 async def page_home(request: Request):
-    """Renders the high-converting BudgetBy E-Commerce Purchase Storefront with dedicated category aisles."""
+    """Renders the high-converting BudgetBy Visual Category Storefront (v4)."""
     initial_drops = {"drops": []}
-    initial_featured = {"deals": []}
     just_dropped = {"deals": []}
     atl_mini = {"deals": []}
     initial_stats = {}
-    fashion_deals = {"deals": []}
-    beauty_deals = {"deals": []}
-    electronics_deals = {"deals": []}
-    home_deals = {"deals": []}
-    sports_deals = {"deals": []}
-    footwear_deals = {"deals": []}
-    watches_deals = {"deals": []}
-    bags_deals = {"deals": []}
 
     try:
         drops_task = get_public_price_drops(page=1, limit=12, min_drop_pct=5.0, min_drop_percent=None, platform="", category="", sort_by="drop_pct")
-        just_dropped_task = get_public_deals(platform="", platforms="", category="", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=True, deal_type="", ids="", page=1, limit=10)
-        atl_task = get_public_deals(platform="", platforms="", category="", categories="", sub="", subcategory="", tab="atl", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=4)
+        just_dropped_task = get_public_deals(platform="", platforms="", category="", categories="", sub="", subcategory="", gender="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=True, deal_type="", ids="", page=1, limit=10)
+        atl_task = get_public_deals(platform="", platforms="", category="", categories="", sub="", subcategory="", gender="", tab="atl", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=4)
         stats_task = get_public_stats()
-
-        # Prefetch category aisles in parallel — ordered by volume (egress protected by 30s RAM cache)
-        fashion_task = get_public_deals(platform="", platforms="", category="fashion", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
-        beauty_task = get_public_deals(platform="", platforms="", category="beauty", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
-        electronics_task = get_public_deals(platform="", platforms="", category="electronics", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
-        home_task = get_public_deals(platform="", platforms="", category="home", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
-        sports_task = get_public_deals(platform="", platforms="", category="sports", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
-        footwear_task = get_public_deals(platform="", platforms="", category="footwear", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
-        watches_task = get_public_deals(platform="", platforms="", category="watches", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
-        bags_task = get_public_deals(platform="", platforms="", category="bags", categories="", sub="", subcategory="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=8)
 
         results = await asyncio.gather(
             drops_task, just_dropped_task, atl_task, stats_task,
-            fashion_task, beauty_task, electronics_task, home_task,
-            sports_task, footwear_task, watches_task, bags_task,
             return_exceptions=True
         )
         if not isinstance(results[0], Exception): initial_drops = results[0]
         if not isinstance(results[1], Exception): just_dropped = results[1]
         if not isinstance(results[2], Exception): atl_mini = results[2]
         if not isinstance(results[3], Exception): initial_stats = results[3]
-        if not isinstance(results[4], Exception): fashion_deals = results[4]
-        if not isinstance(results[5], Exception): beauty_deals = results[5]
-        if not isinstance(results[6], Exception): electronics_deals = results[6]
-        if not isinstance(results[7], Exception): home_deals = results[7]
-        if not isinstance(results[8], Exception): sports_deals = results[8]
-        if not isinstance(results[9], Exception): footwear_deals = results[9]
-        if not isinstance(results[10], Exception): watches_deals = results[10]
-        if not isinstance(results[11], Exception): bags_deals = results[11]
     except Exception as e:
         logger.warning(f"Home SSR prefetch error: {e}")
 
@@ -2563,15 +2593,7 @@ async def page_home(request: Request):
         "initial_drops": initial_drops,
         "just_dropped": just_dropped,
         "atl_mini": atl_mini,
-        "initial_stats": initial_stats,
-        "fashion_deals": fashion_deals,
-        "beauty_deals": beauty_deals,
-        "electronics_deals": electronics_deals,
-        "home_deals": home_deals,
-        "sports_deals": sports_deals,
-        "footwear_deals": footwear_deals,
-        "watches_deals": watches_deals,
-        "bags_deals": bags_deals
+        "initial_stats": initial_stats
     })
 
 @app.get("/drops", response_class=HTMLResponse)
@@ -2626,6 +2648,7 @@ async def page_deals(
     category: str = Query(""),
     sub: str = Query(""),
     subcategory: str = Query(""),
+    gender: str = Query(""),
     tab: str = Query("all"),
     verified_only: bool = Query(True),
     sort_by: str = Query("latest"),
@@ -2637,6 +2660,7 @@ async def page_deals(
     search_str = str(search) if not hasattr(search, 'default') and search is not None else ""
     plat_str = str(platform) if not hasattr(platform, 'default') and platform is not None else ""
     cat_str = str(category) if not hasattr(category, 'default') and category is not None else ""
+    gender_str = str(gender) if not hasattr(gender, 'default') and gender is not None else ""
     sub_raw = str(sub) if not hasattr(sub, 'default') and sub is not None else ""
     subcat_raw = str(subcategory) if not hasattr(subcategory, 'default') and subcategory is not None else ""
     eff_sub_page = (sub_raw or subcat_raw or "").strip().lower()
@@ -2659,6 +2683,7 @@ async def page_deals(
             categories="",
             sub=eff_sub_page,
             subcategory="",
+            gender=gender_str,
             tab=tab_str,
             search=search_str,
             sort_by=sort_str,
@@ -2683,6 +2708,7 @@ async def page_deals(
         "current_platform": plat_str,
         "current_category": cat_str,
         "current_sub": eff_sub_page,
+        "current_gender": gender_str,
         "current_tab": tab_str,
         "current_verified_only": ver_val,
         "current_sort": sort_str,
@@ -2699,6 +2725,7 @@ async def page_atl(
     category: str = Query(""),
     sub: str = Query(""),
     subcategory: str = Query(""),
+    gender: str = Query(""),
     sort_by: str = Query("latest")
 ):
     """Renders the All-Time Lows (ATL) Showcase Hub with complete pre-rendered items (SSR)."""
@@ -2706,6 +2733,7 @@ async def page_atl(
     limit_num = int(limit) if not hasattr(limit, 'default') and str(limit).isdigit() else 24
     plat_str = str(platform) if not hasattr(platform, 'default') and platform is not None else ""
     cat_str = str(category) if not hasattr(category, 'default') and category is not None else ""
+    gender_str = str(gender) if not hasattr(gender, 'default') and gender is not None else ""
     sub_raw = str(sub) if not hasattr(sub, 'default') and sub is not None else ""
     subcat_raw = str(subcategory) if not hasattr(subcategory, 'default') and subcategory is not None else ""
     eff_sub_page = (sub_raw or subcat_raw or "").strip().lower()
@@ -2743,6 +2771,7 @@ async def page_atl(
         "current_platform": plat_str,
         "current_category": cat_str,
         "current_sub": eff_sub_page,
+        "current_gender": gender_str,
         "current_sort": sort_str
     })
 

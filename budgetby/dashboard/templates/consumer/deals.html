@@ -1,41 +1,136 @@
 {% extends "consumer/layout.html" %}
 
-{% block title %}All Verified Deals & Offers Tracker — BudgetBy{% endblock %}
-{% block description %}Browse thousands of live, verified deals across Amazon, Flipkart, Myntra, Ajio, and Nykaa. Filtered against 30, 60 & 120-day median and minimum price baselines.{% endblock %}
+{% set cat_info = categories_taxonomy.get(current_category) if current_category and current_category in categories_taxonomy else None %}
+{% set page_heading = (cat_info.name if cat_info else 'All Verified Deals & Offers') %}
+
+{% block title %}{{ page_heading }} Tracker — BudgetBy{% endblock %}
+{% block description %}Browse live, verified {{ page_heading }} across Amazon, Flipkart, Myntra, Ajio, and Nykaa. Filtered against 30, 60 & 120-day median baselines.{% endblock %}
 
 {% block content %}
-<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-6 pb-16">
-    <!-- Breadcrumb & Page Title -->
+<main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full pt-4 pb-16">
+    
+    <!-- Breadcrumb -->
     <nav class="flex items-center gap-2 text-xs text-slate-500 mb-3" aria-label="Breadcrumb">
         <a href="/" class="hover:text-slate-900 transition flex items-center gap-1">
             <span>🏠</span> Home
         </a>
         <span class="text-slate-300">/</span>
-        <span class="text-indigo-600 font-semibold flex items-center gap-1">
-            <span>🏷️</span> All Deals
+        <a href="/deals" class="hover:text-slate-900 transition">Deals</a>
+        {% if cat_info %}
+        <span class="text-slate-300">/</span>
+        <span class="text-indigo-600 font-bold flex items-center gap-1">
+            <span>{{ cat_info.icon }}</span> {{ cat_info.name }}
         </span>
+        {% endif %}
     </nav>
 
-    <!-- Header Banner -->
-    <div class="relative overflow-hidden rounded-3xl bg-white border border-slate-200/90 p-6 sm:p-8 shadow-sm mb-6">
+    <!-- ── Category Header Hub Banner ───────────────────────────────────── -->
+    <div class="relative overflow-hidden rounded-3xl bg-white border border-slate-200/90 p-5 sm:p-7 shadow-sm mb-5">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 font-bold text-xs uppercase tracking-wide border border-indigo-200 mb-3">
-                    <span class="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span>
-                    Live Deal Discovery Engine
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 font-bold text-xs uppercase tracking-wide border border-indigo-200 mb-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Live Deal Discovery</span>
+                    {% if cat_info %}
+                    <span class="text-slate-400">•</span>
+                    <span class="text-slate-600">{{ cat_info.deal_count or 'Thousands of' }} Active Deals</span>
+                    {% endif %}
                 </div>
-                <h1 class="text-2xl sm:text-3xl font-black text-slate-900">
-                    All Verified Deals & Discounts
+                <h1 class="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-2">
+                    {% if cat_info %}<span>{{ cat_info.icon }}</span>{% endif %}
+                    <span>{{ page_heading }}</span>
                 </h1>
                 <p class="text-xs sm:text-sm text-slate-600 mt-1">
-                    Every deal here is verified against 30, 60 & 120-day rolling median and minimum price records across Amazon, Flipkart, Myntra, Ajio, and Nykaa.
+                    Real-time lowest price drops across Amazon, Flipkart, Myntra, Ajio, and Nykaa audited against 30-day baseline medians.
                 </p>
             </div>
 
-            <!-- Active Filters Quick Clear -->
+            <!-- Active Filters Quick Bar -->
             <div id="activeFilterTags" class="flex flex-wrap items-center gap-1.5 self-start md:self-auto">
                 <!-- Populated via JS if filters active -->
             </div>
+        </div>
+    </div>
+
+    <!-- ── Visual Subcategories Card Showcase (When Category is Selected) ─ -->
+    {% if cat_info and cat_info.subcategories %}
+    <section class="mb-6">
+        <div class="flex items-center justify-between mb-2.5">
+            <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Explore {{ cat_info.name }} Subcategories</h2>
+            <span class="text-[11px] text-indigo-600 font-bold">1-Tap Filter</span>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 sm:gap-3 overflow-x-auto no-scrollbar py-1">
+            
+            <!-- All in category button card -->
+            <button onclick="onSubcategoryClick('', this)" 
+                    class="subcat-card p-2.5 rounded-2xl border transition-all text-center flex flex-col items-center justify-between min-h-[95px] {% if not current_sub %}bg-indigo-600 text-white border-indigo-600 shadow-md{% else %}bg-white border-slate-200 text-slate-800 hover:border-indigo-400{% endif %}">
+                <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl mb-1">
+                    {{ cat_info.icon }}
+                </div>
+                <span class="text-[11px] font-black leading-tight">All {{ cat_info.name.split(' ')[0] }}</span>
+            </button>
+
+            {% for sub_key, sub_val in cat_info.subcategories.items() %}
+            <button onclick="onSubcategoryClick('{{ sub_key }}', this)" 
+                    data-sub-key="{{ sub_key }}"
+                    class="subcat-card relative group rounded-2xl border overflow-hidden transition-all text-left flex flex-col justify-between min-h-[95px] {% if current_sub == sub_key %}bg-indigo-50 border-indigo-600 ring-2 ring-indigo-500/20 shadow-md{% else %}bg-white border-slate-200 hover:border-indigo-400 hover:shadow-sm{% endif %}">
+                
+                <!-- Subcategory Image Thumbnail -->
+                <div class="relative w-full h-14 bg-slate-100 overflow-hidden">
+                    <img src="{{ sub_val.image }}" alt="{{ sub_val.name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    <span class="absolute bottom-1 left-1.5 text-sm">{{ sub_val.icon }}</span>
+                </div>
+
+                <!-- Subcategory Name Inside Box -->
+                <div class="p-1.5 sm:p-2">
+                    <span class="text-[11px] font-bold text-slate-900 line-clamp-1 block leading-tight group-hover:text-indigo-600 transition">
+                        {{ sub_val.name }}
+                    </span>
+                </div>
+            </button>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- ── Audience & Gender Filter Bar ─────────────────────────────────── -->
+    <div class="bg-white border border-slate-200/90 rounded-2xl p-3 mb-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1">
+                <span>👥</span>
+                <span>Audience:</span>
+            </span>
+            <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                <button onclick="onGenderFilterChange('', this)" class="gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition {% if not current_gender %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                    🌟 All
+                </button>
+                <button onclick="onGenderFilterChange('men', this)" class="gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition {% if current_gender == 'men' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                    👨 Men
+                </button>
+                <button onclick="onGenderFilterChange('women', this)" class="gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition {% if current_gender == 'women' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                    👩 Women
+                </button>
+                <button onclick="onGenderFilterChange('boys', this)" class="gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition {% if current_gender == 'boys' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                    👦 Boys
+                </button>
+                <button onclick="onGenderFilterChange('girls', this)" class="gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition {% if current_gender == 'girls' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                    👧 Girls
+                </button>
+                <button onclick="onGenderFilterChange('kids', this)" class="gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition {% if current_gender == 'kids' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                    👶 Kids / Unisex
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick 70% Off and Under 499 Badges -->
+        <div class="flex items-center gap-2 self-start sm:self-auto shrink-0">
+            <button onclick="setMinDiscount(70)" class="px-2.5 py-1 rounded-xl text-[11px] font-black bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition flex items-center gap-1">
+                <span>🔥</span> 70%+ Loot
+            </button>
+            <button onclick="onPriceQuickFilter(499)" class="px-2.5 py-1 rounded-xl text-[11px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition flex items-center gap-1">
+                <span>⚡</span> Under ₹499
+            </button>
         </div>
     </div>
 
@@ -62,51 +157,52 @@
                     <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5">Store</h2>
                     <div class="space-y-1.5 text-xs">
                         <label class="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-50 transition">
-                            <input type="radio" name="storeFilter" value="" onchange="onStoreFilterChange('')" class="text-indigo-600 focus:ring-indigo-500 rounded border-slate-300" checked>
+                            <input type="radio" name="storeFilter" value="" onchange="onStoreFilterChange('')" class="text-indigo-600 focus:ring-indigo-500 rounded border-slate-300" {% if not current_platform %}checked{% endif %}>
                             <span class="font-medium text-slate-700">All 5 Stores</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-50 transition">
-                            <input type="radio" name="storeFilter" value="amazon" onchange="onStoreFilterChange('amazon')" class="text-indigo-600 focus:ring-indigo-500 rounded border-slate-300">
-                            <span class="w-2 h-2 rounded-full bg-[#FF9900]"></span>
+                            <input type="radio" name="storeFilter" value="amazon" onchange="onStoreFilterChange('amazon')" class="text-indigo-600 focus:ring-indigo-500 rounded border-slate-300" {% if current_platform == 'amazon' %}checked{% endif %}>
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#FF9900]"></span>
                             <span class="font-medium text-slate-700">Amazon India</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-50 transition">
-                            <input type="radio" name="storeFilter" value="flipkart" onchange="onStoreFilterChange('flipkart')" class="text-indigo-600 focus:ring-indigo-500 rounded border-slate-300">
-                            <span class="w-2 h-2 rounded-full bg-[#2874F0]"></span>
+                            <input type="radio" name="storeFilter" value="flipkart" onchange="onStoreFilterChange('flipkart')" class="text-indigo-600 focus:ring-indigo-500 rounded border-slate-300" {% if current_platform == 'flipkart' %}checked{% endif %}>
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#2874F0]"></span>
                             <span class="font-medium text-slate-700">Flipkart</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-50 transition">
-                            <input type="radio" name="storeFilter" value="myntra" onchange="onStoreFilterChange('myntra')" class="text-indigo-600 focus:ring-indigo-500 rounded border-slate-300">
-                            <span class="w-2 h-2 rounded-full bg-[#FF3F6C]"></span>
+                            <input type="radio" name="storeFilter" value="myntra" onchange="onStoreFilterChange('myntra')" class="text-indigo-600 focus:ring-indigo-500 rounded border-slate-300" {% if current_platform == 'myntra' %}checked{% endif %}>
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#FF3F6C]"></span>
                             <span class="font-medium text-slate-700">Myntra</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-50 transition">
-                            <input type="radio" name="storeFilter" value="ajio" onchange="onStoreFilterChange('ajio')" class="text-indigo-600 focus:ring-indigo-500 rounded border-slate-300">
-                            <span class="w-2 h-2 rounded-full bg-[#D99814]"></span>
+                            <input type="radio" name="storeFilter" value="ajio" onchange="onStoreFilterChange('ajio')" class="text-indigo-600 focus:ring-indigo-500 rounded border-slate-300" {% if current_platform == 'ajio' %}checked{% endif %}>
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#D99814]"></span>
                             <span class="font-medium text-slate-700">Ajio</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-50 transition">
-                            <input type="radio" name="storeFilter" value="nykaa" onchange="onStoreFilterChange('nykaa')" class="text-indigo-600 focus:ring-indigo-500 rounded border-slate-300">
-                            <span class="w-2 h-2 rounded-full bg-[#FC2779]"></span>
+                            <input type="radio" name="storeFilter" value="nykaa" onchange="onStoreFilterChange('nykaa')" class="text-indigo-600 focus:ring-indigo-500 rounded border-slate-300" {% if current_platform == 'nykaa' %}checked{% endif %}>
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#FC2779]"></span>
                             <span class="font-medium text-slate-700">Nykaa</span>
                         </label>
                     </div>
                 </div>
 
-                <!-- Category Filter -->
+                <!-- Category Switcher Filter -->
                 <div>
-                    <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5">Category</h2>
+                    <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5">Switch Department</h2>
                     <select id="dealsCategorySelect" onchange="onCategoryFilterChange(this.value)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-bold">
-                        <option value="">All Categories</option>
-                        <option value="footwear" {% if current_category == 'footwear' %}selected{% endif %}>👟 Footwear & Shoes</option>
-                        <option value="electronics" {% if current_category == 'electronics' %}selected{% endif %}>📱 Electronics & Gadgets</option>
-                        <option value="beauty" {% if current_category == 'beauty' %}selected{% endif %}>💄 Beauty & Skincare</option>
+                        <option value="">All Departments</option>
                         <option value="fashion" {% if current_category == 'fashion' %}selected{% endif %}>👗 Fashion & Apparel</option>
+                        <option value="beauty" {% if current_category == 'beauty' %}selected{% endif %}>💄 Beauty & Skincare</option>
+                        <option value="electronics" {% if current_category == 'electronics' %}selected{% endif %}>📱 Electronics & Gadgets</option>
                         <option value="home" {% if current_category == 'home' %}selected{% endif %}>🏠 Home & Kitchen</option>
-                        <option value="watches_bags" {% if current_category == 'watches_bags' %}selected{% endif %}>⌚ Watches & Bags</option>
                         <option value="sports" {% if current_category == 'sports' %}selected{% endif %}>🏋️ Sports & Fitness</option>
+                        <option value="footwear" {% if current_category == 'footwear' %}selected{% endif %}>👟 Footwear & Shoes</option>
+                        <option value="watches" {% if current_category == 'watches' %}selected{% endif %}>⌚ Watches</option>
+                        <option value="bags" {% if current_category == 'bags' %}selected{% endif %}>👜 Bags & Luggage</option>
                         <option value="toys_kids" {% if current_category == 'toys_kids' %}selected{% endif %}>🧸 Toys & Kids</option>
-                        <option value="automotive" {% if current_category == 'automotive' %}selected{% endif %}>🚗 Automotive & Bike</option>
+                        <option value="automotive" {% if current_category == 'automotive' %}selected{% endif %}>🚗 Auto & Bikes</option>
                     </select>
                 </div>
 
@@ -140,23 +236,24 @@
         <!-- ── Main Deals Feed & Toolbar ─────────────────────────────────── -->
         <section class="flex-1 min-w-0">
             
-            <!-- Top Subcategory Interactive Quick Filter Rail -->
-            <div id="dealsSubcatRail" class="mb-4 bg-white border border-slate-200/90 rounded-2xl p-2.5 shadow-sm overflow-x-auto no-scrollbar flex items-center gap-1.5 text-xs">
-                <!-- Dynamically populated by updateSubcatRail() in JS -->
-            </div>
-            <!-- Toolbar: Matches Counter & Sorting -->
+            <!-- Toolbar: Header Title, Matches Counter & Sorting -->
             <div class="bg-white border border-slate-200/90 rounded-2xl p-3.5 mb-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
-                <div class="text-xs text-slate-600 font-mono">
-                    Showing <span id="dealsMatchesCount" class="font-bold text-slate-900">{{ initial_data.total_matches if initial_data and initial_data.total_matches else 0 }}</span> verified deals
+                <div>
+                    <h2 id="dealsSectionTitle" class="text-sm sm:text-base font-black text-slate-900">
+                        {% if cat_info %}All of Our {{ cat_info.name }}{% else %}All Live Verified Deals{% endif %}
+                    </h2>
+                    <span class="text-xs text-slate-500 font-mono">
+                        Showing <span id="dealsMatchesCount" class="font-bold text-slate-900">{{ initial_data.total_matches if initial_data and initial_data.total_matches else 0 }}</span> verified items
+                    </span>
                 </div>
 
                 <div class="flex items-center gap-2">
                     <label for="dealsSortSelect" class="text-xs font-bold text-slate-500 hidden sm:inline">Sort By:</label>
-                    <select id="dealsSortSelect" onchange="onSortChange(this.value)" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 transition">
-                        <option value="latest">Recently Verified</option>
-                        <option value="discount">Highest Discount %</option>
-                        <option value="price_asc">Price: Low to High</option>
-                        <option value="price_desc">Price: High to Low</option>
+                    <select id="dealsSortSelect" onchange="onSortChange(this.value)" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 transition font-bold">
+                        <option value="latest">⚡ Recently Verified</option>
+                        <option value="discount">🔥 Highest Discount %</option>
+                        <option value="price_asc">💰 Price: Low to High</option>
+                        <option value="price_desc">💎 Price: High to Low</option>
                     </select>
                 </div>
             </div>
@@ -165,117 +262,14 @@
             <div id="dealsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 transition-opacity duration-200">
                 {% if initial_data and initial_data.deals %}
                     {% for deal in initial_data.deals %}
-                    <div data-deal-id="{{ deal.product_id or deal.id }}" class="bg-white border border-slate-200/90 hover:border-indigo-400 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-md group relative">
-                        <div>
-                            <!-- Store Badge & Discount Meta -->
-                            <div class="flex items-center justify-between gap-2 mb-2">
-                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider {{ deal.platform|store_badge }}">
-                                    {{ deal.platform|store_name }}
-                                </span>
-                                {% if deal.discount_pct and deal.discount_pct > 0 %}
-                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono">
-                                    {{ deal.discount_pct|round_int }}% OFF
-                                </span>
-                                {% endif %}
-                            </div>
-
-                            <!-- Image Area -->
-                            <div class="relative w-full h-44 rounded-xl bg-slate-50 p-2 flex items-center justify-center overflow-hidden border border-slate-100">
-                                <img src="{{ deal.image_url or '/static/placeholder.png' }}" 
-                                     alt="{{ deal.title }}" 
-                                     class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" 
-                                     loading="lazy" 
-                                     onerror="this.src='/static/placeholder.png'" />
-                                
-                                <!-- Watchlist Toggle -->
-                                <button onclick="handleDealsWatchlist(this, {{ deal.product_id or deal.id }})" 
-                                        class="absolute top-2 right-2 p-1.5 rounded-xl bg-white/90 backdrop-blur-md border border-slate-200 text-slate-400 hover:text-rose-500 transition shadow-sm" 
-                                        title="Save to Watchlist">
-                                    <i data-lucide="heart" class="w-4 h-4"></i>
-                                </button>
-
-                                <!-- Freshness Pill -->
-                                <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-white/90 border border-slate-200 text-[10px] font-medium text-emerald-700 flex items-center gap-1 shadow-sm">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                    <span>Verified {{ deal.last_checked|time_ago }}</span>
-                                </div>
-                            </div>
-
-                            <!-- Product Title -->
-                            <div class="mt-3">
-                                <a href="{{ deal.affiliate_url or deal.product_url or '#' }}" target="_blank" rel="noopener noreferrer" 
-                                   class="text-xs font-bold text-slate-900 hover:text-indigo-600 line-clamp-2 transition leading-snug" 
-                                   title="{{ deal.title }}">
-                                    {{ deal.title }}
-                                </a>
-                                {% if deal.rating and deal.rating >= 1.0 %}
-                                <div class="flex items-center gap-1.5 mt-1.5">
-                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-900 text-[10px] font-bold font-mono">
-                                        <span class="text-amber-500">★</span> {{ deal.rating }}
-                                    </span>
-                                    {% if deal.review_count and deal.review_count > 0 %}
-                                    <span class="text-[10px] text-slate-500 font-mono">({{ deal.review_count }})</span>
-                                    {% endif %}
-                                </div>
-                                {% endif %}
-                            </div>
-
-                            <!-- Posted on Channel Date & Time Badge -->
-                            <div class="flex items-center gap-1.5 text-[10px] text-slate-600 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200 mt-2 font-medium">
-                                <i data-lucide="send" class="w-3 h-3 text-indigo-500 shrink-0"></i>
-                                <span>Posted on Channel:</span>
-                                <span class="font-bold text-slate-900 font-mono ml-auto">{{ (deal.posted_at or deal.deal_time or deal.last_checked)|format_posted_time }}</span>
-                            </div>
-                        </div>
-
-                        <!-- Price & Action Footer -->
-                        <div class="mt-3 pt-3 border-t border-slate-100">
-                            <div class="flex items-baseline justify-between gap-1 mb-2">
-                                <div>
-                                    {% set cp = deal.current_price or deal.deal_price or 0 %}
-                                    <span class="text-lg font-black text-slate-900 font-mono">{{ cp|format_inr }}</span>
-                                    {% if deal.mrp and deal.mrp > cp %}
-                                    <span class="text-xs text-slate-400 line-through ml-1.5 font-mono">{{ deal.mrp|format_inr }}</span>
-                                    {% endif %}
-                                </div>
-                                {% if deal.mrp and deal.mrp > cp %}
-                                <div class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-mono">
-                                    Save {{ (deal.mrp - cp)|format_inr }}
-                                </div>
-                                {% endif %}
-                            </div>
-
-                            <!-- Card Action Buttons -->
-                            <div class="flex items-center gap-1.5">
-                                <button onclick="handleDealsShare({{ deal.product_id or deal.id }})" 
-                                        class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center transition shrink-0" 
-                                        title="Share Deal">
-                                    <i data-lucide="share-2" class="w-4 h-4 text-indigo-600"></i>
-                                </button>
-                                <a href="{{ deal.affiliate_url or deal.product_url or '#' }}" target="_blank" rel="noopener noreferrer" 
-                                   class="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-sm shadow-indigo-600/20 hover:scale-[1.02] active:scale-[0.98] transition">
-                                    <span>Get Deal</span>
-                                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                                </a>
-                            </div>
-
-                            <!-- Send for Review Option -->
-                            <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100 text-[10px] text-slate-500 font-medium">
-                                <span class="truncate">Price changed on the platform?</span>
-                                <button onclick="handleSendForReview({{ deal.product_id or deal.id }}, '{{ deal.title|escape }}', '{{ deal.affiliate_url or deal.product_url or '#' }}', {{ deal.current_price or deal.deal_price or 0 }})" 
-                                        class="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 shrink-0 transition" 
-                                        title="Send product for algorithmic verification">
-                                    <i data-lucide="help-circle" class="w-3 h-3 text-indigo-500"></i>
-                                    <span>Flag for Re-Check</span>
-                                </button>
-                            </div>
-
-                        </div>
-                    </div>
+                    {% include "consumer/partials/product_card.html" %}
                     {% endfor %}
                 {% else %}
-                    <div class="col-span-full py-16 text-center text-xs text-slate-500">
-                        No active deals found with the selected filters. Try broadening your criteria.
+                    <div class="col-span-full py-16 text-center text-xs text-slate-500 bg-white rounded-2xl border border-slate-200 p-8">
+                        <span class="text-3xl mb-2 block">🔍</span>
+                        <span class="font-bold text-slate-800 text-sm">No deals found matching your selected criteria.</span>
+                        <p class="text-slate-500 mt-1">Try resetting your filters or selecting a different subcategory.</p>
+                        <button onclick="resetAllFilters()" class="mt-4 px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs">Reset All Filters</button>
                     </div>
                 {% endif %}
             </div>
@@ -312,6 +306,8 @@
         search: "{{ current_search if current_search else '' }}",
         platform: "{{ current_platform if current_platform else '' }}",
         category: "{{ current_category if current_category else '' }}",
+        sub: "{{ current_sub if current_sub else '' }}",
+        gender: "{{ current_gender if current_gender else '' }}",
         minDiscount: 0,
         minPrice: 0,
         maxPrice: 0,
@@ -331,17 +327,6 @@
                 loadDeals(true);
             }
         }, intervalSec * 1000);
-    }
-
-    function syncDealsWatchlistHearts() {
-        if (!window.isInWatchlist) return;
-        document.querySelectorAll('#dealsGrid [data-deal-id]').forEach(card => {
-            const id = card.dataset.dealId;
-            const heartIcon = card.querySelector('[title="Save to Watchlist"] i');
-            if (id && heartIcon && isInWatchlist(id)) {
-                heartIcon.classList.add('fill-rose-500', 'text-rose-500');
-            }
-        });
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -371,12 +356,7 @@
             loadDeals();
         } else {
             if (window.lucide) lucide.createIcons();
-            syncDealsWatchlistHearts();
         }
-        startDealsAutoRefresh();
-    });
-
-    window.addEventListener('budgetby:syncRateChanged', () => {
         startDealsAutoRefresh();
     });
 
@@ -398,6 +378,8 @@
             if (dealsState.search) params.append('search', dealsState.search);
             if (dealsState.platform) params.append('platform', dealsState.platform);
             if (dealsState.category) params.append('category', dealsState.category);
+            if (dealsState.sub) params.append('sub', dealsState.sub);
+            if (dealsState.gender) params.append('gender', dealsState.gender);
             if (dealsState.minDiscount > 0) params.append('min_discount', dealsState.minDiscount);
             if (dealsState.minPrice > 0) params.append('min_price', dealsState.minPrice);
             if (dealsState.maxPrice > 0) params.append('max_price', dealsState.maxPrice);
@@ -429,19 +411,6 @@
             const nextBtn = document.getElementById('dealsNextBtn');
             if (nextBtn) nextBtn.disabled = (dealsState.page >= dealsState.totalPages);
 
-                        if (isBackground && data.deals && data.deals.length > 0) {
-                const firstId = String(data.deals[0].product_id || data.deals[0].deal_id);
-                if (window._lastFirstDealId && window._lastFirstDealId !== firstId) {
-                    if (typeof playDealChime === 'function') playDealChime();
-                    if (typeof showDealNotification === 'function') {
-                        showDealNotification('⚡ Fresh verified deals just arrived!');
-                    }
-                }
-                window._lastFirstDealId = firstId;
-            } else if (data.deals && data.deals.length > 0) {
-                window._lastFirstDealId = String(data.deals[0].product_id || data.deals[0].deal_id);
-            }
-
             renderDealsCards(dealsState.items);
         } catch (err) {
             if (grid && (!dealsState.items || dealsState.items.length === 0)) {
@@ -458,7 +427,14 @@
     function renderDealsCards(items) {
         const grid = document.getElementById('dealsGrid');
         if (items.length === 0) {
-            grid.innerHTML = `<div class="col-span-full py-16 text-center text-xs text-slate-500">No verified deals match your filter criteria. Try resetting filters.</div>`;
+            grid.innerHTML = `
+                <div class="col-span-full py-16 text-center text-xs text-slate-500 bg-white rounded-2xl border border-slate-200 p-8">
+                    <span class="text-3xl mb-2 block">🔍</span>
+                    <span class="font-bold text-slate-800 text-sm">No verified deals match your filter criteria.</span>
+                    <p class="text-slate-500 mt-1">Try resetting your filters or selecting another subcategory.</p>
+                    <button onclick="resetAllFilters()" class="mt-4 px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs">Reset All Filters</button>
+                </div>
+            `;
             return;
         }
 
@@ -480,104 +456,133 @@
         grid.innerHTML = uniqueItems.map(deal => {
             const store = (deal.platform || 'amazon').toLowerCase();
             const storeCfg = STORES[store] || STORES.amazon;
-            const discPct = Math.round(deal.discount_percent || 0);
-            const verifiedAgo = deal.last_checked ? formatTimeAgo(deal.last_checked) : 'Recently';
-            const inWatch = isInWatchlist(deal.id);
+            const cp = deal.current_price || deal.deal_price || 0;
+            const mrp = deal.mrp || 0;
+            const hasDiscount = mrp > cp;
+            const discPct = hasDiscount ? Math.round(((mrp - cp) / mrp) * 100) : Math.round(deal.discount_percent || 0);
+            const savings = hasDiscount ? mrp - cp : 0;
             const safeTitle = escapeHtml(deal.title);
             const dealLink = deal.affiliate_url || deal.product_url || '#';
-            const postedTimeStr = formatPostedDateTime(deal.posted_at || deal.deal_time || deal.last_checked);
-            const hasValidRating = deal.rating && typeof deal.rating === 'number' && deal.rating >= 1.0 && deal.rating <= 5.0;
-            const ratingHtml = hasValidRating ? `
-                <div class="flex items-center gap-1.5 mt-1.5">
-                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-900 text-[10px] font-bold font-mono">
-                        <span class="text-amber-500">★</span> ${deal.rating.toFixed(1)}
-                    </span>
-                    ${deal.review_count && deal.review_count > 0 ? `
-                        <span class="text-[10px] text-slate-500 font-mono">(${Number(deal.review_count).toLocaleString('en-IN')})</span>
-                    ` : ''}
-                </div>
-            ` : '';
-
-            const cp = deal.current_price || 0;
-            const mrp = deal.mrp || 0;
-            const savingsHtml = (mrp > cp) ? `
-                <div class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-mono">
-                    Save ${formatINR(mrp - cp)}
-                </div>
-            ` : '';
+            const rating = deal.rating || 0;
+            const reviews = deal.review_count || 0;
+            const badge = deal.badge || '';
 
             return `
-                <div class="bg-white border border-slate-200/90 hover:border-indigo-400 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-md group relative">
+                <div class="bg-white border border-slate-200/90 hover:border-indigo-400 rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-md group relative">
                     <div>
-                        <div class="flex items-center justify-between gap-2 mb-2">
-                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${storeCfg.badge}">
+                        <!-- Store Badge & Discount Tag -->
+                        <div class="flex items-center justify-between gap-1.5 mb-2">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${storeCfg.badge}">
                                 ${storeCfg.name}
                             </span>
                             ${discPct > 0 ? `
-                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono">
-                                    ${discPct}% OFF
-                                </span>
-                            ` : ''}
+                            <span class="px-1.5 py-0.5 rounded-md text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200 font-mono">
+                                -${discPct}%
+                            </span>` : (badge ? `
+                            <span class="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-amber-50 text-amber-700 border border-amber-200 uppercase font-mono">
+                                ${badge}
+                            </span>` : '')}
                         </div>
 
-                        <div class="relative w-full h-44 rounded-xl bg-slate-50 p-2 flex items-center justify-center overflow-hidden border border-slate-100">
-                            <img src="${deal.image_url || '/static/placeholder.png'}" alt="${safeTitle}" class="w-full h-full object-contain group-hover:scale-105 transition" loading="lazy" onerror="this.src='/static/placeholder.png'"/>
-                            <button onclick="handleDealsWatchlist(this, ${deal.id})" class="absolute top-2 right-2 p-1.5 rounded-xl bg-white/90 backdrop-blur-md border border-slate-200 text-slate-400 hover:text-rose-500 transition shadow-sm" title="Save to Watchlist">
-                                <i data-lucide="heart" class="w-4 h-4 ${inWatch ? 'fill-rose-500 text-rose-500' : ''}"></i>
+                        <!-- Image Area -->
+                        <div class="relative w-full h-36 sm:h-44 rounded-xl bg-slate-50 p-2 flex items-center justify-center overflow-hidden border border-slate-100">
+                            <img src="${deal.image_url || '/static/placeholder.png'}" 
+                                 alt="${safeTitle}" 
+                                 class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                                 loading="lazy"
+                                 onerror="this.src='/static/placeholder.png'" />
+                            
+                            ${badge === 'ATL' ? `
+                            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded-md text-[9px] font-black bg-amber-500 text-white uppercase font-mono shadow-sm">
+                                🏆 ATL
+                            </span>` : (discPct >= 60 ? `
+                            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded-md text-[9px] font-black bg-rose-600 text-white uppercase font-mono shadow-sm">
+                                🔥 LOOT
+                            </span>` : '')}
+
+                            <button onclick="handleDealsWatchlist(this, ${deal.product_id || deal.id})" 
+                                    class="absolute top-2 right-2 p-1.5 rounded-xl bg-white/90 backdrop-blur-md border border-slate-200 text-slate-400 hover:text-rose-500 transition shadow-sm" 
+                                    title="Save to Watchlist">
+                                <i data-lucide="heart" class="w-3.5 h-3.5"></i>
                             </button>
-                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-white/90 border border-slate-200 text-[10px] font-medium text-emerald-700 flex items-center gap-1 shadow-sm">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                <span>Verified ${verifiedAgo}</span>
-                            </div>
                         </div>
 
-                        <div class="mt-3">
-                            <a href="${dealLink}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-slate-900 hover:text-indigo-600 line-clamp-2 transition leading-snug" title="${safeTitle}">
+                        <!-- Ratings & Freshness Row -->
+                        <div class="mt-2 flex items-center justify-between text-[10px] text-slate-500">
+                            ${rating > 0 ? `
+                            <span class="flex items-center gap-1 font-bold text-amber-600 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200/60">
+                                <span>★</span> ${rating.toFixed(1)} ${reviews > 0 ? `<span class="text-slate-400 font-normal">(${reviews})</span>` : ''}
+                            </span>` : `<span class="text-slate-400 text-[10px] font-medium">Verified Price</span>`}
+                            <span class="text-slate-400 font-mono text-[9px]">${deal.deal_time ? 'Recently' : 'Live'}</span>
+                        </div>
+
+                        <!-- Title -->
+                        <div class="mt-1.5">
+                            <a href="${dealLink}" target="_blank" rel="noopener noreferrer" 
+                               class="text-xs font-bold text-slate-900 hover:text-indigo-600 line-clamp-2 transition leading-snug" 
+                               title="${safeTitle}">
                                 ${safeTitle}
                             </a>
-                            ${ratingHtml}
-                        </div>
-
-                        <div class="flex items-center gap-1.5 text-[10px] text-slate-600 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200 mt-2 font-medium">
-                            <i data-lucide="send" class="w-3 h-3 text-indigo-500 shrink-0"></i>
-                            <span>Posted on Channel:</span>
-                            <span class="font-bold text-slate-900 font-mono ml-auto">${postedTimeStr}</span>
                         </div>
                     </div>
 
-                    <div class="mt-3 pt-3 border-t border-slate-100">
+                    <!-- Price & Buy Button -->
+                    <div class="mt-3 pt-2.5 border-t border-slate-100">
                         <div class="flex items-baseline justify-between gap-1 mb-2">
                             <div>
-                                <span class="text-lg font-black text-slate-900 font-mono">${formatINR(deal.current_price)}</span>
-                                ${mrp > cp ? `<span class="text-xs text-slate-400 line-through ml-1.5 font-mono">${formatINR(mrp)}</span>` : ''}
+                                <span class="text-base sm:text-lg font-black text-slate-900 font-mono">${formatINR(cp)}</span>
+                                ${hasDiscount ? `<span class="text-xs text-slate-400 line-through ml-1 font-mono">${formatINR(mrp)}</span>` : ''}
                             </div>
-                            ${savingsHtml}
+                            ${savings > 0 ? `
+                            <div class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-mono">
+                                Save ${formatINR(savings)}
+                            </div>` : ''}
                         </div>
 
-                        <div class="flex items-center gap-1.5">
-                            <button onclick="handleDealsShare(${deal.id})" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center transition shrink-0" title="Share Deal">
-                                <i data-lucide="share-2" class="w-4 h-4 text-indigo-600"></i>
-                            </button>
-                            <a href="${dealLink}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-sm shadow-indigo-600/20 hover:scale-[1.02] active:scale-[0.98] transition">
-                                <span>Get Deal</span>
-                                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                            </a>
-                        </div>
-
-                        <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100 text-[10px] text-slate-500 font-medium">
-                            <span class="truncate">Price changed on the platform?</span>
-                            <button onclick="handleSendForReview(${deal.id}, '${safeTitle.replace(/'/g, "\\'")}', '${dealLink.replace(/'/g, "\\'")}', ${deal.current_price || 0})" class="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 shrink-0 transition" title="Send product for algorithmic verification">
-                                <i data-lucide="help-circle" class="w-3 h-3 text-indigo-500"></i>
-                                <span>Flag for Re-Check</span>
-                            </button>
-                        </div>
-
+                        <a href="${dealLink}" target="_blank" rel="noopener noreferrer" 
+                           class="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 transition shadow-sm shadow-indigo-600/20 active:scale-98">
+                            <span>Buy on ${storeCfg.name}</span>
+                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        </a>
                     </div>
                 </div>
             `;
         }).join('');
 
-        lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function onSubcategoryClick(subKey, btn) {
+        dealsState.sub = subKey;
+        dealsState.page = 1;
+        document.querySelectorAll('.subcat-card').forEach(c => {
+            c.className = 'subcat-card relative group rounded-2xl border overflow-hidden transition-all text-left flex flex-col justify-between min-h-[95px] bg-white border-slate-200 hover:border-indigo-400 hover:shadow-sm';
+        });
+        if (btn) {
+            btn.className = 'subcat-card relative group rounded-2xl border overflow-hidden transition-all text-left flex flex-col justify-between min-h-[95px] bg-indigo-50 border-indigo-600 ring-2 ring-indigo-500/20 shadow-md';
+        }
+        loadDeals();
+    }
+
+    function onGenderFilterChange(gender, btn) {
+        dealsState.gender = gender;
+        dealsState.page = 1;
+        document.querySelectorAll('.gender-btn').forEach(b => {
+            b.className = 'gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200';
+        });
+        if (btn) {
+            btn.className = 'gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition bg-indigo-600 text-white shadow-sm';
+        }
+        loadDeals();
+    }
+
+    function onPriceQuickFilter(maxP) {
+        dealsState.maxPrice = maxP;
+        dealsState.minPrice = 0;
+        dealsState.page = 1;
+        const maxInput = document.getElementById('maxPriceInput');
+        if (maxInput) maxInput.value = maxP;
+        loadDeals();
     }
 
     function onStoreFilterChange(plat) {
@@ -587,9 +592,11 @@
     }
 
     function onCategoryFilterChange(cat) {
-        dealsState.category = cat;
-        dealsState.page = 1;
-        loadDeals();
+        if (cat) {
+            window.location.href = `/deals?category=${encodeURIComponent(cat)}`;
+        } else {
+            window.location.href = '/deals';
+        }
     }
 
     function setMinDiscount(pct) {
@@ -624,14 +631,15 @@
 
     function changeDealsPage(delta) {
         dealsState.page += delta;
-        window.scrollTo({ top: 150, behavior: 'smooth' });
+        window.scrollTo({ top: 200, behavior: 'smooth' });
         loadDeals();
     }
 
     function resetAllFilters() {
         dealsState.page = 1;
         dealsState.platform = '';
-        dealsState.category = '';
+        dealsState.sub = '';
+        dealsState.gender = '';
         dealsState.minDiscount = 0;
         dealsState.minPrice = 0;
         dealsState.maxPrice = 0;
@@ -640,13 +648,18 @@
 
         const radioAll = document.querySelector('input[name="storeFilter"][value=""]');
         if (radioAll) radioAll.checked = true;
-        const catSelect = document.getElementById('dealsCategorySelect');
-        if (catSelect) catSelect.value = '';
         const minP = document.getElementById('minPriceInput');
         if (minP) minP.value = '';
         const maxP = document.getElementById('maxPriceInput');
         if (maxP) maxP.value = '';
         setMinDiscount(0);
+
+        document.querySelectorAll('.gender-btn').forEach((b, idx) => {
+            b.className = idx === 0 
+                ? 'gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition bg-indigo-600 text-white shadow-sm'
+                : 'gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200';
+        });
+
         loadDeals();
     }
 
@@ -663,11 +676,6 @@
                 }
             }
         }
-    }
-
-    function handleDealsShare(id) {
-        const deal = dealsState.itemsMap[id];
-        if (deal) openShareModal(deal);
     }
 </script>
 {% endblock %}
