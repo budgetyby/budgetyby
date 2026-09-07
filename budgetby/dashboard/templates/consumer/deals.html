@@ -451,6 +451,7 @@
             const discPct = hasDiscount ? Math.round(((mrp - cp) / mrp) * 100) : Math.round(deal.discount_percent || 0);
             const savings = hasDiscount ? mrp - cp : 0;
             const safeTitle = escapeHtml(deal.title);
+            const lastCheckedTimeStr = formatPostedDateTime(deal.last_checked || deal.deal_time || deal.posted_at);
             const dealLink = deal.affiliate_url || deal.product_url || '#';
             const rating = deal.rating || 0;
             const reviews = deal.review_count || 0;
@@ -512,6 +513,13 @@
                                title="${safeTitle}">
                                 ${safeTitle}
                             </a>
+                        </div>
+
+                        <!-- Last Price Check Timestamp Badge -->
+                        <div class="flex items-center gap-1.5 text-[10px] text-slate-600 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200/90 mt-2 font-medium">
+                            <i data-lucide="clock-3" class="w-3 h-3 text-indigo-500 shrink-0"></i>
+                            <span>Last Price Check:</span>
+                            <span class="font-bold text-slate-900 font-mono ml-auto">${lastCheckedTimeStr}</span>
                         </div>
                     </div>
 
