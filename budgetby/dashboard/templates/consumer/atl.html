@@ -337,7 +337,8 @@
             if (atlState.store) params.append('platform', atlState.store);
             if (atlState.category) params.append('category', atlState.category);
 
-            const res = await fetch(`/api/public/deals?${params.toString()}`);
+            params.append('_t', Date.now());
+            const res = await fetch(`/api/public/deals?${params.toString()}`, { cache: 'no-store' });
             const data = await res.json();
 
             atlState.items = (data.deals || data.items || []).map(d => ({

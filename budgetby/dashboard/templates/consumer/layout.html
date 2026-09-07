@@ -899,7 +899,7 @@ ${deal.title}
                     clearTimeout(searchDebounceTimer);
                     searchDebounceTimer = setTimeout(async () => {
                         try {
-                            const res = await fetch(`/api/public/deals?search=${encodeURIComponent(q)}&limit=5`);
+                            const res = await fetch(`/api/public/deals?search=${encodeURIComponent(q)}&limit=5&_t=${Date.now()}`, { cache: 'no-store' });
                             const data = await res.json();
                             const deals = data.deals || data.items || [];
                             renderSearchSuggestions(deals, q);

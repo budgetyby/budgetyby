@@ -313,7 +313,8 @@
             });
             if (dropsState.platform) params.append('platform', dropsState.platform);
 
-            const res = await fetch(`/api/public/price-drops?${params.toString()}`);
+            params.append('_t', Date.now());
+            const res = await fetch(`/api/public/price-drops?${params.toString()}`, { cache: 'no-store' });
             const data = await res.json();
 
             dropsState.items = (data.drops || data.items || []).map(d => ({
@@ -338,6 +339,19 @@
             if (prevBtn) prevBtn.disabled = (dropsState.page <= 1);
             const nextBtn = document.getElementById('dropsNextBtn');
             if (nextBtn) nextBtn.disabled = (dropsState.page >= dropsState.totalPages);
+
+                        if (isBackground && data.drops && data.drops.length > 0) {
+                const firstId = String(data.drops[0].product_id || data.drops[0].deal_id);
+                if (window._lastFirstDropId && window._lastFirstDropId !== firstId) {
+                    if (typeof playDealChime === 'function') playDealChime();
+                    if (typeof showDealNotification === 'function') {
+                        showDealNotification('⚡ New 24-hour price cuts just dropped!');
+                    }
+                }
+                window._lastFirstDropId = firstId;
+            } else if (data.drops && data.drops.length > 0) {
+                window._lastFirstDropId = String(data.drops[0].product_id || data.drops[0].deal_id);
+            }
 
             renderDropsCards(dropsState.items);
         } catch (err) {

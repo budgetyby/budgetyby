@@ -537,7 +537,8 @@
             });
             if (storeState.category) params.append('category', storeState.category);
 
-            const res = await fetch(`/api/public/deals?${params.toString()}`);
+            params.append('_t', Date.now());
+            const res = await fetch(`/api/public/deals?${params.toString()}`, { cache: 'no-store' });
             const data = await res.json();
 
             storeState.items = (data.deals || data.items || []).map(d => ({
@@ -742,7 +743,7 @@
     {% else %}
     // Load dynamic store counts and max cuts for directory mode
     function refreshDirectoryStats() {
-        fetch('/api/public/stats')
+        fetch('/api/public/stats?_t=' + Date.now(), { cache: 'no-store' })
             .then(r => r.json())
             .then(data => {
                 if (data.by_platform) {

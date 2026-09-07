@@ -30,12 +30,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         path = request.url.path
-        if path.startswith("/api/public/") or path.startswith("/api/deal/redirect/"):
-            response.headers["Cache-Control"] = "public, max-age=30, stale-while-revalidate=120"
-        elif path.startswith("/api/"):
+        if path.startswith("/api/public/") or path.startswith("/api/"):
             response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
+        elif path.startswith("/api/deal/redirect/"):
+            response.headers["Cache-Control"] = "public, max-age=30"
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)
@@ -1164,7 +1164,7 @@ async def get_public_stats():
             "platforms": ["Amazon", "Flipkart", "Myntra", "Ajio", "Nykaa"],
             "status": "live"
         }
-        await ram_cache.set("public_stats", result, ttl=300)
+        await ram_cache.set("public_stats", result, ttl=10)
         return result
     except Exception as e:
         logger.error(f"Error in get_public_stats: {e}", exc_info=True)
@@ -1672,7 +1672,7 @@ async def get_public_price_drops(
             "min_drop_pct": min_drop_pct,
             "drops": drops
         }
-        await ram_cache.set(cache_key, result, ttl=120)
+        await ram_cache.set(cache_key, result, ttl=10)
         return result
     except Exception as e:
         logger.error(f"Error in get_public_price_drops: {e}", exc_info=True)
@@ -2248,7 +2248,7 @@ async def get_public_deals(
             "search_query": search_clean,
             "deals": deals
         }
-        await ram_cache.set(cache_key, result, ttl=120)
+        await ram_cache.set(cache_key, result, ttl=10)
         return result
     except Exception as e:
         logger.error(f"Error in get_public_deals: {e}", exc_info=True)

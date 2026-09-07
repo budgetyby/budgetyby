@@ -394,7 +394,8 @@
             if (dealsState.minPrice > 0) params.append('min_price', dealsState.minPrice);
             if (dealsState.maxPrice > 0) params.append('max_price', dealsState.maxPrice);
 
-            const res = await fetch(`/api/public/deals?${params.toString()}`);
+            params.append('_t', Date.now());
+            const res = await fetch(`/api/public/deals?${params.toString()}`, { cache: 'no-store' });
             const data = await res.json();
 
             dealsState.items = (data.deals || data.items || []).map(d => ({
@@ -419,6 +420,19 @@
             if (prevBtn) prevBtn.disabled = (dealsState.page <= 1);
             const nextBtn = document.getElementById('dealsNextBtn');
             if (nextBtn) nextBtn.disabled = (dealsState.page >= dealsState.totalPages);
+
+                        if (isBackground && data.deals && data.deals.length > 0) {
+                const firstId = String(data.deals[0].product_id || data.deals[0].deal_id);
+                if (window._lastFirstDealId && window._lastFirstDealId !== firstId) {
+                    if (typeof playDealChime === 'function') playDealChime();
+                    if (typeof showDealNotification === 'function') {
+                        showDealNotification('⚡ Fresh verified deals just arrived!');
+                    }
+                }
+                window._lastFirstDealId = firstId;
+            } else if (data.deals && data.deals.length > 0) {
+                window._lastFirstDealId = String(data.deals[0].product_id || data.deals[0].deal_id);
+            }
 
             renderDealsCards(dealsState.items);
         } catch (err) {
