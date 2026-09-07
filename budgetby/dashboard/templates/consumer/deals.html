@@ -31,23 +31,21 @@
         {% endif %}
     </nav>
 
-    <!-- ── Category Header Hub Banner ───────────────────────────────────── -->
+    <!-- ── Category Header Hub Banner (Shown ONLY on main category/deals pages, hidden on dedicated subcategory pages) ── -->
+    {% if not current_sub %}
     <div class="relative overflow-hidden rounded-3xl bg-white border border-slate-200/90 p-5 sm:p-7 shadow-sm mb-5">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 font-bold text-xs uppercase tracking-wide border border-indigo-200 mb-2">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span>Live Deal Discovery</span>
-                    {% if sub_info %}
-                    <span class="text-slate-400">•</span>
-                    <span class="text-slate-600">{{ sub_info.name }} Subcategory</span>
-                    {% elif cat_info %}
+                    {% if cat_info %}
                     <span class="text-slate-400">•</span>
                     <span class="text-slate-600">{{ cat_info.deal_count or 'Thousands of' }} Active Deals</span>
                     {% endif %}
                 </div>
                 <h1 class="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-2">
-                    {% if sub_info %}<span>{{ sub_info.icon or '🏷️' }}</span>{% elif cat_info %}<span>{{ cat_info.icon }}</span>{% endif %}
+                    {% if cat_info %}<span>{{ cat_info.icon }}</span>{% endif %}
                     <span>{{ page_heading }}</span>
                 </h1>
                 <p class="text-xs sm:text-sm text-slate-600 mt-1">
@@ -61,6 +59,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
 
     <!-- ── Visual Subcategories Card Showcase (Shown ONLY on main category page, hidden on dedicated subcategory pages) ─── -->
