@@ -178,12 +178,12 @@
 
                         <!-- Send for Review Option -->
                         <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100 text-[10px] text-slate-500 font-medium">
-                            <span class="truncate">Missed a lower price?</span>
+                            <span class="truncate">Found a cheaper price elsewhere?</span>
                             <button onclick="handleSendForReview({{ deal.product_id or deal.id }}, '{{ deal.title|escape }}', '{{ deal.affiliate_url or deal.product_url or '#' }}', {{ deal.current_price or deal.deal_price or 0 }})" 
                                     class="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 shrink-0 transition" 
                                     title="Send product for algorithmic verification">
                                 <i data-lucide="help-circle" class="w-3 h-3 text-indigo-500"></i>
-                                <span>Send for Review</span>
+                                <span>Flag for Re-Check</span>
                             </button>
                         </div>
 
@@ -357,12 +357,12 @@
 
                         <!-- Send for Review Option -->
                         <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100 text-[10px] text-slate-500 font-medium">
-                            <span class="truncate">Missed a lower price?</span>
+                            <span class="truncate">Found a cheaper price elsewhere?</span>
                             <button onclick="handleSendForReview({{ deal.product_id or deal.id }}, '{{ deal.title|escape }}', '{{ deal.affiliate_url or deal.product_url or '#' }}', {{ deal.current_price or deal.deal_price or 0 }})" 
                                     class="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 shrink-0 transition" 
                                     title="Send product for algorithmic verification">
                                 <i data-lucide="help-circle" class="w-3 h-3 text-indigo-500"></i>
-                                <span>Send for Review</span>
+                                <span>Flag for Re-Check</span>
                             </button>
                         </div>
 
@@ -524,12 +524,12 @@
                     </div>
 
                     <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100 text-[10px] text-slate-500 font-medium">
-                        <span class="truncate">Missed a lower price?</span>
+                        <span class="truncate">Found a cheaper price elsewhere?</span>
                         <button onclick="handleSendForReview(${deal.product_id || deal.id}, '${safeTitle.replace(/'/g, "\\'")}', '${dealLink.replace(/'/g, "\\'")}', ${cp})" 
                                 class="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 shrink-0 transition" 
                                 title="Send product for algorithmic verification">
                             <i data-lucide="help-circle" class="w-3 h-3 text-indigo-500"></i>
-                            <span>Send for Review</span>
+                            <span>Flag for Re-Check</span>
                         </button>
                     </div>
                 </div>
@@ -636,12 +636,12 @@
                     </div>
 
                     <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100 text-[10px] text-slate-500 font-medium">
-                        <span class="truncate">Missed a lower price?</span>
+                        <span class="truncate">Found a cheaper price elsewhere?</span>
                         <button onclick="handleSendForReview(${deal.product_id || deal.id}, '${safeTitle.replace(/'/g, "\\'")}', '${dealLink.replace(/'/g, "\\'")}', ${cp})" 
                                 class="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 shrink-0 transition" 
                                 title="Send product for algorithmic verification">
                             <i data-lucide="help-circle" class="w-3 h-3 text-indigo-500"></i>
-                            <span>Send for Review</span>
+                            <span>Flag for Re-Check</span>
                         </button>
                     </div>
                 </div>
