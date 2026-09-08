@@ -979,7 +979,15 @@
         function getUserSettings() {
             try {
                 const saved = localStorage.getItem('budgetby_user_settings');
-                return saved ? JSON.parse(saved) : { syncInterval: 300, soundEnabled: true };
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed && typeof parsed.syncInterval === 'number' && parsed.syncInterval < 300 && parsed.syncInterval > 0) {
+                        parsed.syncInterval = 300;
+                        saveUserSettings(parsed);
+                    }
+                    return parsed;
+                }
+                return { syncInterval: 300, soundEnabled: true };
             } catch(e) {
                 return { syncInterval: 300, soundEnabled: true };
             }
@@ -1412,9 +1420,9 @@ ${deal.title}
                     clearTimeout(searchDebounceTimer);
                     searchDebounceTimer = setTimeout(async () => {
                         try {
-                            const res = await fetch(`/api/public/deals?search=${encodeURIComponent(q)}&limit=5`);
+                            const res = await fetch(`/api/public/search-suggestions?q=${encodeURIComponent(q)}`);
                             const data = await res.json();
-                            const deals = data.deals || data.items || [];
+                            const deals = data.suggestions || data.deals || data.items || [];
                             renderSearchSuggestions(deals, q);
                         } catch (err) {}
                     }, 200);

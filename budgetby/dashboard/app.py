@@ -1572,6 +1572,44 @@ async def get_public_stats():
             "error": str(e)
         }
 
+@app.get("/api/public/search-suggestions")
+async def get_public_search_suggestions(q: str = Query("", max_length=100)):
+    """Returns lightweight search suggestion candidates (max 5) with 300s RAM cache."""
+    clean_q = (q or "").strip().lower()
+    if not clean_q:
+        return {"suggestions": []}
+
+    cache_key = f"suggestions:{clean_q}"
+    cached = await ram_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    async def _fetch_suggestions():
+        c = await ram_cache.get(cache_key)
+        if c is not None:
+            return c
+        res = await get_public_deals(search=clean_q, page=1, limit=5, verified_only=False)
+        raw_deals = res.get("deals", []) if isinstance(res, dict) else []
+        suggestions = []
+        for d in raw_deals:
+            suggestions.append({
+                "deal_id": d.get("deal_id"),
+                "product_id": d.get("product_id"),
+                "title": d.get("title"),
+                "platform": d.get("platform"),
+                "current_price": d.get("current_price"),
+                "deal_price": d.get("deal_price"),
+                "mrp": d.get("mrp"),
+                "image_url": d.get("image_url"),
+                "affiliate_url": d.get("affiliate_url"),
+                "badge": d.get("badge")
+            })
+        result = {"suggestions": suggestions}
+        await ram_cache.set(cache_key, result, ttl=300)
+        return result
+
+    return await coalescer.run(cache_key, _fetch_suggestions)
+
 @app.get("/api/public/categories")
 async def get_public_categories():
     """Returns top product categories with active in-stock deal counts across deals and new products."""
