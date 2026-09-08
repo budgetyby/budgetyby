@@ -520,6 +520,7 @@
     });
 
     async function loadStoreDeals(isBackground = false) {
+        if (isBackground && document.hidden) return;
         const grid = document.getElementById('storeDealsGrid');
         if (!isBackground) {
             if (typeof showPageProgress === 'function') showPageProgress();
@@ -537,7 +538,6 @@
             });
             if (storeState.category) params.append('category', storeState.category);
 
-            params.append('_t', Date.now());
             const res = await fetch(`/api/public/deals?${params.toString()}`);
             const data = await res.json();
 

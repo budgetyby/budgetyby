@@ -356,6 +356,7 @@
     });
 
     async function loadDeals(isBackground = false) {
+        if (isBackground && document.hidden) return;
         const grid = document.getElementById('dealsGrid');
         if (!isBackground) {
             if (typeof showPageProgress === 'function') showPageProgress();
@@ -379,7 +380,6 @@
             if (dealsState.minPrice > 0) params.append('min_price', dealsState.minPrice);
             if (dealsState.maxPrice > 0) params.append('max_price', dealsState.maxPrice);
 
-            params.append('_t', Date.now());
             const res = await fetch(`/api/public/deals?${params.toString()}`);
             const data = await res.json();
 

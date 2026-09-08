@@ -296,6 +296,7 @@
     });
 
     async function loadPriceDrops(isBackground = false) {
+        if (isBackground && document.hidden) return;
         const grid = document.getElementById('dropsGrid');
         if (!isBackground) {
             if (typeof showPageProgress === 'function') showPageProgress();
@@ -313,7 +314,6 @@
             });
             if (dropsState.platform) params.append('platform', dropsState.platform);
 
-            params.append('_t', Date.now());
             const res = await fetch(`/api/public/price-drops?${params.toString()}`);
             const data = await res.json();
 

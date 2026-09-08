@@ -319,6 +319,7 @@
     });
 
     async function loadAtlDeals(isBackground = false) {
+        if (isBackground && document.hidden) return;
         const grid = document.getElementById('atlGrid');
         if (!isBackground) {
             if (typeof showPageProgress === 'function') showPageProgress();
@@ -337,7 +338,6 @@
             if (atlState.store) params.append('platform', atlState.store);
             if (atlState.category) params.append('category', atlState.category);
 
-            params.append('_t', Date.now());
             const res = await fetch(`/api/public/deals?${params.toString()}`);
             const data = await res.json();
 
