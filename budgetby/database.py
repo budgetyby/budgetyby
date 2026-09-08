@@ -563,8 +563,10 @@ async def insert_deal(data: dict) -> int:
                     in_stock = TRUE
                 WHERE id = $2;
             """, float(posted_price), pid)
+            _CORE_METRICS_CACHE["expires_at"] = 0
         except Exception as e:
             logger.debug(f"Sync product on deal insert note: {e}")
+    _CORE_METRICS_CACHE["expires_at"] = 0
     return row["id"] if row else None
 
 
