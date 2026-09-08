@@ -17,7 +17,7 @@ async def find_evergreen_deals(limit: int = 10, platform: str = None) -> list[Re
     try:
         platform_filter = "AND p.platform = $3" if platform else ""
         query = f"""
-            SELECT p.*, ((p.mrp - p.current_price) / p.mrp) AS discount_pct
+            SELECT p.id, p.platform, p.product_url, p.affiliate_url, p.title, p.current_price, p.mrp, p.rating, p.review_count, p.image_url, p.category, ((p.mrp - p.current_price) / p.mrp) AS discount_pct
             FROM products p
             LEFT JOIN post_cooldowns c ON p.id = c.product_id AND c.expires_at > NOW()
             WHERE p.in_stock = TRUE

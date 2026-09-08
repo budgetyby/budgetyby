@@ -2022,7 +2022,7 @@ async def get_public_price_drops(
             "min_drop_pct": min_drop_pct,
             "drops": drops
         }
-        await ram_cache.set(cache_key, result, ttl=30)  # 30s RAM cache ensures fresh drops appear promptly
+        await ram_cache.set(cache_key, result, ttl=300)  # 300s RAM cache protects DB egress while keeping drops fresh
         return result
     except Exception as e:
         logger.error(f"Error in get_public_price_drops: {e}", exc_info=True)
@@ -2657,9 +2657,9 @@ async def get_public_deals(
             "search_query": search_clean,
             "deals": deals
         }
-        # Search queries expire fast (30s) so keyword results stay fresh.
-        # Category/browse pages cache for 180s — products don't change every 30s.
-        cache_ttl = 30 if search_clean else 180
+        # Search queries expire after 60s so keyword results stay fresh.
+        # Category/browse pages cache for 600s (10 min) — eliminates redundant DB egress.
+        cache_ttl = 60 if search_clean else 600
         await ram_cache.set(cache_key, result, ttl=cache_ttl)
         return result
     except Exception as e:
@@ -2677,20 +2677,20 @@ STORE_DISPLAY_NAMES = {
     "nykaa": "Nykaa"
 }
 
-def render_consumer_template(template_name: str, request: Request, context: dict = None, cache_seconds: int = 60):
+def render_consumer_template(template_name: str, request: Request, context: dict = None, cache_seconds: int = 300):
     if context is None:
         context = {}
     context["request"] = request
     context["categories_taxonomy"] = UNIVERSAL_CATEGORIES
     try:
         response = templates.TemplateResponse(request=request, name=template_name, context=context)
-        response.headers["Cache-Control"] = f"public, max-age={cache_seconds}, stale-while-revalidate=30"
+        response.headers["Cache-Control"] = f"public, max-age={cache_seconds}, stale-while-revalidate=60"
         return response
     except TypeError:
         # Fallback for older Starlette signature: TemplateResponse(name, context)
         try:
             response = templates.TemplateResponse(template_name, context)
-            response.headers["Cache-Control"] = f"public, max-age={cache_seconds}, stale-while-revalidate=30"
+            response.headers["Cache-Control"] = f"public, max-age={cache_seconds}, stale-while-revalidate=60"
             return response
         except Exception as e:
             logger.error(f"Fallback render error for {template_name}: {e}", exc_info=True)
@@ -2732,7 +2732,7 @@ async def page_home(request: Request):
         "just_dropped": just_dropped,
         "atl_mini": atl_mini,
         "initial_stats": initial_stats
-    }, cache_seconds=30)
+    }, cache_seconds=300)
 
 @app.get("/drops", response_class=HTMLResponse)
 @app.get("/price-drops", response_class=HTMLResponse)

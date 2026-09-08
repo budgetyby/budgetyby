@@ -326,8 +326,8 @@ def start_scheduler():
     """Configure and start all scheduled jobs."""
     logger.info("Starting scheduler...")
 
-    # Core catalog price checking — every 30 seconds
-    _scheduler.add_job(price_check_loop, "interval", seconds=30, id="price_check",
+    # Core catalog price checking — every 60 seconds (15 products/min)
+    _scheduler.add_job(price_check_loop, "interval", seconds=60, id="price_check",
                        max_instances=1, coalesce=True, misfire_grace_time=60)
 
     # Targeted Micro-Job Deal Verifier — every 60 seconds (3 req/min)

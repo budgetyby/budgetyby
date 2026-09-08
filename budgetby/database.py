@@ -314,15 +314,16 @@ async def upsert_daily_price(product_id: int, price: float):
     """, product_id, price)
 
 
-async def get_products_due_for_check(limit: int = 50) -> list[asyncpg.Record]:
+async def get_products_due_for_check(limit: int = 15) -> list[asyncpg.Record]:
     """
     Get products due for checking with balanced round-robin sampling across all 5 platforms.
     Prevents any single platform from starving or monopolizing the scanner queue.
+    Uses light selective column projection to eliminate DB network egress.
     """
-    per_platform = max(5, limit // 5)
+    per_platform = max(3, limit // 5)
     return await fetch("""
         WITH ranked_candidates AS (
-            SELECT p.*,
+            SELECT p.id, p.platform, p.product_url, p.priority_tier, p.title, p.current_price, p.mrp, p.category, p.next_check,
                    EXISTS(
                        SELECT 1 FROM deals d 
                        WHERE d.product_id = p.id 
@@ -567,9 +568,12 @@ async def insert_deal(data: dict) -> int:
     return row["id"] if row else None
 
 
+_CORE_METRICS_CACHE = {"data": None, "expires_at": 0}
+
 async def get_core_metrics() -> dict:
     """
     Centralized Single Source of Truth for system-wide platform metrics.
+    Cached in RAM for 600 seconds to protect database egress.
     Guarantees 100% mathematical synchronization across:
     1. Direct PostgreSQL Database queries
     2. Admin Control Center (/api/stats)
@@ -578,6 +582,11 @@ async def get_core_metrics() -> dict:
     5. Consumer Storefront Header & Hero (/api/public/stats)
     6. Consumer 24h Price Drops Carousel (/api/public/price-drops)
     """
+    import time
+    now = time.time()
+    if _CORE_METRICS_CACHE["data"] and now < _CORE_METRICS_CACHE["expires_at"]:
+        return _CORE_METRICS_CACHE["data"]
+
     total_prods = await fetchval("SELECT COUNT(*) FROM products WHERE LOWER(platform) != 'croma';")
     prods_today = await fetchval("""
         SELECT COUNT(*) FROM products 
@@ -618,7 +627,7 @@ async def get_core_metrics() -> dict:
           AND dp_today.close_price > 0 AND dp_yest.close_price > 0
           AND LOWER(p.platform) != 'croma';
     """)
-    return {
+    res = {
         "total_products": total_prods or 0,
         "products_added_today": prods_today or 0,
         "total_deals": total_deals or 0,
@@ -627,4 +636,7 @@ async def get_core_metrics() -> dict:
         "deals_today": deals_today or 0,
         "drops_today": drops_today or 0,
     }
+    _CORE_METRICS_CACHE["data"] = res
+    _CORE_METRICS_CACHE["expires_at"] = now + 600
+    return res
 

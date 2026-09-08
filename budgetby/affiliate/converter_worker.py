@@ -127,7 +127,7 @@ async def run_affiliate_converter_worker():
 
             if not deals:
                 CONVERTER_STATS["status"] = "all_deals_converted"
-                await asyncio.sleep(30)
+                await asyncio.sleep(300)
                 continue
 
             CONVERTER_STATS["status"] = f"converting_{len(deals)}_items"
