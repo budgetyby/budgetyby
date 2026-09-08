@@ -30,7 +30,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         path = request.url.path
-        if path.startswith("/api/public/"):
+        if request.method in ("POST", "PUT", "DELETE", "PATCH"):
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        elif path.startswith("/api/public/"):
             if "stats" in path:
                 response.headers["Cache-Control"] = "public, max-age=60, s-maxage=180, stale-while-revalidate=300"
             elif "categories" in path:
@@ -271,6 +275,41 @@ class SimpleMemoryCache:
         self._cache.clear()
 
 ram_cache = SimpleMemoryCache(default_ttl=120, max_entries=2000)
+
+
+class AsyncSingleFlightCoalescer:
+    """Coalesces concurrent requests for the same cache key so only 1 DB/render query runs."""
+    def __init__(self):
+        self._in_flight: dict[str, asyncio.Future] = {}
+        self._lock = asyncio.Lock()
+
+    async def run(self, key: str, coro_func):
+        async with self._lock:
+            if key in self._in_flight:
+                fut = self._in_flight[key]
+                execute = False
+            else:
+                fut = asyncio.get_running_loop().create_future()
+                self._in_flight[key] = fut
+                execute = True
+
+        if not execute:
+            return await fut
+
+        try:
+            result = await coro_func()
+            if not fut.done():
+                fut.set_result(result)
+            return result
+        except Exception as exc:
+            if not fut.done():
+                fut.set_exception(exc)
+            raise exc
+        finally:
+            async with self._lock:
+                self._in_flight.pop(key, None)
+
+coalescer = AsyncSingleFlightCoalescer()
 
 
 @app.on_event("startup")
@@ -1869,6 +1908,7 @@ async def get_public_price_drops(
     Calculates drop percentage, absolute rupee savings, previous price, and current price.
     """
     try:
+        limit = min(max(1, limit), 30)
         if min_drop_percent is not None:
             min_drop_pct = min_drop_percent
 
@@ -1877,157 +1917,165 @@ async def get_public_price_drops(
         if cached is not None:
             return cached
 
-        offset = (page - 1) * limit
+        async def _fetch_drops():
+            # Double check cache inside coalescer
+            c = await ram_cache.get(cache_key)
+            if c is not None:
+                return c
 
-        where_clauses = [
-            "p.in_stock = TRUE",
-            "p.status = 'ACTIVE'",
-            "p.current_price > 0",
-            "p.previous_price > p.current_price",
-            "p.previous_price <= GREATEST(COALESCE(NULLIF(p.mrp, 0), p.current_price * 1.35) * 1.15, p.current_price * 3.0)",
-            "LOWER(p.platform) != 'croma'",
-            "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) >= $1",
-            "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) <= 95.0"
-        ]
-        args = [min_drop_pct]
-        arg_idx = 2
+            offset = (page - 1) * limit
 
-        plat_clean = platform.strip().lower() if platform else ""
-        if plat_clean and plat_clean not in ("all", "croma"):
-            where_clauses.append(f"LOWER(p.platform) = ${arg_idx}")
-            args.append(plat_clean)
-            arg_idx += 1
+            where_clauses = [
+                "p.in_stock = TRUE",
+                "p.status = 'ACTIVE'",
+                "p.current_price > 0",
+                "p.previous_price > p.current_price",
+                "p.previous_price <= GREATEST(COALESCE(NULLIF(p.mrp, 0), p.current_price * 1.35) * 1.15, p.current_price * 3.0)",
+                "LOWER(p.platform) != 'croma'",
+                "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) >= $1",
+                "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) <= 95.0"
+            ]
+            args = [min_drop_pct]
+            arg_idx = 2
 
-        cat_clean = category.strip().lower() if category else ""
-        if cat_clean and cat_clean not in ("all",):
-            where_clauses.append(f"LOWER(p.category) LIKE ${arg_idx}")
-            args.append(f"%{cat_clean}%")
-            arg_idx += 1
+            plat_clean = platform.strip().lower() if platform else ""
+            if plat_clean and plat_clean not in ("all", "croma"):
+                where_clauses.append(f"LOWER(p.platform) = ${arg_idx}")
+                args.append(plat_clean)
+                arg_idx += 1
 
-        aff_priority = "(CASE WHEN p.affiliate_url ILIKE '%fktr.in%' OR p.affiliate_url ILIKE '%myntr.it%' OR p.affiliate_url ILIKE '%ajiio.in%' OR p.affiliate_url ILIKE '%clnk.in%' OR LOWER(p.platform) = 'amazon' THEN 1 ELSE 0 END) DESC"
-        order_by = f"{aff_priority}, drop_pct DESC, drop_amount DESC"
-        if sort_by == "price_asc":
-            order_by = f"{aff_priority}, p.current_price ASC, drop_pct DESC"
-        elif sort_by == "discount":
-            order_by = f"{aff_priority}, drop_amount DESC, drop_pct DESC"
-        elif sort_by == "latest":
-            order_by = f"{aff_priority}, p.last_price_change DESC NULLS LAST, drop_pct DESC"
+            cat_clean = category.strip().lower() if category else ""
+            if cat_clean and cat_clean not in ("all",):
+                where_clauses.append(f"LOWER(p.category) LIKE ${arg_idx}")
+                args.append(f"%{cat_clean}%")
+                arg_idx += 1
 
-        args.extend([limit, offset])
+            aff_priority = "(CASE WHEN p.affiliate_url ILIKE '%fktr.in%' OR p.affiliate_url ILIKE '%myntr.it%' OR p.affiliate_url ILIKE '%ajiio.in%' OR p.affiliate_url ILIKE '%clnk.in%' OR LOWER(p.platform) = 'amazon' THEN 1 ELSE 0 END) DESC"
+            order_by = f"{aff_priority}, drop_pct DESC, drop_amount DESC"
+            if sort_by == "price_asc":
+                order_by = f"{aff_priority}, p.current_price ASC, drop_pct DESC"
+            elif sort_by == "discount":
+                order_by = f"{aff_priority}, drop_amount DESC, drop_pct DESC"
+            elif sort_by == "latest":
+                order_by = f"{aff_priority}, p.last_price_change DESC NULLS LAST, drop_pct DESC"
 
-        query = f"""
-            SELECT 
-                p.id as product_id,
-                COALESCE(d.id, -(p.id)) as deal_id,
-                p.title,
-                p.platform,
-                COALESCE(NULLIF(LOWER(p.category), ''), 'general') as category,
-                p.current_price,
-                p.previous_price,
-                p.mrp,
-                p.image_url,
-                p.product_url,
-                p.affiliate_url,
-                p.rating,
-                p.review_count,
-                COALESCE(p.last_price_change, NOW()) as last_price_change,
-                ROUND((((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100)::numeric, 1) as drop_pct,
-                ROUND((p.previous_price - p.current_price)::numeric, 2) as drop_amount,
-                (d.id IS NOT NULL) as is_verified_deal,
-                COALESCE(d.badge, 'PRICE DROP') as badge
-            FROM products p
-            LEFT JOIN deals d ON d.product_id = p.id
-            WHERE {' AND '.join(where_clauses)}
-            ORDER BY {order_by}
-            LIMIT ${arg_idx} OFFSET ${arg_idx + 1};
-        """
-        rows = await database.fetch(query, *args)
+            args.extend([limit, offset])
 
-        cached_total_drops = await ram_cache.get("total_drops_today_count")
-        if cached_total_drops is None:
-            cached_total_drops = await database.fetchval("""
-                SELECT COUNT(*) FROM products 
-                WHERE in_stock = TRUE AND status = 'ACTIVE' 
-                  AND previous_price > current_price AND current_price > 0 
-                  AND previous_price <= GREATEST(COALESCE(NULLIF(mrp, 0), current_price * 1.35) * 1.15, current_price * 3.0)
-                  AND (((previous_price - current_price) / NULLIF(previous_price, 0)) * 100) <= 85.0
-                  AND LOWER(platform) != 'croma';
-            """) or 30000
-            await ram_cache.set("total_drops_today_count", cached_total_drops, ttl=1800)
+            query = f"""
+                SELECT 
+                    p.id as product_id,
+                    COALESCE(d.id, -(p.id)) as deal_id,
+                    p.title,
+                    p.platform,
+                    COALESCE(NULLIF(LOWER(p.category), ''), 'general') as category,
+                    p.current_price,
+                    p.previous_price,
+                    p.mrp,
+                    p.image_url,
+                    p.product_url,
+                    p.affiliate_url,
+                    p.rating,
+                    p.review_count,
+                    COALESCE(p.last_price_change, NOW()) as last_price_change,
+                    ROUND((((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100)::numeric, 1) as drop_pct,
+                    ROUND((p.previous_price - p.current_price)::numeric, 2) as drop_amount,
+                    (d.id IS NOT NULL) as is_verified_deal,
+                    COALESCE(d.badge, 'PRICE DROP') as badge
+                FROM products p
+                LEFT JOIN deals d ON d.product_id = p.id
+                WHERE {' AND '.join(where_clauses)}
+                ORDER BY {order_by}
+                LIMIT ${arg_idx} OFFSET ${arg_idx + 1};
+            """
+            rows = await database.fetch(query, *args)
 
-        total_reported = cached_total_drops
-        total_pages = max(1, math.ceil(total_reported / limit)) if total_reported > 0 else 1
-        has_more = page < total_pages
+            cached_total_drops = await ram_cache.get("total_drops_today_count")
+            if cached_total_drops is None:
+                cached_total_drops = await database.fetchval("""
+                    SELECT COUNT(*) FROM products 
+                    WHERE in_stock = TRUE AND status = 'ACTIVE' 
+                      AND previous_price > current_price AND current_price > 0 
+                      AND previous_price <= GREATEST(COALESCE(NULLIF(mrp, 0), current_price * 1.35) * 1.15, current_price * 3.0)
+                      AND (((previous_price - current_price) / NULLIF(previous_price, 0)) * 100) <= 85.0
+                      AND LOWER(platform) != 'croma';
+                """) or 30000
+                await ram_cache.set("total_drops_today_count", cached_total_drops, ttl=1800)
 
-        drops = []
-        seen_pids = set()
-        seen_aff_urls = set()
-        for r in rows:
-            pid = r["product_id"]
-            if pid in seen_pids:
-                continue
+            total_reported = cached_total_drops
+            total_pages = max(1, math.ceil(total_reported / limit)) if total_reported > 0 else 1
+            has_more = page < total_pages
 
-            cur_p = float(r["current_price"])
-            prev_p = float(r["previous_price"])
-            mrp_p = float(r["mrp"]) if r["mrp"] and float(r["mrp"]) > cur_p else None
-            if mrp_p and mrp_p > cur_p * 4.5:
-                mrp_p = round(cur_p * 1.35, 2)
-            if mrp_p and cur_p < 1500 and mrp_p > 15000:
-                mrp_p = round(cur_p * 1.35, 2)
-
-            # Plausibility clamps on consumer display
-            if mrp_p and prev_p > mrp_p:
-                prev_p = mrp_p
-            elif prev_p > cur_p * 3.0:
-                prev_p = round(cur_p * 1.35, 2)
-
-            drop_amt = max(0.0, prev_p - cur_p)
-            drop_pct = round((drop_amt / prev_p) * 100, 1) if prev_p > 0 else 0.0
-            aff_url = resolve_deal_button_url(r["platform"], None, r["affiliate_url"], r["product_url"], product_id=r["product_id"])
-
-            if aff_url and "/api/deal/redirect/" not in aff_url:
-                clean_aff = aff_url.split("?")[0].rstrip("/").lower()
-                if aff_url in seen_aff_urls or clean_aff in seen_aff_urls:
+            drops = []
+            seen_pids = set()
+            seen_aff_urls = set()
+            for r in rows:
+                pid = r["product_id"]
+                if pid in seen_pids:
                     continue
-                seen_aff_urls.add(aff_url)
-                seen_aff_urls.add(clean_aff)
 
-            seen_pids.add(pid)
+                cur_p = float(r["current_price"])
+                prev_p = float(r["previous_price"])
+                mrp_p = float(r["mrp"]) if r["mrp"] and float(r["mrp"]) > cur_p else None
+                if mrp_p and mrp_p > cur_p * 4.5:
+                    mrp_p = round(cur_p * 1.35, 2)
+                if mrp_p and cur_p < 1500 and mrp_p > 15000:
+                    mrp_p = round(cur_p * 1.35, 2)
 
-            drops.append({
-                "product_id": r["product_id"],
-                "deal_id": r["deal_id"],
-                "title": r["title"],
-                "platform": r["platform"].lower(),
-                "category": r["category"],
-                "current_price": cur_p,
-                "deal_price": cur_p,
-                "previous_price": prev_p,
-                "mrp": mrp_p,
-                "drop_pct": drop_pct,
-                "drop_amount": drop_amt,
-                "is_verified_deal": bool(r["is_verified_deal"]),
-                "badge": r["badge"],
-                "image_url": r["image_url"],
-                "product_url": r["product_url"],
-                "affiliate_url": aff_url,
-                "rating": round(float(r["rating"]), 1) if r["rating"] is not None and 1.0 <= float(r["rating"]) <= 5.0 else None,
-                "review_count": int(r["review_count"]) if r.get("review_count") and int(r["review_count"]) > 0 else None,
-                "last_price_change": r["last_price_change"].isoformat() if hasattr(r["last_price_change"], "isoformat") else str(r["last_price_change"]) if r["last_price_change"] else None,
-                "posted_at": r["last_price_change"].isoformat() if hasattr(r["last_price_change"], "isoformat") else str(r["last_price_change"]) if r.get("last_price_change") else None
-            })
+                # Plausibility clamps on consumer display
+                if mrp_p and prev_p > mrp_p:
+                    prev_p = mrp_p
+                elif prev_p > cur_p * 3.0:
+                    prev_p = round(cur_p * 1.35, 2)
 
-        result = {
-            "total_drops_24h": total_reported,
-            "page": page,
-            "limit": limit,
-            "total_pages": total_pages,
-            "has_more": has_more,
-            "min_drop_pct": min_drop_pct,
-            "drops": drops
-        }
-        await ram_cache.set(cache_key, result, ttl=300)  # 300s RAM cache protects DB egress while keeping drops fresh
-        return result
+                drop_amt = max(0.0, prev_p - cur_p)
+                drop_pct = round((drop_amt / prev_p) * 100, 1) if prev_p > 0 else 0.0
+                aff_url = resolve_deal_button_url(r["platform"], None, r["affiliate_url"], r["product_url"], product_id=r["product_id"])
+
+                if aff_url and "/api/deal/redirect/" not in aff_url:
+                    clean_aff = aff_url.split("?")[0].rstrip("/").lower()
+                    if aff_url in seen_aff_urls or clean_aff in seen_aff_urls:
+                        continue
+                    seen_aff_urls.add(aff_url)
+                    seen_aff_urls.add(clean_aff)
+
+                seen_pids.add(pid)
+
+                drops.append({
+                    "product_id": r["product_id"],
+                    "deal_id": r["deal_id"],
+                    "title": r["title"],
+                    "platform": r["platform"].lower(),
+                    "category": r["category"],
+                    "current_price": cur_p,
+                    "deal_price": cur_p,
+                    "previous_price": prev_p,
+                    "mrp": mrp_p,
+                    "drop_pct": drop_pct,
+                    "drop_amount": drop_amt,
+                    "is_verified_deal": bool(r["is_verified_deal"]),
+                    "badge": r["badge"],
+                    "image_url": r["image_url"],
+                    "product_url": r["product_url"],
+                    "affiliate_url": aff_url,
+                    "rating": round(float(r["rating"]), 1) if r["rating"] is not None and 1.0 <= float(r["rating"]) <= 5.0 else None,
+                    "review_count": int(r["review_count"]) if r.get("review_count") and int(r["review_count"]) > 0 else None,
+                    "last_price_change": r["last_price_change"].isoformat() if hasattr(r["last_price_change"], "isoformat") else str(r["last_price_change"]) if r["last_price_change"] else None,
+                    "posted_at": r["last_price_change"].isoformat() if hasattr(r["last_price_change"], "isoformat") else str(r["last_price_change"]) if r.get("last_price_change") else None
+                })
+
+            result = {
+                "total_drops_24h": total_reported,
+                "page": page,
+                "limit": limit,
+                "total_pages": total_pages,
+                "has_more": has_more,
+                "min_drop_pct": min_drop_pct,
+                "drops": drops
+            }
+            await ram_cache.set(cache_key, result, ttl=300)
+            return result
+
+        return await coalescer.run(cache_key, _fetch_drops)
     except Exception as e:
         logger.error(f"Error in get_public_price_drops: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -2217,6 +2265,7 @@ async def get_public_deals(
     try:
         page = int(page) if not hasattr(page, 'default') and str(page).isdigit() else 1
         limit = int(limit) if not hasattr(limit, 'default') and str(limit).isdigit() else 24
+        limit = min(max(1, limit), 30)
         platform = str(platform) if not hasattr(platform, 'default') else ""
         platforms = str(platforms) if not hasattr(platforms, 'default') else ""
         category = str(category) if not hasattr(category, 'default') else ""
@@ -2241,431 +2290,438 @@ async def get_public_deals(
         if cached is not None:
             return cached
 
-        offset = (page - 1) * limit
-        search_clean = search.strip().lstrip("#")
-        platform_clean = platform.strip().lower()
-        category_clean = category.strip().lower()
-        tab_clean = tab.strip().lower()
-        deal_type_clean = deal_type.strip().lower()
+        async def _fetch_deals():
+            c = await ram_cache.get(cache_key)
+            if c is not None:
+                return c
 
-        where_clauses = [
-            "p.in_stock = TRUE",
-            "p.status = 'ACTIVE'",
-            "p.current_price > 0",
-            "LOWER(p.platform) != 'croma'",
-            "(d.id IS NOT NULL OR p.mrp IS NULL OR p.mrp <= p.current_price * 25.0)"
-        ]
-        args = []
-        arg_idx = 1
-        relevance_select = "0 as relevance_score"
+            offset = (page - 1) * limit
+            search_clean = search.strip().lstrip("#")
+            platform_clean = platform.strip().lower()
+            category_clean = category.strip().lower()
+            tab_clean = tab.strip().lower()
+            deal_type_clean = deal_type.strip().lower()
 
-        # Shared watchlist IDs filtering
-        if ids:
-            clean_ids = [int(x.strip()) for x in ids.split(",") if x.strip().isdigit()][:50]
-            if clean_ids:
-                where_clauses.append(f"p.id = ANY(${arg_idx})")
-                args.append(clean_ids)
-                arg_idx += 1
+            where_clauses = [
+                "p.in_stock = TRUE",
+                "p.status = 'ACTIVE'",
+                "p.current_price > 0",
+                "LOWER(p.platform) != 'croma'",
+                "(d.id IS NOT NULL OR p.mrp IS NULL OR p.mrp <= p.current_price * 25.0)"
+            ]
+            args = []
+            arg_idx = 1
+            relevance_select = "0 as relevance_score"
 
-        # ── SEARCH INTENT EXTRACTION & FILTERING ────────────────────────────
-        parsed = None
-        if search_clean:
-            parsed = parse_search_query(search_clean)
-            if parsed["platform"] and (not platform_clean or platform_clean == "all"):
-                platform_clean = parsed["platform"]
-
-            # Price constraints from search query
-            if parsed["max_price"]:
-                where_clauses.append(f"p.current_price <= ${arg_idx}")
-                args.append(parsed["max_price"])
-                arg_idx += 1
-            if parsed["min_price"]:
-                where_clauses.append(f"p.current_price >= ${arg_idx}")
-                args.append(parsed["min_price"])
-                arg_idx += 1
-
-            # Keyword tokens matching
-            for t in parsed["tokens"]:
-                if t == "tshirt":
-                    where_clauses.append(f"(p.title ILIKE ${arg_idx} OR p.title ILIKE ${arg_idx+1} OR COALESCE(p.category, '') ILIKE ${arg_idx})")
-                    args.extend(['%t-shirt%', '%tshirt%'])
-                    arg_idx += 2
-                else:
-                    where_clauses.append(f"(p.title ILIKE ${arg_idx} OR COALESCE(p.category, '') ILIKE ${arg_idx})")
-                    args.append(f"%{t}%")
+            # Shared watchlist IDs filtering
+            if ids:
+                clean_ids = [int(x.strip()) for x in ids.split(",") if x.strip().isdigit()][:50]
+                if clean_ids:
+                    where_clauses.append(f"p.id = ANY(${arg_idx})")
+                    args.append(clean_ids)
                     arg_idx += 1
 
-            # Scoring parameters
-            args.append(f"%{parsed['clean_query']}%")
-            exact_idx = arg_idx
-            arg_idx += 1
+            # ── SEARCH INTENT EXTRACTION & FILTERING ────────────────────────────
+            parsed = None
+            if search_clean:
+                parsed = parse_search_query(search_clean)
+                if parsed["platform"] and (not platform_clean or platform_clean == "all"):
+                    platform_clean = parsed["platform"]
 
-            first_token = parsed["tokens"][0] if parsed["tokens"] else ""
-            args.append(f"{first_token}%")
-            starts_idx = arg_idx
-            arg_idx += 1
+                # Price constraints from search query
+                if parsed["max_price"]:
+                    where_clauses.append(f"p.current_price <= ${arg_idx}")
+                    args.append(parsed["max_price"])
+                    arg_idx += 1
+                if parsed["min_price"]:
+                    where_clauses.append(f"p.current_price >= ${arg_idx}")
+                    args.append(parsed["min_price"])
+                    arg_idx += 1
 
-            acc_sql = "0"
-            if not parsed["is_accessory_query"]:
-                acc_sql = """
-                    CASE 
-                        WHEN (p.title ILIKE '%case%' OR p.title ILIKE '%cover%' OR p.title ILIKE '%tempered glass%' 
-                              OR p.title ILIKE '%screen protector%' OR p.title ILIKE '%charger%' OR p.title ILIKE '%adapter%'
-                              OR p.title ILIKE '%cable%' OR p.title ILIKE '%sleeve%' OR p.title ILIKE '%bag%'
-                              OR p.title ILIKE '%backpack%' OR p.title ILIKE '%stand%' OR p.title ILIKE '%mount%'
-                              OR p.title ILIKE '%pouch%' OR p.title ILIKE '%cooling pad%' OR p.title ILIKE '%mouse pad%') 
-                        THEN -300 
-                        ELSE 0 
-                    END
+                # Keyword tokens matching
+                for t in parsed["tokens"]:
+                    if t == "tshirt":
+                        where_clauses.append(f"(p.title ILIKE ${arg_idx} OR p.title ILIKE ${arg_idx+1} OR COALESCE(p.category, '') ILIKE ${arg_idx})")
+                        args.extend(['%t-shirt%', '%tshirt%'])
+                        arg_idx += 2
+                    else:
+                        where_clauses.append(f"(p.title ILIKE ${arg_idx} OR COALESCE(p.category, '') ILIKE ${arg_idx})")
+                        args.append(f"%{t}%")
+                        arg_idx += 1
+
+                # Scoring parameters
+                args.append(f"%{parsed['clean_query']}%")
+                exact_idx = arg_idx
+                arg_idx += 1
+
+                first_token = parsed["tokens"][0] if parsed["tokens"] else ""
+                args.append(f"{first_token}%")
+                starts_idx = arg_idx
+                arg_idx += 1
+
+                acc_sql = "0"
+                if not parsed["is_accessory_query"]:
+                    acc_sql = """
+                        CASE 
+                            WHEN (p.title ILIKE '%case%' OR p.title ILIKE '%cover%' OR p.title ILIKE '%tempered glass%' 
+                                  OR p.title ILIKE '%screen protector%' OR p.title ILIKE '%charger%' OR p.title ILIKE '%adapter%'
+                                  OR p.title ILIKE '%cable%' OR p.title ILIKE '%sleeve%' OR p.title ILIKE '%bag%'
+                                  OR p.title ILIKE '%backpack%' OR p.title ILIKE '%stand%' OR p.title ILIKE '%mount%'
+                                  OR p.title ILIKE '%pouch%' OR p.title ILIKE '%cooling pad%' OR p.title ILIKE '%mouse pad%') 
+                            THEN -300 
+                            ELSE 0 
+                        END
+                    """
+
+                relevance_select = f"""
+                    (
+                        (CASE WHEN p.title ILIKE ${exact_idx} THEN 200 ELSE 0 END) +
+                        (CASE WHEN p.title ILIKE ${starts_idx} THEN 100 ELSE 0 END) +
+                        (CASE WHEN p.all_time_low IS NOT NULL AND p.current_price <= p.all_time_low * 1.02 THEN 50 ELSE 0 END) +
+                        (COALESCE(ROUND((((p.mrp - p.current_price)/NULLIF(p.mrp,0)) * 100)::numeric, 0), 0) * 0.5) +
+                        (COALESCE(p.rating, 0) * 8) +
+                        {acc_sql}
+                    ) as relevance_score
                 """
 
-            relevance_select = f"""
-                (
-                    (CASE WHEN p.title ILIKE ${exact_idx} THEN 200 ELSE 0 END) +
-                    (CASE WHEN p.title ILIKE ${starts_idx} THEN 100 ELSE 0 END) +
-                    (CASE WHEN p.all_time_low IS NOT NULL AND p.current_price <= p.all_time_low * 1.02 THEN 50 ELSE 0 END) +
-                    (COALESCE(ROUND((((p.mrp - p.current_price)/NULLIF(p.mrp,0)) * 100)::numeric, 0), 0) * 0.5) +
-                    (COALESCE(p.rating, 0) * 8) +
-                    {acc_sql}
-                ) as relevance_score
-            """
+            # ── PLATFORM FILTER ─────────────────────────────────────────────────
+            selected_platforms = []
+            if platforms:
+                selected_platforms = [p.strip().lower() for p in platforms.split(",") if p.strip() and p.strip().lower() != "croma"]
+            elif platform_clean and platform_clean != "all" and platform_clean != "croma":
+                selected_platforms = [platform_clean]
 
-        # ── PLATFORM FILTER ─────────────────────────────────────────────────
-        selected_platforms = []
-        if platforms:
-            selected_platforms = [p.strip().lower() for p in platforms.split(",") if p.strip() and p.strip().lower() != "croma"]
-        elif platform_clean and platform_clean != "all" and platform_clean != "croma":
-            selected_platforms = [platform_clean]
+            if selected_platforms:
+                where_clauses.append(f"LOWER(p.platform) = ANY(${arg_idx})")
+                args.append(selected_platforms)
+                arg_idx += 1
 
-        if selected_platforms:
-            where_clauses.append(f"LOWER(p.platform) = ANY(${arg_idx})")
-            args.append(selected_platforms)
-            arg_idx += 1
+            # ── EXPLICIT PRICE RANGE FILTER ─────────────────────────────────────
+            if min_price and min_price > 0:
+                where_clauses.append(f"p.current_price >= ${arg_idx}")
+                args.append(min_price)
+                arg_idx += 1
+            if max_price and max_price > 0:
+                where_clauses.append(f"p.current_price <= ${arg_idx}")
+                args.append(max_price)
+                arg_idx += 1
 
-        # ── EXPLICIT PRICE RANGE FILTER ─────────────────────────────────────
-        if min_price and min_price > 0:
-            where_clauses.append(f"p.current_price >= ${arg_idx}")
-            args.append(min_price)
-            arg_idx += 1
-        if max_price and max_price > 0:
-            where_clauses.append(f"p.current_price <= ${arg_idx}")
-            args.append(max_price)
-            arg_idx += 1
+            # ── MINIMUM DISCOUNT FILTER ─────────────────────────────────────────
+            if min_discount and min_discount > 0:
+                where_clauses.append(f"""
+                    COALESCE(
+                        ROUND((((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) * 100)::numeric, 0),
+                        ROUND((((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100)::numeric, 0),
+                        0
+                    ) >= ${arg_idx}
+                """)
+                args.append(min_discount)
+                arg_idx += 1
 
-        # ── MINIMUM DISCOUNT FILTER ─────────────────────────────────────────
-        if min_discount and min_discount > 0:
-            where_clauses.append(f"""
-                COALESCE(
-                    ROUND((((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) * 100)::numeric, 0),
-                    ROUND((((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100)::numeric, 0),
-                    0
-                ) >= ${arg_idx}
-            """)
-            args.append(min_discount)
-            arg_idx += 1
+            # ── CUSTOMER RATING FILTER ──────────────────────────────────────────
+            if min_rating and min_rating > 0:
+                where_clauses.append(f"COALESCE(p.rating, 0) >= ${arg_idx}")
+                args.append(min_rating)
+                arg_idx += 1
 
-        # ── CUSTOMER RATING FILTER ──────────────────────────────────────────
-        if min_rating and min_rating > 0:
-            where_clauses.append(f"COALESCE(p.rating, 0) >= ${arg_idx}")
-            args.append(min_rating)
-            arg_idx += 1
-
-        # ── VERIFIED ONLY FILTER ────────────────────────────────────────────
-        if verified_only:
-            where_clauses.append("d.id IS NOT NULL")
-            where_clauses.append("(p.mrp IS NULL OR p.mrp > p.current_price)")
-
-        # ── CATEGORY & SUBCATEGORY FILTER ───────────────────────────────────
-        selected_categories = []
-        if categories:
-            selected_categories = [c.strip().lower() for c in categories.split(",") if c.strip()]
-        elif category_clean and category_clean != "all":
-            # Handle legacy 'watches_bags' key — map to both watches + bags
-            if category_clean == "watches_bags":
-                selected_categories = ["watches", "bags"]
-            else:
-                selected_categories = [category_clean]
-
-        if selected_categories:
-            cat_clauses = []
-            for cat in selected_categories:
-                cat_info = UNIVERSAL_CATEGORIES.get(cat)
-                if cat in ("miscellaneous", "other", "general", "misc", "more", "null", "none"):
-                    cat_clauses.append("(p.category IS NULL OR LOWER(p.category) IN ('miscellaneous', 'other', 'general', 'misc', 'more', 'none', '') OR p.category = '')")
-                elif cat_info:
-                    # Match ONLY on the p.category column — DB is accurately categorized, no ILIKE title scans
-                    sub_aliases = [f"LOWER(p.category) = '{a}'" for a in cat_info["aliases"]]
-                    combined = " OR ".join(sub_aliases)
-                    cat_clauses.append(f"({combined})")
-                else:
-                    cat_clauses.append(f"LOWER(p.category) = ${arg_idx}")
-                    args.append(cat)
-                    arg_idx += 1
-            if cat_clauses:
-                where_clauses.append(f"({' OR '.join(cat_clauses)})")
-
-        
-        # ── AUDIENCE / GENDER FILTER ────────────────────────────────────────
-        gender_clean = (gender or "").strip().lower()
-        if gender_clean and gender_clean != "all":
-            if gender_clean == "men":
-                where_clauses.append("(p.title ILIKE '% men%' OR p.title ILIKE '%men %' OR p.title ILIKE '%mens%' OR p.title ILIKE '%male%' OR p.title ILIKE '%gentlemen%')")
-            elif gender_clean == "women":
-                where_clauses.append("(p.title ILIKE '% women%' OR p.title ILIKE '%women %' OR p.title ILIKE '%womens%' OR p.title ILIKE '%female%' OR p.title ILIKE '%ladies%' OR p.title ILIKE '%saree%' OR p.title ILIKE '%kurti%' OR p.title ILIKE '%heels%' OR p.title ILIKE '%bra%')")
-            elif gender_clean in ("boy", "boys"):
-                where_clauses.append("(p.title ILIKE '%boy%' OR p.title ILIKE '%boys%')")
-            elif gender_clean in ("girl", "girls"):
-                where_clauses.append("(p.title ILIKE '%girl%' OR p.title ILIKE '%girls%' OR p.title ILIKE '%frock%')")
-            elif gender_clean in ("kid", "kids", "children"):
-                where_clauses.append("(p.title ILIKE '%kid%' OR p.title ILIKE '%kids%' OR p.title ILIKE '%baby%' OR p.title ILIKE '%infant%' OR p.title ILIKE '%toddler%' OR p.title ILIKE '%children%')")
-# Subcategory keyword filtering
-        if eff_sub:
-            sub_kws = []
-            for cat_data in UNIVERSAL_CATEGORIES.values():
-                if eff_sub in cat_data.get("subcategories", {}):
-                    sub_kws = cat_data["subcategories"][eff_sub]["keywords"]
-                    break
-            if not sub_kws:
-                sub_kws = [eff_sub.replace("-", " "), eff_sub]
-            sub_clauses = [f"p.title ILIKE '%{kw}%'" for kw in sub_kws]
-            where_clauses.append(f"({' OR '.join(sub_clauses)})")
-
-        use_fast_deals_path = (
-            not search_clean 
-            and not ids 
-            and deal_type_clean not in ("drops", "atl") 
-            and tab_clean not in ("drops", "atl")
-        )
-
-        aff_priority = "(CASE WHEN p.affiliate_url ILIKE '%fktr.in%' OR p.affiliate_url ILIKE '%myntr.it%' OR p.affiliate_url ILIKE '%ajiio.in%' OR p.affiliate_url ILIKE '%clnk.in%' OR LOWER(p.platform) = 'amazon' THEN 1 ELSE 0 END) DESC"
-
-        if use_fast_deals_path:
-            if tab_clean == "under499":
-                where_clauses.append("p.current_price <= 499")
-            elif tab_clean == "under999":
-                where_clauses.append("p.current_price <= 999")
-            elif tab_clean == "featured":
-                where_clauses.append("(p.mrp IS NULL OR ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) >= 0.30)")
-
-            if sort_by == "discount_desc":
-                order_sql = f"ORDER BY {aff_priority}, ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) DESC NULLS LAST, d.posted_at DESC"
-            elif sort_by == "price_asc":
-                order_sql = f"ORDER BY {aff_priority}, p.current_price ASC, d.posted_at DESC"
-            elif sort_by == "price_desc":
-                order_sql = f"ORDER BY {aff_priority}, p.current_price DESC, d.posted_at DESC"
-            elif sort_by == "score_desc":
-                order_sql = f"ORDER BY {aff_priority}, COALESCE(d.deal_score, 50.0) DESC, d.posted_at DESC"
-            else:
-                order_sql = f"ORDER BY {aff_priority}, d.posted_at DESC"
-
-            args.extend([limit, offset])
-            where_sql = f"WHERE {' AND '.join(where_clauses)}"
-
-            query = f"""
-                SELECT 
-                    d.id as deal_id,
-                    p.id as product_id,
-                    p.title,
-                    p.platform,
-                    COALESCE(NULLIF(LOWER(p.category), ''), 'general') as category,
-                    p.product_url,
-                    p.affiliate_url,
-                    p.image_url,
-                    p.rating,
-                    p.review_count,
-                    COALESCE(d.posted_price, p.current_price) as current_price,
-                    p.mrp,
-                    p.previous_price,
-                    p.min_30d,
-                    p.all_time_low,
-                    p.in_stock,
-                    p.status,
-                    COALESCE(p.last_checked, d.posted_at) as last_checked,
-                    TRUE as is_verified,
-                    COALESCE(d.badge, 'HOT DEAL') as badge,
-                    COALESCE(d.deal_score, 50.0) as deal_score,
-                    d.posted_at as deal_time,
-                    0 as relevance_score,
-                    COUNT(*) OVER() as total_matches,
-                    COUNT(*) OVER() as verified_matches
-                FROM deals d
-                JOIN products p ON d.product_id = p.id
-                {where_sql}
-                {order_sql}
-                LIMIT ${arg_idx} OFFSET ${arg_idx + 1};
-            """
-        else:
-            if deal_type_clean == "verified" or tab_clean == "verified" or verified_only:
+            # ── VERIFIED ONLY FILTER ────────────────────────────────────────────
+            if verified_only:
                 where_clauses.append("d.id IS NOT NULL")
                 where_clauses.append("(p.mrp IS NULL OR p.mrp > p.current_price)")
-            elif deal_type_clean == "drops" or tab_clean == "drops":
-                where_clauses.append("p.previous_price > p.current_price")
-                where_clauses.append("p.previous_price <= GREATEST(COALESCE(NULLIF(p.mrp, 0), p.current_price * 1.35) * 1.15, p.current_price * 3.0)")
-                where_clauses.append("(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) <= 85.0")
-            elif deal_type_clean == "atl" or tab_clean == "atl":
-                where_clauses.append("(d.badge ILIKE '%ATL%' OR (p.all_time_low IS NOT NULL AND p.current_price <= p.all_time_low * 1.02))")
-            elif tab_clean == "under499":
-                where_clauses.append("p.current_price <= 499")
-            elif tab_clean == "under999":
-                where_clauses.append("p.current_price <= 999")
-            elif tab_clean == "featured":
-                where_clauses.append("(d.id IS NOT NULL OR ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) >= 0.50)")
 
-            if sort_by == "discount_desc":
-                order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) DESC NULLS LAST, p.id DESC"
-            elif sort_by == "price_asc":
-                order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, p.current_price ASC, p.id DESC"
-            elif sort_by == "price_desc":
-                order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, p.current_price DESC, p.id DESC"
-            elif sort_by == "score_desc":
-                order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, COALESCE(d.deal_score, 50.0) DESC, p.id DESC"
-            elif search_clean:
-                order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, relevance_score DESC, COALESCE(d.posted_at, p.last_price_change, p.created_at) DESC"
-            else:
-                if tab_clean == "drops":
-                    order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, (((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0))) DESC NULLS LAST, p.last_price_change DESC NULLS LAST, p.id DESC"
+            # ── CATEGORY & SUBCATEGORY FILTER ───────────────────────────────────
+            selected_categories = []
+            if categories:
+                selected_categories = [c.strip().lower() for c in categories.split(",") if c.strip()]
+            elif category_clean and category_clean != "all":
+                # Handle legacy 'watches_bags' key — map to both watches + bags
+                if category_clean == "watches_bags":
+                    selected_categories = ["watches", "bags"]
                 else:
-                    order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, COALESCE(d.posted_at, p.last_price_change, p.created_at) DESC, p.id DESC"
+                    selected_categories = [category_clean]
 
-            args.extend([limit, offset])
-            where_sql = f"WHERE {' AND '.join(where_clauses)}"
+            if selected_categories:
+                cat_clauses = []
+                for cat in selected_categories:
+                    cat_info = UNIVERSAL_CATEGORIES.get(cat)
+                    if cat in ("miscellaneous", "other", "general", "misc", "more", "null", "none"):
+                        cat_clauses.append("(p.category IS NULL OR LOWER(p.category) IN ('miscellaneous', 'other', 'general', 'misc', 'more', 'none', '') OR p.category = '')")
+                    elif cat_info:
+                        # Match ONLY on the p.category column — DB is accurately categorized, no ILIKE title scans
+                        sub_aliases = [f"LOWER(p.category) = '{a}'" for a in cat_info["aliases"]]
+                        combined = " OR ".join(sub_aliases)
+                        cat_clauses.append(f"({combined})")
+                    else:
+                        cat_clauses.append(f"LOWER(p.category) = ${arg_idx}")
+                        args.append(cat)
+                        arg_idx += 1
+                if cat_clauses:
+                    where_clauses.append(f"({' OR '.join(cat_clauses)})")
 
-            query = f"""
-                SELECT 
-                    COALESCE(d.id, -(p.id)) as deal_id,
-                    p.id as product_id,
-                    p.title,
-                    p.platform,
-                    COALESCE(NULLIF(LOWER(p.category), ''), 'general') as category,
-                    p.product_url,
-                    p.affiliate_url,
-                    p.image_url,
-                    p.rating,
-                    p.review_count,
-                    COALESCE(d.posted_price, p.current_price) as current_price,
-                    p.mrp,
-                    p.previous_price,
-                    p.min_30d,
-                    p.all_time_low,
-                    p.in_stock,
-                    p.status,
-                    COALESCE(p.last_checked, d.posted_at, p.last_price_change) as last_checked,
-                    (d.id IS NOT NULL) as is_verified,
-                    COALESCE(d.badge, 
-                        CASE 
-                            WHEN p.all_time_low IS NOT NULL AND p.current_price <= p.all_time_low * 1.02 THEN 'ATL'
-                            WHEN p.last_price_change >= NOW() - INTERVAL '24 hours' THEN 'PRICE DROP'
-                            WHEN ((p.mrp - p.current_price)/NULLIF(p.mrp,0)) >= 0.50 THEN 'HOT DEAL'
-                            ELSE 'CATALOG'
-                        END
-                    ) as badge,
-                    COALESCE(d.deal_score, ROUND((((p.mrp - p.current_price)/NULLIF(p.mrp,0)) * 100)::numeric, 1), 50.0) as deal_score,
-                    COALESCE(d.posted_at, p.last_price_change, p.created_at) as deal_time,
-                    {relevance_select},
-                    COUNT(*) OVER() as total_matches,
-                    SUM(CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) OVER() as verified_matches
-                FROM products p
-                LEFT JOIN deals d ON d.product_id = p.id
-                {where_sql}
-                {order_sql}
-                LIMIT ${arg_idx} OFFSET ${arg_idx + 1};
-            """
 
-        rows = await database.fetch(query, *args)
-        total_matches = rows[0]["total_matches"] if rows else 0
-        verified_matches = rows[0]["verified_matches"] if rows else 0
-        catalog_matches = max(0, total_matches - verified_matches)
+            # ── AUDIENCE / GENDER FILTER ────────────────────────────────────────
+            gender_clean = (gender or "").strip().lower()
+            if gender_clean and gender_clean != "all":
+                if gender_clean == "men":
+                    where_clauses.append("(p.title ILIKE '% men%' OR p.title ILIKE '%men %' OR p.title ILIKE '%mens%' OR p.title ILIKE '%male%' OR p.title ILIKE '%gentlemen%')")
+                elif gender_clean == "women":
+                    where_clauses.append("(p.title ILIKE '% women%' OR p.title ILIKE '%women %' OR p.title ILIKE '%womens%' OR p.title ILIKE '%female%' OR p.title ILIKE '%ladies%' OR p.title ILIKE '%saree%' OR p.title ILIKE '%kurti%' OR p.title ILIKE '%heels%' OR p.title ILIKE '%bra%')")
+                elif gender_clean in ("boy", "boys"):
+                    where_clauses.append("(p.title ILIKE '%boy%' OR p.title ILIKE '%boys%')")
+                elif gender_clean in ("girl", "girls"):
+                    where_clauses.append("(p.title ILIKE '%girl%' OR p.title ILIKE '%girls%' OR p.title ILIKE '%frock%')")
+                elif gender_clean in ("kid", "kids", "children"):
+                    where_clauses.append("(p.title ILIKE '%kid%' OR p.title ILIKE '%kids%' OR p.title ILIKE '%baby%' OR p.title ILIKE '%infant%' OR p.title ILIKE '%toddler%' OR p.title ILIKE '%children%')")
+    # Subcategory keyword filtering
+            if eff_sub:
+                sub_kws = []
+                for cat_data in UNIVERSAL_CATEGORIES.values():
+                    if eff_sub in cat_data.get("subcategories", {}):
+                        sub_kws = cat_data["subcategories"][eff_sub]["keywords"]
+                        break
+                if not sub_kws:
+                    sub_kws = [eff_sub.replace("-", " "), eff_sub]
+                sub_clauses = [f"p.title ILIKE '%{kw}%'" for kw in sub_kws]
+                where_clauses.append(f"({' OR '.join(sub_clauses)})")
 
-        deals = []
-        seen_pids = set()
-        seen_aff_urls = set()
-        for r in rows:
-            pid = r["product_id"]
-            if pid in seen_pids:
-                continue
+            use_fast_deals_path = (
+                not search_clean 
+                and not ids 
+                and deal_type_clean not in ("drops", "atl") 
+                and tab_clean not in ("drops", "atl")
+            )
 
-            cur_p = float(r["current_price"]) if r["current_price"] and float(r["current_price"]) > 0 else 0.0
-            mrp_p = float(r["mrp"]) if r["mrp"] and float(r["mrp"]) > cur_p else cur_p
-            if mrp_p > cur_p * 4.5:
-                mrp_p = round(cur_p * 1.35, 2)
-            if cur_p < 1500 and mrp_p > 15000:
-                mrp_p = round(cur_p * 1.35, 2)
-            
-            if mrp_p > cur_p and mrp_p > 0:
-                pct = round(((mrp_p - cur_p) / mrp_p) * 100)
-                savings = round(mrp_p - cur_p, 2)
+            aff_priority = "(CASE WHEN p.affiliate_url ILIKE '%fktr.in%' OR p.affiliate_url ILIKE '%myntr.it%' OR p.affiliate_url ILIKE '%ajiio.in%' OR p.affiliate_url ILIKE '%clnk.in%' OR LOWER(p.platform) = 'amazon' THEN 1 ELSE 0 END) DESC"
+
+            if use_fast_deals_path:
+                if tab_clean == "under499":
+                    where_clauses.append("p.current_price <= 499")
+                elif tab_clean == "under999":
+                    where_clauses.append("p.current_price <= 999")
+                elif tab_clean == "featured":
+                    where_clauses.append("(p.mrp IS NULL OR ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) >= 0.30)")
+
+                if sort_by == "discount_desc":
+                    order_sql = f"ORDER BY {aff_priority}, ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) DESC NULLS LAST, d.posted_at DESC"
+                elif sort_by == "price_asc":
+                    order_sql = f"ORDER BY {aff_priority}, p.current_price ASC, d.posted_at DESC"
+                elif sort_by == "price_desc":
+                    order_sql = f"ORDER BY {aff_priority}, p.current_price DESC, d.posted_at DESC"
+                elif sort_by == "score_desc":
+                    order_sql = f"ORDER BY {aff_priority}, COALESCE(d.deal_score, 50.0) DESC, d.posted_at DESC"
+                else:
+                    order_sql = f"ORDER BY {aff_priority}, d.posted_at DESC"
+
+                args.extend([limit, offset])
+                where_sql = f"WHERE {' AND '.join(where_clauses)}"
+
+                query = f"""
+                    SELECT 
+                        d.id as deal_id,
+                        p.id as product_id,
+                        p.title,
+                        p.platform,
+                        COALESCE(NULLIF(LOWER(p.category), ''), 'general') as category,
+                        p.product_url,
+                        p.affiliate_url,
+                        p.image_url,
+                        p.rating,
+                        p.review_count,
+                        COALESCE(d.posted_price, p.current_price) as current_price,
+                        p.mrp,
+                        p.previous_price,
+                        p.min_30d,
+                        p.all_time_low,
+                        p.in_stock,
+                        p.status,
+                        COALESCE(p.last_checked, d.posted_at) as last_checked,
+                        TRUE as is_verified,
+                        COALESCE(d.badge, 'HOT DEAL') as badge,
+                        COALESCE(d.deal_score, 50.0) as deal_score,
+                        d.posted_at as deal_time,
+                        0 as relevance_score,
+                        COUNT(*) OVER() as total_matches,
+                        COUNT(*) OVER() as verified_matches
+                    FROM deals d
+                    JOIN products p ON d.product_id = p.id
+                    {where_sql}
+                    {order_sql}
+                    LIMIT ${arg_idx} OFFSET ${arg_idx + 1};
+                """
             else:
-                pct = 0
-                savings = 0.0
+                if deal_type_clean == "verified" or tab_clean == "verified" or verified_only:
+                    where_clauses.append("d.id IS NOT NULL")
+                    where_clauses.append("(p.mrp IS NULL OR p.mrp > p.current_price)")
+                elif deal_type_clean == "drops" or tab_clean == "drops":
+                    where_clauses.append("p.previous_price > p.current_price")
+                    where_clauses.append("p.previous_price <= GREATEST(COALESCE(NULLIF(p.mrp, 0), p.current_price * 1.35) * 1.15, p.current_price * 3.0)")
+                    where_clauses.append("(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) <= 85.0")
+                elif deal_type_clean == "atl" or tab_clean == "atl":
+                    where_clauses.append("(d.badge ILIKE '%ATL%' OR (p.all_time_low IS NOT NULL AND p.current_price <= p.all_time_low * 1.02))")
+                elif tab_clean == "under499":
+                    where_clauses.append("p.current_price <= 499")
+                elif tab_clean == "under999":
+                    where_clauses.append("p.current_price <= 999")
+                elif tab_clean == "featured":
+                    where_clauses.append("(d.id IS NOT NULL OR ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) >= 0.50)")
 
-            prev_p = float(r["previous_price"]) if r.get("previous_price") and float(r["previous_price"]) > cur_p else None
-            if prev_p:
-                if mrp_p and prev_p > mrp_p:
-                    prev_p = mrp_p
-                elif prev_p > cur_p * 3.0:
-                    prev_p = round(cur_p * 1.35, 2)
+                if sort_by == "discount_desc":
+                    order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) DESC NULLS LAST, p.id DESC"
+                elif sort_by == "price_asc":
+                    order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, p.current_price ASC, p.id DESC"
+                elif sort_by == "price_desc":
+                    order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, p.current_price DESC, p.id DESC"
+                elif sort_by == "score_desc":
+                    order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, COALESCE(d.deal_score, 50.0) DESC, p.id DESC"
+                elif search_clean:
+                    order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, relevance_score DESC, COALESCE(d.posted_at, p.last_price_change, p.created_at) DESC"
+                else:
+                    if tab_clean == "drops":
+                        order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, (((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0))) DESC NULLS LAST, p.last_price_change DESC NULLS LAST, p.id DESC"
+                    else:
+                        order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, COALESCE(d.posted_at, p.last_price_change, p.created_at) DESC, p.id DESC"
 
-            drop_pct = round(((prev_p - cur_p) / prev_p) * 100) if prev_p else 0
-            drop_amount = round(prev_p - cur_p, 2) if prev_p else 0.0
+                args.extend([limit, offset])
+                where_sql = f"WHERE {' AND '.join(where_clauses)}"
 
-            aff_url = resolve_deal_button_url(r["platform"], None, r["affiliate_url"], r["product_url"], product_id=r["product_id"])
+                query = f"""
+                    SELECT 
+                        COALESCE(d.id, -(p.id)) as deal_id,
+                        p.id as product_id,
+                        p.title,
+                        p.platform,
+                        COALESCE(NULLIF(LOWER(p.category), ''), 'general') as category,
+                        p.product_url,
+                        p.affiliate_url,
+                        p.image_url,
+                        p.rating,
+                        p.review_count,
+                        COALESCE(d.posted_price, p.current_price) as current_price,
+                        p.mrp,
+                        p.previous_price,
+                        p.min_30d,
+                        p.all_time_low,
+                        p.in_stock,
+                        p.status,
+                        COALESCE(p.last_checked, d.posted_at, p.last_price_change) as last_checked,
+                        (d.id IS NOT NULL) as is_verified,
+                        COALESCE(d.badge, 
+                            CASE 
+                                WHEN p.all_time_low IS NOT NULL AND p.current_price <= p.all_time_low * 1.02 THEN 'ATL'
+                                WHEN p.last_price_change >= NOW() - INTERVAL '24 hours' THEN 'PRICE DROP'
+                                WHEN ((p.mrp - p.current_price)/NULLIF(p.mrp,0)) >= 0.50 THEN 'HOT DEAL'
+                                ELSE 'CATALOG'
+                            END
+                        ) as badge,
+                        COALESCE(d.deal_score, ROUND((((p.mrp - p.current_price)/NULLIF(p.mrp,0)) * 100)::numeric, 1), 50.0) as deal_score,
+                        COALESCE(d.posted_at, p.last_price_change, p.created_at) as deal_time,
+                        {relevance_select},
+                        COUNT(*) OVER() as total_matches,
+                        SUM(CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) OVER() as verified_matches
+                    FROM products p
+                    LEFT JOIN deals d ON d.product_id = p.id
+                    {where_sql}
+                    {order_sql}
+                    LIMIT ${arg_idx} OFFSET ${arg_idx + 1};
+                """
 
-            if aff_url and "/api/deal/redirect/" not in aff_url:
-                clean_aff = aff_url.split("?")[0].rstrip("/").lower()
-                if aff_url in seen_aff_urls or clean_aff in seen_aff_urls:
+            rows = await database.fetch(query, *args)
+            total_matches = rows[0]["total_matches"] if rows else 0
+            verified_matches = rows[0]["verified_matches"] if rows else 0
+            catalog_matches = max(0, total_matches - verified_matches)
+
+            deals = []
+            seen_pids = set()
+            seen_aff_urls = set()
+            for r in rows:
+                pid = r["product_id"]
+                if pid in seen_pids:
                     continue
-                seen_aff_urls.add(aff_url)
-                seen_aff_urls.add(clean_aff)
 
-            seen_pids.add(pid)
-            is_verified = bool(r["is_verified"])
+                cur_p = float(r["current_price"]) if r["current_price"] and float(r["current_price"]) > 0 else 0.0
+                mrp_p = float(r["mrp"]) if r["mrp"] and float(r["mrp"]) > cur_p else cur_p
+                if mrp_p > cur_p * 4.5:
+                    mrp_p = round(cur_p * 1.35, 2)
+                if cur_p < 1500 and mrp_p > 15000:
+                    mrp_p = round(cur_p * 1.35, 2)
 
-            deals.append({
-                "deal_id": r["deal_id"],
-                "product_id": r["product_id"],
-                "title": r["title"],
-                "platform": r["platform"].lower(),
-                "category": r["category"] or "general",
-                "deal_price": cur_p,
-                "current_price": cur_p,
-                "mrp": mrp_p if mrp_p > cur_p else None,
-                "previous_price": prev_p,
-                "drop_pct": drop_pct,
-                "drop_amount": drop_amount,
-                "discount_pct": pct,
-                "savings_amount": savings,
-                "is_verified_deal": is_verified,
-                "badge": r["badge"] or ("TOP DEAL" if is_verified else "HOT DEAL"),
-                "deal_score": float(r["deal_score"]) if r["deal_score"] else None,
-                "posted_at": r["deal_time"].isoformat() if r["deal_time"] else None,
-                "image_url": r["image_url"],
-                "product_url": r["product_url"],
-                "affiliate_url": aff_url,
-                "rating": round(float(r["rating"]), 1) if r["rating"] is not None and 1.0 <= float(r["rating"]) <= 5.0 else None,
-                "review_count": int(r["review_count"]) if r.get("review_count") and int(r["review_count"]) > 0 else None,
-                "min_30d": float(r["min_30d"]) if r["min_30d"] else None,
-                "all_time_low": float(r["all_time_low"]) if r["all_time_low"] else None,
-                "in_stock": bool(r["in_stock"]),
-                "last_checked": r["last_checked"].isoformat() if r.get("last_checked") else None,
-                "is_catalog_product": not is_verified
-            })
+                if mrp_p > cur_p and mrp_p > 0:
+                    pct = round(((mrp_p - cur_p) / mrp_p) * 100)
+                    savings = round(mrp_p - cur_p, 2)
+                else:
+                    pct = 0
+                    savings = 0.0
 
-        result = {
-            "page": page,
-            "limit": limit,
-            "total_matches": total_matches,
-            "total_pages": max(1, (total_matches + limit - 1) // limit) if total_matches > 0 else 1,
-            "verified_matches": verified_matches,
-            "catalog_matches": catalog_matches,
-            "has_verified_deals": bool(verified_matches > 0),
-            "search_query": search_clean,
-            "deals": deals
-        }
-        # Keyword searches and Just Dropped fresh feeds (latest/all) expire after 60s so newly posted Telegram deals appear fast.
-        # Specific category/browse pages cache for 600s (10 min) to protect DB egress.
-        cache_ttl = 60 if (search_clean or sort_by == "latest" or tab_clean == "all") else 600
-        await ram_cache.set(cache_key, result, ttl=cache_ttl)
-        return result
+                prev_p = float(r["previous_price"]) if r.get("previous_price") and float(r["previous_price"]) > cur_p else None
+                if prev_p:
+                    if mrp_p and prev_p > mrp_p:
+                        prev_p = mrp_p
+                    elif prev_p > cur_p * 3.0:
+                        prev_p = round(cur_p * 1.35, 2)
+
+                drop_pct = round(((prev_p - cur_p) / prev_p) * 100) if prev_p else 0
+                drop_amount = round(prev_p - cur_p, 2) if prev_p else 0.0
+
+                aff_url = resolve_deal_button_url(r["platform"], None, r["affiliate_url"], r["product_url"], product_id=r["product_id"])
+
+                if aff_url and "/api/deal/redirect/" not in aff_url:
+                    clean_aff = aff_url.split("?")[0].rstrip("/").lower()
+                    if aff_url in seen_aff_urls or clean_aff in seen_aff_urls:
+                        continue
+                    seen_aff_urls.add(aff_url)
+                    seen_aff_urls.add(clean_aff)
+
+                seen_pids.add(pid)
+                is_verified = bool(r["is_verified"])
+
+                deals.append({
+                    "deal_id": r["deal_id"],
+                    "product_id": r["product_id"],
+                    "title": r["title"],
+                    "platform": r["platform"].lower(),
+                    "category": r["category"] or "general",
+                    "deal_price": cur_p,
+                    "current_price": cur_p,
+                    "mrp": mrp_p if mrp_p > cur_p else None,
+                    "previous_price": prev_p,
+                    "drop_pct": drop_pct,
+                    "drop_amount": drop_amount,
+                    "discount_pct": pct,
+                    "savings_amount": savings,
+                    "is_verified_deal": is_verified,
+                    "badge": r["badge"] or ("TOP DEAL" if is_verified else "HOT DEAL"),
+                    "deal_score": float(r["deal_score"]) if r["deal_score"] else None,
+                    "posted_at": r["deal_time"].isoformat() if r["deal_time"] else None,
+                    "image_url": r["image_url"],
+                    "product_url": r["product_url"],
+                    "affiliate_url": aff_url,
+                    "rating": round(float(r["rating"]), 1) if r["rating"] is not None and 1.0 <= float(r["rating"]) <= 5.0 else None,
+                    "review_count": int(r["review_count"]) if r.get("review_count") and int(r["review_count"]) > 0 else None,
+                    "min_30d": float(r["min_30d"]) if r["min_30d"] else None,
+                    "all_time_low": float(r["all_time_low"]) if r["all_time_low"] else None,
+                    "in_stock": bool(r["in_stock"]),
+                    "last_checked": r["last_checked"].isoformat() if r.get("last_checked") else None,
+                    "is_catalog_product": not is_verified
+                })
+
+            result = {
+                "page": page,
+                "limit": limit,
+                "total_matches": total_matches,
+                "total_pages": max(1, (total_matches + limit - 1) // limit) if total_matches > 0 else 1,
+                "verified_matches": verified_matches,
+                "catalog_matches": catalog_matches,
+                "has_verified_deals": bool(verified_matches > 0),
+                "search_query": search_clean,
+                "deals": deals
+            }
+            # Keyword searches and Just Dropped fresh feeds (latest/all) expire after 60s so newly posted Telegram deals appear fast.
+            # Specific category/browse pages cache for 600s (10 min) to protect DB egress.
+            cache_ttl = 60 if (search_clean or sort_by == "latest" or tab_clean == "all") else 600
+            await ram_cache.set(cache_key, result, ttl=cache_ttl)
+            return result
+
+        return await coalescer.run(cache_key, _fetch_deals)
     except Exception as e:
         logger.error(f"Error in get_public_deals: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -2771,7 +2827,7 @@ async def page_drops(
     raw_min_drop = min_drop_percent if not hasattr(min_drop_percent, 'default') and min_drop_percent is not None else min_drop_pct
     eff_min_drop = float(raw_min_drop) if not hasattr(raw_min_drop, 'default') and raw_min_drop is not None else 15.0
 
-    ssr_key = f"drops:{page_num}:{eff_min_drop}:{plat_str}:{sort_str}"
+    ssr_key = f"drops:{page_num}:{limit_num}:{eff_min_drop}:{plat_str}:{sort_str}"
     cached_html = await get_cached_ssr_html(ssr_key)
     if cached_html:
         return HTMLResponse(content=cached_html, headers={"Cache-Control": "public, max-age=120, stale-while-revalidate=30"})
@@ -2839,7 +2895,7 @@ async def page_deals(
         ver_val = False
 
     ssr_ttl = 60 if (search_str or sort_str == "latest" or tab_str == "all") else 300
-    ssr_key = f"deals:{page_num}:{search_str}:{plat_str}:{cat_str}:{eff_sub_page}:{gender_str}:{tab_str}:{ver_val}:{sort_str}:{min_disc_val}"
+    ssr_key = f"deals:{page_num}:{limit_num}:{search_str}:{plat_str}:{cat_str}:{eff_sub_page}:{gender_str}:{tab_str}:{ver_val}:{sort_str}:{min_disc_val}"
     cached_html = await get_cached_ssr_html(ssr_key)
     if cached_html:
         return HTMLResponse(content=cached_html, headers={"Cache-Control": f"public, max-age={ssr_ttl}, stale-while-revalidate=30"})
@@ -2913,7 +2969,7 @@ async def page_atl(
     eff_sub_page = (sub_raw or subcat_raw or "").strip().lower()
     sort_str = str(sort_by) if not hasattr(sort_by, 'default') and sort_by is not None else "latest"
 
-    ssr_key = f"atl:{page_num}:{plat_str}:{cat_str}:{eff_sub_page}:{gender_str}:{sort_str}"
+    ssr_key = f"atl:{page_num}:{limit_num}:{plat_str}:{cat_str}:{eff_sub_page}:{gender_str}:{sort_str}"
     cached_html = await get_cached_ssr_html(ssr_key)
     if cached_html:
         return HTMLResponse(content=cached_html, headers={"Cache-Control": "public, max-age=120, stale-while-revalidate=30"})

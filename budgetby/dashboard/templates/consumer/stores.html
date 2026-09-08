@@ -743,7 +743,7 @@
     {% else %}
     // Load dynamic store counts and max cuts for directory mode
     function refreshDirectoryStats() {
-        fetch('/api/public/stats?_t=' + Date.now())
+        fetch('/api/public/stats')
             .then(r => r.json())
             .then(data => {
                 if (data.by_platform) {
