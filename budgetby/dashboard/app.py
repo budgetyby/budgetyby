@@ -1953,7 +1953,7 @@ async def get_public_price_drops(
                   AND (((previous_price - current_price) / NULLIF(previous_price, 0)) * 100) <= 85.0
                   AND LOWER(platform) != 'croma';
             """) or 30000
-            await ram_cache.set("total_drops_today_count", cached_total_drops, ttl=600)
+            await ram_cache.set("total_drops_today_count", cached_total_drops, ttl=1800)
 
         total_reported = cached_total_drops
         total_pages = max(1, math.ceil(total_reported / limit)) if total_reported > 0 else 1
@@ -2681,6 +2681,12 @@ STORE_DISPLAY_NAMES = {
     "nykaa": "Nykaa"
 }
 
+async def get_cached_ssr_html(key: str) -> str | None:
+    return await ram_cache.get(f"ssr_html:{key}")
+
+async def set_cached_ssr_html(key: str, html_content: str, ttl: int = 120):
+    await ram_cache.set(f"ssr_html:{key}", html_content, ttl=ttl)
+
 def render_consumer_template(template_name: str, request: Request, context: dict = None, cache_seconds: int = 60):
     if context is None:
         context = {}
@@ -2708,6 +2714,11 @@ def render_consumer_template(template_name: str, request: Request, context: dict
 @app.get("/", response_class=HTMLResponse)
 async def page_home(request: Request):
     """Renders the high-converting BudgetBy Visual Category Storefront (v4)."""
+    ssr_key = "home"
+    cached_html = await get_cached_ssr_html(ssr_key)
+    if cached_html:
+        return HTMLResponse(content=cached_html, headers={"Cache-Control": "public, max-age=60, stale-while-revalidate=30"})
+
     initial_drops = {"drops": []}
     just_dropped = {"deals": []}
     atl_mini = {"deals": []}
@@ -2730,13 +2741,16 @@ async def page_home(request: Request):
     except Exception as e:
         logger.warning(f"Home SSR prefetch error: {e}")
 
-    return render_consumer_template("consumer/home.html", request, {
+    resp = render_consumer_template("consumer/home.html", request, {
         "active_page": "home",
         "initial_drops": initial_drops,
         "just_dropped": just_dropped,
         "atl_mini": atl_mini,
         "initial_stats": initial_stats
     }, cache_seconds=60)
+    if resp.status_code == 200 and hasattr(resp, "body"):
+        await set_cached_ssr_html(ssr_key, resp.body.decode("utf-8"), ttl=60)
+    return resp
 
 @app.get("/drops", response_class=HTMLResponse)
 @app.get("/price-drops", response_class=HTMLResponse)
@@ -2757,6 +2771,11 @@ async def page_drops(
     raw_min_drop = min_drop_percent if not hasattr(min_drop_percent, 'default') and min_drop_percent is not None else min_drop_pct
     eff_min_drop = float(raw_min_drop) if not hasattr(raw_min_drop, 'default') and raw_min_drop is not None else 15.0
 
+    ssr_key = f"drops:{page_num}:{eff_min_drop}:{plat_str}:{sort_str}"
+    cached_html = await get_cached_ssr_html(ssr_key)
+    if cached_html:
+        return HTMLResponse(content=cached_html, headers={"Cache-Control": "public, max-age=120, stale-while-revalidate=30"})
+
     initial_data = {"drops": [], "total_drops_24h": 0, "total_pages": 1, "page": page_num}
     try:
         initial_data = await get_public_price_drops(
@@ -2771,14 +2790,17 @@ async def page_drops(
     except Exception as e:
         logger.warning(f"Drops SSR prefetch error: {e}")
 
-    return render_consumer_template("consumer/drops.html", request, {
+    resp = render_consumer_template("consumer/drops.html", request, {
         "active_page": "drops",
         "initial_data": initial_data,
         "current_page": page_num,
         "current_min_drop": eff_min_drop,
         "current_platform": plat_str,
         "current_sort": sort_str
-    })
+    }, cache_seconds=120)
+    if resp.status_code == 200 and hasattr(resp, "body"):
+        await set_cached_ssr_html(ssr_key, resp.body.decode("utf-8"), ttl=120)
+    return resp
 
 @app.get("/deals", response_class=HTMLResponse)
 async def page_deals(
@@ -2816,6 +2838,12 @@ async def page_deals(
     if search_str and has_query_params and "verified_only" not in request.query_params:
         ver_val = False
 
+    ssr_ttl = 60 if (search_str or sort_str == "latest" or tab_str == "all") else 300
+    ssr_key = f"deals:{page_num}:{search_str}:{plat_str}:{cat_str}:{eff_sub_page}:{gender_str}:{tab_str}:{ver_val}:{sort_str}:{min_disc_val}"
+    cached_html = await get_cached_ssr_html(ssr_key)
+    if cached_html:
+        return HTMLResponse(content=cached_html, headers={"Cache-Control": f"public, max-age={ssr_ttl}, stale-while-revalidate=30"})
+
     initial_data = {"deals": [], "total_matches": 0, "total_pages": 1, "page": page_num}
     try:
         initial_data = await get_public_deals(
@@ -2842,7 +2870,7 @@ async def page_deals(
     except Exception as e:
         logger.warning(f"Deals SSR prefetch error: {e}")
 
-    return render_consumer_template("consumer/deals.html", request, {
+    resp = render_consumer_template("consumer/deals.html", request, {
         "active_page": "deals",
         "cat_info": UNIVERSAL_CATEGORIES.get(cat_str.lower()) if cat_str else None,
         "initial_data": initial_data,
@@ -2856,7 +2884,10 @@ async def page_deals(
         "current_verified_only": ver_val,
         "current_sort": sort_str,
         "current_min_discount": min_disc_val
-    })
+    }, cache_seconds=ssr_ttl)
+    if resp.status_code == 200 and hasattr(resp, "body"):
+        await set_cached_ssr_html(ssr_key, resp.body.decode("utf-8"), ttl=ssr_ttl)
+    return resp
 
 @app.get("/all-time-lows", response_class=HTMLResponse)
 @app.get("/atl", response_class=HTMLResponse)
@@ -2881,6 +2912,11 @@ async def page_atl(
     subcat_raw = str(subcategory) if not hasattr(subcategory, 'default') and subcategory is not None else ""
     eff_sub_page = (sub_raw or subcat_raw or "").strip().lower()
     sort_str = str(sort_by) if not hasattr(sort_by, 'default') and sort_by is not None else "latest"
+
+    ssr_key = f"atl:{page_num}:{plat_str}:{cat_str}:{eff_sub_page}:{gender_str}:{sort_str}"
+    cached_html = await get_cached_ssr_html(ssr_key)
+    if cached_html:
+        return HTMLResponse(content=cached_html, headers={"Cache-Control": "public, max-age=120, stale-while-revalidate=30"})
 
     initial_data = {"deals": [], "total_matches": 0, "total_pages": 1, "page": page_num}
     try:
@@ -2907,7 +2943,7 @@ async def page_atl(
     except Exception as e:
         logger.warning(f"ATL SSR prefetch error: {e}")
 
-    return render_consumer_template("consumer/atl.html", request, {
+    resp = render_consumer_template("consumer/atl.html", request, {
         "active_page": "atl",
         "initial_data": initial_data,
         "current_page": page_num,
@@ -2916,7 +2952,10 @@ async def page_atl(
         "current_sub": eff_sub_page,
         "current_gender": gender_str,
         "current_sort": sort_str
-    })
+    }, cache_seconds=120)
+    if resp.status_code == 200 and hasattr(resp, "body"):
+        await set_cached_ssr_html(ssr_key, resp.body.decode("utf-8"), ttl=120)
+    return resp
 
 @app.get("/stores", response_class=HTMLResponse)
 @app.get("/stores/{platform}", response_class=HTMLResponse)
@@ -2927,6 +2966,11 @@ async def page_stores(request: Request, platform: str = ""):
         return RedirectResponse(url="/stores", status_code=302)
     store_name = STORE_DISPLAY_NAMES.get(plat_clean, plat_clean.capitalize()) if plat_clean else None
     
+    ssr_key = f"stores:{plat_clean}"
+    cached_html = await get_cached_ssr_html(ssr_key)
+    if cached_html:
+        return HTMLResponse(content=cached_html, headers={"Cache-Control": "public, max-age=300, stale-while-revalidate=30"})
+
     initial_deals = None
     if plat_clean in STORE_DISPLAY_NAMES:
         try:
@@ -2951,16 +2995,20 @@ async def page_stores(request: Request, platform: str = ""):
         except Exception as e:
             logger.warning(f"Store deals SSR prefetch error: {e}")
 
-    return render_consumer_template(
+    resp = render_consumer_template(
         "consumer/stores.html", 
         request, 
         {
             "active_page": "stores", 
             "store_id": plat_clean if plat_clean in STORE_DISPLAY_NAMES else None,
             "store_name": store_name,
-            "initial_data": initial_deals
-        }
+            "initial_deals": initial_deals
+        },
+        cache_seconds=300
     )
+    if resp.status_code == 200 and hasattr(resp, "body"):
+        await set_cached_ssr_html(ssr_key, resp.body.decode("utf-8"), ttl=300)
+    return resp
 
 def render_admin_login_template(request: Request, context: dict, status_code: int = 200):
     context["request"] = request
