@@ -315,7 +315,7 @@
     function startDealsAutoRefresh() {
         if (dealsAutoRefreshTimer) clearInterval(dealsAutoRefreshTimer);
         const settings = window.getUserSettings ? window.getUserSettings() : null;
-        const intervalSec = (settings && settings.syncInterval !== undefined) ? settings.syncInterval : 30;
+        const intervalSec = (settings && settings.syncInterval !== undefined) ? settings.syncInterval : 300;
         if (intervalSec <= 0) return;
         dealsAutoRefreshTimer = setInterval(() => {
             if (dealsState.page === 1 && !document.hidden) {

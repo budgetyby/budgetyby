@@ -2275,6 +2275,7 @@ async def submit_product_review(request: Request):
 @app.get("/api/public/deals")
 async def get_public_deals(
     platform: str = Query("", max_length=50),
+    last_id: int = Query(0, ge=0),
     platforms: str = Query("", max_length=200),
     category: str = Query("", max_length=50),
     categories: str = Query("", max_length=500),
@@ -2577,9 +2578,7 @@ async def get_public_deals(
                         COALESCE(d.badge, 'HOT DEAL') as badge,
                         COALESCE(d.deal_score, 50.0) as deal_score,
                         d.posted_at as deal_time,
-                        0 as relevance_score,
-                        COUNT(*) OVER() as total_matches,
-                        COUNT(*) OVER() as verified_matches
+                        0 as relevance_score
                     FROM deals d
                     JOIN products p ON d.product_id = p.id
                     {where_sql}
@@ -2653,9 +2652,7 @@ async def get_public_deals(
                         ) as badge,
                         COALESCE(d.deal_score, ROUND((((p.mrp - p.current_price)/NULLIF(p.mrp,0)) * 100)::numeric, 1), 50.0) as deal_score,
                         COALESCE(d.posted_at, p.last_price_change, p.created_at) as deal_time,
-                        {relevance_select},
-                        COUNT(*) OVER() as total_matches,
-                        SUM(CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) OVER() as verified_matches
+                        {relevance_select}
                     FROM products p
                     LEFT JOIN deals d ON d.product_id = p.id
                     {where_sql}
@@ -2664,8 +2661,21 @@ async def get_public_deals(
                 """
 
             rows = await database.fetch(query, *args)
-            total_matches = rows[0]["total_matches"] if rows else 0
-            verified_matches = rows[0]["verified_matches"] if rows else 0
+
+            cached_total_catalog = await ram_cache.get("total_catalog_deals_count")
+            if cached_total_catalog is None:
+                cached_total_catalog = await database.fetchval("""
+                    SELECT COUNT(*) FROM products 
+                    WHERE in_stock = TRUE AND status = 'ACTIVE' AND current_price > 0 AND LOWER(platform) != 'croma';
+                """) or 100000
+                await ram_cache.set("total_catalog_deals_count", cached_total_catalog, ttl=900)
+
+            if len(rows) < limit and page == 1:
+                total_matches = len(rows)
+                verified_matches = sum(1 for r in rows if r.get("is_verified"))
+            else:
+                total_matches = cached_total_catalog
+                verified_matches = 1500
             catalog_matches = max(0, total_matches - verified_matches)
 
             deals = []
@@ -2979,9 +2989,10 @@ async def page_deals(
         "current_sort": sort_str,
         "current_min_discount": min_disc_val
     }, cache_seconds=ssr_ttl)
-    if resp.status_code == 200 and hasattr(resp, "body"):
-        await set_cached_ssr_html(ssr_key, resp.body.decode("utf-8"), ttl=ssr_ttl)
-    return resp
+    html_str = resp.body.decode("utf-8") if (resp.status_code == 200 and hasattr(resp, "body")) else ""
+    if html_str:
+        await set_cached_ssr_html(ssr_key, html_str, ttl=ssr_ttl)
+    return html_str
 
 @app.get("/all-time-lows", response_class=HTMLResponse)
 @app.get("/atl", response_class=HTMLResponse)

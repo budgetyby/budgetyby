@@ -463,7 +463,7 @@
     function startStoreDealsAutoRefresh() {
         if (storeDealsAutoRefreshTimer) clearInterval(storeDealsAutoRefreshTimer);
         const settings = window.getUserSettings ? window.getUserSettings() : null;
-        const intervalSec = (settings && settings.syncInterval !== undefined) ? settings.syncInterval : 30;
+        const intervalSec = (settings && settings.syncInterval !== undefined) ? settings.syncInterval : 300;
         if (intervalSec <= 0) return;
         storeDealsAutoRefreshTimer = setInterval(() => {
             if (storeState.page === 1 && !document.hidden) {

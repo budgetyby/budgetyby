@@ -877,10 +877,8 @@
                     <label class="font-bold text-slate-800 block mb-1">Live Deal Sync Frequency</label>
                     <p class="text-slate-500 text-[11px] mb-2">How often BudgetBy refreshes price drops in background.</p>
                     <select id="prefSyncInterval" onchange="updateSyncInterval(this.value)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-mono">
-                        <option value="30">Every 30 seconds (Live Tracker)</option>
-                        <option value="60">Every 60 seconds</option>
-                        <option value="120">Every 2 minutes</option>
                         <option value="300" selected>Every 5 minutes (Recommended)</option>
+                        <option value="600">Every 10 minutes</option>
                         <option value="0">Manual Refresh Only</option>
                     </select>
                 </div>
@@ -1016,7 +1014,7 @@
             const settings = getUserSettings();
             const intervalSelect = document.getElementById('prefSyncInterval');
             const soundCheck = document.getElementById('prefSoundToggle');
-            if (intervalSelect) intervalSelect.value = settings.syncInterval !== undefined ? settings.syncInterval : 30;
+            if (intervalSelect) intervalSelect.value = settings.syncInterval !== undefined ? settings.syncInterval : 300;
             if (soundCheck) soundCheck.checked = settings.soundEnabled !== undefined ? settings.soundEnabled : true;
             const overlay = document.getElementById('prefModalOverlay');
             overlay.classList.remove('opacity-0', 'pointer-events-none');
