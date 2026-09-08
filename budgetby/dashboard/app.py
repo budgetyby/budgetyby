@@ -31,11 +31,15 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-XSS-Protection"] = "1; mode=block"
         path = request.url.path
         if path.startswith("/api/public/"):
-            # No browser-side cache — server RAM cache handles egress reduction.
-            # Browser must always ask the server, but server replies from RAM (no DB hit).
-            # This keeps data fresh (within server cache TTL) while eliminating egress.
-            response.headers["Cache-Control"] = "no-cache, must-revalidate"
-            response.headers["Pragma"] = "no-cache"
+            if "stats" in path:
+                response.headers["Cache-Control"] = "public, max-age=60, s-maxage=180, stale-while-revalidate=300"
+            elif "categories" in path:
+                response.headers["Cache-Control"] = "public, max-age=300, s-maxage=600, stale-while-revalidate=1200"
+            elif "price-drops" in path or "drops" in path:
+                response.headers["Cache-Control"] = "public, max-age=120, s-maxage=300, stale-while-revalidate=600"
+            else:
+                response.headers["Cache-Control"] = "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
+            response.headers["Vary"] = "Accept-Encoding"
         elif path.startswith("/api/deal/redirect/"):
             response.headers["Cache-Control"] = "public, max-age=30"
         elif path.startswith("/api/"):
