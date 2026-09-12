@@ -140,7 +140,8 @@ class AmazonScraper(BaseScraper):
         
         for a in tree.css("a"):
             href = a.attributes.get("href", "")
-            if not href: continue
+            if not href:
+                continue
             match = re.search(r'/dp/([A-Z0-9]{10})', href)
             if match:
                 asin = match.group(1)

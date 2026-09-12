@@ -3,12 +3,11 @@ BudgetBy — Cooldown Management
 """
 
 import logging
-from budgetby import database, config
+import time
+from budgetby import database
 from budgetby.engine.evergreen import get_evergreen_cooldown_days
 
 logger = logging.getLogger("budgetby.engine.cooldown")
-
-import time
 
 _cooldown_cache: dict[int, tuple[bool, float]] = {}
 _CACHE_TTL_SECONDS = 120.0  # 2-minute in-memory cache for cooldown status

@@ -10,7 +10,7 @@ import logging
 import asyncio
 from budgetby import config
 from budgetby import database
-from budgetby.discovery import amazon_discover, flipkart_discover, myntra_discover, ajio_discover, nykaa_discover
+from budgetby.discovery import amazon_discover, flipkart_discover, ajio_discover
 
 logger = logging.getLogger("budgetby.discovery.seeder")
 
@@ -114,9 +114,6 @@ class ProductSeeder:
     async def seed_myntra(self, sort_mode: str = "popularity"):
         logger.info("🛑 Myntra seeding is disabled.")
         return
-
-        tasks = [process_category(cat, info) for cat, info in config.MYNTRA_DISCOVERY_TARGETS.items()]
-        await asyncio.gather(*tasks, return_exceptions=True)
 
     async def seed_ajio(self):
         current_count = await self.get_platform_count("ajio")

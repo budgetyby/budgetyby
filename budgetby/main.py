@@ -4,8 +4,6 @@ BudgetBy Main Entry Point.
 import asyncio
 import logging
 import os
-import signal
-import sys
 import uvicorn
 from dotenv import load_dotenv
 from telegram.ext import Application

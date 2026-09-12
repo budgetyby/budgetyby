@@ -60,7 +60,7 @@ async def convert_url_via_ek_bot(raw_url: str, platform: str = None, timeout: fl
                 while (asyncio.get_event_loop().time() - loop_start) < timeout:
                     rem_time = max(0.5, timeout - (asyncio.get_event_loop().time() - loop_start))
                     try:
-                        resp = await conv.get_response()
+                        resp = await conv.get_response(timeout=rem_time)
                     except (asyncio.TimeoutError, TimeoutError):
                         break
 
@@ -137,7 +137,7 @@ async def convert_url_via_cuelinks_bot(raw_url: str, platform: str = "nykaa", ti
                 while (asyncio.get_event_loop().time() - loop_start) < timeout:
                     rem_time = max(0.5, timeout - (asyncio.get_event_loop().time() - loop_start))
                     try:
-                        resp = await conv.get_response()
+                        resp = await conv.get_response(timeout=rem_time)
                     except (asyncio.TimeoutError, TimeoutError):
                         break
 
@@ -292,7 +292,7 @@ async def start_telegram_listener(api_id: int = None, api_hash: str = None):
                 clean_urls = [u for u in detected_urls if u.startswith("http") and "t.me/" not in u and "telegram.org" not in u]
 
                 if clean_urls:
-                    logger.info(f"⚡ [REAL-TIME TELEGRAM] Intercepted multi-link post from {chat_title} with {len(clean_urls)} individual product deal(s)")
+                    logger.info(f"⚡ [REAL-TIME TELEGRAM] Intercepted multi-link post from {source_tag} with {len(clean_urls)} individual product deal(s)")
                     for url in clean_urls:
                         await verify_and_ingest_single_deal(
                             channel=chat_title,

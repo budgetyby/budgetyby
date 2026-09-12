@@ -14,8 +14,7 @@ and returns the deal for immediate Telegram broadcasting.
 import random
 import logging
 from typing import Dict, Any, Optional
-
-from budgetby import config, database
+from budgetby import database
 from budgetby.engine.cooldown import is_on_cooldown
 
 logger = logging.getLogger("budgetby.engine.live_hunter")

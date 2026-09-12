@@ -3,6 +3,7 @@ Telegram command handlers.
 """
 
 import logging
+import re
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from budgetby import database

@@ -1,12 +1,11 @@
 """
 BudgetBy — Myntra Scraper
 """
-import re
 import json
 from curl_cffi.requests import AsyncSession
 from selectolax.parser import HTMLParser
 from budgetby.scrapers.base import BaseScraper
-from budgetby.scrapers.utils import get_random_ua, extract_price, clean_title
+from budgetby.scrapers.utils import get_random_ua, clean_title
 from budgetby import config
 
 class MyntraScraper(BaseScraper):

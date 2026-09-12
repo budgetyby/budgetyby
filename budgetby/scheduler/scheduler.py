@@ -34,8 +34,7 @@ async def price_check_loop():
         from budgetby.engine.deal_detector import detect_deal
         from budgetby.engine.deal_scorer import score_deal
         from budgetby.engine.fake_discount import is_fake_discount
-        from budgetby.engine.cooldown import is_on_cooldown, set_cooldown
-        from budgetby.engine.posting_queue import PostingQueue
+        from budgetby.engine.cooldown import is_on_cooldown
         from budgetby.scheduler.priority import assign_priority
 
         scrapers = {
@@ -52,7 +51,6 @@ async def price_check_loop():
 
         logger.info(f"Checking {len(products)} products")
 
-        import asyncio
         sem = asyncio.Semaphore(getattr(config, "SCRAPER_WORKERS", 5))
 
         async def process_product(product):

@@ -3,7 +3,6 @@ import logging
 import asyncio
 from typing import List, Dict, Any
 from curl_cffi.requests import AsyncSession
-from budgetby import config
 from budgetby.affiliate.earnkaro_links import build_earnkaro_url_sync
 
 logger = logging.getLogger("budgetby.discovery.ajio")

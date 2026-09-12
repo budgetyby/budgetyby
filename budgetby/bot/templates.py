@@ -1,6 +1,7 @@
 import html
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from budgetby.scrapers.utils import clean_title
+from budgetby.utils import format_inr
 
 def format_rating(rating: float | int | str | None) -> str:
     """Format star rating cleanly to 1 decimal place (e.g. 3.8 ★, 4.2 ★)."""
@@ -18,22 +19,7 @@ def format_price(amount: float | int | None) -> str:
     """Format amount as ₹1,23,456"""
     if amount is None:
         return "N/A"
-    try:
-        amount = int(round(float(amount)))
-    except (ValueError, TypeError):
-        return f"₹{amount}"
-        
-    s = str(amount)
-    if len(s) <= 3:
-        return f"₹{s}"
-    last3 = s[-3:]
-    other = s[:-3]
-    other_parts = []
-    while other:
-        other_parts.append(other[-2:])
-        other = other[:-2]
-    other_parts.reverse()
-    return f"₹{','.join(other_parts)},{last3}"
+    return format_inr(amount, prefix="₹")
 
 def build_buy_button(url: str, text: str = "🛒 Buy Now") -> InlineKeyboardMarkup:
     """Create an InlineKeyboardMarkup with a single URL button."""
@@ -118,7 +104,6 @@ def format_mega_deal(product: dict, deal_result: dict = None) -> str:
     pct = round((savings / mrp) * 100) if mrp and mrp > 0 else 0
     badge = (deal_result or {}).get("badge") or product.get("badge")
     rating = product.get("rating", "")
-    rc = product.get("review_count", 0)
     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
     
     badge_header = get_tiered_badge(badge, pct)
@@ -155,7 +140,6 @@ def format_today_deal(product: dict, deal_result: dict = None) -> str:
     pct = round((savings / mrp) * 100) if mrp and mrp > 0 else 0
     badge = (deal_result or {}).get("badge") or product.get("badge")
     rating = product.get("rating", "")
-    rc = product.get("review_count", 0)
     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
     
     badge_header = get_tiered_badge(badge, pct)
@@ -192,7 +176,6 @@ def format_hot_deal(product: dict, deal_result: dict = None) -> str:
     pct = round((savings / mrp) * 100) if mrp and mrp > 0 else 0
     badge = (deal_result or {}).get("badge") or product.get("badge")
     rating = product.get("rating", "")
-    rc = product.get("review_count", 0)
     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
     
     badge_header = get_tiered_badge(badge, pct)
@@ -258,7 +241,6 @@ def format_evergreen_deal(product: dict, post_count: int = 1) -> str:
     savings = mrp - current_price if mrp and mrp > current_price else 0
     pct = round((savings / mrp) * 100) if mrp and mrp > 0 else 0
     rating = product.get("rating", "")
-    rc = product.get("review_count", 0)
     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
     hashtags = get_category_hashtags(platform, product.get("category", ""), pct, "evergreen")
     
@@ -370,7 +352,6 @@ def format_back_in_stock(product: dict, days_oos: int = 0) -> str:
     savings = mrp - current_price if mrp and mrp > current_price else 0
     pct = round((savings / mrp) * 100) if mrp and mrp > 0 else 0
     rating = product.get("rating")
-    rc = product.get("review_count", 0)
     url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
     hashtags = get_category_hashtags(platform, product.get("category", ""), pct, "back_in_stock")
     

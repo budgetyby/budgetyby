@@ -8,20 +8,18 @@ Guarantees:
 """
 
 import asyncio
-import logging
 import datetime
+import io
+import logging
+import time
 import zoneinfo
-from typing import Optional, Dict, Any, List
+from PIL import Image
+from curl_cffi.requests import AsyncSession
 
-from budgetby import config
+from budgetby import config, database
 from budgetby.bot import templates
 
 logger = logging.getLogger("budgetby.engine.posting_queue")
-
-import io
-import time
-from PIL import Image
-from curl_cffi.requests import AsyncSession
 
 _rejected_candidates: dict[int, float] = {}
 
@@ -315,7 +313,8 @@ class PostingQueue:
                             live_check = await scr_cls()._do_scrape_product(c_url)
                             if not live_check:
                                 logger.info(f"🚫 [PRE-FLIGHT REJECT] #{pid} ({plat.upper()}) live check returned None. Trying next candidate from same store...")
-                                if pid: _rejected_candidates[pid] = time.monotonic() + 1800.0
+                                if pid:
+                                    _rejected_candidates[pid] = time.monotonic() + 1800.0
                                 continue
                             
                             is_in_stock = bool(live_check.get("in_stock", True))
@@ -383,7 +382,6 @@ class PostingQueue:
 
             # 4. Process and Broadcast Deal to Telegram
             try:
-                from budgetby import database
                 from budgetby.engine.cooldown import is_on_cooldown, set_cooldown
 
                 product = deal_data.get("product", {})

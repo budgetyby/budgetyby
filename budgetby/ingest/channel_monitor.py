@@ -1,4 +1,3 @@
-from budgetby.engine.classifier import classify_product
 """
 BudgetBy — Real-Time Telegram Channel Deal Monitor & Ingestion Engine
 Monitors public deal channels in parallel (bypassing ISP blocks with DoH),
@@ -9,10 +8,12 @@ stores in local PostgreSQL database, and immediately broadcasts verified deals.
 import logging
 import re
 import asyncio
-from typing import List, Dict, Any, Optional
+from typing import Optional, List, Dict, Any
 from selectolax.parser import HTMLParser
 import httpx
 from budgetby import database, config
+from budgetby.engine.classifier import classify_product
+from budgetby.utils import is_monetized_affiliate_url
 
 logger = logging.getLogger("budgetby.ingest.channel_monitor")
 
@@ -227,7 +228,7 @@ async def verify_and_ingest_single_deal(channel: str, post_id: int, raw_url: str
         final_deal_url = None
         if platform == "amazon":
             final_deal_url = f"{clean_url}?tag={config.AMAZON_ASSOCIATE_TAG}"
-        elif any(d in (raw_url or "").lower() for d in ("fktr.in", "myntr.it", "ajiio.in", "ekaro.in", "clnk.in")):
+        elif is_monetized_affiliate_url(raw_url):
             final_deal_url = raw_url
         else:
             try:

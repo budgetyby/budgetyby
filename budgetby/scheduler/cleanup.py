@@ -118,7 +118,7 @@ async def run_backup():
                         os.remove(fp)
                         logger.info(f"Pruned old backup: {f}")
         else:
-            logger.warning(f"Backup file was empty or failed to generate.")
+            logger.warning("Backup file was empty or failed to generate.")
 
     except Exception as e:
         logger.error(f"Error during backup: {e}", exc_info=True)

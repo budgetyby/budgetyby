@@ -22,8 +22,6 @@ import random
 from datetime import datetime
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
-from budgetby import config
-
 logger = logging.getLogger("budgetby.affiliate.earnkaro")
 
 EARNKARO_AFF_ID = "affgrowth"

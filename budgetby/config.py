@@ -49,10 +49,6 @@ CUELINKS_API_KEY = os.getenv("CUELINKS_API_KEY", "")
 # 1.5 DATABASE RETENTION & STORAGE PROTECTION (500 MB Free Cloud Quota)
 # ════════════════════════════════════════════════════════════════════════
 
-STATUS_ACTIVE = "ACTIVE"
-STATUS_TEMP_OOS = "TEMP_OOS"
-STATUS_DORMANT = "DORMANT"
-
 # ── Tiered Price History Retention ────────────────────────────────────────
 # Stage 1: Keep raw daily rows for the most recent N days
 # 2 = keep only today + yesterday (the minimum needed for price-drop detection)
@@ -64,10 +60,6 @@ PRICE_BUCKET_SIZE_DAYS = 3
 # Stage 3: Delete ALL daily_prices rows (raw + buckets) older than 30 days.
 #          Benchmarks (min_30d, median_30d_price) are persisted on products row first.
 DAILY_PRICE_RETENTION_DAYS = 30
-
-# OOS product archival thresholds
-DORMANT_THRESHOLD_DAYS = 14
-DELETE_THRESHOLD_DAYS = 30
 
 
 # ════════════════════════════════════════════════════════════════════════

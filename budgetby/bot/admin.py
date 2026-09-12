@@ -200,7 +200,7 @@ async def admin_today_command(update: Update, context: ContextTypes.DEFAULT_TYPE
             LIMIT 5
         """)
         
-        text = f"📅 <b>Products Added Today (IST)</b>\n\n"
+        text = "📅 <b>Products Added Today (IST)</b>\n\n"
         text += f"<b>Total Added Today:</b> {today_count:,} products\n\n"
         
         if breakdown:

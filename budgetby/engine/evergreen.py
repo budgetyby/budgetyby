@@ -3,6 +3,7 @@ BudgetBy — Evergreen Deals
 """
 
 import logging
+import time
 from asyncpg import Record
 from budgetby import database, config
 
@@ -11,8 +12,6 @@ logger = logging.getLogger("budgetby.engine.evergreen")
 def get_evergreen_cooldown_days(discount_pct: float) -> int:
     """Returns the cooldown days for evergreen deals."""
     return config.EVERGREEN_COOLDOWN_DAYS
-
-import time
 
 _evergreen_cache: dict[str, tuple[list[Record], float]] = {}
 _EVERGREEN_CACHE_TTL = 90.0  # Cache evergreen queries for 90s in memory
