@@ -35,26 +35,27 @@ async def main():
     try:
         import socket
         from budgetby.dashboard.app import app as dashboard_app
-        dash_port = int(os.getenv("DASHBOARD_PORT", "5000"))
+        dash_port = int(os.getenv("PORT", os.getenv("DASHBOARD_PORT", "5000")))
+        dash_host = os.getenv("HOST", "0.0.0.0")
 
         # Check if port is already in use before attempting to bind
-        def _port_free(port: int) -> bool:
+        def _port_free(host: str, port: int) -> bool:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 try:
-                    s.bind(("127.0.0.1", port))
+                    s.bind((host, port))
                     return True
                 except OSError:
                     return False
 
-        if not _port_free(dash_port):
+        if not _port_free(dash_host, dash_port):
             logger.warning(
                 f"⚠️  Port {dash_port} already in use — dashboard already running, skipping re-bind."
             )
         else:
             config_server = uvicorn.Config(
                 dashboard_app,
-                host="127.0.0.1",
+                host=dash_host,
                 port=dash_port,
                 log_level="warning",
                 access_log=False
@@ -69,7 +70,7 @@ async def main():
                     logger.warning(f"Dashboard server stopped: {exc}")
 
             asyncio.create_task(_safe_serve())
-            logger.info(f"🚀 Local Web Dashboard running on http://localhost:{dash_port}")
+            logger.info(f"🚀 Web Storefront & Dashboard running on http://{dash_host}:{dash_port}")
     except Exception as e:
         logger.warning(f"Could not start dashboard: {e}")
     

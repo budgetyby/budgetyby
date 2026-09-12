@@ -6,7 +6,7 @@ services:
     region: singapore # Closest free region to India for ultra-low latency
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn budgetby.dashboard.app:app --host 0.0.0.0 --port $PORT
+    startCommand: python -m budgetby.main
     autoDeploy: true
     healthCheckPath: /api/public/stats
     envVars:
