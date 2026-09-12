@@ -2675,6 +2675,7 @@ def render_admin_login_template(request: Request, context: dict, status_code: in
         return templates.TemplateResponse("admin_login.html", context, status_code=status_code)
 
 @app.get("/pnther/login", response_class=HTMLResponse)
+@app.get("/pnther/login/", response_class=HTMLResponse)
 async def get_admin_login(request: Request, next: str = "/pnther"):
     """Renders the secure Admin Login Page. Always prompts for credentials."""
     clean_next = next if next.startswith("/pnther") and not next.startswith("/pnther/login") else "/pnther"
@@ -2687,6 +2688,7 @@ async def get_admin_login(request: Request, next: str = "/pnther"):
     return response
 
 @app.post("/pnther/login", response_class=HTMLResponse)
+@app.post("/pnther/login/", response_class=HTMLResponse)
 async def post_admin_login(
     request: Request,
     username: str = Form(""),
@@ -2727,7 +2729,9 @@ async def post_admin_login(
     return resp
 
 @app.get("/pnther/logout")
+@app.get("/pnther/logout/")
 @app.post("/pnther/logout")
+@app.post("/pnther/logout/")
 async def admin_logout():
     """Logs out admin and terminates any session."""
     resp = RedirectResponse(url="/pnther/login", status_code=302)
@@ -2736,6 +2740,7 @@ async def admin_logout():
     return resp
 
 @app.get("/pnther", response_class=HTMLResponse)
+@app.get("/pnther/", response_class=HTMLResponse)
 async def admin_dashboard(request: Request):
     """Renders the BudgetBy Admin Control Center (Stealth Protected URL: /pnther)."""
     auth_tok = request.query_params.get("auth_token")
@@ -2762,6 +2767,7 @@ async def admin_dashboard(request: Request):
     return response
 
 @app.get("/pnther/db-explorer", response_class=HTMLResponse)
+@app.get("/pnther/db-explorer/", response_class=HTMLResponse)
 async def admin_db_explorer(request: Request):
     """Renders the BudgetBy Database Explorer (Stealth Protected URL: /pnther/db-explorer)."""
     auth_tok = request.query_params.get("auth_token")
