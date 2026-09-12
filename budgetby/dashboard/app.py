@@ -1467,11 +1467,26 @@ async def get_public_price_drops(
     Calculates drop percentage, absolute rupee savings, previous price, and current price.
     """
     try:
-        limit = min(max(1, limit), 30)
-        if min_drop_percent is not None:
-            min_drop_pct = min_drop_percent
+        def _get_val(param, default=""):
+            if hasattr(param, "default"):
+                return param.default if param.default is not None else default
+            return param if param is not None else default
 
-        cache_key = f"drops:{page}:{limit}:{min_drop_pct}:{platform}:{category}:{sort_by}"
+        page_val = int(_get_val(page, 1))
+        limit_val = int(_get_val(limit, 14))
+        limit_val = min(max(1, limit_val), 30)
+
+        min_drop_val = _get_val(min_drop_percent, None)
+        if min_drop_val is not None:
+            min_drop_pct_val = float(min_drop_val)
+        else:
+            min_drop_pct_val = float(_get_val(min_drop_pct, 5.0))
+
+        platform_val = str(_get_val(platform, "")).strip()
+        category_val = str(_get_val(category, "")).strip()
+        sort_by_val = str(_get_val(sort_by, "drop_pct")).strip()
+
+        cache_key = f"drops:{page_val}:{limit_val}:{min_drop_pct_val}:{platform_val}:{category_val}:{sort_by_val}"
         cached = await ram_cache.get(cache_key)
         if cached is not None:
             return cached
@@ -1482,7 +1497,7 @@ async def get_public_price_drops(
             if c is not None:
                 return c
 
-            offset = (page - 1) * limit
+            offset = (page_val - 1) * limit_val
 
             where_clauses = [
                 "p.in_stock = TRUE",
@@ -1495,16 +1510,16 @@ async def get_public_price_drops(
                 "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) >= $1",
                 "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) <= 95.0"
             ]
-            args = [min_drop_pct]
+            args = [min_drop_pct_val]
             arg_idx = 2
 
-            plat_clean = platform.strip().lower() if platform else ""
+            plat_clean = platform_val.strip().lower() if platform_val else ""
             if plat_clean and plat_clean not in ("all", "croma"):
                 where_clauses.append(f"LOWER(p.platform) = ${arg_idx}")
                 args.append(plat_clean)
                 arg_idx += 1
 
-            cat_clean = category.strip().lower() if category else ""
+            cat_clean = category_val.strip().lower() if category_val else ""
             if cat_clean and cat_clean not in ("all",):
                 where_clauses.append(f"LOWER(p.category) LIKE ${arg_idx}")
                 args.append(f"%{cat_clean}%")
@@ -1512,7 +1527,7 @@ async def get_public_price_drops(
 
             aff_priority = "(CASE WHEN p.affiliate_url ILIKE '%fktr.in%' OR p.affiliate_url ILIKE '%myntr.it%' OR p.affiliate_url ILIKE '%ajiio.in%' OR p.affiliate_url ILIKE '%clnk.in%' OR LOWER(p.platform) = 'amazon' THEN 1 ELSE 0 END) DESC"
             order_by = f"{aff_priority}, drop_pct DESC, drop_amount DESC"
-            if sort_by == "price_asc":
+            if sort_by_val == "price_asc":
                 order_by = f"{aff_priority}, p.current_price ASC, drop_pct DESC"
             elif sort_by == "discount":
                 order_by = f"{aff_priority}, drop_amount DESC, drop_pct DESC"
