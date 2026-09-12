@@ -242,325 +242,325 @@
     <!-- ── E-Commerce Category Aisle & Mega Shopping Bar ────────────────────────── -->
     <nav class="bg-white border-b border-slate-200/90 shadow-[0_2px_4px_rgba(0,0,0,0.02)] z-30 sticky top-16 transition-all" aria-label="Product Category Aisles">
         <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
-            <div class="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar py-2 text-xs font-bold whitespace-nowrap">
+            <div id="categoryAisleRow" class="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar py-2 text-xs font-bold whitespace-nowrap">
                 
                 <!-- 1. Fashion -->
-                <div class="relative group">
-                    <a href="/deals?category=fashion" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-purple-600 transition flex items-center gap-1.5 {% if current_category == 'fashion' %}bg-purple-50 text-purple-700 border border-purple-200{% endif %}">
+                <div class="relative cat-dropdown-group">
+                    <a href="/deals?category=fashion" class="cat-trigger px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-purple-600 transition flex items-center gap-1.5 {% if current_category == 'fashion' %}bg-purple-50 text-purple-700 border border-purple-200{% endif %}">
                         <span class="text-sm">👗</span>
                         <span>Fashion</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
-                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[220px]">
+                    <div class="cat-dropdown-menu hidden pt-1 z-[99999] min-w-[220px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=fashion" class="block px-3 py-2 rounded-xl font-extrabold text-purple-700 bg-purple-50 hover:bg-purple-100">All Fashion & Apparel ➔</a>
-                            <a href="/deals?category=fashion&sub=tshirts" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👕 T-Shirts & Polos</a>
-                            <a href="/deals?category=fashion&sub=shirts" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👔 Casual & Formal Shirts</a>
-                            <a href="/deals?category=fashion&sub=kurta" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">✨ Kurtas & Ethnic Wear</a>
-                            <a href="/deals?category=fashion&sub=jeans" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👖 Jeans & Denim</a>
-                            <a href="/deals?category=fashion&sub=trousers" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👖 Trousers & Joggers</a>
-                            <a href="/deals?category=fashion&sub=dresses" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👗 Dresses & Tops</a>
-                            <a href="/deals?category=fashion&sub=jackets" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧥 Jackets & Hoodies</a>
-                            <a href="/deals?category=fashion&sub=innerwear" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🩲 Innerwear & Loungewear</a>
+                            <a href="/deals?category=fashion" class="cat-trigger block px-3 py-2 rounded-xl font-extrabold text-purple-700 bg-purple-50 hover:bg-purple-100">All Fashion & Apparel ➔</a>
+                            <a href="/deals?category=fashion&sub=tshirts" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👕 T-Shirts & Polos</a>
+                            <a href="/deals?category=fashion&sub=shirts" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👔 Casual & Formal Shirts</a>
+                            <a href="/deals?category=fashion&sub=kurta" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">✨ Kurtas & Ethnic Wear</a>
+                            <a href="/deals?category=fashion&sub=jeans" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👖 Jeans & Denim</a>
+                            <a href="/deals?category=fashion&sub=trousers" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👖 Trousers & Joggers</a>
+                            <a href="/deals?category=fashion&sub=dresses" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👗 Dresses & Tops</a>
+                            <a href="/deals?category=fashion&sub=jackets" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧥 Jackets & Hoodies</a>
+                            <a href="/deals?category=fashion&sub=innerwear" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🩲 Innerwear & Loungewear</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 2. Beauty -->
-                <div class="relative group">
-                    <a href="/deals?category=beauty" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-rose-600 transition flex items-center gap-1.5 {% if current_category == 'beauty' %}bg-rose-50 text-rose-700 border border-rose-200{% endif %}">
+                <div class="relative cat-dropdown-group">
+                    <a href="/deals?category=beauty" class="cat-trigger px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-rose-600 transition flex items-center gap-1.5 {% if current_category == 'beauty' %}bg-rose-50 text-rose-700 border border-rose-200{% endif %}">
                         <span class="text-sm">💄</span>
                         <span>Beauty</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
-                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[220px]">
+                    <div class="cat-dropdown-menu hidden pt-1 z-[99999] min-w-[220px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=beauty" class="block px-3 py-2 rounded-xl font-extrabold text-rose-700 bg-rose-50 hover:bg-rose-100">All Beauty & Skincare ➔</a>
-                            <a href="/deals?category=beauty&sub=sunscreen" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">☀️ Sunscreen & SPF 50</a>
-                            <a href="/deals?category=beauty&sub=facewash" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧼 Face Wash & Cleansers</a>
-                            <a href="/deals?category=beauty&sub=serum" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💧 Serums & Oils</a>
-                            <a href="/deals?category=beauty&sub=moisturizer" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧴 Moisturizers & Creams</a>
-                            <a href="/deals?category=beauty&sub=perfume" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🌸 Perfumes & Deos</a>
-                            <a href="/deals?category=beauty&sub=haircare" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💆 Shampoos & Haircare</a>
-                            <a href="/deals?category=beauty&sub=makeup" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💋 Lipsticks & Makeup</a>
-                            <a href="/deals?category=beauty&sub=grooming" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🪒 Men's Grooming</a>
+                            <a href="/deals?category=beauty" class="cat-trigger block px-3 py-2 rounded-xl font-extrabold text-rose-700 bg-rose-50 hover:bg-rose-100">All Beauty & Skincare ➔</a>
+                            <a href="/deals?category=beauty&sub=sunscreen" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">☀️ Sunscreen & SPF 50</a>
+                            <a href="/deals?category=beauty&sub=facewash" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧼 Face Wash & Cleansers</a>
+                            <a href="/deals?category=beauty&sub=serum" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💧 Serums & Oils</a>
+                            <a href="/deals?category=beauty&sub=moisturizer" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧴 Moisturizers & Creams</a>
+                            <a href="/deals?category=beauty&sub=perfume" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🌸 Perfumes & Deos</a>
+                            <a href="/deals?category=beauty&sub=haircare" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💆 Shampoos & Haircare</a>
+                            <a href="/deals?category=beauty&sub=makeup" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💋 Lipsticks & Makeup</a>
+                            <a href="/deals?category=beauty&sub=grooming" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🪒 Men's Grooming</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 3. Electronics -->
-                <div class="relative group">
-                    <a href="/deals?category=electronics" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-blue-600 transition flex items-center gap-1.5 {% if current_category == 'electronics' %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
+                <div class="relative cat-dropdown-group">
+                    <a href="/deals?category=electronics" class="cat-trigger px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-blue-600 transition flex items-center gap-1.5 {% if current_category == 'electronics' %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
                         <span class="text-sm">📱</span>
                         <span>Electronics</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
-                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[220px]">
+                    <div class="cat-dropdown-menu hidden pt-1 z-[99999] min-w-[220px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=electronics" class="block px-3 py-2 rounded-xl font-extrabold text-blue-700 bg-blue-50 hover:bg-blue-100">All Electronics & Gadgets ➔</a>
-                            <a href="/deals?category=electronics&sub=earbuds" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎧 TWS Earbuds</a>
-                            <a href="/deals?category=electronics&sub=headphones" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎧 Headphones & Neckbands</a>
-                            <a href="/deals?category=electronics&sub=speakers" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🔊 Bluetooth Speakers</a>
-                            <a href="/deals?category=electronics&sub=powerbanks" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🔋 Power Banks & Fast Chargers</a>
-                            <a href="/deals?category=electronics&sub=smartphones" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">📱 Smartphones</a>
-                            <a href="/deals?category=electronics&sub=laptops" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💻 Laptops & Computing</a>
+                            <a href="/deals?category=electronics" class="cat-trigger block px-3 py-2 rounded-xl font-extrabold text-blue-700 bg-blue-50 hover:bg-blue-100">All Electronics & Gadgets ➔</a>
+                            <a href="/deals?category=electronics&sub=earbuds" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎧 TWS Earbuds</a>
+                            <a href="/deals?category=electronics&sub=headphones" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎧 Headphones & Neckbands</a>
+                            <a href="/deals?category=electronics&sub=speakers" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🔊 Bluetooth Speakers</a>
+                            <a href="/deals?category=electronics&sub=powerbanks" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🔋 Power Banks & Fast Chargers</a>
+                            <a href="/deals?category=electronics&sub=smartphones" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">📱 Smartphones</a>
+                            <a href="/deals?category=electronics&sub=laptops" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💻 Laptops & Computing</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 4. Home & Kitchen -->
-                <div class="relative group">
-                    <a href="/deals?category=home" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-amber-600 transition flex items-center gap-1.5 {% if current_category == 'home' %}bg-amber-50 text-amber-700 border border-amber-200{% endif %}">
+                <div class="relative cat-dropdown-group">
+                    <a href="/deals?category=home" class="cat-trigger px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-amber-600 transition flex items-center gap-1.5 {% if current_category == 'home' %}bg-amber-50 text-amber-700 border border-amber-200{% endif %}">
                         <span class="text-sm">🏠</span>
                         <span>Home</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
-                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[220px]">
+                    <div class="cat-dropdown-menu hidden pt-1 z-[99999] min-w-[220px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=home" class="block px-3 py-2 rounded-xl font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100">All Home & Kitchen ➔</a>
-                            <a href="/deals?category=home&sub=bottles" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🍶 Bottles & Lunch Boxes</a>
-                            <a href="/deals?category=home&sub=cookware" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🍳 Cookware & Pans</a>
-                            <a href="/deals?category=home&sub=storage" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">📦 Storage Containers</a>
-                            <a href="/deals?category=home&sub=cleaning" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧹 Cleaning & Dustbins</a>
-                            <a href="/deals?category=home&sub=bedding" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🛏️ Bedsheets & Curtains</a>
-                            <a href="/deals?category=home&sub=appliances" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⚡ Kitchen Appliances</a>
+                            <a href="/deals?category=home" class="cat-trigger block px-3 py-2 rounded-xl font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100">All Home & Kitchen ➔</a>
+                            <a href="/deals?category=home&sub=bottles" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🍶 Bottles & Lunch Boxes</a>
+                            <a href="/deals?category=home&sub=cookware" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🍳 Cookware & Pans</a>
+                            <a href="/deals?category=home&sub=storage" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">📦 Storage Containers</a>
+                            <a href="/deals?category=home&sub=cleaning" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧹 Cleaning & Dustbins</a>
+                            <a href="/deals?category=home&sub=bedding" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🛏️ Bedsheets & Curtains</a>
+                            <a href="/deals?category=home&sub=appliances" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⚡ Kitchen Appliances</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 5. Sports & Fitness -->
-                <div class="relative group">
-                    <a href="/deals?category=sports" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-green-600 transition flex items-center gap-1.5 {% if current_category == 'sports' %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+                <div class="relative cat-dropdown-group">
+                    <a href="/deals?category=sports" class="cat-trigger px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-green-600 transition flex items-center gap-1.5 {% if current_category == 'sports' %}bg-green-50 text-green-700 border border-green-200{% endif %}">
                         <span class="text-sm">🏋️</span>
                         <span>Sports</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
-                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[210px]">
+                    <div class="cat-dropdown-menu hidden pt-1 z-[99999] min-w-[210px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=sports" class="block px-3 py-2 rounded-xl font-extrabold text-green-700 bg-green-50 hover:bg-green-100">All Sports & Fitness ➔</a>
-                            <a href="/deals?category=sports&sub=gym" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💪 Gym & Weights</a>
-                            <a href="/deals?category=sports&sub=yoga" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧘 Yoga & Exercise</a>
-                            <a href="/deals?category=sports&sub=badminton" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🏸 Badminton & Racket</a>
-                            <a href="/deals?category=sports&sub=cricket" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🏏 Cricket Gear</a>
-                            <a href="/deals?category=sports&sub=football" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⚽ Football & Team Sports</a>
-                            <a href="/deals?category=sports&sub=cycling" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🚴 Cycling & Outdoors</a>
-                            <a href="/deals?category=sports&sub=running" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🏃 Running & Athletics</a>
-                            <a href="/deals?category=sports&sub=swimming" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🏊 Swimming & Water Sports</a>
+                            <a href="/deals?category=sports" class="cat-trigger block px-3 py-2 rounded-xl font-extrabold text-green-700 bg-green-50 hover:bg-green-100">All Sports & Fitness ➔</a>
+                            <a href="/deals?category=sports&sub=gym" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💪 Gym & Weights</a>
+                            <a href="/deals?category=sports&sub=yoga" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧘 Yoga & Exercise</a>
+                            <a href="/deals?category=sports&sub=badminton" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🏸 Badminton & Racket</a>
+                            <a href="/deals?category=sports&sub=cricket" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🏏 Cricket Gear</a>
+                            <a href="/deals?category=sports&sub=football" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⚽ Football & Team Sports</a>
+                            <a href="/deals?category=sports&sub=cycling" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🚴 Cycling & Outdoors</a>
+                            <a href="/deals?category=sports&sub=running" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🏃 Running & Athletics</a>
+                            <a href="/deals?category=sports&sub=swimming" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🏊 Swimming & Water Sports</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 6. Footwear -->
-                <div class="relative group">
-                    <a href="/deals?category=footwear" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-indigo-600 transition flex items-center gap-1.5 {% if current_category == 'footwear' %}bg-indigo-50 text-indigo-700 border border-indigo-200{% endif %}">
+                <div class="relative cat-dropdown-group">
+                    <a href="/deals?category=footwear" class="cat-trigger px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-indigo-600 transition flex items-center gap-1.5 {% if current_category == 'footwear' %}bg-indigo-50 text-indigo-700 border border-indigo-200{% endif %}">
                         <span class="text-sm">👟</span>
                         <span>Footwear</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
-                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[210px]">
+                    <div class="cat-dropdown-menu hidden pt-1 z-[99999] min-w-[210px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=footwear" class="block px-3 py-2 rounded-xl font-extrabold text-indigo-700 bg-indigo-50 hover:bg-indigo-100">All Footwear & Shoes ➔</a>
-                            <a href="/deals?category=footwear&sub=sneakers" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👟 Sneakers & Running</a>
-                            <a href="/deals?category=footwear&sub=slippers" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🩴 Slippers & Slides</a>
-                            <a href="/deals?category=footwear&sub=formal" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👞 Formal & Loafers</a>
-                            <a href="/deals?category=footwear&sub=heels" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👠 Heels & Wedges</a>
-                            <a href="/deals?category=footwear&sub=boots" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👢 Boots & High-Tops</a>
-                            <a href="/deals?category=footwear&sub=sandals" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👡 Sandals & Floaters</a>
-                            <a href="/deals?category=footwear&sub=clogs" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🦶 Clogs & Crocs</a>
+                            <a href="/deals?category=footwear" class="cat-trigger block px-3 py-2 rounded-xl font-extrabold text-indigo-700 bg-indigo-50 hover:bg-indigo-100">All Footwear & Shoes ➔</a>
+                            <a href="/deals?category=footwear&sub=sneakers" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👟 Sneakers & Running</a>
+                            <a href="/deals?category=footwear&sub=slippers" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🩴 Slippers & Slides</a>
+                            <a href="/deals?category=footwear&sub=formal" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👞 Formal & Loafers</a>
+                            <a href="/deals?category=footwear&sub=heels" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👠 Heels & Wedges</a>
+                            <a href="/deals?category=footwear&sub=boots" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👢 Boots & High-Tops</a>
+                            <a href="/deals?category=footwear&sub=sandals" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👡 Sandals & Floaters</a>
+                            <a href="/deals?category=footwear&sub=clogs" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🦶 Clogs & Crocs</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 7. Watches -->
-                <div class="relative group">
-                    <a href="/deals?category=watches" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-slate-600 transition flex items-center gap-1.5 {% if current_category == 'watches' %}bg-slate-100 text-slate-700 border border-slate-300{% endif %}">
+                <div class="relative cat-dropdown-group">
+                    <a href="/deals?category=watches" class="cat-trigger px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-slate-600 transition flex items-center gap-1.5 {% if current_category == 'watches' %}bg-slate-100 text-slate-700 border border-slate-300{% endif %}">
                         <span class="text-sm">⌚</span>
                         <span>Watches</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
-                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[210px]">
+                    <div class="cat-dropdown-menu hidden pt-1 z-[99999] min-w-[210px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=watches" class="block px-3 py-2 rounded-xl font-extrabold text-slate-700 bg-slate-100 hover:bg-slate-200">All Watches ➔</a>
-                            <a href="/deals?category=watches&sub=menwatches" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⌚ Men's Watches</a>
-                            <a href="/deals?category=watches&sub=womenwatches" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⌚ Women's Watches</a>
-                            <a href="/deals?category=watches&sub=smartwatches" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💡 Smartwatches & Bands</a>
-                            <a href="/deals?category=watches&sub=digital" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🔢 Digital & Sports</a>
-                            <a href="/deals?category=watches&sub=couple" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💑 Couple Watches</a>
+                            <a href="/deals?category=watches" class="cat-trigger block px-3 py-2 rounded-xl font-extrabold text-slate-700 bg-slate-100 hover:bg-slate-200">All Watches ➔</a>
+                            <a href="/deals?category=watches&sub=menwatches" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⌚ Men's Watches</a>
+                            <a href="/deals?category=watches&sub=womenwatches" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⌚ Women's Watches</a>
+                            <a href="/deals?category=watches&sub=smartwatches" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💡 Smartwatches & Bands</a>
+                            <a href="/deals?category=watches&sub=digital" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🔢 Digital & Sports</a>
+                            <a href="/deals?category=watches&sub=couple" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💑 Couple Watches</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 8. Bags & Luggage -->
-                <div class="relative group">
-                    <a href="/deals?category=bags" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-teal-600 transition flex items-center gap-1.5 {% if current_category == 'bags' %}bg-teal-50 text-teal-700 border border-teal-200{% endif %}">
+                <div class="relative cat-dropdown-group">
+                    <a href="/deals?category=bags" class="cat-trigger px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-teal-600 transition flex items-center gap-1.5 {% if current_category == 'bags' %}bg-teal-50 text-teal-700 border border-teal-200{% endif %}">
                         <span class="text-sm">👜</span>
                         <span>Bags</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
-                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[210px]">
+                    <div class="cat-dropdown-menu hidden pt-1 z-[99999] min-w-[210px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=bags" class="block px-3 py-2 rounded-xl font-extrabold text-teal-700 bg-teal-50 hover:bg-teal-100">All Bags & Luggage ➔</a>
-                            <a href="/deals?category=bags&sub=handbags" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👜 Handbags & Totes</a>
-                            <a href="/deals?category=bags&sub=slingbags" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👝 Sling & Crossbody</a>
-                            <a href="/deals?category=bags&sub=backpacks" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎒 Backpacks & Duffels</a>
-                            <a href="/deals?category=bags&sub=wallets" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👛 Wallets & Cardholders</a>
-                            <a href="/deals?category=bags&sub=belts" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🪙 Belts</a>
-                            <a href="/deals?category=bags&sub=luggage" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧳 Trolley & Travel Bags</a>
+                            <a href="/deals?category=bags" class="cat-trigger block px-3 py-2 rounded-xl font-extrabold text-teal-700 bg-teal-50 hover:bg-teal-100">All Bags & Luggage ➔</a>
+                            <a href="/deals?category=bags&sub=handbags" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👜 Handbags & Totes</a>
+                            <a href="/deals?category=bags&sub=slingbags" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👝 Sling & Crossbody</a>
+                            <a href="/deals?category=bags&sub=backpacks" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎒 Backpacks & Duffels</a>
+                            <a href="/deals?category=bags&sub=wallets" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👛 Wallets & Cardholders</a>
+                            <a href="/deals?category=bags&sub=belts" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🪙 Belts</a>
+                            <a href="/deals?category=bags&sub=luggage" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧳 Trolley & Travel Bags</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 9. Health & Nutrition (NEW) -->
-                <div class="relative group">
-                    <a href="/deals?category=health" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-emerald-600 transition flex items-center gap-1.5 {% if current_category == 'health' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %}">
+                <div class="relative cat-dropdown-group">
+                    <a href="/deals?category=health" class="cat-trigger px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-emerald-600 transition flex items-center gap-1.5 {% if current_category == 'health' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %}">
                         <span class="text-sm">💊</span>
                         <span>Health</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
-                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[210px]">
+                    <div class="cat-dropdown-menu hidden pt-1 z-[99999] min-w-[210px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=health" class="block px-3 py-2 rounded-xl font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100">All Health & Nutrition ➔</a>
-                            <a href="/deals?category=health&sub=protein" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💪 Whey Protein & Isolate</a>
-                            <a href="/deals?category=health&sub=creatine" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⚡ Creatine & Pre-Workout</a>
-                            <a href="/deals?category=health&sub=vitamins" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💊 Multivitamins & Omega-3</a>
-                            <a href="/deals?category=health&sub=healthfoods" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🥜 Peanut Butter & Snacks</a>
+                            <a href="/deals?category=health" class="cat-trigger block px-3 py-2 rounded-xl font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100">All Health & Nutrition ➔</a>
+                            <a href="/deals?category=health&sub=protein" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💪 Whey Protein & Isolate</a>
+                            <a href="/deals?category=health&sub=creatine" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⚡ Creatine & Pre-Workout</a>
+                            <a href="/deals?category=health&sub=vitamins" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💊 Multivitamins & Omega-3</a>
+                            <a href="/deals?category=health&sub=healthfoods" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🥜 Peanut Butter & Snacks</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 10. Jewellery & Accessories (NEW) -->
-                <div class="relative group">
-                    <a href="/deals?category=jewellery" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-pink-600 transition flex items-center gap-1.5 {% if current_category == 'jewellery' %}bg-pink-50 text-pink-700 border border-pink-200{% endif %}">
+                <div class="relative cat-dropdown-group">
+                    <a href="/deals?category=jewellery" class="cat-trigger px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-pink-600 transition flex items-center gap-1.5 {% if current_category == 'jewellery' %}bg-pink-50 text-pink-700 border border-pink-200{% endif %}">
                         <span class="text-sm">💍</span>
                         <span>Jewellery</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
-                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[210px]">
+                    <div class="cat-dropdown-menu hidden pt-1 z-[99999] min-w-[210px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=jewellery" class="block px-3 py-2 rounded-xl font-extrabold text-pink-700 bg-pink-50 hover:bg-pink-100">All Jewellery & Accessories ➔</a>
-                            <a href="/deals?category=jewellery&sub=earrings" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">✨ Earrings & Jhumkas</a>
-                            <a href="/deals?category=jewellery&sub=necklaces" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">📿 Necklaces & Pendants</a>
-                            <a href="/deals?category=jewellery&sub=rings" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💍 Rings & Bracelets</a>
-                            <a href="/deals?category=jewellery&sub=sunglasses" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🕶️ Sunglasses & Eyewear</a>
+                            <a href="/deals?category=jewellery" class="cat-trigger block px-3 py-2 rounded-xl font-extrabold text-pink-700 bg-pink-50 hover:bg-pink-100">All Jewellery & Accessories ➔</a>
+                            <a href="/deals?category=jewellery&sub=earrings" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">✨ Earrings & Jhumkas</a>
+                            <a href="/deals?category=jewellery&sub=necklaces" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">📿 Necklaces & Pendants</a>
+                            <a href="/deals?category=jewellery&sub=rings" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💍 Rings & Bracelets</a>
+                            <a href="/deals?category=jewellery&sub=sunglasses" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🕶️ Sunglasses & Eyewear</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 11. Gaming & PC (NEW) -->
-                <div class="relative group">
-                    <a href="/deals?category=gaming" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-violet-600 transition flex items-center gap-1.5 {% if current_category == 'gaming' %}bg-violet-50 text-violet-700 border border-violet-200{% endif %}">
+                <div class="relative cat-dropdown-group">
+                    <a href="/deals?category=gaming" class="cat-trigger px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-violet-600 transition flex items-center gap-1.5 {% if current_category == 'gaming' %}bg-violet-50 text-violet-700 border border-violet-200{% endif %}">
                         <span class="text-sm">🎮</span>
                         <span>Gaming</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
-                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[210px]">
+                    <div class="cat-dropdown-menu hidden pt-1 z-[99999] min-w-[210px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=gaming" class="block px-3 py-2 rounded-xl font-extrabold text-violet-700 bg-violet-50 hover:bg-violet-100">All Gaming & PC ➔</a>
-                            <a href="/deals?category=gaming&sub=keyboards" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⌨️ Mechanical Keyboards</a>
-                            <a href="/deals?category=gaming&sub=mice" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🖱️ Gaming Mice & Pads</a>
-                            <a href="/deals?category=gaming&sub=headsets" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎧 Gaming Headsets</a>
-                            <a href="/deals?category=gaming&sub=controllers" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎮 Controllers & Consoles</a>
+                            <a href="/deals?category=gaming" class="cat-trigger block px-3 py-2 rounded-xl font-extrabold text-violet-700 bg-violet-50 hover:bg-violet-100">All Gaming & PC ➔</a>
+                            <a href="/deals?category=gaming&sub=keyboards" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⌨️ Mechanical Keyboards</a>
+                            <a href="/deals?category=gaming&sub=mice" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🖱️ Gaming Mice & Pads</a>
+                            <a href="/deals?category=gaming&sub=headsets" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎧 Gaming Headsets</a>
+                            <a href="/deals?category=gaming&sub=controllers" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎮 Controllers & Consoles</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 12. Toys & Baby -->
-                <div class="relative group">
-                    <a href="/deals?category=toys_kids" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-yellow-600 transition flex items-center gap-1.5 {% if current_category == 'toys_kids' %}bg-yellow-50 text-yellow-700 border border-yellow-200{% endif %}">
+                <div class="relative cat-dropdown-group">
+                    <a href="/deals?category=toys_kids" class="cat-trigger px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-yellow-600 transition flex items-center gap-1.5 {% if current_category == 'toys_kids' %}bg-yellow-50 text-yellow-700 border border-yellow-200{% endif %}">
                         <span class="text-sm">🧸</span>
                         <span>Toys & Baby</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
-                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[200px]">
+                    <div class="cat-dropdown-menu hidden pt-1 z-[99999] min-w-[200px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=toys_kids" class="block px-3 py-2 rounded-xl font-extrabold text-yellow-700 bg-yellow-50 hover:bg-yellow-100">All Toys & Baby ➔</a>
-                            <a href="/deals?category=toys_kids&sub=boardgames" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎲 Board Games</a>
-                            <a href="/deals?category=toys_kids&sub=toys" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧸 Action Toys & LEGO</a>
-                            <a href="/deals?category=toys_kids&sub=baby" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👶 Diapers & Baby Care</a>
+                            <a href="/deals?category=toys_kids" class="cat-trigger block px-3 py-2 rounded-xl font-extrabold text-yellow-700 bg-yellow-50 hover:bg-yellow-100">All Toys & Baby ➔</a>
+                            <a href="/deals?category=toys_kids&sub=boardgames" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎲 Board Games</a>
+                            <a href="/deals?category=toys_kids&sub=toys" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🧸 Action Toys & LEGO</a>
+                            <a href="/deals?category=toys_kids&sub=baby" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">👶 Diapers & Baby Care</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 13. Books & Stationery (NEW) -->
-                <div class="relative group">
-                    <a href="/deals?category=books" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-cyan-600 transition flex items-center gap-1.5 {% if current_category == 'books' %}bg-cyan-50 text-cyan-700 border border-cyan-200{% endif %}">
+                <div class="relative cat-dropdown-group">
+                    <a href="/deals?category=books" class="cat-trigger px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-cyan-600 transition flex items-center gap-1.5 {% if current_category == 'books' %}bg-cyan-50 text-cyan-700 border border-cyan-200{% endif %}">
                         <span class="text-sm">📚</span>
                         <span>Books</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
-                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[200px]">
+                    <div class="cat-dropdown-menu hidden pt-1 z-[99999] min-w-[200px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=books" class="block px-3 py-2 rounded-xl font-extrabold text-cyan-700 bg-cyan-50 hover:bg-cyan-100">All Books & Stationery ➔</a>
-                            <a href="/deals?category=books&sub=novels" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">📖 Fiction & Bestsellers</a>
-                            <a href="/deals?category=books&sub=selfhelp" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💡 Self-Help & Business</a>
-                            <a href="/deals?category=books&sub=stationery" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">✏️ Pens & Notebooks</a>
+                            <a href="/deals?category=books" class="cat-trigger block px-3 py-2 rounded-xl font-extrabold text-cyan-700 bg-cyan-50 hover:bg-cyan-100">All Books & Stationery ➔</a>
+                            <a href="/deals?category=books&sub=novels" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">📖 Fiction & Bestsellers</a>
+                            <a href="/deals?category=books&sub=selfhelp" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">💡 Self-Help & Business</a>
+                            <a href="/deals?category=books&sub=stationery" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">✏️ Pens & Notebooks</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 14. Grocery & Gourmet (NEW) -->
-                <div class="relative group">
-                    <a href="/deals?category=grocery" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-lime-600 transition flex items-center gap-1.5 {% if current_category == 'grocery' %}bg-lime-50 text-lime-700 border border-lime-200{% endif %}">
+                <div class="relative cat-dropdown-group">
+                    <a href="/deals?category=grocery" class="cat-trigger px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-lime-600 transition flex items-center gap-1.5 {% if current_category == 'grocery' %}bg-lime-50 text-lime-700 border border-lime-200{% endif %}">
                         <span class="text-sm">🍵</span>
                         <span>Grocery</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
-                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[200px]">
+                    <div class="cat-dropdown-menu hidden pt-1 z-[99999] min-w-[200px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=grocery" class="block px-3 py-2 rounded-xl font-extrabold text-lime-700 bg-lime-50 hover:bg-lime-100">All Grocery & Gourmet ➔</a>
-                            <a href="/deals?category=grocery&sub=tea_coffee" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">☕ Tea & Coffee</a>
-                            <a href="/deals?category=grocery&sub=dryfruits" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🥜 Dry Fruits & Nuts</a>
-                            <a href="/deals?category=grocery&sub=chocolates" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🍫 Chocolates & Sweets</a>
+                            <a href="/deals?category=grocery" class="cat-trigger block px-3 py-2 rounded-xl font-extrabold text-lime-700 bg-lime-50 hover:bg-lime-100">All Grocery & Gourmet ➔</a>
+                            <a href="/deals?category=grocery&sub=tea_coffee" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">☕ Tea & Coffee</a>
+                            <a href="/deals?category=grocery&sub=dryfruits" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🥜 Dry Fruits & Nuts</a>
+                            <a href="/deals?category=grocery&sub=chocolates" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🍫 Chocolates & Sweets</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 15. Auto & Bikes -->
-                <div class="relative group">
-                    <a href="/deals?category=automotive" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-orange-600 transition flex items-center gap-1.5 {% if current_category == 'automotive' %}bg-orange-50 text-orange-700 border border-orange-200{% endif %}">
+                <div class="relative cat-dropdown-group">
+                    <a href="/deals?category=automotive" class="cat-trigger px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-orange-600 transition flex items-center gap-1.5 {% if current_category == 'automotive' %}bg-orange-50 text-orange-700 border border-orange-200{% endif %}">
                         <span class="text-sm">🚗</span>
                         <span>Auto & Bikes</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
-                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[200px]">
+                    <div class="cat-dropdown-menu hidden pt-1 z-[99999] min-w-[200px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=automotive" class="block px-3 py-2 rounded-xl font-extrabold text-orange-700 bg-orange-50 hover:bg-orange-100">All Auto & Bikes ➔</a>
-                            <a href="/deals?category=automotive&sub=helmets" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🪖 Helmets & Riding Gear</a>
-                            <a href="/deals?category=automotive&sub=caraccessories" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🚗 Car Accessories</a>
+                            <a href="/deals?category=automotive" class="cat-trigger block px-3 py-2 rounded-xl font-extrabold text-orange-700 bg-orange-50 hover:bg-orange-100">All Auto & Bikes ➔</a>
+                            <a href="/deals?category=automotive&sub=helmets" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🪖 Helmets & Riding Gear</a>
+                            <a href="/deals?category=automotive&sub=caraccessories" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🚗 Car Accessories</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 16. Pet Supplies (NEW) -->
-                <div class="relative group">
-                    <a href="/deals?category=pets" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-sky-600 transition flex items-center gap-1.5 {% if current_category == 'pets' %}bg-sky-50 text-sky-700 border border-sky-200{% endif %}">
+                <div class="relative cat-dropdown-group">
+                    <a href="/deals?category=pets" class="cat-trigger px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-sky-600 transition flex items-center gap-1.5 {% if current_category == 'pets' %}bg-sky-50 text-sky-700 border border-sky-200{% endif %}">
                         <span class="text-sm">🐾</span>
                         <span>Pets</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
-                    <div class="hidden group-hover:block absolute left-0 top-full pt-1 z-50 min-w-[200px]">
+                    <div class="cat-dropdown-menu hidden pt-1 z-[99999] min-w-[200px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=pets" class="block px-3 py-2 rounded-xl font-extrabold text-sky-700 bg-sky-50 hover:bg-sky-100">All Pet Supplies ➔</a>
-                            <a href="/deals?category=pets&sub=dogfood" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🐕 Dog Food & Treats</a>
-                            <a href="/deals?category=pets&sub=catfood" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🐈 Cat Food & Litter</a>
-                            <a href="/deals?category=pets&sub=accessories" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎾 Grooming & Toys</a>
+                            <a href="/deals?category=pets" class="cat-trigger block px-3 py-2 rounded-xl font-extrabold text-sky-700 bg-sky-50 hover:bg-sky-100">All Pet Supplies ➔</a>
+                            <a href="/deals?category=pets&sub=dogfood" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🐕 Dog Food & Treats</a>
+                            <a href="/deals?category=pets&sub=catfood" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🐈 Cat Food & Litter</a>
+                            <a href="/deals?category=pets&sub=accessories" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🎾 Grooming & Toys</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- 17. Miscellaneous & More -->
-                <div class="relative group">
-                    <a href="/deals?category=miscellaneous" class="px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-amber-600 transition flex items-center gap-1.5 {% if current_category == 'miscellaneous' %}bg-amber-50 text-amber-700 border border-amber-200{% endif %}">
+                <div class="relative cat-dropdown-group">
+                    <a href="/deals?category=miscellaneous" class="cat-trigger px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-amber-600 transition flex items-center gap-1.5 {% if current_category == 'miscellaneous' %}bg-amber-50 text-amber-700 border border-amber-200{% endif %}">
                         <span class="text-sm">📦</span>
                         <span>More</span>
                         <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:rotate-180 transition-transform"></i>
                     </a>
-                    <div class="hidden group-hover:block absolute right-0 top-full pt-1 z-50 min-w-[210px]">
+                    <div class="cat-dropdown-menu hidden pt-1 z-[99999] min-w-[210px]">
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl p-2 text-xs space-y-1">
-                            <a href="/deals?category=miscellaneous" class="block px-3 py-2 rounded-xl font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100">All Miscellaneous & More ➔</a>
-                            <a href="/deals?category=miscellaneous&sub=daily_deals" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⚡ Daily Loot & Steals</a>
-                            <a href="/deals?category=miscellaneous&sub=stationery_craft" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">✂️ Crafts & Utilities</a>
-                            <a href="/deals?category=miscellaneous&sub=lifestyle" class="block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🌟 Lifestyle & Essentials</a>
+                            <a href="/deals?category=miscellaneous" class="cat-trigger block px-3 py-2 rounded-xl font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100">All Miscellaneous & More ➔</a>
+                            <a href="/deals?category=miscellaneous&sub=daily_deals" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">⚡ Daily Loot & Steals</a>
+                            <a href="/deals?category=miscellaneous&sub=stationery_craft" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">✂️ Crafts & Utilities</a>
+                            <a href="/deals?category=miscellaneous&sub=lifestyle" class="cat-trigger block px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100">🌟 Lifestyle & Essentials</a>
                         </div>
                     </div>
                 </div>
@@ -1500,6 +1500,76 @@ ${deal.title}
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
         }
+
+        
+        // ── Smart Floating Category Dropdown Positioning (Escapes overflow-x-auto) ──
+        (function initCategoryDropdowns() {
+            let currentOpenMenu = null;
+            let hideTimer = null;
+
+            const groups = document.querySelectorAll('.cat-dropdown-group');
+            groups.forEach(group => {
+                const trigger = group.querySelector('.cat-trigger');
+                const menu = group.querySelector('.cat-dropdown-menu');
+                const chevron = trigger ? trigger.querySelector('[data-lucide="chevron-down"]') : null;
+                if (!trigger || !menu) return;
+
+                const showMenu = () => {
+                    if (hideTimer) clearTimeout(hideTimer);
+                    if (currentOpenMenu && currentOpenMenu !== menu) {
+                        currentOpenMenu.classList.add('hidden');
+                        const prevChevron = currentOpenMenu.closest('.cat-dropdown-group')?.querySelector('[data-lucide="chevron-down"]');
+                        if (prevChevron) prevChevron.style.transform = '';
+                    }
+
+                    const rect = trigger.getBoundingClientRect();
+                    menu.style.position = 'fixed';
+                    menu.style.top = (rect.bottom + 2) + 'px';
+                    
+                    const menuWidth = 230;
+                    let left = rect.left;
+                    if (left + menuWidth > window.innerWidth - 12) {
+                        left = Math.max(12, window.innerWidth - menuWidth - 12);
+                    }
+                    menu.style.left = left + 'px';
+                    menu.style.zIndex = '99999';
+                    menu.classList.remove('hidden');
+                    if (chevron) chevron.style.transform = 'rotate(180deg)';
+                    currentOpenMenu = menu;
+                };
+
+                const scheduleHide = () => {
+                    hideTimer = setTimeout(() => {
+                        menu.classList.add('hidden');
+                        if (chevron) chevron.style.transform = '';
+                        if (currentOpenMenu === menu) currentOpenMenu = null;
+                    }, 120);
+                };
+
+                trigger.addEventListener('mouseenter', showMenu);
+                trigger.addEventListener('mouseleave', scheduleHide);
+                menu.addEventListener('mouseenter', () => {
+                    if (hideTimer) clearTimeout(hideTimer);
+                });
+                menu.addEventListener('mouseleave', scheduleHide);
+            });
+
+            const categoryRow = document.getElementById('categoryAisleRow');
+            if (categoryRow) {
+                categoryRow.addEventListener('scroll', () => {
+                    if (currentOpenMenu) {
+                        currentOpenMenu.classList.add('hidden');
+                        currentOpenMenu = null;
+                    }
+                }, { passive: true });
+            }
+            window.addEventListener('scroll', () => {
+                if (currentOpenMenu) {
+                    currentOpenMenu.classList.add('hidden');
+                    currentOpenMenu = null;
+                }
+            }, { passive: true });
+        })();
 
         // Loading bar helper
         function showPageProgress() {
