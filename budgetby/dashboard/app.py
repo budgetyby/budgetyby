@@ -136,6 +136,21 @@ def verify_admin_session_token(token: str) -> bool:
     except Exception:
         return False
 
+def is_admin_enabled(request: Request) -> bool:
+    """
+    Completely isolates and disables the admin panel & DB explorer from cloud deployments.
+    - Cloud (Render): Disabled by default unless ENABLE_ADMIN_PANEL=true is explicitly set in env.
+    - Localhost / 127.0.0.1: Enabled for local management and operations.
+    """
+    env_setting = os.getenv("ENABLE_ADMIN_PANEL", "").strip().lower()
+    if env_setting in ("true", "1", "yes"):
+        return True
+    if env_setting in ("false", "0", "no"):
+        return False
+    # If not set in environment, allow local connections only
+    client_host = getattr(getattr(request, "client", None), "host", "")
+    return client_host in ("127.0.0.1", "localhost", "::1", "testclient", "")
+
 def is_admin_authorized(request: Request) -> bool:
     """
     Cryptographically verifies admin access via:
@@ -161,9 +176,9 @@ def is_admin_authorized(request: Request) -> bool:
 def require_admin(request: Request):
     """
     Dependency enforcing complete admin stealth isolation for APIs:
-    Returns 404 Not Found to unauthorized requests, completely hiding admin/db existence.
+    Returns 404 Not Found to unauthorized requests or when disabled on cloud.
     """
-    if not is_admin_authorized(request):
+    if not is_admin_enabled(request) or not is_admin_authorized(request):
         raise HTTPException(status_code=404, detail="Not Found")
     return True
 
@@ -2678,6 +2693,8 @@ def render_admin_login_template(request: Request, context: dict, status_code: in
 @app.get("/pnther/login/", response_class=HTMLResponse)
 async def get_admin_login(request: Request, next: str = "/pnther"):
     """Renders the secure Admin Login Page. Always prompts for credentials."""
+    if not is_admin_enabled(request):
+        return RedirectResponse(url="/", status_code=302)
     clean_next = next if next.startswith("/pnther") and not next.startswith("/pnther/login") else "/pnther"
     response = render_admin_login_template(
         request,
@@ -2700,6 +2717,9 @@ async def post_admin_login(
     1) pnther / Pnther@3Alphabetisc
     2) vidushi / lilu
     """
+    if not is_admin_enabled(request):
+        return RedirectResponse(url="/", status_code=302)
+
     user_clean = (username or "").strip()
     pwd_clean = (password or "").strip()
 
@@ -2732,8 +2752,10 @@ async def post_admin_login(
 @app.get("/pnther/logout/")
 @app.post("/pnther/logout")
 @app.post("/pnther/logout/")
-async def admin_logout():
+async def admin_logout(request: Request = None):
     """Logs out admin and terminates any session."""
+    if request and not is_admin_enabled(request):
+        return RedirectResponse(url="/", status_code=302)
     resp = RedirectResponse(url="/pnther/login", status_code=302)
     resp.delete_cookie(key="budgetby_admin_session")
     resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
@@ -2743,6 +2765,9 @@ async def admin_logout():
 @app.get("/pnther/", response_class=HTMLResponse)
 async def admin_dashboard(request: Request):
     """Renders the BudgetBy Admin Control Center (Stealth Protected URL: /pnther)."""
+    if not is_admin_enabled(request):
+        return RedirectResponse(url="/", status_code=302)
+
     auth_tok = request.query_params.get("auth_token")
     req_key = request.query_params.get("key") or request.query_params.get("admin_key")
 
@@ -2770,6 +2795,9 @@ async def admin_dashboard(request: Request):
 @app.get("/pnther/db-explorer/", response_class=HTMLResponse)
 async def admin_db_explorer(request: Request):
     """Renders the BudgetBy Database Explorer (Stealth Protected URL: /pnther/db-explorer)."""
+    if not is_admin_enabled(request):
+        return RedirectResponse(url="/", status_code=302)
+
     auth_tok = request.query_params.get("auth_token")
     req_key = request.query_params.get("key") or request.query_params.get("admin_key")
 
