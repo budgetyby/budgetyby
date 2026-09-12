@@ -65,6 +65,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Initializing Database Pool and APScheduler Background Service...")
+    await database.init_pool()
+    try:
+        from budgetby.scheduler import scheduler
+        scheduler.start_scheduler()
+        logger.info("🚀 APScheduler background price-checker and deal-detector started successfully!")
+    except Exception as e:
+        logger.warning(f"Scheduler startup note: {e}")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    try:
+        from budgetby.scheduler import scheduler
+        scheduler.stop_scheduler()
+    except Exception:
+        pass
+    await database.close_pool()
+
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
