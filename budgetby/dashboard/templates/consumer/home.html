@@ -97,7 +97,7 @@
             </a>
         </div>
 
-        <div class="flex gap-3 overflow-x-auto pb-3 pt-1 no-scrollbar scroll-smooth">
+        <div id="justDroppedContainer" class="flex gap-3 overflow-x-auto pb-3 pt-1 no-scrollbar scroll-smooth">
             {% for deal in just_dropped.deals %}
             <div class="w-56 sm:w-64 shrink-0">
                 {% include "consumer/partials/product_card.html" %}
@@ -144,21 +144,21 @@
                 </div>
             </a>
 
-            <a href="/stores/ajio" class="bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-200/80 rounded-2xl p-3.5 hover:shadow-md hover:border-yellow-400 transition group flex flex-col justify-between">
+            <a href="/stores/ajio" class="bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200/80 rounded-2xl p-3.5 hover:shadow-md hover:border-amber-400 transition group flex flex-col justify-between">
                 <div>
-                    <span class="text-xs font-bold text-yellow-800 uppercase tracking-wider block mb-1">Ajio</span>
-                    <h3 class="text-sm font-black text-slate-900 leading-tight">Trends & Footwear</h3>
+                    <span class="text-xs font-bold text-amber-800 uppercase tracking-wider block mb-1">Ajio</span>
+                    <h3 class="text-sm font-black text-slate-900 leading-tight">Trends & Ethnic</h3>
                 </div>
-                <div class="mt-2.5 flex items-center justify-between text-xs font-extrabold text-yellow-800">
+                <div class="mt-2.5 flex items-center justify-between text-xs font-extrabold text-amber-700">
                     <span>Explore Deals</span>
                     <span class="group-hover:translate-x-0.5 transition-transform">➔</span>
                 </div>
             </a>
 
-            <a href="/stores/nykaa" class="col-span-2 sm:col-span-1 bg-gradient-to-br from-rose-50 to-pink-50 border border-rose-200/80 rounded-2xl p-3.5 hover:shadow-md hover:border-rose-400 transition group flex flex-col justify-between">
+            <a href="/stores/nykaa" class="bg-gradient-to-br from-rose-50 to-pink-50 border border-rose-200/80 rounded-2xl p-3.5 hover:shadow-md hover:border-rose-400 transition group flex flex-col justify-between col-span-2 sm:col-span-1">
                 <div>
                     <span class="text-xs font-bold text-rose-800 uppercase tracking-wider block mb-1">Nykaa</span>
-                    <h3 class="text-sm font-black text-slate-900 leading-tight">Cosmetics & Beauty</h3>
+                    <h3 class="text-sm font-black text-slate-900 leading-tight">Beauty & Skincare</h3>
                 </div>
                 <div class="mt-2.5 flex items-center justify-between text-xs font-extrabold text-rose-700">
                     <span>Explore Deals</span>
@@ -169,34 +169,113 @@
         </div>
     </section>
 
-    <!-- ── 5. 24h Price Drops Carousel ──────────────────────────── -->
-    <section class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full pt-4 pb-4">
-        <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-2">
-                <span class="text-xl">📉</span>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h2 class="text-lg sm:text-xl font-black text-slate-900">24-Hour Price Drops</h2>
-                        <span class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold font-mono">LIVE</span>
+    <!-- ── 5. Category Aisle Banners Showcase ────────────────────────────── -->
+    <section class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full pt-4 pb-6 space-y-8">
+        
+        <!-- Fashion Aisle Showcase -->
+        {% if fashion_deals and fashion_deals.deals %}
+        <div>
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">👗</span>
+                    <div>
+                        <h2 class="text-base sm:text-lg font-black text-slate-900">Fashion & Apparel Loot</h2>
+                        <p class="text-xs text-slate-500">Live deals on T-shirts, Shirts, Kurtis & Jeans</p>
                     </div>
-                    <p class="text-xs text-slate-500">Real price cuts tracked against 30-day price history across Amazon, Flipkart, Myntra & Ajio</p>
                 </div>
+                <a href="/deals?category=fashion" class="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center gap-1 bg-purple-50 px-2.5 py-1 rounded-xl transition">
+                    <span>View All Fashion</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </a>
             </div>
-            <a href="/drops" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 shrink-0 bg-indigo-50 px-3 py-1.5 rounded-xl transition">
-                <span>View All Drops</span>
-                <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-            </a>
-        </div>
-
-        <div id="homeDropsCarousel" class="flex gap-3.5 overflow-x-auto pb-4 pt-1 no-scrollbar scroll-smooth">
-            {% if initial_drops and initial_drops.drops %}
-                {% for deal in initial_drops.drops %}
-                {% include "consumer/partials/product_card_compact.html" %}
+            <div class="flex gap-3 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
+                {% for deal in fashion_deals.deals %}
+                <div class="w-52 sm:w-60 shrink-0">
+                    {% include "consumer/partials/product_card.html" %}
+                </div>
                 {% endfor %}
-            {% else %}
-                <div class="text-center py-8 text-slate-400 text-xs w-full">Loading latest price drops...</div>
-            {% endif %}
+            </div>
         </div>
+        {% endif %}
+
+        <!-- Electronics Aisle Showcase -->
+        {% if electronics_deals and electronics_deals.deals %}
+        <div>
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">📱</span>
+                    <div>
+                        <h2 class="text-base sm:text-lg font-black text-slate-900">Electronics & Gadgets Steals</h2>
+                        <p class="text-xs text-slate-500">Top discounts on TWS Earbuds, Powerbanks & Accessories</p>
+                    </div>
+                </div>
+                <a href="/deals?category=electronics" class="text-xs font-bold text-blue-700 hover:text-blue-900 flex items-center gap-1 bg-blue-50 px-2.5 py-1 rounded-xl transition">
+                    <span>View All Electronics</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </a>
+            </div>
+            <div class="flex gap-3 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
+                {% for deal in electronics_deals.deals %}
+                <div class="w-52 sm:w-60 shrink-0">
+                    {% include "consumer/partials/product_card.html" %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Beauty Aisle Showcase -->
+        {% if beauty_deals and beauty_deals.deals %}
+        <div>
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">💄</span>
+                    <div>
+                        <h2 class="text-base sm:text-lg font-black text-slate-900">Beauty & Skincare Offers</h2>
+                        <p class="text-xs text-slate-500">Sunscreeen, Serums, Facewash & Grooming deals</p>
+                    </div>
+                </div>
+                <a href="/deals?category=beauty" class="text-xs font-bold text-rose-700 hover:text-rose-900 flex items-center gap-1 bg-rose-50 px-2.5 py-1 rounded-xl transition">
+                    <span>View All Beauty</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </a>
+            </div>
+            <div class="flex gap-3 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
+                {% for deal in beauty_deals.deals %}
+                <div class="w-52 sm:w-60 shrink-0">
+                    {% include "consumer/partials/product_card.html" %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Home & Kitchen Aisle Showcase -->
+        {% if home_deals and home_deals.deals %}
+        <div>
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">🏠</span>
+                    <div>
+                        <h2 class="text-base sm:text-lg font-black text-slate-900">Home & Kitchen Essentials</h2>
+                        <p class="text-xs text-slate-500">Cookware, Water Bottles & Appliances</p>
+                    </div>
+                </div>
+                <a href="/deals?category=home" class="text-xs font-bold text-amber-700 hover:text-amber-900 flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-xl transition">
+                    <span>View All Home</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </a>
+            </div>
+            <div class="flex gap-3 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
+                {% for deal in home_deals.deals %}
+                <div class="w-52 sm:w-60 shrink-0">
+                    {% include "consumer/partials/product_card.html" %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
     </section>
 
     <!-- ── 6. All-Time Lows (ATL) 4-Product Mini Grid ───────────────────── -->
@@ -248,4 +327,67 @@
     </section>
 
 </main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    (function startHomeLiveAutoPolling() {
+        setInterval(async () => {
+            if (document.hidden) return;
+            try {
+                const res = await fetch('/api/public/deals?sort_by=latest&limit=10');
+                if (!res.ok) return;
+                const data = await res.json();
+                const deals = data.deals || data.items || [];
+                if (!deals || deals.length === 0) return;
+                
+                const container = document.getElementById('justDroppedContainer');
+                if (!container) return;
+
+                const html = deals.map(deal => {
+                    const store = (deal.platform || 'amazon').toLowerCase();
+                    const storeCfg = STORES[store] || STORES.amazon;
+                    const cp = deal.current_price || deal.deal_price || 0;
+                    const mrp = deal.mrp || 0;
+                    const hasDiscount = mrp > cp;
+                    const discPct = hasDiscount ? Math.round(((mrp - cp) / mrp) * 100) : Math.round(deal.discount_percent || 0);
+                    const safeTitle = escapeHtml(deal.title);
+                    const dealLink = deal.affiliate_url || deal.product_url || '#';
+
+                    return `
+                    <div class="w-56 sm:w-64 shrink-0">
+                        <div class="bg-white border border-slate-200/90 hover:border-indigo-400 rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-md group relative">
+                            <div>
+                                <div class="flex items-center justify-between gap-1.5 mb-2">
+                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${storeCfg.badge}">
+                                        ${storeCfg.name}
+                                    </span>
+                                    ${discPct > 0 ? `<span class="px-1.5 py-0.5 rounded-md text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200 font-mono">-${discPct}%</span>` : ''}
+                                </div>
+                                <div class="relative w-full h-36 sm:h-44 rounded-xl bg-slate-50 p-2 flex items-center justify-center overflow-hidden border border-slate-100">
+                                    <img src="${deal.image_url || '/static/placeholder.png'}" alt="${safeTitle}" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                                </div>
+                                <div class="mt-2 text-xs font-bold text-slate-900 line-clamp-2 leading-snug">${safeTitle}</div>
+                            </div>
+                            <div class="mt-3 pt-2.5 border-t border-slate-100">
+                                <div class="flex items-baseline gap-1.5 flex-wrap mb-2">
+                                    <span class="text-base sm:text-lg font-black text-slate-900 font-mono">${formatINR(cp)}</span>
+                                    ${hasDiscount ? `<span class="text-xs text-slate-400 line-through font-mono">${formatINR(mrp)}</span>` : ''}
+                                    ${discPct > 0 ? `<span class="text-xs font-black text-rose-600 font-mono">(${discPct}% OFF)</span>` : ''}
+                                </div>
+                                <a href="${dealLink}" target="_blank" rel="noopener noreferrer" class="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 transition shadow-sm shadow-indigo-600/20">
+                                    <span>Buy on ${storeCfg.name}</span>
+                                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+
+                container.innerHTML = html;
+                if (window.lucide) lucide.createIcons();
+            } catch (e) {}
+        }, 15000); // 15-second live auto-polling
+    })();
+</script>
 {% endblock %}

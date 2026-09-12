@@ -244,7 +244,7 @@
     function startDropsAutoRefresh() {
         if (dropsAutoRefreshTimer) clearInterval(dropsAutoRefreshTimer);
         const settings = window.getUserSettings ? window.getUserSettings() : null;
-        const intervalSec = (settings && settings.syncInterval !== undefined) ? settings.syncInterval : 300;
+        const intervalSec = (settings && settings.syncInterval !== undefined && settings.syncInterval > 0) ? settings.syncInterval : 15;
         if (intervalSec <= 0) return;
         dropsAutoRefreshTimer = setInterval(() => {
             if (dropsState.page === 1 && !document.hidden) {
