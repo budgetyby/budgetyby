@@ -31,7 +31,6 @@ async def daily_cleanup():
         # 3. Delete rows older than 30 days (benchmarks are persisted inside cleanup before delete)
         await database.cleanup_old_daily_prices()
         await database.sync_daily_price_baselines()
-        await database.refresh_30d_benchmarks()
         await database.finalize_expired_tracking()
         
         try:
@@ -62,6 +61,9 @@ async def daily_cleanup():
 
 async def run_backup():
     """Runs pg_dump and compresses output with native Python gzip, keeping 14-day retention."""
+    if not getattr(config, "BACKUP_ENABLED", False):
+        logger.info("Application-level pg_dump backup is disabled (relying on Supabase cloud auto-backup). Skipping execution.")
+        return
     try:
         logger.info("Starting scheduled database backup...")
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

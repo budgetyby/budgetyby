@@ -50,7 +50,7 @@ async def find_evergreen_deals(limit: int = 10, platform: str = None) -> list[Re
             ORDER BY 
                 ((p.mrp - p.current_price) / p.mrp) DESC,
                 p.rating DESC NULLS LAST,
-                RANDOM()
+                p.id ASC
             LIMIT ${4 if platform else 3}
         """
         args = [config.EVERGREEN_MIN_MRP_DISCOUNT, config.EVERGREEN_MIN_SAVINGS_INR]

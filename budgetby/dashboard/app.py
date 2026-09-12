@@ -319,8 +319,12 @@ async def startup():
 
 @app.get("/api/stats", dependencies=[Depends(require_admin)])
 async def get_stats():
+    cache_key = "api_stats_cache"
+    cached = ram_cache.get(cache_key)
+    if cached is not None:
+        return cached
 
-    try:
+    async def _compute_stats():
         core_metrics = await database.get_core_metrics()
         total_prods = core_metrics["total_products"]
         products_added_today = core_metrics["products_added_today"]
@@ -437,6 +441,12 @@ async def get_stats():
             "active_cooldowns": cooldowns or 0,
             "daily_prices_recorded": daily_prices or 0
         }
+
+    try:
+        res = await coalescer.run(cache_key, _compute_stats)
+        if res:
+            ram_cache.set(cache_key, res, ttl=60)
+        return res
     except Exception as e:
         logger.error(f"Internal stats error: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -866,7 +876,10 @@ async def get_db_overview():
 async def get_product_history(product_id: int):
     """Returns the full 30-day chronological daily price timeline (Day 1 to Day 30) for a product."""
     try:
-        product = await database.fetchrow("SELECT * FROM products WHERE id = $1;", product_id)
+        product = await database.fetchrow("""
+            SELECT id, platform, title, current_price, mrp, all_time_low, rating, image_url, product_url, affiliate_url, category 
+            FROM products WHERE id = $1;
+        """, product_id)
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
 

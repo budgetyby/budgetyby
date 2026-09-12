@@ -783,8 +783,8 @@ TIMEZONE = "Asia/Kolkata"
 # 18. DATABASE BACKUP
 # ════════════════════════════════════════════════════════════════════════
 
-BACKUP_ENABLED = True
-BACKUP_HOUR = 3       # 3:00 AM IST daily backup
+BACKUP_ENABLED = False  # Disabled by default; rely on Supabase managed backups to save cloud egress
+BACKUP_HOUR = 3        # 3:00 AM IST backup (if manually enabled)
 BACKUP_RETAIN_DAYS = 7 # Keep last 7 backup files
 
 

@@ -21,9 +21,11 @@ async def init_pool() -> asyncpg.Pool:
         return _pool
 
     import ssl
+    import os
     ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+    if os.getenv("DB_SSL_VERIFY", "true").lower() in ("false", "0", "no"):
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
 
     host_to_use = config.DB_HOST
     if "aivencloud.com" in config.DB_HOST:
@@ -175,7 +177,7 @@ async def upsert_product(data: dict) -> int:
                 END,
                 in_stock = COALESCE($8, in_stock),
                 last_checked = NOW(),
-                all_time_low = LEAST(COALESCE($2, all_time_low), all_time_low)
+                all_time_low = COALESCE(LEAST(COALESCE($2, all_time_low), all_time_low), $2)
             WHERE id = $1;
         """, existing_id, cur_price, mrp_val, data.get("rating"), data.get("review_count"), 
              data.get("image_url"), data.get("affiliate_url"), data.get("in_stock", True))
@@ -282,7 +284,7 @@ async def update_price(product_id: int, new_price: float, in_stock: bool,
                 WHEN current_price IS DISTINCT FROM $2::numeric THEN NOW()
                 ELSE last_price_change
             END,
-            all_time_low = LEAST(all_time_low, $2::numeric)
+            all_time_low = COALESCE(LEAST(all_time_low, $2::numeric), $2::numeric)
         WHERE id = $1::integer
     """, product_id, new_price, in_stock, title, mrp, rating,
          review_count, image_url)
