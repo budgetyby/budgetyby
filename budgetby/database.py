@@ -23,7 +23,7 @@ async def init_pool() -> asyncpg.Pool:
     import ssl
     import os
     ctx = ssl.create_default_context()
-    if os.getenv("DB_SSL_VERIFY", "true").lower() in ("false", "0", "no"):
+    if os.getenv("DB_SSL_VERIFY", "false").lower() in ("false", "0", "no", "none", "off"):
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
 
