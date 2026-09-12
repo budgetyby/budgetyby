@@ -155,7 +155,7 @@
 </main>
 
 <!-- ── Filter Products Slide-Over Drawer Modal ────────────────────────────── -->
-<div id="filterProductsModal" class="hidden fixed inset-0 z-50 overflow-hidden">
+<div id="filterProductsModal" class="hidden fixed inset-0 z-[999999] overflow-hidden">
     <!-- Backdrop -->
     <div onclick="closeFilterModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300"></div>
 
@@ -725,6 +725,8 @@
                 }
             }
         }
+    }
+
     function toggleFilterModal() {
         const modal = document.getElementById('filterProductsModal');
         if (modal) {
@@ -738,6 +740,9 @@
             modal.classList.add('hidden');
         }
     }
+
+    window.toggleFilterModal = toggleFilterModal;
+    window.closeFilterModal = closeFilterModal;
 
     function updateActiveFilterBadge() {
         let count = 0;
