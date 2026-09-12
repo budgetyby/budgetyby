@@ -35,6 +35,11 @@ def find_pg_dump():
     return "pg_dump"
 
 def export_database():
+    if "--force" not in sys.argv:
+        print("NOTICE: Database export requires the '--force' flag (python export_database.py --force) to prevent accidental cloud egress downloads.")
+        print("To manage backups automatically, rely on Supabase's managed cloud auto-backups.")
+        return
+
     pg_dump = find_pg_dump()
     print("=" * 60)
     print("STARTING BUDGETBY DATABASE CLOUD EXPORT")

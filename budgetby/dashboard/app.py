@@ -1165,9 +1165,10 @@ async def trigger_backup():
 @app.post("/api/trigger/backfill", dependencies=[Depends(require_admin)])
 async def trigger_backfill():
     try:
-        from budgetby.scheduler.scheduler import hourly_backfill
-        asyncio.create_task(hourly_backfill())
-        return {"status": "success", "message": "Hourly backfill post triggered successfully."}
+        from budgetby.engine.posting_queue import get_posting_queue
+        pq = get_posting_queue()
+        asyncio.create_task(pq.post_next_deal())
+        return {"status": "success", "message": "Deal post triggered successfully."}
     except Exception as e:
         logger.error(f"Backfill trigger error: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")

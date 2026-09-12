@@ -53,13 +53,14 @@ async def _fetch_and_normalize_image(image_url: str, timeout: float = 6.0) -> io
         logger.debug(f"Image download note for {image_url[:50]}: {e}")
     return None
 
-# 12-slot proportional rotation cycle (Croma paused):
-# Amazon: 3, Flipkart: 3, Myntra: 2, Ajio: 2, Nykaa: 2 (Total = 12 parts)
+# 14-slot proportional rotation cycle (Croma paused):
+# Amazon: 4, Flipkart: 3, Myntra: 3, Ajio: 2, Nykaa: 2 (Total = 14 slots)
 ROTATION_SEQUENCE = [
     "amazon", "flipkart", "myntra",
     "amazon", "ajio", "flipkart",
-    "nykaa", "myntra", "nykaa",
-    "amazon", "flipkart", "ajio"
+    "myntra", "amazon", "nykaa",
+    "flipkart", "myntra", "ajio",
+    "amazon", "nykaa"
 ]
 
 def format_deal_message(deal_data: dict) -> str:

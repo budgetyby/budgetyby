@@ -56,74 +56,69 @@ async def run_affiliate_converter_worker():
             # 1. Prioritize verified active deals across all non-Amazon stores
             # Round-robin: fetch up to 10 latest deals per store (ordered by posted_at DESC)
             # so the exact deals visitors see on the homepage & /deals get real affiliate links first!
-            stores = ["myntra", "ajio", "nykaa", "flipkart"]
-            deals = []
-            for store in stores:
-                store_deals = await database.fetch("""
-                    SELECT product_id, platform, product_url, affiliate_url, title
-                    FROM (
-                        SELECT DISTINCT ON (d.product_id) 
-                            d.product_id, 
-                            p.platform, 
-                            p.product_url, 
-                            p.affiliate_url, 
-                            p.title,
-                            d.posted_at
-                        FROM deals d
-                        JOIN products p ON d.product_id = p.id
-                        WHERE p.in_stock = TRUE 
-                          AND p.status = 'ACTIVE'
-                          AND p.current_price > 0
-                          AND LOWER(p.platform) = $1
-                          AND (
-                              p.affiliate_url IS NULL 
-                              OR NOT (
-                                  p.affiliate_url ILIKE '%fktr.in%' 
-                                  OR p.affiliate_url ILIKE '%myntr.it%' 
-                                  OR p.affiliate_url ILIKE '%ajiio.in%' 
-                                  OR p.affiliate_url ILIKE '%ekaro.in%' 
-                                  OR p.affiliate_url ILIKE '%clnk.in%'
-                              )
+            # 1. Prioritize verified active deals across all non-Amazon stores in a single combined query
+            deals = await database.fetch("""
+                SELECT product_id, platform, product_url, affiliate_url, title
+                FROM (
+                    SELECT DISTINCT ON (d.product_id) 
+                        d.product_id, 
+                        p.platform, 
+                        p.product_url, 
+                        p.affiliate_url, 
+                        p.title,
+                        d.posted_at
+                    FROM deals d
+                    JOIN products p ON d.product_id = p.id
+                    WHERE p.in_stock = TRUE 
+                      AND p.status = 'ACTIVE'
+                      AND p.current_price > 0
+                      AND LOWER(p.platform) IN ('myntra', 'ajio', 'nykaa', 'flipkart')
+                      AND (
+                          p.affiliate_url IS NULL 
+                          OR NOT (
+                              p.affiliate_url ILIKE '%fktr.in%' 
+                              OR p.affiliate_url ILIKE '%myntr.it%' 
+                              OR p.affiliate_url ILIKE '%ajiio.in%' 
+                              OR p.affiliate_url ILIKE '%ekaro.in%' 
+                              OR p.affiliate_url ILIKE '%clnk.in%'
                           )
-                          AND (p.last_checked IS NULL OR p.last_checked < NOW() - INTERVAL '30 minutes')
-                        ORDER BY d.product_id, d.posted_at DESC
-                    ) sub
-                    ORDER BY (posted_at) DESC
-                    LIMIT 10;
-                """, store)
-                deals.extend(store_deals)
+                      )
+                      AND (p.last_checked IS NULL OR p.last_checked < NOW() - INTERVAL '30 minutes')
+                    ORDER BY d.product_id, d.posted_at DESC
+                ) sub
+                ORDER BY (posted_at) DESC
+                LIMIT 10;
+            """)
 
             # 2. If all verified deals have real affiliate links, convert discounted catalog products
             if not deals:
-                for store in stores:
-                    catalog_deals = await database.fetch("""
-                        SELECT 
-                            p.id as product_id, 
-                            p.platform, 
-                            p.product_url, 
-                            p.affiliate_url, 
-                            p.title
-                        FROM products p
-                        WHERE p.in_stock = TRUE 
-                          AND p.status = 'ACTIVE'
-                          AND p.current_price > 0
-                          AND p.mrp > p.current_price
-                          AND LOWER(p.platform) = $1
-                          AND (
-                              p.affiliate_url IS NULL 
-                              OR NOT (
-                                  p.affiliate_url ILIKE '%fktr.in%' 
-                                  OR p.affiliate_url ILIKE '%myntr.it%' 
-                                  OR p.affiliate_url ILIKE '%ajiio.in%' 
-                                  OR p.affiliate_url ILIKE '%ekaro.in%' 
-                                  OR p.affiliate_url ILIKE '%clnk.in%'
-                              )
+                deals = await database.fetch("""
+                    SELECT 
+                        p.id as product_id, 
+                        p.platform, 
+                        p.product_url, 
+                        p.affiliate_url, 
+                        p.title
+                    FROM products p
+                    WHERE p.in_stock = TRUE 
+                      AND p.status = 'ACTIVE'
+                      AND p.current_price > 0
+                      AND p.mrp > p.current_price
+                      AND LOWER(p.platform) IN ('myntra', 'ajio', 'nykaa', 'flipkart')
+                      AND (
+                          p.affiliate_url IS NULL 
+                          OR NOT (
+                              p.affiliate_url ILIKE '%fktr.in%' 
+                              OR p.affiliate_url ILIKE '%myntr.it%' 
+                              OR p.affiliate_url ILIKE '%ajiio.in%' 
+                              OR p.affiliate_url ILIKE '%ekaro.in%' 
+                              OR p.affiliate_url ILIKE '%clnk.in%'
                           )
-                          AND (p.last_checked IS NULL OR p.last_checked < NOW() - INTERVAL '30 minutes')
-                        ORDER BY p.id DESC
-                        LIMIT 10;
-                    """, store)
-                    deals.extend(catalog_deals)
+                      )
+                      AND (p.last_checked IS NULL OR p.last_checked < NOW() - INTERVAL '30 minutes')
+                    ORDER BY p.id DESC
+                    LIMIT 10;
+                """)
 
             if not deals:
                 CONVERTER_STATS["status"] = "all_deals_converted"
