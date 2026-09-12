@@ -160,8 +160,19 @@ CREATE TABLE IF NOT EXISTS scraper_retry_queue (
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS scrape_retries (
+    id              SERIAL PRIMARY KEY,
+    product_id      INTEGER UNIQUE NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    attempt         INTEGER DEFAULT 1,
+    error           TEXT,
+    next_retry      TIMESTAMPTZ NOT NULL,
+    created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_retry_queue_next
     ON scraper_retry_queue(next_retry_at ASC);
+CREATE INDEX IF NOT EXISTS idx_scrape_retries_next
+    ON scrape_retries(next_retry ASC);
 """
 
 

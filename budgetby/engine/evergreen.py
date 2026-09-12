@@ -12,8 +12,20 @@ def get_evergreen_cooldown_days(discount_pct: float) -> int:
     """Returns the cooldown days for evergreen deals."""
     return config.EVERGREEN_COOLDOWN_DAYS
 
+import time
+
+_evergreen_cache: dict[str, tuple[list[Record], float]] = {}
+_EVERGREEN_CACHE_TTL = 90.0  # Cache evergreen queries for 90s in memory
+
 async def find_evergreen_deals(limit: int = 10, platform: str = None) -> list[Record]:
-    """Finds stable, highly discounted products that haven't been posted in the last 7 days."""
+    """Finds stable, highly discounted products that haven't been posted in the last 7 days with memory caching."""
+    cache_key = f"evergreen_{platform}_{limit}"
+    now = time.monotonic()
+    if cache_key in _evergreen_cache:
+        rows, exp = _evergreen_cache[cache_key]
+        if now < exp:
+            return rows
+
     try:
         platform_filter = "AND p.platform = $3" if platform else ""
         query = f"""
@@ -45,17 +57,28 @@ async def find_evergreen_deals(limit: int = 10, platform: str = None) -> list[Re
         if platform:
             args.append(platform)
         args.append(limit)
-        return await database.fetch(query, *args)
+        results = await database.fetch(query, *args)
+        _evergreen_cache[cache_key] = (results, now + _EVERGREEN_CACHE_TTL)
+        return results
     except Exception as e:
         logger.error(f"Error in find_evergreen_deals: {e}")
         return []
 
 async def find_still_in_stock_reminders(limit: int = 5, platform: str = None) -> list[Record]:
     """Finds deals posted 2 to 7 days ago that are STILL in stock for reminders (doesn't count towards fresh minimums)."""
+    cache_key = f"reminders_{platform}_{limit}"
+    now = time.monotonic()
+    if cache_key in _evergreen_cache:
+        rows, exp = _evergreen_cache[cache_key]
+        if now < exp:
+            return rows
+
     try:
         platform_filter = "AND p.platform = $1" if platform else ""
         query = f"""
-            SELECT p.*, d.posted_price, d.posted_at as initial_posted_at
+            SELECT p.id, p.platform, p.product_url, p.affiliate_url, p.title, p.current_price, 
+                   p.mrp, p.rating, p.review_count, p.image_url, p.category, 
+                   d.posted_price, d.posted_at as initial_posted_at
             FROM deals d
             JOIN products p ON d.product_id = p.id
             LEFT JOIN post_cooldowns c ON p.id = c.product_id AND c.expires_at > NOW()
@@ -76,7 +99,9 @@ async def find_still_in_stock_reminders(limit: int = 5, platform: str = None) ->
         """
         args = [platform] if platform else []
         args.append(limit)
-        return await database.fetch(query, *args)
+        results = await database.fetch(query, *args)
+        _evergreen_cache[cache_key] = (results, now + _EVERGREEN_CACHE_TTL)
+        return results
     except Exception as e:
         logger.error(f"Error in find_still_in_stock_reminders: {e}")
         return []

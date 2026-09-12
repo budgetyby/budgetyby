@@ -130,14 +130,14 @@
                             <!-- Freshness Pill -->
                             <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-white/90 border border-slate-200 text-[10px] font-medium text-emerald-700 flex items-center gap-1 shadow-sm">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                <span>Live {{ deal.last_checked|time_ago }}</span>
+                                <span>Live {{ (deal.last_price_change or deal.last_checked)|time_ago }}</span>
                             </div>
                         </div>
 
                         <!-- Product Title -->
                         <div class="mt-3">
                             <a href="{{ deal.affiliate_url or deal.product_url or '#' }}" target="_blank" rel="noopener noreferrer" 
-                               class="text-xs font-bold text-slate-900 hover:text-rose-600 line-clamp-2 transition leading-snug" 
+                               class="text-xs font-bold text-slate-900 hover:text-rose-600 line-clamp-2 break-words transition leading-snug" 
                                title="{{ deal.title }}">
                                 {{ deal.title }}
                             </a>
@@ -153,11 +153,11 @@
                             {% endif %}
                         </div>
 
-                        <!-- Posted on Channel Date & Time Badge -->
+                        <!-- Price Dropped Date & Time Badge -->
                         <div class="flex items-center gap-1.5 text-[10px] text-slate-600 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200 mt-2 font-medium">
-                            <i data-lucide="send" class="w-3 h-3 text-indigo-500 shrink-0"></i>
-                            <span>Posted on Channel:</span>
-                            <span class="font-bold text-slate-900 font-mono ml-auto">{{ (deal.posted_at or deal.deal_time or deal.last_checked)|format_posted_time }}</span>
+                            <i data-lucide="clock-3" class="w-3 h-3 text-indigo-500 shrink-0"></i>
+                            <span>Price Dropped:</span>
+                            <span class="font-bold text-slate-900 font-mono ml-auto">{{ (deal.last_price_change or deal.deal_time or deal.posted_at or deal.last_checked)|format_posted_time }}</span>
                         </div>
                     </div>
 
@@ -186,10 +186,13 @@
                                 <i data-lucide="share-2" class="w-4 h-4 text-indigo-600"></i>
                             </button>
                             <a href="{{ deal.affiliate_url or deal.product_url or '#' }}" target="_blank" rel="noopener noreferrer" 
-                               class="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-sm shadow-rose-600/20 hover:scale-[1.02] active:scale-[0.98] transition">
+                                class="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-sm shadow-rose-600/20 hover:scale-[1.02] active:scale-[0.98] transition">
                                 <span>Get Deal</span>
                                 <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
                             </a>
+                        </div>
+                        <div class="text-center mt-1">
+                            <span class="text-[9px] text-slate-400 font-medium">* Affiliate link</span>
                         </div>
                     </div>
                 </div>
@@ -392,11 +395,11 @@
             const store = (deal.platform || 'amazon').toLowerCase();
             const storeCfg = STORES[store] || STORES.amazon;
             const dropPct = Math.round(deal.drop_percent || deal.discount_percent || 0);
-            const liveAgo = deal.last_checked ? formatTimeAgo(deal.last_checked) : 'Recently';
+            const liveAgo = deal.last_price_change ? formatTimeAgo(deal.last_price_change) : (deal.last_checked ? formatTimeAgo(deal.last_checked) : 'Recently');
             const inWatch = isInWatchlist(deal.id);
             const safeTitle = escapeHtml(deal.title);
             const dealLink = deal.affiliate_url || deal.product_url || '#';
-            const postedTimeStr = formatPostedDateTime(deal.posted_at || deal.deal_time || deal.last_checked);
+            const postedTimeStr = formatPostedDateTime(deal.last_price_change || deal.deal_time || deal.posted_at || deal.last_checked);
             const hasValidRating = deal.rating && typeof deal.rating === 'number' && deal.rating >= 1.0 && deal.rating <= 5.0;
             const ratingHtml = hasValidRating ? `
                 <div class="flex items-center gap-1.5 mt-1.5">
@@ -442,15 +445,15 @@
                         </div>
 
                         <div class="mt-3">
-                            <a href="${dealLink}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-slate-900 hover:text-rose-600 line-clamp-2 transition leading-snug" title="${safeTitle}">
+                            <a href="${dealLink}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-slate-900 hover:text-rose-600 line-clamp-2 break-words transition leading-snug" title="${safeTitle}">
                                 ${safeTitle}
                             </a>
                             ${ratingHtml}
                         </div>
 
                         <div class="flex items-center gap-1.5 text-[10px] text-slate-600 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200 mt-2 font-medium">
-                            <i data-lucide="send" class="w-3 h-3 text-indigo-500 shrink-0"></i>
-                            <span>Posted on Channel:</span>
+                            <i data-lucide="clock-3" class="w-3 h-3 text-indigo-500 shrink-0"></i>
+                            <span>Price Dropped:</span>
                             <span class="font-bold text-slate-900 font-mono ml-auto">${postedTimeStr}</span>
                         </div>
                     </div>
@@ -472,6 +475,9 @@
                                 <span>Get Deal</span>
                                 <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
                             </a>
+                        </div>
+                        <div class="text-center mt-1">
+                            <span class="text-[9px] text-slate-400 font-medium">* Affiliate link</span>
                         </div>
 
                         <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100 text-[10px] text-slate-500 font-medium">

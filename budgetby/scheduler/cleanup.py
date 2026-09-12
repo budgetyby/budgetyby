@@ -63,8 +63,8 @@ async def daily_cleanup():
 async def run_backup():
     """Runs pg_dump and compresses output with native Python gzip, keeping 14-day retention."""
     try:
-        logger.info("Starting database backup...")
-        base_dir = r"c:\Users\jaysi\.gemini\antigravity\scratch\budget-by"
+        logger.info("Starting scheduled database backup...")
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         backup_dir = os.path.join(base_dir, "backups")
         os.makedirs(backup_dir, exist_ok=True)
 
@@ -74,7 +74,11 @@ async def run_backup():
 
         pg_dump_bin = r"C:\Program Files\PostgreSQL\18\bin\pg_dump.exe"
         if not os.path.exists(pg_dump_bin):
-            pg_dump_bin = "pg_dump"
+            pg_dump_bin = shutil.which("pg_dump") or "pg_dump"
+
+        if pg_dump_bin == "pg_dump" and not shutil.which("pg_dump") and not os.path.exists(r"C:\Program Files\PostgreSQL\18\bin\pg_dump.exe"):
+            logger.warning("pg_dump executable not found on host system — skipping manual backup execution (Supabase cloud auto-backup is active).")
+            return
 
         # Run pg_dump
         env = os.environ.copy()

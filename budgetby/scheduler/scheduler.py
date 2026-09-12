@@ -46,7 +46,7 @@ async def price_check_loop():
             "nykaa": NykaaScraper(),
         }
 
-        products = await database.get_products_due_for_check(limit=50)
+        products = await database.get_products_due_for_check(limit=15)
         if not products:
             return
 
@@ -326,12 +326,12 @@ def start_scheduler():
     """Configure and start all scheduled jobs."""
     logger.info("Starting scheduler...")
 
-    # Core catalog price checking — every 60 seconds (15 products/min)
-    _scheduler.add_job(price_check_loop, "interval", seconds=60, id="price_check",
+    # Core catalog price checking — every 120 seconds (15 products / 2 min)
+    _scheduler.add_job(price_check_loop, "interval", seconds=120, id="price_check",
                        max_instances=1, coalesce=True, misfire_grace_time=60)
 
-    # Targeted Micro-Job Deal Verifier — every 60 seconds (3 req/min)
-    _scheduler.add_job(verify_active_deals_loop, "interval", seconds=60, id="deal_verifier",
+    # Targeted Micro-Job Deal Verifier — every 180 seconds (3 minutes)
+    _scheduler.add_job(verify_active_deals_loop, "interval", seconds=180, id="deal_verifier",
                        max_instances=1, coalesce=True, misfire_grace_time=30)
 
     # Discovery — every 6 hours (Croma & Myntra seeding disabled; Amazon/Flipkart/Ajio/Nykaa only)
@@ -345,10 +345,10 @@ def start_scheduler():
     _scheduler.add_job(cleanup.monthly_maintenance, "cron", day=1, hour=1, minute=0,
                        id="monthly_maintenance")
 
-    # Backup at configured hour
+    # Bi-weekly backup on 1st and 15th of each month at 3:00 AM IST (saves 93% egress)
     if config.BACKUP_ENABLED:
-        _scheduler.add_job(cleanup.run_backup, "cron",
-                           hour=config.BACKUP_HOUR, minute=0, id="daily_backup")
+        _scheduler.add_job(cleanup.run_backup, "cron", day="1,15",
+                           hour=config.BACKUP_HOUR, minute=0, id="biweekly_backup")
 
     # Daily Morning Digest at 9:00 AM IST
     _scheduler.add_job(morning_digest, "cron", hour=9, minute=0, timezone="Asia/Kolkata", id="morning_digest")
@@ -356,8 +356,8 @@ def start_scheduler():
     # Daily Evening Digest at 8:00 PM IST
     _scheduler.add_job(evening_digest, "cron", hour=20, minute=0, timezone="Asia/Kolkata", id="evening_digest")
 
-    # High-Velocity 30-Second Paced Broadcaster with Live Deal Hunter (2,880 posts/day)
-    _scheduler.add_job(paced_posting_loop, "interval", seconds=30, id="paced_posting",
+    # High-Velocity 45-Second Paced Broadcaster with Live Deal Hunter
+    _scheduler.add_job(paced_posting_loop, "interval", seconds=45, id="paced_posting",
                        max_instances=1, coalesce=True, misfire_grace_time=60)
 
     _scheduler.start()

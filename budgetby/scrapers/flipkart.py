@@ -60,9 +60,9 @@ class FlipkartScraper(BaseScraper):
                 
         # 2. Fallback Title
         if not title:
-            brand_node = tree.css_first("div._2WkVRV, span.mEh187")
+            brand_node = tree.css_first("div._2WkVRV, span.mEh187, span.G6XhRU, div[class*='brand'], span[class*='brand']")
             brand = brand_node.text(strip=True) if brand_node else ""
-            t_node = tree.css_first("h1.VU-Tz5, span.VU-Tz5, .VU-Tz5, .B_NuCI, h1._6EBuvT, h1")
+            t_node = tree.css_first("h1.VU-Tz5, span.VU-Tz5, .VU-Tz5, .B_NuCI, h1._6EBuvT, h1[class*='title'], span[class*='title'], [data-testid='product-title'], h1")
             desc = t_node.text(strip=True) if t_node else ""
             if brand and desc and not desc.lower().startswith(brand.lower()):
                 title = f"{brand} {desc}"
@@ -74,7 +74,7 @@ class FlipkartScraper(BaseScraper):
                 
         # 3. Fallback Price via modern CSS selectors
         if not price:
-            for p_sel in [".Nx9bqj.CxhGGd", "._30jeq3._16Jk6d", ".css-g5y9jx", "div.v1zwn20", ".v1zwn21m.v1zwn20"]:
+            for p_sel in [".Nx9bqj.CxhGGd", "._30jeq3._16Jk6d", ".css-g5y9jx", "div.v1zwn20", ".v1zwn21m.v1zwn20", "[class*='Nx9bqj']", "[class*='price']"]:
                 p_node = tree.css_first(p_sel)
                 if p_node and extract_price(p_node.text()) > 0:
                     price = extract_price(p_node.text())
@@ -85,7 +85,7 @@ class FlipkartScraper(BaseScraper):
             for m_sel in [
                 "div.yRaY8j.A6rEoz", "div.v1zwn21n.v1zwn21", "div._3I9_wc._2p6lqe", 
                 "._3I9_wc", ".yRaY8j", "div.Nx9bqj ~ div.yRaY8j", "div._25b18c div._3I9_wc",
-                "div.OmE16y div.yRaY8j"
+                "div.OmE16y div.yRaY8j", "[class*='yRaY8j']", "[class*='strike']"
             ]:
                 m_node = tree.css_first(m_sel)
                 if m_node and extract_price(m_node.text()) > 0:
@@ -105,14 +105,14 @@ class FlipkartScraper(BaseScraper):
             
         # 4. Fallback Rating & Review count
         if not rating:
-            for r_sel in [".XQDdHH", "div._3LWZlK"]:
+            for r_sel in [".XQDdHH", "div._3LWZlK", "[class*='XQDdHH']", "[class*='rating']"]:
                 r_node = tree.css_first(r_sel)
                 if r_node and extract_price(r_node.text()) > 0:
                     rating = extract_price(r_node.text())
                     break
             
         if not review_count:
-            rc_node = tree.css_first(".Wphh3N")
+            rc_node = tree.css_first(".Wphh3N, [class*='Wphh3N']")
             if rc_node:
                 rc_match = re.search(r'([\d,]+)\s*Reviews', rc_node.text())
                 if rc_match:
@@ -120,9 +120,9 @@ class FlipkartScraper(BaseScraper):
                 
         # 5. Fallback Image
         if not image_url:
-            img_node = tree.css_first(".v2VVsD .jBwCF_, ._396cs4._2amPTt, img.DByuf4")
+            img_node = tree.css_first(".v2VVsD .jBwCF_, ._396cs4._2amPTt, img.DByuf4, img._0DkuPH, img[class*='DByuf4'], img[class*='product-image'], img[loading='eager'], ._2r_T1I img")
             if img_node:
-                image_url = img_node.attributes.get("src", "")
+                image_url = img_node.attributes.get("src", "") or img_node.attributes.get("data-src", "")
             
         out_node = tree.css_first(".Z8NC81, div._16FRp0, ._16FRp0")
         if out_node and any(s in out_node.text().lower() for s in ["sold out", "currently unavailable", "item is out of stock"]):

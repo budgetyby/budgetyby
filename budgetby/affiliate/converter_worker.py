@@ -189,7 +189,10 @@ async def run_affiliate_converter_worker():
 
                 # Deliberate polite delay between conversions:
                 # Guarantees zero rate-limiting and complete discrete message separation
-                await asyncio.sleep(1.2)
+                await asyncio.sleep(1.5)
+
+            # Rest between conversion batches to save DB egress and Telegram bandwidth
+            await asyncio.sleep(60)
 
         except asyncio.CancelledError:
             logger.info("Affiliate converter worker cancelled.")

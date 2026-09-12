@@ -249,7 +249,7 @@ async def verify_and_ingest_single_deal(channel: str, post_id: int, raw_url: str
             "platform": platform,
             "platform_id": platform_id,
             "title": title,
-            "category": classify_product(clean_title),
+            "category": classify_product(title),
             "product_url": clean_url,
             "affiliate_url": final_deal_url,
             "image_url": image_url,
@@ -291,7 +291,7 @@ async def verify_and_ingest_single_deal(channel: str, post_id: int, raw_url: str
                     "id": pid,
                     "title": title,
                     "platform": platform,
-                    "category": classify_product(clean_title),
+                    "category": classify_product(title),
                     "product_url": clean_url,
                     "affiliate_url": final_deal_url,
                     "image_url": image_url,
@@ -336,14 +336,17 @@ async def _process_single_channel(channel: str, client: httpx.AsyncClient):
 
         max_id_on_page = max(p["post_id"] for p in posts)
 
-        # Update last post id in database
-        await database.execute("UPDATE channel_monitors SET last_post_id = $2 WHERE channel_name = $1;", ch_tag, max_id_on_page)
-
-        # First boot for this channel: record baseline
+        # Check baseline post ID from memory or database
         if ch_key not in _channel_baseline_post_ids:
-            _channel_baseline_post_ids[ch_key] = max_id_on_page
-            logger.info(f"📍 Channel @{ch_key}: Initialized baseline at Post #{max_id_on_page}.")
-            return
+            row = await database.fetchrow("SELECT last_post_id FROM channel_monitors WHERE channel_name = $1;", ch_tag)
+            db_last_id = row["last_post_id"] if row and row.get("last_post_id") else None
+            if db_last_id and db_last_id > 0:
+                # Use stored DB post ID as baseline so posts while offline are ingested
+                _channel_baseline_post_ids[ch_key] = db_last_id
+                logger.info(f"📍 Channel @{ch_key}: Loaded persistent baseline #{db_last_id} from database.")
+            else:
+                _channel_baseline_post_ids[ch_key] = max(0, max_id_on_page - 5)
+                logger.info(f"📍 Channel @{ch_key}: Initialized fresh baseline at Post #{_channel_baseline_post_ids[ch_key]}.")
 
         baseline_id = _channel_baseline_post_ids[ch_key]
         new_posts = [p for p in posts if p["post_id"] > baseline_id]
@@ -360,7 +363,9 @@ async def _process_single_channel(channel: str, client: httpx.AsyncClient):
                     )
                     await asyncio.sleep(0.3)
 
-            _channel_baseline_post_ids[ch_key] = max_id_on_page
+        _channel_baseline_post_ids[ch_key] = max_id_on_page
+        # Update last post id in database after processing
+        await database.execute("UPDATE channel_monitors SET last_post_id = $2 WHERE channel_name = $1;", ch_tag, max_id_on_page)
 
     except Exception as e:
         logger.error(f"Error processing channel @{channel}: {e}")

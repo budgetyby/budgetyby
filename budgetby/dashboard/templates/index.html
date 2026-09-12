@@ -1105,9 +1105,9 @@
         fetchData();
         fetchDeals();
         fetchCategoryMatrix();
-        setInterval(fetchCategoryMatrix, 15000);
-        setInterval(fetchData, 15000);
-        setInterval(fetchDeals, 10000);
+        setInterval(() => { if (!document.hidden) fetchCategoryMatrix(); }, 60000);
+        setInterval(() => { if (!document.hidden) fetchData(); }, 45000);
+        setInterval(() => { if (!document.hidden) fetchDeals(); }, 45000);
         
         document.getElementById('searchInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') runSearch();

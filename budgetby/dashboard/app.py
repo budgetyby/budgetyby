@@ -57,7 +57,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
@@ -1969,6 +1969,7 @@ async def get_public_price_drops(
                 "p.current_price > 0",
                 "p.previous_price > p.current_price",
                 "p.previous_price <= GREATEST(COALESCE(NULLIF(p.mrp, 0), p.current_price * 1.35) * 1.15, p.current_price * 3.0)",
+                "p.last_price_change >= NOW() - INTERVAL '48 hours'",
                 "LOWER(p.platform) != 'croma'",
                 "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) >= $1",
                 "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) <= 95.0"
@@ -2034,9 +2035,10 @@ async def get_public_price_drops(
                     WHERE in_stock = TRUE AND status = 'ACTIVE' 
                       AND previous_price > current_price AND current_price > 0 
                       AND previous_price <= GREATEST(COALESCE(NULLIF(mrp, 0), current_price * 1.35) * 1.15, current_price * 3.0)
+                      AND last_price_change >= NOW() - INTERVAL '48 hours'
                       AND (((previous_price - current_price) / NULLIF(previous_price, 0)) * 100) <= 85.0
                       AND LOWER(platform) != 'croma';
-                """) or 30000
+                """) or 5000
                 await ram_cache.set("total_drops_today_count", cached_total_drops, ttl=1800)
 
             total_reported = cached_total_drops
@@ -2540,7 +2542,7 @@ async def get_public_deals(
                 elif tab_clean == "featured":
                     where_clauses.append("(p.mrp IS NULL OR ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) >= 0.30)")
 
-                if sort_by == "discount_desc":
+                if sort_by in ("discount_desc", "discount"):
                     order_sql = f"ORDER BY {aff_priority}, ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) DESC NULLS LAST, d.posted_at DESC"
                 elif sort_by == "price_asc":
                     order_sql = f"ORDER BY {aff_priority}, p.current_price ASC, d.posted_at DESC"
@@ -2602,7 +2604,7 @@ async def get_public_deals(
                 elif tab_clean == "featured":
                     where_clauses.append("(d.id IS NOT NULL OR ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) >= 0.50)")
 
-                if sort_by == "discount_desc":
+                if sort_by in ("discount_desc", "discount"):
                     order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) DESC NULLS LAST, p.id DESC"
                 elif sort_by == "price_asc":
                     order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, p.current_price ASC, p.id DESC"
@@ -2791,25 +2793,27 @@ async def get_cached_ssr_html(key: str) -> str | None:
 async def set_cached_ssr_html(key: str, html_content: str, ttl: int = 120):
     await ram_cache.set(f"ssr_html:{key}", html_content, ttl=ttl)
 
-def render_consumer_template(template_name: str, request: Request, context: dict = None, cache_seconds: int = 60):
+def make_html_response(request: Request, html_content: str, cache_seconds: int = 60) -> Response:
+    etag = hashlib.md5(html_content.encode("utf-8")).hexdigest()
+    client_etag = request.headers.get("if-none-match", "").strip('"')
+    headers = {
+        "ETag": f'"{etag}"',
+        "Cache-Control": f"public, max-age={cache_seconds}, stale-while-revalidate=5",
+        "Vary": "Accept-Encoding"
+    }
+    if client_etag and client_etag == etag:
+        return Response(status_code=304, headers=headers)
+    return HTMLResponse(content=html_content, status_code=200, headers=headers)
+
+def render_consumer_template(template_name: str, request: Request, context: dict = None, cache_seconds: int = 60) -> Response:
     if context is None:
         context = {}
     context["request"] = request
     context["categories_taxonomy"] = UNIVERSAL_CATEGORIES
     try:
-        response = templates.TemplateResponse(request=request, name=template_name, context=context)
-        response.headers["Cache-Control"] = f"public, max-age={cache_seconds}, stale-while-revalidate=30"
-        return response
-    except TypeError:
-        # Fallback for older Starlette signature: TemplateResponse(name, context)
-        try:
-            response = templates.TemplateResponse(template_name, context)
-            response.headers["Cache-Control"] = f"public, max-age={cache_seconds}, stale-while-revalidate=30"
-            return response
-        except Exception as e:
-            logger.error(f"Fallback render error for {template_name}: {e}", exc_info=True)
-            import traceback
-            return HTMLResponse(content=f"<h3>Template Error: {e}</h3><pre>{traceback.format_exc()}</pre>", status_code=500)
+        tpl = templates.get_template(template_name)
+        rendered_html = tpl.render(context)
+        return make_html_response(request, rendered_html, cache_seconds=cache_seconds)
     except Exception as e:
         logger.error(f"Render error for {template_name}: {e}", exc_info=True)
         import traceback
@@ -2821,7 +2825,7 @@ async def page_home(request: Request):
     ssr_key = "home"
     cached_html = await get_cached_ssr_html(ssr_key)
     if cached_html:
-        return HTMLResponse(content=cached_html, headers={"Cache-Control": "public, max-age=60, stale-while-revalidate=30"})
+        return make_html_response(request, cached_html, cache_seconds=60)
 
     initial_drops = {"drops": []}
     just_dropped = {"deals": []}
@@ -2878,7 +2882,7 @@ async def page_drops(
     ssr_key = f"drops:{page_num}:{limit_num}:{eff_min_drop}:{plat_str}:{sort_str}"
     cached_html = await get_cached_ssr_html(ssr_key)
     if cached_html:
-        return HTMLResponse(content=cached_html, headers={"Cache-Control": "public, max-age=120, stale-while-revalidate=30"})
+        return make_html_response(request, cached_html, cache_seconds=120)
 
     initial_data = {"drops": [], "total_drops_24h": 0, "total_pages": 1, "page": page_num}
     try:
@@ -2946,7 +2950,7 @@ async def page_deals(
     ssr_key = f"deals:{page_num}:{limit_num}:{search_str}:{plat_str}:{cat_str}:{eff_sub_page}:{gender_str}:{tab_str}:{ver_val}:{sort_str}:{min_disc_val}"
     cached_html = await get_cached_ssr_html(ssr_key)
     if cached_html:
-        return HTMLResponse(content=cached_html, headers={"Cache-Control": f"public, max-age={ssr_ttl}, stale-while-revalidate=30"})
+        return make_html_response(request, cached_html, cache_seconds=ssr_ttl)
 
     initial_data = {"deals": [], "total_matches": 0, "total_pages": 1, "page": page_num}
     try:
@@ -2989,10 +2993,9 @@ async def page_deals(
         "current_sort": sort_str,
         "current_min_discount": min_disc_val
     }, cache_seconds=ssr_ttl)
-    html_str = resp.body.decode("utf-8") if (resp.status_code == 200 and hasattr(resp, "body")) else ""
-    if html_str:
-        await set_cached_ssr_html(ssr_key, html_str, ttl=ssr_ttl)
-    return html_str
+    if resp.status_code == 200 and hasattr(resp, "body"):
+        await set_cached_ssr_html(ssr_key, resp.body.decode("utf-8"), ttl=ssr_ttl)
+    return resp
 
 @app.get("/all-time-lows", response_class=HTMLResponse)
 @app.get("/atl", response_class=HTMLResponse)
@@ -3021,7 +3024,7 @@ async def page_atl(
     ssr_key = f"atl:{page_num}:{limit_num}:{plat_str}:{cat_str}:{eff_sub_page}:{gender_str}:{sort_str}"
     cached_html = await get_cached_ssr_html(ssr_key)
     if cached_html:
-        return HTMLResponse(content=cached_html, headers={"Cache-Control": "public, max-age=120, stale-while-revalidate=30"})
+        return make_html_response(request, cached_html, cache_seconds=120)
 
     initial_data = {"deals": [], "total_matches": 0, "total_pages": 1, "page": page_num}
     try:
@@ -3074,7 +3077,7 @@ async def page_stores(request: Request, platform: str = ""):
     ssr_key = f"stores:{plat_clean}"
     cached_html = await get_cached_ssr_html(ssr_key)
     if cached_html:
-        return HTMLResponse(content=cached_html, headers={"Cache-Control": "public, max-age=300, stale-while-revalidate=30"})
+        return make_html_response(request, cached_html, cache_seconds=300)
 
     initial_deals = None
     if plat_clean in STORE_DISPLAY_NAMES:

@@ -49,6 +49,11 @@ async def init_pool() -> asyncpg.Pool:
 
     _pool = await asyncpg.create_pool(**pool_kwargs)
     logger.info(f"Database connection pool initialized to {host_to_use}:{config.DB_PORT} (min=1, max=6)")
+    try:
+        async with _pool.acquire() as conn:
+            await conn.execute("UPDATE products SET all_time_low = current_price WHERE all_time_low IS NULL AND current_price > 0;")
+    except Exception as e:
+        logger.debug(f"ATL baseline initialization notice: {e}")
     return _pool
 
 

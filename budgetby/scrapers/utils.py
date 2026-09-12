@@ -68,11 +68,20 @@ def extract_price(text: str) -> float:
         return 0.0
 
 def clean_title(text: str) -> str:
-    """Sanitizes product titles, removing leaked prices, discounts, and trailing card junk."""
+    """Sanitizes product titles, removing leaked prices, discounts, leading numbers, and trailing ratings/card junk."""
     if not text:
         return ""
     # Remove currency symbol and any attached price/discount noise (e.g. "Top₹292₹2,99990% off...")
     cleaned = re.split(r'[\u20b9₹]', text)[0]
+    
+    # Strip leading list numbers/bullets (e.g. "3. CANTABIL...", "1) Nike...", "10 - Puma...", "(1) Item...")
+    cleaned = re.sub(r'^(?:\d+[\.\)\-:\s]+|\(\d+\)\s*)', '', cleaned)
+    # Strip leading bracketed SKU/ASIN codes (e.g. "[B09XKZV7S8] Men's...", "[1202621] ...")
+    cleaned = re.sub(r'^\[[A-Za-z0-9_\-]+\]\s*', '', cleaned)
+    
+    # Strip trailing rating and review text (e.g. "...4115 Ratings&10 Reviews", "...4.2★ (120)")
+    cleaned = re.sub(r'\b\d[\d,]*\s*Ratings?\s*&?\s*[\d,]*\s*Reviews?.*', '', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\b\d(?:\.\d)?\s*★.*', '', cleaned)
     
     # Remove discount percentages and attached stock/delivery text
     cleaned = re.sub(r'\b\d{1,2}%\s*off\b.*', '', cleaned, flags=re.IGNORECASE)
@@ -86,3 +95,4 @@ def clean_title(text: str) -> str:
     cleaned = cleaned.replace('\xa0', ' ')
     cleaned = re.sub(r'\s+', ' ', cleaned)
     return cleaned.strip(' -–—,:|')
+
