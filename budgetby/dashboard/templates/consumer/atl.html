@@ -267,7 +267,7 @@
     function startAtlAutoRefresh() {
         if (atlAutoRefreshTimer) clearInterval(atlAutoRefreshTimer);
         const settings = window.getUserSettings ? window.getUserSettings() : null;
-        const intervalSec = (settings && settings.syncInterval !== undefined && settings.syncInterval > 0) ? settings.syncInterval : 15;
+        const intervalSec = (settings && settings.syncInterval !== undefined && settings.syncInterval > 0) ? settings.syncInterval : 60;
         if (intervalSec <= 0) return;
         atlAutoRefreshTimer = setInterval(() => {
             if (atlState.page === 1 && !document.hidden) {

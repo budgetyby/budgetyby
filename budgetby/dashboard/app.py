@@ -67,14 +67,17 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    logger.info("Initializing Database Pool and APScheduler Background Service...")
+    logger.info("Initializing Database Pool...")
     await database.init_pool()
-    try:
-        from budgetby.scheduler import scheduler
-        scheduler.start_scheduler()
-        logger.info("🚀 APScheduler background price-checker and deal-detector started successfully!")
-    except Exception as e:
-        logger.warning(f"Scheduler startup note: {e}")
+    if os.getenv("ENABLE_CLOUD_SCHEDULER", "false").lower() in ("true", "1", "yes"):
+        try:
+            from budgetby.scheduler import scheduler
+            scheduler.start_scheduler()
+            logger.info("🚀 APScheduler background price-checker and deal-detector started successfully!")
+        except Exception as e:
+            logger.warning(f"Scheduler startup note: {e}")
+    else:
+        logger.info("🌐 Web-only mode active: Background scheduler disabled on web server (delegated to local daemon).")
 
 @app.on_event("shutdown")
 async def shutdown_event():

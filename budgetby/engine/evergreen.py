@@ -14,7 +14,7 @@ def get_evergreen_cooldown_days(discount_pct: float) -> int:
     return config.EVERGREEN_COOLDOWN_DAYS
 
 _evergreen_cache: dict[str, tuple[list[Record], float]] = {}
-_EVERGREEN_CACHE_TTL = 90.0  # Cache evergreen queries for 90s in memory
+_EVERGREEN_CACHE_TTL = 900.0  # Cache evergreen queries for 15 minutes in memory to minimize Supabase egress
 
 async def find_evergreen_deals(limit: int = 10, platform: str = None) -> list[Record]:
     """Finds stable, highly discounted products that haven't been posted in the last 7 days with memory caching."""
