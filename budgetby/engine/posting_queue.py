@@ -19,8 +19,11 @@ from budgetby.bot import templates
 logger = logging.getLogger("budgetby.engine.posting_queue")
 
 import io
+import time
 from PIL import Image
 from curl_cffi.requests import AsyncSession
+
+_rejected_candidates: dict[int, float] = {}
 
 async def _fetch_and_normalize_image(image_url: str, timeout: float = 6.0) -> io.BytesIO | None:
     """
@@ -301,7 +304,7 @@ class PostingQueue:
                     pid = p_dict.get("id")
                     plat = (p_dict.get("platform") or target_platform).lower()
                     
-                    if pid and await is_on_cooldown(pid):
+                    if pid and (await is_on_cooldown(pid) or (pid in _rejected_candidates and time.monotonic() < _rejected_candidates[pid])):
                         continue
 
                     c_url = p_dict.get("product_url") or p_dict.get("affiliate_url") or p_dict.get("url", "")
@@ -312,6 +315,7 @@ class PostingQueue:
                             live_check = await scr_cls()._do_scrape_product(c_url)
                             if not live_check:
                                 logger.info(f"🚫 [PRE-FLIGHT REJECT] #{pid} ({plat.upper()}) live check returned None. Trying next candidate from same store...")
+                                if pid: _rejected_candidates[pid] = time.monotonic() + 1800.0
                                 continue
                             
                             is_in_stock = bool(live_check.get("in_stock", True))
@@ -321,13 +325,16 @@ class PostingQueue:
                             if not is_in_stock:
                                 logger.info(f"🚫 [PRE-FLIGHT REJECT] #{pid} ({plat.upper()}) is OUT OF STOCK. Trying next candidate from same store...")
                                 if pid:
+                                    _rejected_candidates[pid] = time.monotonic() + 1800.0
                                     await database.execute("UPDATE products SET in_stock = FALSE WHERE id = $1;", pid)
                                 continue
 
                             if live_p <= 0 or live_m <= live_p or ((live_m - live_p) / live_m) < min_discount:
                                 logger.info(f"🚫 [PRE-FLIGHT REJECT] #{pid} ({plat.upper()}) has no valid discount (₹{live_p} / ₹{live_m}). Trying next candidate from same store...")
-                                if pid and live_p > 0:
-                                    await database.execute("UPDATE products SET current_price = $1, mrp = $2, in_stock = $3 WHERE id = $4;", live_p, live_m, is_in_stock, pid)
+                                if pid:
+                                    _rejected_candidates[pid] = time.monotonic() + 1800.0
+                                    if live_p > 0:
+                                        await database.execute("UPDATE products SET current_price = $1, mrp = $2, in_stock = $3 WHERE id = $4;", live_p, live_m, is_in_stock, pid)
                                 continue
 
                             # Live check passed! Sync fresh live price, mrp, image, rating
