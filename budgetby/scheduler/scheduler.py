@@ -322,41 +322,44 @@ async def verify_active_deals_loop():
 
 def start_scheduler():
     """Configure and start all scheduled jobs."""
+    if _scheduler.running:
+        logger.info("Scheduler already running, skipping start.")
+        return
     logger.info("Starting scheduler...")
 
     # Core catalog price checking — every 120 seconds (15 products / 2 min)
     _scheduler.add_job(price_check_loop, "interval", seconds=120, id="price_check",
-                       max_instances=1, coalesce=True, misfire_grace_time=60)
+                       max_instances=1, coalesce=True, misfire_grace_time=60, replace_existing=True)
 
     # Targeted Micro-Job Deal Verifier — every 180 seconds (3 minutes)
     _scheduler.add_job(verify_active_deals_loop, "interval", seconds=180, id="deal_verifier",
-                       max_instances=1, coalesce=True, misfire_grace_time=30)
+                       max_instances=1, coalesce=True, misfire_grace_time=30, replace_existing=True)
 
     # Discovery — every 6 hours (Croma & Myntra seeding disabled; Amazon/Flipkart/Ajio/Nykaa only)
     _scheduler.add_job(discovery_job, "interval",
-                       hours=config.DISCOVERY_INTERVAL_HOURS, id="discovery", max_instances=1, misfire_grace_time=30)
+                       hours=config.DISCOVERY_INTERVAL_HOURS, id="discovery", max_instances=1, misfire_grace_time=30, replace_existing=True)
 
     # Daily cleanup at midnight IST
-    _scheduler.add_job(cleanup.daily_cleanup, "cron", hour=0, minute=0, id="daily_cleanup")
+    _scheduler.add_job(cleanup.daily_cleanup, "cron", hour=0, minute=0, id="daily_cleanup", replace_existing=True)
 
     # Monthly benchmark shift on the 1st
     _scheduler.add_job(cleanup.monthly_maintenance, "cron", day=1, hour=1, minute=0,
-                       id="monthly_maintenance")
+                       id="monthly_maintenance", replace_existing=True)
 
     # Bi-weekly backup on 1st and 15th of each month at 3:00 AM IST (saves 93% egress)
     if config.BACKUP_ENABLED:
         _scheduler.add_job(cleanup.run_backup, "cron", day="1,15",
-                           hour=config.BACKUP_HOUR, minute=0, id="biweekly_backup")
+                           hour=config.BACKUP_HOUR, minute=0, id="biweekly_backup", replace_existing=True)
 
     # Daily Morning Digest at 9:00 AM IST
-    _scheduler.add_job(morning_digest, "cron", hour=9, minute=0, timezone="Asia/Kolkata", id="morning_digest")
+    _scheduler.add_job(morning_digest, "cron", hour=9, minute=0, timezone="Asia/Kolkata", id="morning_digest", replace_existing=True)
 
     # Daily Evening Digest at 8:00 PM IST
-    _scheduler.add_job(evening_digest, "cron", hour=20, minute=0, timezone="Asia/Kolkata", id="evening_digest")
+    _scheduler.add_job(evening_digest, "cron", hour=20, minute=0, timezone="Asia/Kolkata", id="evening_digest", replace_existing=True)
 
     # High-Velocity 45-Second Paced Broadcaster with Live Deal Hunter
     _scheduler.add_job(paced_posting_loop, "interval", seconds=45, id="paced_posting",
-                       max_instances=1, coalesce=True, misfire_grace_time=60)
+                       max_instances=1, coalesce=True, misfire_grace_time=60, replace_existing=True)
 
     _scheduler.start()
     logger.info("Scheduler started with all jobs configured")
