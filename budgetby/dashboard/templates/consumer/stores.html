@@ -386,16 +386,21 @@
                     <!-- Price & Action Footer -->
                     <div class="mt-3 pt-3 border-t border-slate-100">
                         <div class="flex items-baseline justify-between gap-1 mb-2">
-                            <div>
+                            <div class="flex items-baseline gap-1.5 flex-wrap">
                                 {% set cp = deal.current_price or deal.deal_price or 0 %}
+                                {% set mrp = deal.mrp or 0 %}
+                                {% set drop_pct = deal.drop_pct or deal.discount_percent or ((((mrp - cp) / mrp) * 100)|round_int if mrp > cp and mrp > 0 else 0) %}
                                 <span class="text-lg font-black text-slate-900 font-mono">{{ cp|format_inr }}</span>
-                                {% if deal.mrp and deal.mrp > cp %}
-                                <span class="text-xs text-slate-400 line-through ml-1.5 font-mono">{{ deal.mrp|format_inr }}</span>
+                                {% if mrp > cp %}
+                                <span class="text-xs text-slate-400 line-through font-mono">{{ mrp|format_inr }}</span>
+                                {% endif %}
+                                {% if drop_pct and drop_pct > 0 %}
+                                <span class="text-xs font-black text-rose-600 font-mono">({{ drop_pct|round_int }}% OFF)</span>
                                 {% endif %}
                             </div>
-                            {% if deal.mrp and deal.mrp > cp %}
-                            <div class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-mono">
-                                Save {{ (deal.mrp - cp)|format_inr }}
+                            {% if mrp > cp %}
+                            <div class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-mono shrink-0">
+                                Save {{ (mrp - cp)|format_inr }}
                             </div>
                             {% endif %}
                         </div>
@@ -669,9 +674,10 @@
 
                     <div class="mt-3 pt-3 border-t border-slate-100">
                         <div class="flex items-baseline justify-between gap-1 mb-2">
-                            <div>
+                            <div class="flex items-baseline gap-1.5 flex-wrap">
                                 <span class="text-lg font-black text-slate-900 font-mono">${formatINR(deal.current_price)}</span>
-                                ${mrp > cp ? `<span class="text-xs text-slate-400 line-through ml-1.5 font-mono">${formatINR(mrp)}</span>` : ''}
+                                ${mrp > cp ? `<span class="text-xs text-slate-400 line-through font-mono">${formatINR(mrp)}</span>` : ''}
+                                ${discPct > 0 ? `<span class="text-xs font-black text-rose-600 font-mono">(${discPct}% OFF)</span>` : ''}
                             </div>
                             ${savingsHtml}
                         </div>

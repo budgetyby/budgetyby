@@ -44,14 +44,17 @@
 
     <div class="mt-2.5 pt-2 border-t border-slate-100">
         <div class="flex items-baseline justify-between gap-1 mb-2">
-            <div>
+            <div class="flex items-baseline gap-1 flex-wrap">
                 <span class="text-base font-black text-slate-900 font-mono">{{ cp|format_inr }}</span>
                 {% if has_discount and mrp > cp %}
-                <span class="text-[11px] text-slate-400 line-through ml-1 font-mono">{{ mrp|format_inr }}</span>
+                <span class="text-[11px] text-slate-400 line-through font-mono">{{ mrp|format_inr }}</span>
+                {% endif %}
+                {% if discount_pct and discount_pct > 0 %}
+                <span class="text-[11px] font-black text-rose-600 font-mono">({{ discount_pct|round_int }}% OFF)</span>
                 {% endif %}
             </div>
             {% if savings > 0 %}
-            <span class="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-200 font-mono">
+            <span class="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-200 font-mono shrink-0">
                 -₹{{ savings|round_int }}
             </span>
             {% endif %}
