@@ -17,7 +17,7 @@ _evergreen_cache: dict[str, tuple[list[Record], float]] = {}
 _EVERGREEN_CACHE_TTL = 900.0  # Cache evergreen queries for 15 minutes in memory to minimize Supabase egress
 
 async def find_evergreen_deals(limit: int = 10, platform: str = None) -> list[Record]:
-    """Finds stable, highly discounted products that haven't been posted in the last 7 days with memory caching."""
+    """Finds stable, highly discounted products that haven't been posted recently with memory caching."""
     cache_key = f"evergreen_{platform}_{limit}"
     now = time.monotonic()
     if cache_key in _evergreen_cache:
@@ -26,45 +26,45 @@ async def find_evergreen_deals(limit: int = 10, platform: str = None) -> list[Re
             return rows
 
     try:
-        platform_filter = "AND p.platform = $3" if platform else ""
+        platform_filter = "AND platform = $1" if platform else ""
         query = f"""
-            SELECT p.id, p.platform, p.product_url, p.affiliate_url, p.title, p.current_price, p.mrp, p.rating, p.review_count, p.image_url, p.category, ((p.mrp - p.current_price) / p.mrp) AS discount_pct
-            FROM products p
-            LEFT JOIN post_cooldowns c ON p.id = c.product_id AND c.expires_at > NOW()
-            WHERE p.in_stock = TRUE
-              AND p.mrp > 0 AND p.current_price > 0
-              AND p.mrp > p.current_price
-              AND p.mrp <= p.current_price * 4.5
-              AND ((p.mrp - p.current_price) / p.mrp) >= $1
-              AND ((p.mrp - p.current_price) / p.mrp) <= 0.85
-              AND (p.mrp - p.current_price) >= $2
-              AND NOT (p.mrp > 15000 AND p.current_price < 1500)
+            SELECT id, platform, product_url, affiliate_url, title, current_price, mrp, rating, review_count, image_url, category
+            FROM products
+            WHERE in_stock = TRUE
+              AND current_price > 0
+              AND mrp > current_price
               {platform_filter}
-              AND c.product_id IS NULL
-              AND NOT EXISTS (
-                  SELECT 1 FROM deals d 
-                  WHERE d.product_id = p.id 
-                    AND d.posted_at >= NOW() - make_interval(days => {config.DUPLICATE_EXPIRY_DAYS})
-              )
-            ORDER BY 
-                ((p.mrp - p.current_price) / p.mrp) DESC,
-                p.rating DESC NULLS LAST,
-                p.id ASC
-            LIMIT ${4 if platform else 3}
+            ORDER BY rating DESC NULLS LAST, id DESC
+            LIMIT ${2 if platform else 1};
         """
-        args = [config.EVERGREEN_MIN_MRP_DISCOUNT, config.EVERGREEN_MIN_SAVINGS_INR]
-        if platform:
-            args.append(platform)
-        args.append(limit)
-        results = await database.fetch(query, *args)
-        _evergreen_cache[cache_key] = (results, now + _EVERGREEN_CACHE_TTL)
-        return results
+        args = [platform] if platform else []
+        args.append(limit * 3)
+        raw_results = await database.fetch(query, *args)
+
+        # Apply precautions and business filters in Python RAM (0 DB joins, 0 CPU overhead)
+        min_disc = getattr(config, "EVERGREEN_MIN_MRP_DISCOUNT", 0.15)
+        min_savings = getattr(config, "EVERGREEN_MIN_SAVINGS_INR", 100)
+
+        filtered = []
+        for r in raw_results:
+            mrp = float(r["mrp"] or 0)
+            cp = float(r["current_price"] or 0)
+            if mrp > cp > 0:
+                disc = (mrp - cp) / mrp
+                savings = mrp - cp
+                if min_disc <= disc <= 0.85 and savings >= min_savings:
+                    filtered.append(r)
+                    if len(filtered) >= limit:
+                        break
+
+        _evergreen_cache[cache_key] = (filtered, now + _EVERGREEN_CACHE_TTL)
+        return filtered
     except Exception as e:
         logger.error(f"Error in find_evergreen_deals: {e}")
         return []
 
 async def find_still_in_stock_reminders(limit: int = 5, platform: str = None) -> list[Record]:
-    """Finds deals posted 2 to 7 days ago that are STILL in stock for reminders (doesn't count towards fresh minimums)."""
+    """Finds deals posted recently that are STILL in stock for reminders."""
     cache_key = f"reminders_{platform}_{limit}"
     now = time.monotonic()
     if cache_key in _evergreen_cache:
@@ -80,27 +80,31 @@ async def find_still_in_stock_reminders(limit: int = 5, platform: str = None) ->
                    d.posted_price, d.posted_at as initial_posted_at
             FROM deals d
             JOIN products p ON d.product_id = p.id
-            LEFT JOIN post_cooldowns c ON p.id = c.product_id AND c.expires_at > NOW()
             WHERE p.in_stock = TRUE
               AND p.current_price > 0
-              AND d.posted_at <= NOW() - make_interval(hours => {config.MIN_REMINDER_DELAY_HOURS})
-              AND d.posted_at >= NOW() - make_interval(days => {config.DUPLICATE_EXPIRY_DAYS})
+              AND d.posted_at >= NOW() - INTERVAL '7 days'
               {platform_filter}
-              AND c.product_id IS NULL
-              AND NOT EXISTS (
-                  SELECT 1 FROM deals d2 
-                  WHERE d2.product_id = p.id 
-                    AND d2.deal_type = 'reminder' 
-                    AND d2.posted_at >= NOW() - INTERVAL '48 hours'
-              )
-            ORDER BY d.posted_at ASC, RANDOM()
-            LIMIT ${2 if platform else 1}
+            ORDER BY d.posted_at ASC
+            LIMIT ${2 if platform else 1};
         """
         args = [platform] if platform else []
-        args.append(limit)
-        results = await database.fetch(query, *args)
-        _evergreen_cache[cache_key] = (results, now + _EVERGREEN_CACHE_TTL)
-        return results
+        args.append(limit * 2)
+        raw_results = await database.fetch(query, *args)
+
+        filtered = []
+        min_delay_secs = getattr(config, "MIN_REMINDER_DELAY_HOURS", 24) * 3600
+        current_time = time.time()
+        for r in raw_results:
+            posted_at = r["initial_posted_at"]
+            if posted_at:
+                age_secs = current_time - posted_at.timestamp()
+                if age_secs >= min_delay_secs:
+                    filtered.append(r)
+                    if len(filtered) >= limit:
+                        break
+
+        _evergreen_cache[cache_key] = (filtered, now + _EVERGREEN_CACHE_TTL)
+        return filtered
     except Exception as e:
         logger.error(f"Error in find_still_in_stock_reminders: {e}")
         return []

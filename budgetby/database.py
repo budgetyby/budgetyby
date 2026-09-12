@@ -331,11 +331,6 @@ async def get_products_due_for_check(limit: int = 15) -> list[asyncpg.Record]:
     return await fetch("""
         WITH ranked_candidates AS (
             SELECT p.id, p.platform, p.product_url, p.priority_tier, p.title, p.current_price, p.mrp, p.category, p.next_check,
-                   EXISTS(
-                       SELECT 1 FROM deals d 
-                       WHERE d.product_id = p.id 
-                         AND d.posted_at >= NOW() - INTERVAL '48 hours'
-                   ) as has_recent_deal,
                    ROW_NUMBER() OVER (
                        PARTITION BY p.platform 
                        ORDER BY 
