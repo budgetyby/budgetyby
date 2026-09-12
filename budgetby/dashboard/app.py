@@ -453,24 +453,37 @@ async def get_stats():
 
 @app.get("/api/channel_stats", dependencies=[Depends(require_admin)])
 async def get_channel_stats():
-    """Returns all monitored Telegram channels with real-time heartbeat and deal statistics."""
+    """Returns all monitored Telegram channels with real-time heartbeat and deal statistics (120s RAM cache)."""
     try:
-        rows = await database.fetch("""
-            SELECT 
-                m.channel_name as source_channel,
-                m.status as monitor_status,
-                COALESCE(COUNT(d.id), 0) as total_picked_up,
-                COALESCE(COUNT(CASE WHEN d.product_id IS NOT NULL THEN 1 END), 0) as saved_to_catalog,
-                COALESCE(COUNT(CASE WHEN d.status = 'VERIFIED_DEAL' THEN 1 END), 0) as verified_deals,
-                COALESCE(COUNT(CASE WHEN d.status = 'OUT_OF_STOCK' THEN 1 END), 0) as out_of_stock,
-                COALESCE(COUNT(CASE WHEN d.status = 'FAILED_SCRAPE' THEN 1 END), 0) as failed_scrapes,
-                m.last_scanned_at as last_activity
-            FROM channel_monitors m
-            LEFT JOIN ingested_channel_deals d ON LOWER(d.source_channel) = LOWER(m.channel_name)
-            GROUP BY m.channel_name, m.status, m.last_scanned_at
-            ORDER BY total_picked_up DESC, m.channel_name ASC;
-        """)
-        return [dict(r) for r in rows]
+        cache_key = "admin_channel_stats"
+        cached = await ram_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        async def _fetch_channel_stats():
+            c = await ram_cache.get(cache_key)
+            if c is not None:
+                return c
+            rows = await database.fetch("""
+                SELECT 
+                    m.channel_name as source_channel,
+                    m.status as monitor_status,
+                    COALESCE(COUNT(d.id), 0) as total_picked_up,
+                    COALESCE(COUNT(CASE WHEN d.product_id IS NOT NULL THEN 1 END), 0) as saved_to_catalog,
+                    COALESCE(COUNT(CASE WHEN d.status = 'VERIFIED_DEAL' THEN 1 END), 0) as verified_deals,
+                    COALESCE(COUNT(CASE WHEN d.status = 'OUT_OF_STOCK' THEN 1 END), 0) as out_of_stock,
+                    COALESCE(COUNT(CASE WHEN d.status = 'FAILED_SCRAPE' THEN 1 END), 0) as failed_scrapes,
+                    m.last_scanned_at as last_activity
+                FROM channel_monitors m
+                LEFT JOIN ingested_channel_deals d ON LOWER(d.source_channel) = LOWER(m.channel_name)
+                GROUP BY m.channel_name, m.status, m.last_scanned_at
+                ORDER BY total_picked_up DESC, m.channel_name ASC;
+            """)
+            res = [dict(r) for r in rows]
+            await ram_cache.set(cache_key, res, ttl=120)
+            return res
+
+        return await coalescer.run(cache_key, _fetch_channel_stats)
     except Exception as e:
         logger.error(f"Channel stats error: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -488,85 +501,99 @@ async def get_posting_queue_endpoint():
 
 @app.get("/api/category_platform_stats", dependencies=[Depends(require_admin)])
 async def get_category_platform_stats():
-    """Returns detailed cross-matrix of deals and catalog products by category and platform."""
+    """Returns detailed cross-matrix of deals and catalog products by category and platform (300s RAM cache)."""
     try:
-        # 1. Lifetime Deals Posted by Category & Platform
-        lifetime_rows = await database.fetch("""
-            SELECT 
-                COALESCE(NULLIF(p.category, ''), 'general') as category,
-                COUNT(*) as total_deals,
-                COUNT(CASE WHEN p.platform = 'amazon' THEN 1 END) as amazon_count,
-                COUNT(CASE WHEN p.platform = 'flipkart' THEN 1 END) as flipkart_count,
-                COUNT(CASE WHEN p.platform = 'myntra' THEN 1 END) as myntra_count,
-                COUNT(CASE WHEN p.platform = 'ajio' THEN 1 END) as ajio_count,
-                COUNT(CASE WHEN p.platform = 'croma' THEN 1 END) as croma_count,
-                COUNT(CASE WHEN p.platform = 'nykaa' THEN 1 END) as nykaa_count
-            FROM deals d
-            JOIN products p ON d.product_id = p.id
-            GROUP BY COALESCE(NULLIF(p.category, ''), 'general')
-            ORDER BY total_deals DESC;
-        """)
+        cache_key = "admin_category_platform_stats"
+        cached = await ram_cache.get(cache_key)
+        if cached is not None:
+            return cached
 
-        # 2. Today's Deals Posted by Category & Platform (IST)
-        today_rows = await database.fetch("""
-            SELECT 
-                COALESCE(NULLIF(p.category, ''), 'general') as category,
-                COUNT(*) as total_deals,
-                COUNT(CASE WHEN p.platform = 'amazon' THEN 1 END) as amazon_count,
-                COUNT(CASE WHEN p.platform = 'flipkart' THEN 1 END) as flipkart_count,
-                COUNT(CASE WHEN p.platform = 'myntra' THEN 1 END) as myntra_count,
-                COUNT(CASE WHEN p.platform = 'ajio' THEN 1 END) as ajio_count,
-                COUNT(CASE WHEN p.platform = 'croma' THEN 1 END) as croma_count,
-                COUNT(CASE WHEN p.platform = 'nykaa' THEN 1 END) as nykaa_count
-            FROM deals d
-            JOIN products p ON d.product_id = p.id
-            WHERE d.posted_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE
-            GROUP BY COALESCE(NULLIF(p.category, ''), 'general')
-            ORDER BY total_deals DESC;
-        """)
+        async def _fetch_category_platform_stats():
+            c = await ram_cache.get(cache_key)
+            if c is not None:
+                return c
+            # 1. Lifetime Deals Posted by Category & Platform
+            lifetime_rows = await database.fetch("""
+                SELECT 
+                    COALESCE(NULLIF(p.category, ''), 'general') as category,
+                    COUNT(*) as total_deals,
+                    COUNT(CASE WHEN p.platform = 'amazon' THEN 1 END) as amazon_count,
+                    COUNT(CASE WHEN p.platform = 'flipkart' THEN 1 END) as flipkart_count,
+                    COUNT(CASE WHEN p.platform = 'myntra' THEN 1 END) as myntra_count,
+                    COUNT(CASE WHEN p.platform = 'ajio' THEN 1 END) as ajio_count,
+                    COUNT(CASE WHEN p.platform = 'croma' THEN 1 END) as croma_count,
+                    COUNT(CASE WHEN p.platform = 'nykaa' THEN 1 END) as nykaa_count
+                FROM deals d
+                JOIN products p ON d.product_id = p.id
+                GROUP BY COALESCE(NULLIF(p.category, ''), 'general')
+                ORDER BY total_deals DESC;
+            """)
 
-        # 3. This Month Deals Posted by Category & Platform
-        month_rows = await database.fetch("""
-            SELECT 
-                COALESCE(NULLIF(p.category, ''), 'general') as category,
-                COUNT(*) as total_deals,
-                COUNT(CASE WHEN p.platform = 'amazon' THEN 1 END) as amazon_count,
-                COUNT(CASE WHEN p.platform = 'flipkart' THEN 1 END) as flipkart_count,
-                COUNT(CASE WHEN p.platform = 'myntra' THEN 1 END) as myntra_count,
-                COUNT(CASE WHEN p.platform = 'ajio' THEN 1 END) as ajio_count,
-                COUNT(CASE WHEN p.platform = 'croma' THEN 1 END) as croma_count,
-                COUNT(CASE WHEN p.platform = 'nykaa' THEN 1 END) as nykaa_count
-            FROM deals d
-            JOIN products p ON d.product_id = p.id
-            WHERE d.posted_at >= date_trunc('month', NOW() AT TIME ZONE 'Asia/Kolkata')
-            GROUP BY COALESCE(NULLIF(p.category, ''), 'general')
-            ORDER BY total_deals DESC;
-        """)
+            # 2. Today's Deals Posted by Category & Platform (IST)
+            today_rows = await database.fetch("""
+                SELECT 
+                    COALESCE(NULLIF(p.category, ''), 'general') as category,
+                    COUNT(*) as total_deals,
+                    COUNT(CASE WHEN p.platform = 'amazon' THEN 1 END) as amazon_count,
+                    COUNT(CASE WHEN p.platform = 'flipkart' THEN 1 END) as flipkart_count,
+                    COUNT(CASE WHEN p.platform = 'myntra' THEN 1 END) as myntra_count,
+                    COUNT(CASE WHEN p.platform = 'ajio' THEN 1 END) as ajio_count,
+                    COUNT(CASE WHEN p.platform = 'croma' THEN 1 END) as croma_count,
+                    COUNT(CASE WHEN p.platform = 'nykaa' THEN 1 END) as nykaa_count
+                FROM deals d
+                JOIN products p ON d.product_id = p.id
+                WHERE d.posted_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE
+                GROUP BY COALESCE(NULLIF(p.category, ''), 'general')
+                ORDER BY total_deals DESC;
+            """)
 
-        # 4. Catalog Products Available by Category & Platform
-        catalog_rows = await database.fetch("""
-            SELECT 
-                COALESCE(NULLIF(category, ''), 'general') as category,
-                COUNT(*) as total_prods,
-                COUNT(CASE WHEN platform = 'amazon' THEN 1 END) as amazon_count,
-                COUNT(CASE WHEN platform = 'flipkart' THEN 1 END) as flipkart_count,
-                COUNT(CASE WHEN platform = 'myntra' THEN 1 END) as myntra_count,
-                COUNT(CASE WHEN platform = 'ajio' THEN 1 END) as ajio_count,
-                COUNT(CASE WHEN platform = 'croma' THEN 1 END) as croma_count,
-                COUNT(CASE WHEN platform = 'nykaa' THEN 1 END) as nykaa_count
-            FROM products
-            GROUP BY COALESCE(NULLIF(category, ''), 'general')
-            ORDER BY total_prods DESC;
-        """)
+            # 3. This Month Deals Posted by Category & Platform
+            month_rows = await database.fetch("""
+                SELECT 
+                    COALESCE(NULLIF(p.category, ''), 'general') as category,
+                    COUNT(*) as total_deals,
+                    COUNT(CASE WHEN p.platform = 'amazon' THEN 1 END) as amazon_count,
+                    COUNT(CASE WHEN p.platform = 'flipkart' THEN 1 END) as flipkart_count,
+                    COUNT(CASE WHEN p.platform = 'myntra' THEN 1 END) as myntra_count,
+                    COUNT(CASE WHEN p.platform = 'ajio' THEN 1 END) as ajio_count,
+                    COUNT(CASE WHEN p.platform = 'croma' THEN 1 END) as croma_count,
+                    COUNT(CASE WHEN p.platform = 'nykaa' THEN 1 END) as nykaa_count
+                FROM deals d
+                JOIN products p ON d.product_id = p.id
+                WHERE d.posted_at >= date_trunc('month', NOW() AT TIME ZONE 'Asia/Kolkata')
+                GROUP BY COALESCE(NULLIF(p.category, ''), 'general')
+                ORDER BY total_deals DESC;
+            """)
 
-        return {
-            "lifetime": [dict(r) for r in lifetime_rows],
-            "today": [dict(r) for r in today_rows],
-            "this_month": [dict(r) for r in month_rows],
-            "catalog": [dict(r) for r in catalog_rows]
-        }
+            # 4. Catalog Products Available by Category & Platform
+            catalog_rows = await database.fetch("""
+                SELECT 
+                    COALESCE(NULLIF(category, ''), 'general') as category,
+                    COUNT(*) as total_prods,
+                    COUNT(CASE WHEN platform = 'amazon' THEN 1 END) as amazon_count,
+                    COUNT(CASE WHEN platform = 'flipkart' THEN 1 END) as flipkart_count,
+                    COUNT(CASE WHEN platform = 'myntra' THEN 1 END) as myntra_count,
+                    COUNT(CASE WHEN platform = 'ajio' THEN 1 END) as ajio_count,
+                    COUNT(CASE WHEN platform = 'croma' THEN 1 END) as croma_count,
+                    COUNT(CASE WHEN platform = 'nykaa' THEN 1 END) as nykaa_count
+                FROM products
+                GROUP BY COALESCE(NULLIF(category, ''), 'general')
+                ORDER BY total_prods DESC;
+            """)
+
+            res = {
+                "lifetime": [dict(r) for r in lifetime_rows],
+                "today": [dict(r) for r in today_rows],
+                "this_month": [dict(r) for r in month_rows],
+                "catalog": [dict(r) for r in catalog_rows]
+            }
+            await ram_cache.set(cache_key, res, ttl=300)
+            return res
+
+        return await coalescer.run(cache_key, _fetch_category_platform_stats)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Category platform stats error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.get("/api/price_changes_24h", dependencies=[Depends(require_admin)])
@@ -752,6 +779,16 @@ ALLOWED_SORT_COLUMNS = {
     "channel_monitors": {"id", "channel_name", "status", "last_scanned_at"},
     "post_cooldowns": {"id", "product_id", "expires_at", "created_at"},
     "deal_tracking": {"id", "product_id", "status", "created_at"}
+}
+
+EXPLORER_TABLE_COLUMNS = {
+    "products": "id, platform, platform_id, title, category, current_price, mrp, rating, review_count, in_stock, status, priority_tier, last_checked, all_time_low",
+    "deals": "id, product_id, posted_price, posted_mrp, savings_amount, savings_pct, deal_score, badge, deal_type, posted_at, source_channel",
+    "daily_prices": "id, product_id, date, min_price, close_price, is_compressed",
+    "ingested_channel_deals": "id, source_channel, status, posted_price, original_url, created_at",
+    "channel_monitors": "id, channel_name, status, last_scanned_at, deals_detected_24h",
+    "post_cooldowns": "id, product_id, expires_at",
+    "deal_tracking": "id, product_id, posted_price, posted_at, track_until, is_finalized"
 }
 
 def inject_admin_session_script(html_content: str, token: str) -> str:
@@ -1010,9 +1047,10 @@ async def get_table_data(
                 order_col = sort_by
             order_sql = f"ORDER BY {order_col} {sort_order.upper()} NULLS LAST"
 
-        # Data query
+        # Data query with selective column projection (saves admin network egress)
+        cols = EXPLORER_TABLE_COLUMNS.get(table, "*")
         data_sql = f"""
-            SELECT * FROM {table}
+            SELECT {cols} FROM {table}
             {where_sql}
             {order_sql}
             LIMIT ${arg_idx} OFFSET ${arg_idx + 1};
@@ -1038,34 +1076,47 @@ async def get_table_data(
 @app.get("/api/deals", dependencies=[Depends(require_admin)])
 async def get_deals(limit: int = 36, platform: str = ""):
     try:
-        where_clauses = [
-            "LOWER(p.platform) != 'croma'",
-            "d.posted_at >= NOW() - INTERVAL '30 days'"
-        ]
-        args = []
-        if platform and platform.lower() != "all":
-            where_clauses.append("LOWER(p.platform) = $1")
-            args.append(platform.lower())
-            
+        plat_clean = (platform or "").strip().lower()
         limit_val = min(max(1, limit), 200)
-        args.append(limit_val)
-        query = f"""
-            SELECT d.id, d.posted_price, d.posted_mrp, d.savings_pct, d.badge, d.deal_score, d.posted_at, d.source_channel,
-                   p.id as product_id, p.title, p.platform, p.category, p.product_url, p.affiliate_url, p.image_url, p.rating,
-                   p.current_price, p.in_stock
-            FROM deals d
-            JOIN products p ON d.product_id = p.id
-            WHERE {' AND '.join(where_clauses)}
-            ORDER BY d.posted_at DESC
-            LIMIT ${len(args)};
-        """
-        rows = await database.fetch(query, *args)
-        res = []
-        for r in rows:
-            d = dict(r)
-            d["affiliate_url"] = resolve_deal_button_url(d.get("platform"), None, d.get("affiliate_url"), d.get("product_url"), product_id=d.get("product_id"))
-            res.append(d)
-        return res
+        cache_key = f"admin_deals_{plat_clean}_{limit_val}"
+        cached = await ram_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        async def _fetch_admin_deals():
+            c = await ram_cache.get(cache_key)
+            if c is not None:
+                return c
+            where_clauses = [
+                "LOWER(p.platform) != 'croma'",
+                "d.posted_at >= NOW() - INTERVAL '30 days'"
+            ]
+            args = []
+            if plat_clean and plat_clean != "all":
+                where_clauses.append("LOWER(p.platform) = $1")
+                args.append(plat_clean)
+                
+            args.append(limit_val)
+            query = f"""
+                SELECT d.id, d.posted_price, d.posted_mrp, d.savings_pct, d.badge, d.deal_score, d.posted_at, d.source_channel,
+                       p.id as product_id, p.title, p.platform, p.category, p.product_url, p.affiliate_url, p.image_url, p.rating,
+                       p.current_price, p.in_stock
+                FROM deals d
+                JOIN products p ON d.product_id = p.id
+                WHERE {' AND '.join(where_clauses)}
+                ORDER BY d.posted_at DESC
+                LIMIT ${len(args)};
+            """
+            rows = await database.fetch(query, *args)
+            res = []
+            for r in rows:
+                d = dict(r)
+                d["affiliate_url"] = resolve_deal_button_url(d.get("platform"), None, d.get("affiliate_url"), d.get("product_url"), product_id=d.get("product_id"))
+                res.append(d)
+            await ram_cache.set(cache_key, res, ttl=30)
+            return res
+
+        return await coalescer.run(cache_key, _fetch_admin_deals)
     except Exception as e:
         logger.error(f"Internal deals error: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -2339,8 +2390,19 @@ async def get_public_deals(
         deal_type = str(deal_type) if not hasattr(deal_type, 'default') else ""
         ids = str(ids) if not hasattr(ids, 'default') else ""
 
+        plat_norm = (platform or "").strip().lower()
+        plats_norm = (platforms or "").strip().lower()
+        cat_norm = (category or "").strip().lower()
+        cats_norm = (categories or "").strip().lower()
         eff_sub = (sub or subcategory or "").strip().lower()
-        cache_key = f"deals:{platform}:{platforms}:{category}:{categories}:{eff_sub}:{gender}:{tab}:{search}:{sort_by}:{min_discount}:{min_price}:{max_price}:{min_rating}:{verified_only}:{deal_type}:{ids}:{page}:{limit}"
+        gender_norm = (gender or "").strip().lower()
+        tab_norm = (tab or "all").strip().lower()
+        search_norm = (search or "").strip().lower().lstrip("#")
+        sort_norm = (sort_by or "latest").strip().lower()
+        deal_type_norm = (deal_type or "").strip().lower()
+        ids_norm = (ids or "").strip()
+
+        cache_key = f"deals:{plat_norm}:{plats_norm}:{cat_norm}:{cats_norm}:{eff_sub}:{gender_norm}:{tab_norm}:{search_norm}:{sort_norm}:{min_discount}:{min_price}:{max_price}:{min_rating}:{verified_only}:{deal_type_norm}:{ids_norm}:{page}:{limit}"
         cached = await ram_cache.get(cache_key)
         if cached is not None:
             return cached
@@ -2351,11 +2413,11 @@ async def get_public_deals(
                 return c
 
             offset = (page - 1) * limit
-            search_clean = search.strip().lstrip("#")
-            platform_clean = platform.strip().lower()
-            category_clean = category.strip().lower()
-            tab_clean = tab.strip().lower()
-            deal_type_clean = deal_type.strip().lower()
+            search_clean = search_norm
+            platform_clean = plat_norm
+            category_clean = cat_norm
+            tab_clean = tab_norm
+            deal_type_clean = deal_type_norm
 
             where_clauses = [
                 "p.in_stock = TRUE",
