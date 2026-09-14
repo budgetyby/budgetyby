@@ -190,13 +190,14 @@
                             <div class="flex items-baseline gap-1.5 flex-wrap">
                                 {% set cp = deal.current_price or deal.deal_price or 0 %}
                                 {% set mrp = deal.mrp or 0 %}
-                                {% set drop_pct = deal.drop_pct or deal.discount_percent or ((((mrp - cp) / mrp) * 100)|round_int if mrp > cp and mrp > 0 else 0) %}
+                                {% set has_disc = mrp > cp %}
+                                {% set disc_pct = ((((mrp - cp) / mrp) * 100)|round_int) if (has_disc and mrp > 0) else (deal.discount_pct or deal.discount_percent or 0) %}
                                 <span class="text-lg font-black text-slate-900 font-mono">{{ cp|format_inr }}</span>
-                                {% if mrp > cp %}
+                                {% if has_disc %}
                                 <span class="text-xs text-slate-400 line-through font-mono">{{ mrp|format_inr }}</span>
                                 {% endif %}
-                                {% if drop_pct and drop_pct > 0 %}
-                                <span class="text-xs font-black text-rose-600 font-mono">({{ drop_pct|round_int }}% OFF)</span>
+                                {% if disc_pct and disc_pct > 0 %}
+                                <span class="text-xs font-black text-rose-600 font-mono">({{ disc_pct|round_int }}% OFF)</span>
                                 {% endif %}
                             </div>
                             {% if mrp > cp %}
@@ -438,6 +439,7 @@
 
             const cp = deal.current_price || 0;
             const mrp = deal.mrp || 0;
+            const discPct = (mrp > cp && mrp > 0) ? Math.round(((mrp - cp) / mrp) * 100) : Math.round(deal.discount_pct || deal.discount_percent || 0);
             const savingsHtml = (mrp > cp) ? `
                 <div class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-mono">
                     Save ${formatINR(mrp - cp)}
