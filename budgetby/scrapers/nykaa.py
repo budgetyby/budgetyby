@@ -145,7 +145,7 @@ class NykaaScraper(BaseScraper):
             if image_url and "tr:" in image_url:
                 image_url = re.sub(r'tr:[^/]+/', 'tr:h-800,w-800,cm-pad_resize/', image_url)
         except Exception as e:
-            logger.debug(f"Nykaa scraping error: {e}")
+            logger.warning(f"Nykaa scraping parsing warning for {url}: {e}")
 
         if not title or price <= 0:
             return None

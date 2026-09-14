@@ -15,6 +15,7 @@ import time
 import zoneinfo
 from PIL import Image
 from curl_cffi.requests import AsyncSession
+import telegram.error
 
 from budgetby import config, database
 from budgetby.bot import templates
@@ -23,12 +24,31 @@ logger = logging.getLogger("budgetby.engine.posting_queue")
 
 _rejected_candidates: dict[int, float] = {}
 
+def _prune_rejected_candidates():
+    global _rejected_candidates
+    now = time.time()
+    if len(_rejected_candidates) > 200:
+        _rejected_candidates = {k: v for k, v in _rejected_candidates.items() if v > now}
+
+def _process_image_sync(raw: bytes) -> io.BytesIO | None:
+    try:
+        im = Image.open(io.BytesIO(raw))
+        if im.mode in ("RGBA", "P"):
+            im = im.convert("RGB")
+        out = io.BytesIO()
+        im.save(out, format="JPEG", quality=88)
+        out.seek(0)
+        out.name = "product.jpg"
+        return out
+    except Exception:
+        b = io.BytesIO(raw)
+        b.name = "product.jpg"
+        return b
+
 async def _fetch_and_normalize_image(image_url: str, timeout: float = 6.0) -> io.BytesIO | None:
     """
     Fetches product image via Chrome impersonation and normalizes AVIF/WEBP/PNG
-    into standard high-quality JPEG for Telegram send_photo.
-    Guarantees that 100% of deals (Flipkart, Myntra, Ajio, Nykaa, Amazon)
-    display the real product photo instead of generic store logos.
+    into standard high-quality JPEG for Telegram send_photo in a background thread.
     """
     if not image_url or not image_url.startswith("http"):
         return None
@@ -36,20 +56,7 @@ async def _fetch_and_normalize_image(image_url: str, timeout: float = 6.0) -> io
         async with AsyncSession(impersonate="chrome") as session:
             resp = await session.get(image_url, timeout=timeout)
             if resp.status_code == 200 and len(resp.content) > 500:
-                raw = resp.content
-                try:
-                    im = Image.open(io.BytesIO(raw))
-                    if im.mode in ("RGBA", "P"):
-                        im = im.convert("RGB")
-                    out = io.BytesIO()
-                    im.save(out, format="JPEG", quality=88)
-                    out.seek(0)
-                    out.name = "product.jpg"
-                    return out
-                except Exception:
-                    b = io.BytesIO(raw)
-                    b.name = "product.jpg"
-                    return b
+                return await asyncio.to_thread(_process_image_sync, resp.content)
     except Exception as e:
         logger.debug(f"Image download note for {image_url[:50]}: {e}")
     return None
@@ -93,7 +100,7 @@ class PostingQueue:
     def __init__(self):
         if self._initialized:
             return
-        self._queue = asyncio.Queue()
+        self._queue = asyncio.Queue(maxsize=1000)
         self._lock = asyncio.Lock()
         self._draining = False
         self._queued_pids = set()
@@ -104,7 +111,7 @@ class PostingQueue:
         self.hour_started = self._get_ist_hour()
         self.ROTATION_SEQUENCE = ROTATION_SEQUENCE
         self._initialized = True
-        logger.info("PostingQueue initialized with 30-second high-velocity pacer, smart interleaving, and dynamic >2 burst drain.")
+        logger.info("PostingQueue initialized with maxsize=1000, 30s pacer, and dynamic burst drain.")
 
     def set_bot(self, bot):
         self._bot = bot
@@ -381,6 +388,7 @@ class PostingQueue:
                 return
 
             # 4. Process and Broadcast Deal to Telegram
+            pid = None
             try:
                 from budgetby.engine.cooldown import is_on_cooldown, set_cooldown
 
@@ -390,7 +398,6 @@ class PostingQueue:
 
                 # Anti-duplicate check
                 if pid and await is_on_cooldown(pid):
-                    self._queued_pids.discard(pid)
                     logger.info(f"🛡️ Skipping product #{pid} — strictly on 24h cooldown.")
                     return
 
@@ -473,17 +480,30 @@ class PostingQueue:
                                 caption=message_text,
                                 parse_mode="HTML"
                             )
+                        except telegram.error.RetryAfter as ra:
+                            logger.warning(f"Telegram photo rate limit: waiting {ra.retry_after}s")
+                            await asyncio.sleep(ra.retry_after)
+                            return
                         except Exception as pe:
                             logger.debug(f"send_photo fallback to text: {pe}")
 
                 # Fallback to text message if photo upload fails
                 if not sent_msg:
-                    sent_msg = await bot_instance.send_message(
-                        chat_id=config.TELEGRAM_CHANNEL_ID,
-                        text=message_text,
-                        parse_mode="HTML",
-                        disable_web_page_preview=False
-                    )
+                    try:
+                        sent_msg = await bot_instance.send_message(
+                            chat_id=config.TELEGRAM_CHANNEL_ID,
+                            text=message_text,
+                            parse_mode="HTML",
+                            disable_web_page_preview=False
+                        )
+                    except telegram.error.RetryAfter as ra:
+                        logger.warning(f"Telegram msg rate limit: waiting {ra.retry_after}s")
+                        await asyncio.sleep(ra.retry_after)
+                        return
+
+                if not sent_msg:
+                    logger.warning(f"Failed to deliver message for deal #{pid}")
+                    return
 
                 savings_amount = max(0.0, mrp - price)
                 savings_pct = (savings_amount / mrp) if mrp > 0 else 0.0
@@ -516,6 +536,9 @@ class PostingQueue:
 
             except Exception as e:
                 logger.error(f"Error posting deal to Telegram: {e}", exc_info=True)
+            finally:
+                if pid:
+                    self._queued_pids.discard(pid)
 
 
 _global_posting_queue = None

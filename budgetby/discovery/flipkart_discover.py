@@ -9,7 +9,7 @@ from curl_cffi.requests import AsyncSession
 from selectolax.parser import HTMLParser
 from budgetby import config
 from budgetby.affiliate.earnkaro_links import build_earnkaro_url_sync
-from budgetby.scrapers.utils import extract_price, clean_title
+from budgetby.scrapers.utils import extract_price, clean_title, fetch_with_retry
 
 logger = logging.getLogger("budgetby.discovery.flipkart")
 
@@ -21,9 +21,9 @@ async def discover_category(name: str, sid: str, pages: int = 5, sort: str = "po
         for page in range(1, pages + 1):
             url = f"https://www.flipkart.com/{name}/pr?sid={sid}&sort={sort}&page={page}"
             try:
-                await asyncio.sleep(0.3)  # Fast discovery: 0.3s per page (was 2.0s - too slow, caused restarts)
-                response = await session.get(url)
-                if response.status_code != 200:
+                await asyncio.sleep(0.3)  # Fast discovery: 0.3s per page
+                response = await fetch_with_retry(session, url, timeout=config.SCRAPER_TIMEOUT)
+                if not response or response.status_code != 200:
                     continue
 
                 tree = HTMLParser(response.text)
@@ -33,8 +33,8 @@ async def discover_category(name: str, sid: str, pages: int = 5, sort: str = "po
                 if not items and page == 1:
                     query = name.replace('-', '+')
                     search_url = f"https://www.flipkart.com/search?q={query}&sort={sort}&page={page}"
-                    s_resp = await session.get(search_url)
-                    if s_resp.status_code == 200:
+                    s_resp = await fetch_with_retry(session, search_url, timeout=config.SCRAPER_TIMEOUT)
+                    if s_resp and s_resp.status_code == 200:
                         tree = HTMLParser(s_resp.text)
                         items = tree.css("div[data-id], a[href*='pid=']")
 

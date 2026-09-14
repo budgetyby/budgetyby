@@ -14,6 +14,7 @@ import httpx
 from budgetby import database, config
 from budgetby.engine.classifier import classify_product
 from budgetby.utils import is_monetized_affiliate_url
+from budgetby.scrapers.utils import get_random_ua
 
 logger = logging.getLogger("budgetby.ingest.channel_monitor")
 
@@ -109,7 +110,7 @@ async def scrape_channel_posts(channel: str, limit: int = 15) -> List[Dict[str, 
 
     try:
         transport = httpx.AsyncHTTPTransport(verify=False)
-        async with httpx.AsyncClient(transport=transport, follow_redirects=False, timeout=10, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as client:
+        async with httpx.AsyncClient(transport=transport, follow_redirects=False, timeout=10, headers={"User-Agent": get_random_ua()}) as client:
             resp = await client.get(f"https://{TELEGRAM_WEB_IP}/s/{channel_name}", headers={"Host": "t.me"})
             
             if resp.status_code != 200:

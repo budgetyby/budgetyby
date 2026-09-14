@@ -41,16 +41,17 @@ async def init_pool() -> asyncpg.Pool:
         "database": config.DB_NAME,
         "user": config.DB_USER,
         "password": config.DB_PASSWORD,
-        "min_size": 1,
-        "max_size": 6,
-        "command_timeout": 30,
+        "min_size": int(os.getenv("DB_POOL_MIN", "2")),
+        "max_size": int(os.getenv("DB_POOL_MAX", "20")),
+        "command_timeout": 60,
+        "timeout": 30,
         "statement_cache_size": 0,
     }
     if config.DB_SSL and str(config.DB_SSL).lower() not in ("disable", "false", "none", "0", ""):
         pool_kwargs["ssl"] = ctx
 
     _pool = await asyncpg.create_pool(**pool_kwargs)
-    logger.info(f"Database connection pool initialized to {host_to_use}:{config.DB_PORT} (min=1, max=6)")
+    logger.info(f"Database connection pool initialized to {host_to_use}:{config.DB_PORT} (min=2, max=20)")
     try:
         async with _pool.acquire() as conn:
             await conn.execute("UPDATE products SET all_time_low = current_price WHERE all_time_low IS NULL AND current_price > 0;")
@@ -423,43 +424,46 @@ async def compress_old_daily_prices():
     raw_days = config.PRICE_RAW_RETENTION_DAYS   # 5
     bucket_size = config.PRICE_BUCKET_SIZE_DAYS  # 3
 
-    # Step A: Insert compressed bucket rows for all complete 3-day windows
-    await execute(f"""
-        INSERT INTO daily_prices (product_id, date, min_price, close_price, is_compressed)
-        SELECT
-            product_id,
-            -- Align bucket start to fixed 3-day epoch from 2000-01-01
-            (DATE '2000-01-01' + (((date - DATE '2000-01-01') / {bucket_size}) * {bucket_size})) AS bucket_start,
-            MIN(min_price)                                     AS agg_min,
-            ROUND(AVG(close_price)::numeric, 2)                AS agg_close,
-            TRUE
-        FROM daily_prices
-        WHERE is_compressed = FALSE
-          AND date < (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - INTERVAL '{raw_days} days'
-        GROUP BY
-            product_id,
-            (DATE '2000-01-01' + (((date - DATE '2000-01-01') / {bucket_size}) * {bucket_size}))
-        HAVING COUNT(*) >= 1   -- Compress ALL old raw rows, even partial windows (1 or 2 day buckets)
-        ON CONFLICT (product_id, date) DO UPDATE SET
-            min_price     = LEAST(daily_prices.min_price, EXCLUDED.min_price),
-            close_price   = EXCLUDED.close_price,
-            is_compressed = TRUE;
-    """)
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            # Step A: Insert compressed bucket rows for all complete 3-day windows
+            await conn.execute(f"""
+                INSERT INTO daily_prices (product_id, date, min_price, close_price, is_compressed)
+                SELECT
+                    product_id,
+                    -- Align bucket start to fixed 3-day epoch from 2000-01-01
+                    (DATE '2000-01-01' + (((date - DATE '2000-01-01') / {bucket_size}) * {bucket_size})) AS bucket_start,
+                    MIN(min_price)                                     AS agg_min,
+                    ROUND(AVG(close_price)::numeric, 2)                AS agg_close,
+                    TRUE
+                FROM daily_prices
+                WHERE is_compressed = FALSE
+                  AND date < (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - INTERVAL '{raw_days} days'
+                GROUP BY
+                    product_id,
+                    (DATE '2000-01-01' + (((date - DATE '2000-01-01') / {bucket_size}) * {bucket_size}))
+                HAVING COUNT(*) >= 1   -- Compress ALL old raw rows, even partial windows (1 or 2 day buckets)
+                ON CONFLICT (product_id, date) DO UPDATE SET
+                    min_price     = LEAST(daily_prices.min_price, EXCLUDED.min_price),
+                    close_price   = EXCLUDED.close_price,
+                    is_compressed = TRUE;
+            """)
 
-    # Step B: Delete the raw rows that have been successfully compressed
-    result = await execute(f"""
-        DELETE FROM daily_prices
-        WHERE is_compressed = FALSE
-          AND date < (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - INTERVAL '{raw_days} days'
-          AND EXISTS (
-              SELECT 1 FROM daily_prices dp2
-              WHERE dp2.product_id = daily_prices.product_id
-                AND dp2.is_compressed = TRUE
-                AND dp2.date = (DATE '2000-01-01' + (
-                    ((daily_prices.date - DATE '2000-01-01') / {bucket_size}) * {bucket_size}
-                ))
-          );
-    """)
+            # Step B: Delete the raw rows that have been successfully compressed
+            result = await conn.execute(f"""
+                DELETE FROM daily_prices
+                WHERE is_compressed = FALSE
+                  AND date < (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - INTERVAL '{raw_days} days'
+                  AND EXISTS (
+                      SELECT 1 FROM daily_prices dp2
+                      WHERE dp2.product_id = daily_prices.product_id
+                        AND dp2.is_compressed = TRUE
+                        AND dp2.date = (DATE '2000-01-01' + (
+                            ((daily_prices.date - DATE '2000-01-01') / {bucket_size}) * {bucket_size}
+                        ))
+                  );
+            """)
     logger.info(f"Price compression complete: compressed raw rows deleted: {result}")
 
 
@@ -488,13 +492,15 @@ async def get_product_by_platform_id(platform: str, platform_id: str) -> asyncpg
 
 
 async def get_active_deal_tracking() -> list[asyncpg.Record]:
-    """Get all deals being tracked for message editing (within 2.5-day window)."""
+    """Get all deals being tracked for message editing (within 2.5-day window, max 1000)."""
     return await fetch("""
         SELECT dt.*, p.current_price, p.in_stock, p.title
         FROM deal_tracking dt
         JOIN products p ON dt.product_id = p.id
         WHERE dt.track_until > NOW()
           AND dt.is_finalized = FALSE
+        ORDER BY dt.posted_at DESC
+        LIMIT 1000;
     """)
 
 

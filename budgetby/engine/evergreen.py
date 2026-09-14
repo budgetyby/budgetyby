@@ -33,6 +33,10 @@ async def find_evergreen_deals(limit: int = 10, platform: str = None) -> list[Re
             WHERE in_stock = TRUE
               AND current_price > 0
               AND mrp > current_price
+              AND id NOT IN (
+                  SELECT product_id FROM deals
+                  WHERE posted_at > (NOW() - INTERVAL '24 hours')
+              )
               {platform_filter}
             ORDER BY rating DESC NULLS LAST, id DESC
             LIMIT ${2 if platform else 1};

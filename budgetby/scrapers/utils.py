@@ -1,9 +1,50 @@
-"""
-BudgetBy — Scraper Utilities
-"""
+import asyncio
+import logging
+import os
 import random
 import re
+from curl_cffi.requests import AsyncSession
 from budgetby import config
+
+logger = logging.getLogger("budgetby.scrapers.utils")
+
+def get_proxy_config() -> dict | None:
+    """Returns proxy dictionary from PROXY_URL or HTTP_PROXY environment variables if configured."""
+    proxy = getattr(config, "PROXY_URL", "") or os.getenv("PROXY_URL", "") or os.getenv("HTTP_PROXY", "")
+    if proxy:
+        return {"http": proxy, "https": proxy}
+    return None
+
+async def fetch_with_retry(
+    session: AsyncSession,
+    url: str,
+    headers: dict = None,
+    max_attempts: int = 3,
+    backoff: float = 2.0,
+    timeout: float = 15.0
+):
+    """Executes an async HTTP GET request with exponential retry and backoff."""
+    last_err = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            resp = await session.get(url, headers=headers, timeout=timeout)
+            if resp.status_code == 200:
+                return resp
+            elif resp.status_code in (429, 502, 503, 504):
+                sleep_dur = backoff * (2 ** (attempt - 1))
+                logger.debug(f"HTTP {resp.status_code} for {url[:50]}, retrying in {sleep_dur:.1f}s (attempt {attempt}/{max_attempts})")
+                await asyncio.sleep(sleep_dur)
+            else:
+                return resp
+        except Exception as e:
+            last_err = e
+            sleep_dur = backoff * (2 ** (attempt - 1))
+            logger.debug(f"Network error {e} for {url[:50]}, retrying in {sleep_dur:.1f}s (attempt {attempt}/{max_attempts})")
+            await asyncio.sleep(sleep_dur)
+    if last_err:
+        logger.debug(f"Fetch failed after {max_attempts} attempts for {url[:50]}: {last_err}")
+    return None
+
 def get_random_ua() -> str:
     """Picks a random User-Agent from config."""
     return random.choice(config.USER_AGENTS)

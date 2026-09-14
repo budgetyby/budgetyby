@@ -56,14 +56,14 @@ class ProductSeeder:
                 products = await amazon_discover.discover_bestsellers(slug, pages=1)
                 for p in products:
                     p["category"] = info.get("category", category)
-                    await self._upsert(p)
+                await self._upsert_batch(products)
                 await asyncio.sleep(3.0)
 
                 # New Releases (single page, slowed down)
                 new_rel = await amazon_discover.discover_new_releases(slug, pages=1)
                 for p in new_rel:
                     p["category"] = info.get("category", category)
-                    await self._upsert(p)
+                await self._upsert_batch(new_rel)
                 await asyncio.sleep(3.0)
 
                 # Search Keywords (throttled to max 2 keywords with 4s pause)
@@ -72,7 +72,7 @@ class ProductSeeder:
                     kw_prods = await amazon_discover.discover_search_keywords(kw, pages=1)
                     for p in kw_prods:
                         p["category"] = info.get("category", category)
-                        await self._upsert(p)
+                    await self._upsert_batch(kw_prods)
                     await asyncio.sleep(4.0)
 
                 await asyncio.sleep(5.0)
@@ -133,7 +133,7 @@ class ProductSeeder:
                 products = await ajio_discover.discover_category(code, pages=30)
                 for p in products:
                     p["category"] = cat_type
-                    await self._upsert(p)
+                await self._upsert_batch(products)
                 logger.info(f"Ajio {category}: Added {len(products)} products")
                 await asyncio.sleep(0.1)
             except Exception as e:
@@ -153,6 +153,21 @@ class ProductSeeder:
         except Exception as e:
             logger.error(f"Error upserting product {product_data.get('platform_id')}: {e}")
             self.stats["errors"] += 1
+
+    async def _upsert_batch(self, products: list[dict], batch_size: int = 25):
+        """Batches product upserts in parallel chunks to minimize DB round-trips."""
+        if not products:
+            return
+        valid_prods = [p for p in products if p.get("product_url")]
+        for i in range(0, len(valid_prods), batch_size):
+            chunk = valid_prods[i:i + batch_size]
+            tasks = [database.upsert_product(p) for p in chunk]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for r in results:
+                if isinstance(r, Exception):
+                    self.stats["errors"] += 1
+                else:
+                    self.stats["new_products_added"] += 1
 
     async def _platform_worker(self, platform: str, seed_func, sort_modes: list = None):
         """Runs discovery for a single platform until its configured target is reached, then cleanly exits."""

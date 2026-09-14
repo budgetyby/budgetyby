@@ -9,7 +9,7 @@ from curl_cffi.requests import AsyncSession
 from selectolax.parser import HTMLParser
 from budgetby import config
 from budgetby.affiliate.amazon_links import build_affiliate_url
-from budgetby.scrapers.utils import extract_price
+from budgetby.scrapers.utils import extract_price, fetch_with_retry
 
 logger = logging.getLogger("budgetby.discovery.amazon")
 
@@ -183,8 +183,8 @@ async def discover_bestsellers(category_slug: str, pages: int = 3) -> List[Dict[
             url = f"https://www.amazon.in/gp/bestsellers/{category_slug}/ref=zg_bs_pg_{page}?ie=UTF8&pg={page}"
             try:
                 await asyncio.sleep(config.SCRAPER_DELAY_MIN)
-                response = await session.get(url)
-                if response.status_code == 200:
+                response = await fetch_with_retry(session, url, timeout=config.SCRAPER_TIMEOUT)
+                if response and response.status_code == 200:
                     tree = HTMLParser(response.text)
                     items = await _parse_amazon_listing(tree)
                     results.extend(items)
@@ -199,8 +199,8 @@ async def discover_new_releases(category_slug: str, pages: int = 2) -> List[Dict
             url = f"https://www.amazon.in/gp/new-releases/{category_slug}/ref=zg_bs_pg_{page}?ie=UTF8&pg={page}"
             try:
                 await asyncio.sleep(config.SCRAPER_DELAY_MIN)
-                response = await session.get(url)
-                if response.status_code == 200:
+                response = await fetch_with_retry(session, url, timeout=config.SCRAPER_TIMEOUT)
+                if response and response.status_code == 200:
                     tree = HTMLParser(response.text)
                     items = await _parse_amazon_listing(tree)
                     results.extend(items)
@@ -224,8 +224,8 @@ async def discover_deals_page(pages: int = 3) -> List[Dict[str, Any]]:
                 url = f"{base_url}?page={page}" if page > 1 else base_url
                 try:
                     await asyncio.sleep(0.5)
-                    response = await session.get(url)
-                    if response.status_code == 200:
+                    response = await fetch_with_retry(session, url, timeout=config.SCRAPER_TIMEOUT)
+                    if response and response.status_code == 200:
                         tree = HTMLParser(response.text)
                         items = await _parse_amazon_listing(tree)
                         for it in items:

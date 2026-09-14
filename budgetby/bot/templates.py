@@ -1,5 +1,6 @@
 import html
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from budgetby import config
 from budgetby.scrapers.utils import clean_title
 from budgetby.utils import format_inr
 
@@ -117,6 +118,33 @@ def format_mega_deal(product: dict, deal_result: dict = None) -> str:
         text += f"🏷️ <b>Massive Savings:</b> <b>{pct}% OFF</b> (Save {format_price(savings)})\n"
     else:
         text += f"💸 <b>Deal Price:</b> <b>{format_price(current_price)}</b>\n"
+def get_bot_footer() -> str:
+    bot_handle = getattr(config, "TELEGRAM_BOT_USERNAME", "") or "@BudgetByBot"
+    return f"🔍 <i>Missed a price drop? Send product link to {bot_handle} for review!</i>\n"
+
+def format_mega_deal(product: dict, deal_result: dict = None) -> str:
+    """Format a 80+ score MEGA DEAL or ATL price drop."""
+    title = html.escape(clean_title(product.get("title", "")))
+    current_price = product.get("current_price", 0)
+    mrp = product.get("mrp", 0)
+    platform = (product.get("platform") or "Store").capitalize()
+    savings = mrp - current_price if mrp and mrp > current_price else 0
+    pct = round((savings / mrp) * 100) if mrp and mrp > 0 else 0
+    badge = (deal_result or {}).get("badge") or product.get("badge")
+    rating = product.get("rating", "")
+    url = product.get("affiliate_url") or product.get("product_url") or product.get("url", "")
+    
+    badge_header = get_tiered_badge(badge, pct)
+    hashtags = get_category_hashtags(platform, product.get("category", ""), pct, badge)
+    
+    text = f"<b>{badge_header} ({platform})</b>\n"
+    text += "━━━━━━━━━━━━━━━━━━━━━\n"
+    text += f"🛍️ <b>{title}</b>\n\n"
+    if savings > 0:
+        text += f"💸 <b>Offer Price:</b> <b>{format_price(current_price)}</b> (<s>{format_price(mrp)}</s>)\n"
+        text += f"🏷️ <b>Discount:</b> <b>{pct}% OFF</b> (Save {format_price(savings)})\n"
+    else:
+        text += f"💸 <b>Offer Price:</b> <b>{format_price(current_price)}</b>\n"
         
     rating_str = format_rating(rating)
     if rating_str:
@@ -125,7 +153,7 @@ def format_mega_deal(product: dict, deal_result: dict = None) -> str:
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
-    text += "🔍 <i>Missed a price drop? Send product link to @Deal_pulse_alert_bot for review!</i>\n"
+    text += get_bot_footer()
     text += f"{hashtags}"
         
     return text
@@ -161,7 +189,7 @@ def format_today_deal(product: dict, deal_result: dict = None) -> str:
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
-    text += "🔍 <i>Missed a price drop? Send product link to @Deal_pulse_alert_bot for review!</i>\n"
+    text += get_bot_footer()
     text += f"{hashtags}"
 
     return text
@@ -197,7 +225,7 @@ def format_hot_deal(product: dict, deal_result: dict = None) -> str:
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
-    text += "🔍 <i>Missed a price drop? Send product link to @Deal_pulse_alert_bot for review!</i>\n"
+    text += get_bot_footer()
     text += f"{hashtags}"
         
     return text
@@ -228,7 +256,7 @@ def format_good_deal(product: dict, deal_result: dict = None) -> str:
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
-    text += "🔍 <i>Missed a price drop? Send product link to @Deal_pulse_alert_bot for review!</i>\n"
+    text += get_bot_footer()
     text += f"{hashtags}"
     return text
 
@@ -261,7 +289,7 @@ def format_evergreen_deal(product: dict, post_count: int = 1) -> str:
     if url:
         text += f"\n🛒 <b>Buy Directly on {platform}:</b>\n👉 {url}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n"
-    text += "🔍 <i>Missed a price drop? Send product link to @Deal_pulse_alert_bot for review!</i>\n"
+    text += get_bot_footer()
     text += f"{hashtags}"
     return text
 

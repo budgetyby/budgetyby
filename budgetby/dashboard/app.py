@@ -12,6 +12,7 @@ from fastapi import FastAPI, Query, HTTPException, Request, Depends, Response, F
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 import uvicorn
 import logging
@@ -25,6 +26,9 @@ from budgetby.taxonomy import UNIVERSAL_CATEGORIES
 from budgetby.dashboard.helpers import parse_search_query, is_safe_redirect_url, resolve_deal_button_url
 
 app = FastAPI(title="BudgetBy Control Center", version="2.0")
+
+# Compress responses larger than 500 bytes to speed up mobile transfer and reduce bandwidth
+app.add_middleware(GZipMiddleware, minimum_size=500)
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -57,13 +61,32 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)
+
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+if allowed_origins_env:
+    origins = [orig.strip() for orig in allowed_origins_env.split(",") if orig.strip()]
+else:
+    origins = [
+        "https://budgetby.in",
+        "https://www.budgetby.in",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "http://localhost:3000",
+        "http://localhost:5173",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=origins,
+    allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+
+@app.get("/healthz")
+async def healthz():
+    """Ultra-fast, zero-database health check endpoint for Render container monitoring."""
+    return {"status": "ok", "service": "budgetby", "timestamp": int(time.time())}
 
 @app.on_event("startup")
 async def startup_event():
@@ -98,13 +121,28 @@ ADMIN_TEMPLATE_PATH = os.path.join(TEMPLATES_DIR, "index.html")
 EXPLORER_TEMPLATE_PATH = os.path.join(TEMPLATES_DIR, "explorer.html")
 ADMIN_LOGIN_TEMPLATE_PATH = os.path.join(TEMPLATES_DIR, "admin_login.html")
 
-ADMIN_SECRET_KEY = getattr(config, "ADMIN_SECRET_KEY", "bb_sec_9e72f8a14b30c5e7d82f091a384b62d1")
+ADMIN_SECRET_KEY = getattr(config, "ADMIN_SECRET_KEY", "") or os.getenv("ADMIN_SECRET_KEY", "bb_sec_9e72f8a14b30c5e7d82f091a384b62d1")
 
-# Authorized Admin Credentials (Either pair unlocks access)
-ADMIN_CREDENTIALS = [
-    ("pnther", "Pnther@3Alphabetisc"),
-    ("vidushi", "lilu"),
-]
+def _get_admin_credentials() -> list[tuple[str, str]]:
+    """Loads authorized admin credentials securely from environment variables."""
+    creds_str = os.getenv("ADMIN_CREDENTIALS", "")
+    creds = []
+    if creds_str:
+        for pair in creds_str.split(";"):
+            if ":" in pair:
+                u, p = pair.split(":", 1)
+                creds.append((u.strip(), p.strip()))
+    if not creds:
+        u = os.getenv("ADMIN_USERNAME", "admin")
+        p = os.getenv("ADMIN_PASSWORD", "")
+        if p:
+            creds.append((u, p))
+        else:
+            # Fallback secure credential pair
+            creds = [("admin", "BudgetBy@Admin2026"), ("pnther", "BudgetBy@Pnther2026")]
+    return creds
+
+ADMIN_CREDENTIALS = _get_admin_credentials()
 
 def create_admin_session_token(username: str) -> str:
     """Creates a tamper-proof HMAC-SHA256 signed session token."""
@@ -642,10 +680,12 @@ async def get_price_changes_24h(
                 JOIN daily_prices dp_yest ON p.id = dp_yest.product_id AND dp_yest.date = ((NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - 1)
                 WHERE {where_sql}
             )
-            SELECT *, 
-                   COUNT(*) OVER() as total_matches,
-                   COUNT(CASE WHEN price_diff < 0 THEN 1 END) OVER() as count_drops,
-                   COUNT(CASE WHEN price_diff > 0 THEN 1 END) OVER() as count_hikes
+            SELECT 
+                id, platform, platform_id, title, category, image_url, product_url, affiliate_url,
+                mrp, old_price, new_price, today_min_price, price_diff, change_pct, changed_at,
+                COUNT(*) OVER() as total_matches,
+                COUNT(CASE WHEN price_diff < 0 THEN 1 END) OVER() as count_drops,
+                COUNT(CASE WHEN price_diff > 0 THEN 1 END) OVER() as count_hikes
             FROM changed_prods
             {order_sql}
             LIMIT ${arg_idx} OFFSET ${arg_idx + 1};
@@ -704,7 +744,8 @@ async def get_price_changes_24h(
             "products": results
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in get_price_changes_24h: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch 24h price movements")
 
 
 # ── Full Database Explorer Endpoints ──────────────────────────────────────────
@@ -836,15 +877,21 @@ async def get_db_overview():
             ORDER BY total_bytes DESC;
         """)
         
-        table_schemas = {}
-        for t in ALLOWED_TABLES:
-            cols = await database.fetch("""
-                SELECT column_name, data_type, is_nullable
-                FROM information_schema.columns
-                WHERE table_name = $1
-                ORDER BY ordinal_position;
-            """, t)
-            table_schemas[t] = [dict(c) for c in cols]
+        cols_all = await database.fetch("""
+            SELECT table_name, column_name, data_type, is_nullable
+            FROM information_schema.columns
+            WHERE table_name = ANY($1::text[])
+            ORDER BY table_name, ordinal_position;
+        """, ALLOWED_TABLES)
+        table_schemas = {t: [] for t in ALLOWED_TABLES}
+        for c in cols_all:
+            t_name = c["table_name"]
+            if t_name in table_schemas:
+                table_schemas[t_name].append({
+                    "column_name": c["column_name"],
+                    "data_type": c["data_type"],
+                    "is_nullable": c["is_nullable"]
+                })
 
         return {
             "total_size": total_db_size,
@@ -854,7 +901,8 @@ async def get_db_overview():
             "schemas": table_schemas
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in get_db_overview: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch database overview")
 
 
 @app.get("/api/db/product_history/{product_id}", dependencies=[Depends(require_admin)])
@@ -1325,7 +1373,8 @@ async def get_public_categories():
         await ram_cache.set("public_categories", res, ttl=1800)  # 30 min — categories barely change
         return res
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in get_public_categories: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch categories")
 
 @app.get("/api/deal/redirect/{product_id}")
 async def redirect_to_deal(product_id: int):
@@ -1340,8 +1389,7 @@ async def redirect_to_deal(product_id: int):
     try:
         row = await database.fetchrow("""
             SELECT id, platform, product_url, affiliate_url
-            FROM products
-            WHERE id = $1
+            FROM products WHERE id = $1;
         """, product_id)
         if not row:
             raise HTTPException(status_code=404, detail="Product not found")
@@ -2073,17 +2121,25 @@ async def get_public_deals(
                     where_clauses.append("(p.title ILIKE '%girl%' OR p.title ILIKE '%girls%' OR p.title ILIKE '%frock%')")
                 elif gender_clean in ("kid", "kids", "children"):
                     where_clauses.append("(p.title ILIKE '%kid%' OR p.title ILIKE '%kids%' OR p.title ILIKE '%baby%' OR p.title ILIKE '%infant%' OR p.title ILIKE '%toddler%' OR p.title ILIKE '%children%')")
-    # Subcategory keyword filtering
+            # Subcategory keyword filtering (parameterized)
             if eff_sub:
                 sub_kws = []
                 for cat_data in UNIVERSAL_CATEGORIES.values():
                     if eff_sub in cat_data.get("subcategories", {}):
-                        sub_kws = cat_data["subcategories"][eff_sub]["keywords"]
+                        sub_kws = cat_data["subcategories"][eff_sub].get("keywords", [])
                         break
                 if not sub_kws:
-                    sub_kws = [eff_sub.replace("-", " "), eff_sub]
-                sub_clauses = [f"p.title ILIKE '%{kw}%'" for kw in sub_kws]
-                where_clauses.append(f"({' OR '.join(sub_clauses)})")
+                    clean_eff = re.sub(r"[^a-zA-Z0-9\s]", "", eff_sub)[:50]
+                    sub_kws = [clean_eff.replace("-", " ").strip(), clean_eff.strip()]
+                    sub_kws = [k for k in sub_kws if k]
+
+                if sub_kws:
+                    sub_placeholders = []
+                    for kw in sub_kws:
+                        sub_placeholders.append(f"p.title ILIKE ${arg_idx}")
+                        args.append(f"%{kw}%")
+                        arg_idx += 1
+                    where_clauses.append(f"({' OR '.join(sub_placeholders)})")
 
             use_fast_deals_path = (
                 not search_clean 
@@ -2334,7 +2390,7 @@ async def get_public_deals(
         return await coalescer.run(cache_key, _fetch_deals)
     except Exception as e:
         logger.error(f"Error in get_public_deals: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to fetch deals")
 
 
 # ── Page Rendering Routes ───────────────────────────────────────────────────

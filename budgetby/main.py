@@ -4,6 +4,8 @@ BudgetBy Main Entry Point.
 import asyncio
 import logging
 import os
+import signal
+import sys
 import uvicorn
 from dotenv import load_dotenv
 from telegram.ext import Application
@@ -157,6 +159,26 @@ async def main():
         logger.warning(f"Could not start affiliate converter worker: {e}")
 
     # 8. Run Bot Polling
+    loop = asyncio.get_running_loop()
+    stop_event = asyncio.Event()
+
+    def _handle_signal():
+        logger.info("Received termination signal (SIGTERM/SIGINT). Initiating graceful stop...")
+        stop_event.set()
+
+    if sys.platform != "win32":
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            try:
+                loop.add_signal_handler(sig, _handle_signal)
+            except NotImplementedError:
+                pass
+    else:
+        try:
+            signal.signal(signal.SIGINT, lambda s, f: stop_event.set())
+            signal.signal(signal.SIGTERM, lambda s, f: stop_event.set())
+        except Exception:
+            pass
+
     if application:
         try:
             await application.initialize()
@@ -167,31 +189,42 @@ async def main():
                 timeout=20,
                 bootstrap_retries=-1
             )
-            logger.info("Bot is polling.")
-            
-            # Keep main task alive
-            stop_event = asyncio.Event()
+            logger.info("Bot is polling. Main task running.")
             await stop_event.wait()
             
         except (KeyboardInterrupt, SystemExit):
             logger.info("Shutting down bot gracefully...")
         finally:
-            scheduler.stop_scheduler()
+            logger.info("Executing graceful shutdown sequence...")
+            try:
+                scheduler.stop_scheduler()
+            except Exception as se:
+                logger.debug(f"Scheduler stop notice: {se}")
             if application.updater:
-                await application.updater.stop()
-            await application.stop()
-            await application.shutdown()
+                try:
+                    await application.updater.stop()
+                except Exception:
+                    pass
+            try:
+                await application.stop()
+                await application.shutdown()
+            except Exception:
+                pass
             await database.close_pool()
-            logger.info("Bot shutdown complete.")
+            logger.info("Bot & Database shutdown complete.")
     else:
         try:
-            while True:
-                await asyncio.sleep(1)
+            await stop_event.wait()
         except (KeyboardInterrupt, SystemExit):
             pass
         finally:
-            scheduler.stop_scheduler()
+            logger.info("Executing graceful shutdown sequence...")
+            try:
+                scheduler.stop_scheduler()
+            except Exception as se:
+                logger.debug(f"Scheduler stop notice: {se}")
             await database.close_pool()
+            logger.info("Daemon shutdown complete.")
 
 if __name__ == "__main__":
     try:

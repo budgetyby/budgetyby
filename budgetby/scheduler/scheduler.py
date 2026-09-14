@@ -340,22 +340,22 @@ def start_scheduler():
                        hours=config.DISCOVERY_INTERVAL_HOURS, id="discovery", max_instances=1, misfire_grace_time=30, replace_existing=True)
 
     # Daily cleanup at midnight IST
-    _scheduler.add_job(cleanup.daily_cleanup, "cron", hour=0, minute=0, id="daily_cleanup", replace_existing=True)
+    _scheduler.add_job(cleanup.daily_cleanup, "cron", hour=0, minute=0, id="daily_cleanup", misfire_grace_time=300, replace_existing=True)
 
     # Monthly benchmark shift on the 1st
     _scheduler.add_job(cleanup.monthly_maintenance, "cron", day=1, hour=1, minute=0,
-                       id="monthly_maintenance", replace_existing=True)
+                       id="monthly_maintenance", misfire_grace_time=300, replace_existing=True)
 
     # Bi-weekly backup on 1st and 15th of each month at 3:00 AM IST (saves 93% egress)
     if config.BACKUP_ENABLED:
         _scheduler.add_job(cleanup.run_backup, "cron", day="1,15",
-                           hour=config.BACKUP_HOUR, minute=0, id="biweekly_backup", replace_existing=True)
+                           hour=config.BACKUP_HOUR, minute=0, id="biweekly_backup", misfire_grace_time=300, replace_existing=True)
 
     # Daily Morning Digest at 9:00 AM IST
-    _scheduler.add_job(morning_digest, "cron", hour=9, minute=0, timezone="Asia/Kolkata", id="morning_digest", replace_existing=True)
+    _scheduler.add_job(morning_digest, "cron", hour=9, minute=0, timezone="Asia/Kolkata", id="morning_digest", misfire_grace_time=300, replace_existing=True)
 
     # Daily Evening Digest at 8:00 PM IST
-    _scheduler.add_job(evening_digest, "cron", hour=20, minute=0, timezone="Asia/Kolkata", id="evening_digest", replace_existing=True)
+    _scheduler.add_job(evening_digest, "cron", hour=20, minute=0, timezone="Asia/Kolkata", id="evening_digest", misfire_grace_time=300, replace_existing=True)
 
     # High-Velocity 30-Second Paced Broadcaster with Live Deal Hunter
     _scheduler.add_job(paced_posting_loop, "interval", seconds=30, id="paced_posting",
@@ -365,9 +365,9 @@ def start_scheduler():
     logger.info("Scheduler started with all jobs configured")
 
 
-def stop_scheduler():
+def stop_scheduler(wait: bool = True):
     """Gracefully stop the scheduler."""
     logger.info("Stopping scheduler...")
-    _scheduler.shutdown(wait=False)
-    logger.info("Scheduler stopped.")
-
+    if _scheduler.running:
+        _scheduler.shutdown(wait=wait)
+        logger.info("Scheduler stopped")

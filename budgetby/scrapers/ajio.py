@@ -110,7 +110,7 @@ class AjioScraper(BaseScraper):
                         except Exception:
                             pass
         except Exception as e:
-            logger.debug(f"Ajio scraping failed for {url}: {e}")
+            logger.warning(f"Ajio scraping parsing warning for {url}: {e}")
 
         if not title or price <= 0:
             return None

@@ -57,10 +57,10 @@ def _strip_existing_affiliate_params(url: str) -> str:
         return url
 
 
-def build_earnkaro_url_sync(url: str) -> str:
+def strip_affiliate_params(url: str) -> str:
     """
     Returns clean merchant URL stripped of any third-party tracking or foreign affiliate parameters.
-    Does NOT append broken synthetic affid/ENKR parameters.
+    Ensures URL is ready for live Telegram converter or direct catalog storage.
     """
     if not url:
         return ""
@@ -70,7 +70,9 @@ def build_earnkaro_url_sync(url: str) -> str:
         logger.warning(f"URL clean failed for {url[:60]}: {e}")
         return url
 
+# Backwards compatible aliases
+build_earnkaro_url_sync = strip_affiliate_params
 
 async def build_earnkaro_url(url: str) -> str:
-    """Async wrapper — same as sync, no I/O needed."""
-    return build_earnkaro_url_sync(url)
+    """Async wrapper — returns cleaned URL."""
+    return strip_affiliate_params(url)
