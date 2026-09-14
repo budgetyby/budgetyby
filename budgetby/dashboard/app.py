@@ -2457,7 +2457,7 @@ async def page_home(request: Request):
     try:
         drops_task = get_public_price_drops(page=1, limit=12, min_drop_pct=5.0, min_drop_percent=None, platform="", category="", sort_by="drop_pct")
         just_dropped_task = get_public_deals(platform="", platforms="", category="", categories="", sub="", subcategory="", gender="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=True, deal_type="", ids="", page=1, limit=10)
-        atl_task = get_public_deals(platform="", platforms="", category="", categories="", sub="", subcategory="", gender="", tab="atl", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=4)
+        atl_task = get_public_deals(platform="", platforms="", category="", categories="", sub="", subcategory="", gender="", tab="atl", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=10)
         stats_task = get_public_stats()
 
         results = await asyncio.gather(
