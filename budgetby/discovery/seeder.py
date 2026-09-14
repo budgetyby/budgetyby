@@ -15,12 +15,11 @@ from budgetby.discovery import amazon_discover, flipkart_discover, ajio_discover
 logger = logging.getLogger("budgetby.discovery.seeder")
 
 TARGET_PROPORTIONS = {
-    "amazon": 22500,    # 3 parts (~25.0%)
-    "flipkart": 22500,  # 3 parts (~25.0%)
-    "myntra": 15000,    # 2 parts (~16.7%)
-    "ajio": 15000,      # 2 parts (~16.7%)
-    "croma": 3500,      # 1 part  (~8.3%)
-    "nykaa": 7500,      # 1 part  (~8.3%)
+    "amazon": 24000,    # ~30%
+    "flipkart": 24000,  # ~30%
+    "myntra": 16000,    # ~20%
+    "ajio": 16000,      # ~20%
+    "nykaa": 8000,      # ~10%
 }
 
 class ProductSeeder:
@@ -202,7 +201,6 @@ class ProductSeeder:
         """
         logger.info("Initializing bootstrap discovery...")
 
-        # 1. Croma Bootstrap (Temporarily paused)
         # 2. Nykaa Bootstrap (Temporarily paused per user request - relies on Live Hunter)
 
         logger.info("✨ Bootstrap seeder finished! New products will be dynamically ingested and saved to DB whenever deals arrive.")

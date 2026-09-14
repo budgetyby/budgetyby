@@ -123,12 +123,8 @@ async def upsert_product(data: dict) -> int:
     Insert a new product or update if it already exists (same platform + platform_id).
     Returns the product id.
     """
-    # Strict Exclusion Guard: Croma is permanently excluded across the entire system
     platform = str(data.get("platform") or "").strip().lower()
     p_url = str(data.get("product_url") or "").strip()
-    if platform == "croma" or "croma.com" in p_url.lower():
-        logger.debug("Excluded Croma product from ingestion.")
-        return 0
 
     # Automated title sanitizer: if title is missing or generic, derive from URL slug
     title = data.get("title") or ""
@@ -351,7 +347,6 @@ async def get_products_due_for_check(limit: int = 15) -> list[asyncpg.Record]:
             FROM products p
             WHERE p.status IN ($1, $2)
               AND p.next_check <= NOW()
-              AND LOWER(p.platform) != 'croma'
         )
         SELECT * FROM ranked_candidates
         WHERE rank_in_platform <= $4
@@ -615,13 +610,11 @@ async def get_core_metrics() -> dict:
           prods AS (
             SELECT id, in_stock, status, current_price, created_at, all_time_low
             FROM products
-            WHERE LOWER(platform) != 'croma'
           ),
           deals_base AS (
             SELECT d.product_id, d.posted_at, d.posted_price, d.id as deal_id
             FROM deals d
             JOIN products p ON d.product_id = p.id
-            WHERE LOWER(p.platform) != 'croma'
           )
         SELECT
           -- total_products

@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 from budgetby import config
 from budgetby.utils import is_monetized_affiliate_url
 
-KNOWN_PLATFORMS = {'amazon', 'flipkart', 'myntra', 'ajio', 'croma', 'nykaa'}
+KNOWN_PLATFORMS = {'amazon', 'flipkart', 'myntra', 'ajio', 'nykaa'}
 ACCESSORY_WORDS = {
     'case', 'cover', 'glass', 'strap', 'cable', 'charger', 'adapter',
     'sleeve', 'bag', 'backpack', 'pouch', 'guard', 'protector', 'skin',

@@ -60,9 +60,6 @@ def get_category_hashtags(platform: str = "", category: str = "", pct: int = 0, 
         tags.append("#Ajio")
     elif "nykaa" in p:
         tags.append("#Nykaa")
-    elif "croma" in p:
-        tags.append("#Croma")
-        tags.append("#ElectronicsDeals")
         
     # Category tag mappings
     c = (category or "").lower()

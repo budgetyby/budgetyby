@@ -174,24 +174,22 @@ FAKE_DISCOUNT_PENALTY = 12
 
 # Hourly minimum quotas per platform (24/7 identical, Day & Night):
 # Amazon: 3, Flipkart: 3, Myntra: 2, Ajio: 2, Nykaa: 1 (Total = 11 products / hour)
-# Strict Proportional Posting Quotas (Amazon: 3, Flipkart: 3, Myntra: 2, Ajio: 2, Croma: 1, Nykaa: 1)
-# Total per cycle = 12 deals | Per hour at 30s cadence (~120 deals/hour):
+# Strict Proportional Posting Quotas (Amazon: 3, Flipkart: 3, Myntra: 2, Ajio: 2, Nykaa: 1)
+# Total per cycle = 11 deals | Per hour at 30s cadence (~120 deals/hour):
 PLATFORM_RATIO = {
     "amazon": 3,
     "flipkart": 3,
     "myntra": 2,
     "ajio": 2,
-    "croma": 1,
     "nykaa": 1
 }
 
 PLATFORM_MIN_HOURLY_POSTS = {
-    "amazon": 30,   # 3 parts (25.0%)
-    "flipkart": 30, # 3 parts (25.0%)
-    "myntra": 20,   # 2 parts (16.7%)
-    "ajio": 20,     # 2 parts (16.7%)
-    "croma": 10,    # 1 part  (8.3%)
-    "nykaa": 10     # 1 part  (8.3%)
+    "amazon": 30,
+    "flipkart": 30,
+    "myntra": 20,
+    "ajio": 20,
+    "nykaa": 10
 }
 
 # NO maximum limit — every genuine deal / price drop is posted immediately without cap
@@ -301,15 +299,6 @@ EARNKARO_COMMISSION_RATES = {
         "beauty":           0.06,
         "fashion":          0.05,
         "default":          0.05,
-    },
-    "croma": {
-        "laptops":          0.035,
-        "smartphones":      0.015,
-        "electronics":      0.035,
-        "appliances":       0.040,
-        "home":             0.040,
-        "beauty":           0.050,
-        "default":          0.035,
     },
 }
 

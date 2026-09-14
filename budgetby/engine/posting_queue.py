@@ -61,7 +61,7 @@ async def _fetch_and_normalize_image(image_url: str, timeout: float = 6.0) -> io
         logger.debug(f"Image download note for {image_url[:50]}: {e}")
     return None
 
-# 14-slot proportional rotation cycle (Croma paused):
+# 14-slot proportional rotation cycle:
 # Amazon: 4, Flipkart: 3, Myntra: 3, Ajio: 2, Nykaa: 2 (Total = 14 slots)
 ROTATION_SEQUENCE = [
     "amazon", "flipkart", "myntra",

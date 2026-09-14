@@ -276,7 +276,6 @@ async def verify_active_deals_loop():
             FROM products p
             JOIN deals d ON d.product_id = p.id
             WHERE p.in_stock = TRUE AND p.status = 'ACTIVE'
-              AND LOWER(p.platform) != 'croma'
               AND d.posted_at >= NOW() - INTERVAL '72 hours'
             ORDER BY p.last_checked ASC NULLS FIRST
             LIMIT 5;
@@ -332,7 +331,7 @@ def start_scheduler():
     _scheduler.add_job(verify_active_deals_loop, "interval", seconds=180, id="deal_verifier",
                        max_instances=1, coalesce=True, misfire_grace_time=30, replace_existing=True)
 
-    # Discovery — every 6 hours (Croma & Myntra seeding disabled; Amazon/Flipkart/Ajio/Nykaa only)
+    # Discovery — every 6 hours (Amazon/Flipkart/Ajio/Nykaa only)
     _scheduler.add_job(discovery_job, "interval",
                        hours=config.DISCOVERY_INTERVAL_HOURS, id="discovery", max_instances=1, misfire_grace_time=30, replace_existing=True)
 

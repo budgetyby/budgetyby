@@ -321,29 +321,26 @@ async def get_stats():
         deals_today = core_metrics["deals_today"]
         drops_today = core_metrics.get("drops_today", 0)
 
-        by_plat = await database.fetch("SELECT platform, COUNT(*) as count FROM products WHERE LOWER(platform) != 'croma' GROUP BY platform ORDER BY count DESC;")
+        by_plat = await database.fetch("SELECT platform, COUNT(*) as count FROM products GROUP BY platform ORDER BY count DESC;")
         
         # Time-based deals counts (IST Timezone)
         deals_1h = await database.fetchval("""
             SELECT COUNT(*) FROM deals d
             JOIN products p ON d.product_id = p.id
-            WHERE d.posted_at >= NOW() - INTERVAL '1 hour'
-              AND LOWER(p.platform) != 'croma';
+            WHERE d.posted_at >= NOW() - INTERVAL '1 hour';
         """)
         
         deals_this_month = await database.fetchval("""
             SELECT COUNT(*) FROM deals d
             JOIN products p ON d.product_id = p.id
-            WHERE d.posted_at >= date_trunc('month', NOW() AT TIME ZONE 'Asia/Kolkata')
-              AND LOWER(p.platform) != 'croma';
+            WHERE d.posted_at >= date_trunc('month', NOW() AT TIME ZONE 'Asia/Kolkata');
         """)
         
         deals_last_month = await database.fetchval("""
             SELECT COUNT(*) FROM deals d
             JOIN products p ON d.product_id = p.id
             WHERE d.posted_at >= date_trunc('month', (NOW() AT TIME ZONE 'Asia/Kolkata') - INTERVAL '1 month')
-              AND d.posted_at < date_trunc('month', NOW() AT TIME ZONE 'Asia/Kolkata')
-              AND LOWER(p.platform) != 'croma';
+              AND d.posted_at < date_trunc('month', NOW() AT TIME ZONE 'Asia/Kolkata');
         """)
         
         # Deals posted TODAY grouped by platform
@@ -509,7 +506,6 @@ async def get_category_platform_stats():
                     COUNT(CASE WHEN p.platform = 'flipkart' THEN 1 END) as flipkart_count,
                     COUNT(CASE WHEN p.platform = 'myntra' THEN 1 END) as myntra_count,
                     COUNT(CASE WHEN p.platform = 'ajio' THEN 1 END) as ajio_count,
-                    COUNT(CASE WHEN p.platform = 'croma' THEN 1 END) as croma_count,
                     COUNT(CASE WHEN p.platform = 'nykaa' THEN 1 END) as nykaa_count
                 FROM deals d
                 JOIN products p ON d.product_id = p.id
@@ -526,7 +522,6 @@ async def get_category_platform_stats():
                     COUNT(CASE WHEN p.platform = 'flipkart' THEN 1 END) as flipkart_count,
                     COUNT(CASE WHEN p.platform = 'myntra' THEN 1 END) as myntra_count,
                     COUNT(CASE WHEN p.platform = 'ajio' THEN 1 END) as ajio_count,
-                    COUNT(CASE WHEN p.platform = 'croma' THEN 1 END) as croma_count,
                     COUNT(CASE WHEN p.platform = 'nykaa' THEN 1 END) as nykaa_count
                 FROM deals d
                 JOIN products p ON d.product_id = p.id
@@ -544,7 +539,6 @@ async def get_category_platform_stats():
                     COUNT(CASE WHEN p.platform = 'flipkart' THEN 1 END) as flipkart_count,
                     COUNT(CASE WHEN p.platform = 'myntra' THEN 1 END) as myntra_count,
                     COUNT(CASE WHEN p.platform = 'ajio' THEN 1 END) as ajio_count,
-                    COUNT(CASE WHEN p.platform = 'croma' THEN 1 END) as croma_count,
                     COUNT(CASE WHEN p.platform = 'nykaa' THEN 1 END) as nykaa_count
                 FROM deals d
                 JOIN products p ON d.product_id = p.id
@@ -562,7 +556,6 @@ async def get_category_platform_stats():
                     COUNT(CASE WHEN platform = 'flipkart' THEN 1 END) as flipkart_count,
                     COUNT(CASE WHEN platform = 'myntra' THEN 1 END) as myntra_count,
                     COUNT(CASE WHEN platform = 'ajio' THEN 1 END) as ajio_count,
-                    COUNT(CASE WHEN platform = 'croma' THEN 1 END) as croma_count,
                     COUNT(CASE WHEN platform = 'nykaa' THEN 1 END) as nykaa_count
                 FROM products
                 GROUP BY COALESCE(NULLIF(category, ''), 'general')
@@ -706,8 +699,7 @@ async def get_price_changes_24h(
             JOIN daily_prices dp_today ON p.id = dp_today.product_id AND dp_today.date = (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE
             JOIN daily_prices dp_yest ON p.id = dp_yest.product_id AND dp_yest.date = ((NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - 1)
             WHERE dp_today.close_price != dp_yest.close_price
-              AND p.in_stock = TRUE AND dp_today.close_price > 0 AND dp_yest.close_price > 0
-              AND LOWER(p.platform) != 'croma';
+              AND p.in_stock = TRUE AND dp_today.close_price > 0 AND dp_yest.close_price > 0;
         """)
 
         results = []
@@ -1083,7 +1075,6 @@ async def get_deals(limit: int = 36, platform: str = ""):
             if c is not None:
                 return c
             where_clauses = [
-                "LOWER(p.platform) != 'croma'",
                 "d.posted_at >= NOW() - INTERVAL '30 days'"
             ]
             args = []
@@ -1138,7 +1129,6 @@ async def search_products(
         min_p = parsed.get("min_price")
 
         where_clauses = [
-            "LOWER(platform) != 'croma'",
             "in_stock = TRUE",
             "current_price > 0",
             "status = 'ACTIVE'"
@@ -1245,10 +1235,10 @@ async def get_public_stats():
     try:
         stats_row = await database.fetchrow("""
             SELECT 
-                (SELECT COUNT(*) FROM products WHERE LOWER(platform) != 'croma') as total_products,
+                (SELECT COUNT(*) FROM products) as total_products,
                 (SELECT COUNT(*) FROM deals) as total_deals,
                 (SELECT COUNT(*) FROM deals WHERE posted_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE) as deals_today,
-                (SELECT COUNT(*) FROM products WHERE previous_price > current_price AND in_stock = TRUE AND LOWER(platform) != 'croma') as drops_today,
+                (SELECT COUNT(*) FROM products WHERE previous_price > current_price AND in_stock = TRUE) as drops_today,
                 (SELECT MAX(posted_at) FROM deals) as latest_deal_time,
                 (SELECT jsonb_object_agg(
                     LOWER(platform),
@@ -1260,7 +1250,7 @@ async def get_public_stats():
                     SELECT platform, COUNT(*) as cnt, 
                            MAX(CASE WHEN mrp > current_price THEN ROUND(((mrp - current_price) / NULLIF(mrp, 0)) * 100) END) as max_disc
                     FROM products 
-                    WHERE in_stock = TRUE AND current_price > 0 AND mrp > current_price AND LOWER(platform) != 'croma'
+                    WHERE in_stock = TRUE AND current_price > 0 AND mrp > current_price
                     GROUP BY platform
                 ) sub) as by_platform_json;
         """)
@@ -1368,7 +1358,6 @@ async def get_public_categories():
                 FROM deals d
                 JOIN products p ON d.product_id = p.id
                 WHERE p.in_stock = TRUE AND p.status = 'ACTIVE' AND p.current_price > 0 AND p.mrp > p.current_price
-                  AND LOWER(p.platform) != 'croma'
                   AND p.current_price <= (d.posted_price * 1.01)
                   AND (d.posted_at >= NOW() - INTERVAL '24 hours' OR (p.last_checked >= NOW() - INTERVAL '12 hours' AND d.posted_at >= NOW() - INTERVAL '72 hours'))
                 UNION ALL
@@ -1377,7 +1366,6 @@ async def get_public_categories():
                     p.platform
                 FROM products p
                 WHERE p.in_stock = TRUE AND p.status = 'ACTIVE' AND p.current_price > 0 AND p.mrp > p.current_price
-                  AND LOWER(p.platform) != 'croma'
                   AND (p.created_at >= NOW() - INTERVAL '48 hours' OR p.last_price_change >= NOW() - INTERVAL '48 hours')
                   AND p.id NOT IN (SELECT product_id FROM deals WHERE posted_at >= NOW() - INTERVAL '72 hours')
             )
@@ -1591,7 +1579,6 @@ async def get_public_price_drops(
                 "p.previous_price > p.current_price",
                 "p.previous_price <= GREATEST(COALESCE(NULLIF(p.mrp, 0), p.current_price * 1.35) * 1.15, p.current_price * 3.0)",
                 "p.last_price_change >= NOW() - INTERVAL '48 hours'",
-                "LOWER(p.platform) != 'croma'",
                 "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) >= $1",
                 "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) <= 95.0"
             ]
@@ -1599,7 +1586,7 @@ async def get_public_price_drops(
             arg_idx = 2
 
             plat_clean = platform_val.strip().lower() if platform_val else ""
-            if plat_clean and plat_clean not in ("all", "croma"):
+            if plat_clean and plat_clean != "all":
                 where_clauses.append(f"LOWER(p.platform) = ${arg_idx}")
                 args.append(plat_clean)
                 arg_idx += 1
@@ -1658,7 +1645,7 @@ async def get_public_price_drops(
                       AND previous_price <= GREATEST(COALESCE(NULLIF(mrp, 0), current_price * 1.35) * 1.15, current_price * 3.0)
                       AND last_price_change >= NOW() - INTERVAL '48 hours'
                       AND (((previous_price - current_price) / NULLIF(previous_price, 0)) * 100) <= 85.0
-                      AND LOWER(platform) != 'croma';
+;
                 """) or 5000
                 await ram_cache.set("total_drops_today_count", cached_total_drops, ttl=1800)
 
@@ -1841,8 +1828,6 @@ async def submit_product_review(request: Request):
         plat = "ajio"
     elif "nykaa.com" in url_lower:
         plat = "nykaa"
-    elif "croma.com" in url_lower:
-        plat = "croma"
 
     # Check if exists by URL
     existing_id = await database.fetchval(
@@ -1977,7 +1962,6 @@ async def get_public_deals(
                 "p.in_stock = TRUE",
                 "p.status = 'ACTIVE'",
                 "p.current_price > 0",
-                "LOWER(p.platform) != 'croma'",
                 "(d.id IS NOT NULL OR p.mrp IS NULL OR p.mrp <= p.current_price * 25.0)"
             ]
             args = []
@@ -2058,8 +2042,8 @@ async def get_public_deals(
             # ── PLATFORM FILTER ─────────────────────────────────────────────────
             selected_platforms = []
             if platforms:
-                selected_platforms = [p.strip().lower() for p in platforms.split(",") if p.strip() and p.strip().lower() != "croma"]
-            elif platform_clean and platform_clean != "all" and platform_clean != "croma":
+                selected_platforms = [p.strip().lower() for p in platforms.split(",") if p.strip()]
+            elif platform_clean and platform_clean != "all":
                 selected_platforms = [platform_clean]
 
             if selected_platforms:
@@ -2306,7 +2290,7 @@ async def get_public_deals(
             if cached_total_catalog is None:
                 cached_total_catalog = await database.fetchval("""
                     SELECT COUNT(*) FROM products 
-                    WHERE in_stock = TRUE AND status = 'ACTIVE' AND current_price > 0 AND LOWER(platform) != 'croma';
+                    WHERE in_stock = TRUE AND status = 'ACTIVE' AND current_price > 0;
                 """) or 100000
                 await ram_cache.set("total_catalog_deals_count", cached_total_catalog, ttl=900)
 
@@ -2712,7 +2696,7 @@ async def page_atl(
 async def page_stores(request: Request, platform: str = ""):
     """Renders the Stores Directory or Dedicated Store Deals Page."""
     plat_clean = platform.strip().lower() if platform else ""
-    if plat_clean == "croma":
+    if plat_clean and plat_clean not in STORE_DISPLAY_NAMES:
         return RedirectResponse(url="/stores", status_code=302)
     store_name = STORE_DISPLAY_NAMES.get(plat_clean, plat_clean.capitalize()) if plat_clean else None
     
