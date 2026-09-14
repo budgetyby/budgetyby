@@ -152,14 +152,23 @@ async def upsert_product(data: dict) -> int:
     platform = data.get("platform")
     platform_id = str(data.get("platform_id") or "")
 
-    # Strict Deduplication Check: Look for existing product by platform_id, URL, or normalized Title
-    existing = await fetchrow("""
-        SELECT id, current_price, mrp, all_time_low 
-        FROM products 
-        WHERE platform = $1 
-          AND (platform_id = $2 OR product_url = $3 OR LOWER(TRIM(title)) = LOWER(TRIM($4)))
-        LIMIT 1;
-    """, platform, platform_id, p_url, title)
+    # Strict Deduplication Check: Fast index lookup if platform_id is present; fallback to URL/Title check only if empty
+    existing = None
+    if platform_id:
+        existing = await fetchrow("""
+            SELECT id, current_price, mrp, all_time_low 
+            FROM products 
+            WHERE platform = $1 AND platform_id = $2
+            LIMIT 1;
+        """, platform, platform_id)
+    else:
+        existing = await fetchrow("""
+            SELECT id, current_price, mrp, all_time_low 
+            FROM products 
+            WHERE platform = $1 
+              AND (product_url = $2 OR LOWER(TRIM(title)) = LOWER(TRIM($3)))
+            LIMIT 1;
+        """, platform, p_url, title)
 
     if existing:
         existing_id = existing["id"]
@@ -486,7 +495,10 @@ async def cleanup_old_daily_prices():
 async def get_product_by_platform_id(platform: str, platform_id: str) -> asyncpg.Record | None:
     """Look up a product by its platform and platform-specific ID."""
     return await fetchrow("""
-        SELECT * FROM products
+        SELECT id, platform, platform_id, title, current_price, mrp, in_stock, status,
+               affiliate_url, product_url, image_url, rating, review_count, all_time_low,
+               priority_tier, last_checked
+        FROM products
         WHERE platform = $1 AND platform_id = $2
     """, platform, platform_id)
 
@@ -597,54 +609,63 @@ async def get_core_metrics() -> dict:
     if _CORE_METRICS_CACHE["data"] and now < _CORE_METRICS_CACHE["expires_at"]:
         return _CORE_METRICS_CACHE["data"]
 
-    total_prods = await fetchval("SELECT COUNT(*) FROM products WHERE LOWER(platform) != 'croma';")
-    prods_today = await fetchval("""
-        SELECT COUNT(*) FROM products 
-        WHERE (created_at AT TIME ZONE 'Asia/Kolkata')::DATE = (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE
-          AND LOWER(platform) != 'croma';
-    """)
-    total_deals = await fetchval("""
-        SELECT COUNT(DISTINCT d.product_id) FROM deals d 
-        JOIN products p ON d.product_id = p.id 
-        WHERE LOWER(p.platform) != 'croma'
-          AND p.in_stock = TRUE
-          AND p.status = 'ACTIVE'
-          AND p.current_price > 0
-          AND p.current_price <= (d.posted_price * 1.01)
-          AND d.posted_at >= NOW() - INTERVAL '30 days';
-    """)
-    lifetime_deals = await fetchval("""
-        SELECT COUNT(*) FROM deals d 
-        JOIN products p ON d.product_id = p.id 
-        WHERE LOWER(p.platform) != 'croma';
-    """)
-    deals_today = await fetchval("""
-        SELECT COUNT(DISTINCT d.product_id) FROM deals d 
-        JOIN products p ON d.product_id = p.id 
-        WHERE d.posted_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE
-          AND LOWER(p.platform) != 'croma'
-          AND p.in_stock = TRUE
-          AND p.status = 'ACTIVE'
-          AND p.current_price > 0
-          AND p.current_price <= (d.posted_price * 1.01);
-    """)
-    drops_today = await fetchval("""
-        SELECT COUNT(*) FROM products p
-        JOIN daily_prices dp_today ON p.id = dp_today.product_id AND dp_today.date = (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE
-        JOIN daily_prices dp_yest ON p.id = dp_yest.product_id AND dp_yest.date = ((NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - 1)
-        WHERE dp_today.close_price < dp_yest.close_price 
-          AND p.in_stock = TRUE
-          AND dp_today.close_price > 0 AND dp_yest.close_price > 0
-          AND LOWER(p.platform) != 'croma';
+    row = await fetchrow("""
+        WITH
+          today AS (SELECT (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE AS d),
+          prods AS (
+            SELECT id, in_stock, status, current_price, created_at, all_time_low
+            FROM products
+            WHERE LOWER(platform) != 'croma'
+          ),
+          deals_base AS (
+            SELECT d.product_id, d.posted_at, d.posted_price, d.id as deal_id
+            FROM deals d
+            JOIN products p ON d.product_id = p.id
+            WHERE LOWER(p.platform) != 'croma'
+          )
+        SELECT
+          -- total_products
+          (SELECT COUNT(*) FROM prods) AS total_products,
+          -- products_added_today
+          (SELECT COUNT(*) FROM prods
+           WHERE (created_at AT TIME ZONE 'Asia/Kolkata')::DATE = (SELECT d FROM today)) AS products_added_today,
+          -- total_deals (active, in-stock, price still valid)
+          (SELECT COUNT(DISTINCT db.product_id)
+           FROM deals_base db
+           JOIN prods p ON db.product_id = p.id
+           WHERE p.in_stock = TRUE AND p.status = 'ACTIVE'
+             AND p.current_price > 0
+             AND p.current_price <= (db.posted_price * 1.01)
+             AND db.posted_at >= NOW() - INTERVAL '30 days') AS total_deals,
+          -- lifetime_deals
+          (SELECT COUNT(*) FROM deals_base) AS lifetime_deals,
+          -- deals_today
+          (SELECT COUNT(DISTINCT db.product_id)
+           FROM deals_base db
+           JOIN prods p ON db.product_id = p.id
+           WHERE db.posted_at >= (SELECT d FROM today)
+             AND p.in_stock = TRUE AND p.status = 'ACTIVE'
+             AND p.current_price > 0
+             AND p.current_price <= (db.posted_price * 1.01)) AS deals_today,
+          -- drops_today (price drop vs yesterday)
+          (SELECT COUNT(*)
+           FROM prods p
+           JOIN daily_prices dp_today ON p.id = dp_today.product_id
+             AND dp_today.date = (SELECT d FROM today)
+           JOIN daily_prices dp_yest ON p.id = dp_yest.product_id
+             AND dp_yest.date = (SELECT d FROM today) - 1
+           WHERE dp_today.close_price < dp_yest.close_price
+             AND p.in_stock = TRUE
+             AND dp_today.close_price > 0 AND dp_yest.close_price > 0) AS drops_today;
     """)
     res = {
-        "total_products": total_prods or 0,
-        "products_added_today": prods_today or 0,
-        "total_deals": total_deals or 0,
-        "active_deals": total_deals or 0,
-        "lifetime_deals": lifetime_deals or 0,
-        "deals_today": deals_today or 0,
-        "drops_today": drops_today or 0,
+        "total_products": (row["total_products"] if row else 0) or 0,
+        "products_added_today": (row["products_added_today"] if row else 0) or 0,
+        "total_deals": (row["total_deals"] if row else 0) or 0,
+        "active_deals": (row["total_deals"] if row else 0) or 0,
+        "lifetime_deals": (row["lifetime_deals"] if row else 0) or 0,
+        "deals_today": (row["deals_today"] if row else 0) or 0,
+        "drops_today": (row["drops_today"] if row else 0) or 0,
     }
     _CORE_METRICS_CACHE["data"] = res
     _CORE_METRICS_CACHE["expires_at"] = now + 600

@@ -160,20 +160,7 @@ async def hunt_live_store_deal(platform: str) -> Optional[Dict[str, Any]]:
         if not products:
             return None
 
-        # Organically ingest valid products into PostgreSQL catalog so website covers every category
-        ingest_tasks = []
-        for p in products[:15]:
-            p_price = float(p.get("current_price") or 0)
-            p_title = p.get("title") or ""
-            if p_price > 0 and len(p_title) >= 5:
-                ingest_tasks.append(database.upsert_product(p))
-        if ingest_tasks:
-            try:
-                await asyncio.gather(*ingest_tasks, return_exceptions=True)
-            except Exception as ie:
-                logger.debug(f"Catalog organic ingestion note: {ie}")
-
-        # Filter and pick the best non-cooldown candidate for posting
+        # Filter and pick the best non-cooldown candidate for posting (only winner gets upserted)
         random.shuffle(products)
         for p in products:
             price = float(p.get("current_price") or 0)

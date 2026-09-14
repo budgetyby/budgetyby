@@ -33,6 +33,16 @@ async def daily_cleanup():
         await database.sync_daily_price_baselines()
         await database.finalize_expired_tracking()
         
+        # Prune ingested_channel_deals older than 30 days (prevents unbounded table growth)
+        try:
+            deleted_icd = await database.execute("""
+                DELETE FROM ingested_channel_deals
+                WHERE created_at < NOW() - INTERVAL '30 days';
+            """)
+            logger.info(f"Pruned old ingested_channel_deals: {deleted_icd}")
+        except Exception as e:
+            logger.warning(f"Could not prune ingested_channel_deals: {e}")
+        
         try:
             from budgetby.engine.cooldown import cleanup_expired_cooldowns
             await cleanup_expired_cooldowns()

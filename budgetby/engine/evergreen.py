@@ -29,16 +29,17 @@ async def find_evergreen_deals(limit: int = 10, platform: str = None) -> list[Re
         platform_filter = "AND platform = $1" if platform else ""
         query = f"""
             SELECT id, platform, product_url, affiliate_url, title, current_price, mrp, rating, review_count, image_url, category
-            FROM products
-            WHERE in_stock = TRUE
-              AND current_price > 0
-              AND mrp > current_price
-              AND id NOT IN (
-                  SELECT product_id FROM deals
-                  WHERE posted_at > (NOW() - INTERVAL '24 hours')
+            FROM products p
+            WHERE p.in_stock = TRUE
+              AND p.current_price > 0
+              AND p.mrp > p.current_price
+              AND NOT EXISTS (
+                  SELECT 1 FROM deals d
+                  WHERE d.product_id = p.id
+                    AND d.posted_at > (NOW() - INTERVAL '24 hours')
               )
               {platform_filter}
-            ORDER BY rating DESC NULLS LAST, id DESC
+            ORDER BY p.rating DESC NULLS LAST, p.id DESC
             LIMIT ${2 if platform else 1};
         """
         args = [platform] if platform else []

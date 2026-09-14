@@ -10,7 +10,7 @@ from budgetby.engine.evergreen import get_evergreen_cooldown_days
 logger = logging.getLogger("budgetby.engine.cooldown")
 
 _cooldown_cache: dict[int, tuple[bool, float]] = {}
-_CACHE_TTL_SECONDS = 120.0  # 2-minute in-memory cache for cooldown status
+_CACHE_TTL_SECONDS = 300.0  # 5-minute in-memory cache for cooldown status — safe since cooldowns are 24h+
 
 async def is_on_cooldown(product_id: int) -> bool:
     """

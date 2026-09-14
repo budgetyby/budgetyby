@@ -1249,14 +1249,20 @@ async def get_public_stats():
                 (SELECT COUNT(*) FROM deals) as total_deals,
                 (SELECT COUNT(*) FROM deals WHERE posted_at >= (NOW() AT TIME ZONE 'Asia/Kolkata')::DATE) as deals_today,
                 (SELECT COUNT(*) FROM products WHERE previous_price > current_price AND in_stock = TRUE AND LOWER(platform) != 'croma') as drops_today,
-                (SELECT MAX(posted_at) FROM deals) as latest_deal_time
-        """)
-        by_plat = await database.fetch("""
-            SELECT platform, COUNT(*) as count, 
-                   MAX(CASE WHEN mrp > current_price THEN ROUND(((mrp - current_price) / NULLIF(mrp, 0)) * 100) END) as max_discount
-            FROM products 
-            WHERE in_stock = TRUE AND current_price > 0 AND mrp > current_price AND LOWER(platform) != 'croma'
-            GROUP BY platform;
+                (SELECT MAX(posted_at) FROM deals) as latest_deal_time,
+                (SELECT jsonb_object_agg(
+                    LOWER(platform),
+                    jsonb_build_object(
+                        'count', cnt,
+                        'max_discount', COALESCE(max_disc, 50)
+                    )
+                ) FROM (
+                    SELECT platform, COUNT(*) as cnt, 
+                           MAX(CASE WHEN mrp > current_price THEN ROUND(((mrp - current_price) / NULLIF(mrp, 0)) * 100) END) as max_disc
+                    FROM products 
+                    WHERE in_stock = TRUE AND current_price > 0 AND mrp > current_price AND LOWER(platform) != 'croma'
+                    GROUP BY platform
+                ) sub) as by_platform_json;
         """)
 
         total_prods = stats_row["total_products"] if stats_row else 101000
@@ -1265,6 +1271,22 @@ async def get_public_stats():
         drops_today = stats_row["drops_today"] if stats_row else 30000
         latest_time = stats_row["latest_deal_time"] if stats_row else None
 
+        by_plat_raw = stats_row["by_platform_json"] if stats_row and stats_row.get("by_platform_json") else {}
+        if isinstance(by_plat_raw, str):
+            import json
+            try:
+                by_plat_raw = json.loads(by_plat_raw)
+            except Exception:
+                by_plat_raw = {}
+
+        by_platform = {}
+        for plat in ["amazon", "flipkart", "myntra", "ajio", "nykaa"]:
+            val = by_plat_raw.get(plat) or {"count": 0, "max_discount": 50}
+            by_platform[plat] = {
+                "count": int(val.get("count", 0)),
+                "max_discount": int(val.get("max_discount", 50))
+            }
+
         result = {
             "total_products": total_prods,
             "total_deals": total_deals,
@@ -1272,7 +1294,7 @@ async def get_public_stats():
             "lifetime_deals": total_deals,
             "deals_today": deals_today,
             "drops_today": drops_today,
-            "by_platform": {r["platform"].lower(): {"count": r["count"], "max_discount": int(r["max_discount"] or 50)} for r in by_plat},
+            "by_platform": by_platform,
             "latest_timestamp": latest_time.isoformat() if latest_time else None,
             "platforms": ["Amazon", "Flipkart", "Myntra", "Ajio", "Nykaa"],
             "status": "live"

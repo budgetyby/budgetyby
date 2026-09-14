@@ -190,16 +190,16 @@ async def _post_digest(digest_type: str, hours_lookback: int = 12):
         from budgetby.bot.templates import format_daily_digest
         
         # Query top 5 deals in the lookback window ordered by deal_score and savings_pct
-        rows = await database.fetch(f"""
+        rows = await database.fetch("""
             SELECT p.title, p.platform, p.category, p.product_url, p.affiliate_url,
                    p.image_url, p.rating, p.review_count, d.posted_price, d.posted_mrp,
                    d.savings_amount, d.savings_pct, d.deal_score, d.badge
             FROM deals d
             JOIN products p ON d.product_id = p.id
-            WHERE d.posted_at >= NOW() - INTERVAL '{hours_lookback} hours'
+            WHERE d.posted_at >= NOW() - ($1 * INTERVAL '1 hour')
             ORDER BY d.deal_score DESC, d.savings_pct DESC
             LIMIT 5;
-        """)
+        """, hours_lookback)
 
         if not rows or len(rows) < 3:
             # Fallback to top products with highest discount currently in DB
@@ -274,13 +274,10 @@ async def verify_active_deals_loop():
                    COALESCE(d.posted_price, p.current_price) as posted_price, 
                    p.current_price
             FROM products p
-            LEFT JOIN deals d ON d.product_id = p.id
+            JOIN deals d ON d.product_id = p.id
             WHERE p.in_stock = TRUE AND p.status = 'ACTIVE'
               AND LOWER(p.platform) != 'croma'
-              AND (
-                  p.last_checked < '2001-01-01'::timestamptz
-                  OR (d.id IS NOT NULL AND d.posted_at >= NOW() - INTERVAL '72 hours')
-              )
+              AND d.posted_at >= NOW() - INTERVAL '72 hours'
             ORDER BY p.last_checked ASC NULLS FIRST
             LIMIT 5;
         """)
