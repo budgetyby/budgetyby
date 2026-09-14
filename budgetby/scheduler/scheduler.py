@@ -357,8 +357,8 @@ def start_scheduler():
     # Daily Evening Digest at 8:00 PM IST
     _scheduler.add_job(evening_digest, "cron", hour=20, minute=0, timezone="Asia/Kolkata", id="evening_digest", replace_existing=True)
 
-    # High-Velocity 45-Second Paced Broadcaster with Live Deal Hunter
-    _scheduler.add_job(paced_posting_loop, "interval", seconds=45, id="paced_posting",
+    # High-Velocity 30-Second Paced Broadcaster with Live Deal Hunter
+    _scheduler.add_job(paced_posting_loop, "interval", seconds=30, id="paced_posting",
                        max_instances=1, coalesce=True, misfire_grace_time=60, replace_existing=True)
 
     _scheduler.start()

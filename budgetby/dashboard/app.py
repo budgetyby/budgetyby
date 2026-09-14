@@ -2821,5 +2821,22 @@ async def redirect_old_admin(rest: str = ""):
     """Safely redirects deprecated /admin routes to consumer homepage."""
     return RedirectResponse(url="/", status_code=302)
 
+@app.get("/about", response_class=HTMLResponse)
+@app.get("/about/", response_class=HTMLResponse)
+async def page_about(request: Request):
+    """Renders the About & Methodology page."""
+    return render_consumer_template("consumer/about.html", request, {
+        "active_page": "about"
+    }, cache_seconds=300)
+
+@app.exception_handler(404)
+async def custom_404_handler(request: Request, exc):
+    """Renders the custom branded 404 page for missing consumer routes."""
+    if request.url.path.startswith("/api/"):
+        return JSONResponse(status_code=404, content={"detail": "Not Found", "status": "error"})
+    return render_consumer_template("consumer/404.html", request, {
+        "active_page": "404"
+    }, cache_seconds=60)
+
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=5000)

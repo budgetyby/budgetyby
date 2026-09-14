@@ -182,32 +182,34 @@
             <!-- Modal Body (Scrollable) -->
             <div class="p-5 overflow-y-auto custom-scrollbar space-y-6 flex-1">
                 
-                <!-- Audience / Gender Filter -->
+                <!-- Audience / Gender Filter (Contextual to Fashion, Footwear, Watches, Beauty, Jewellery, Sports) -->
+                {% if not current_category or current_category in ['fashion', 'footwear', 'watches', 'beauty', 'jewellery', 'sports'] %}
                 <div>
                     <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                         <span>👥</span> Audience / Gender
                     </h3>
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        <button onclick="onGenderFilterChange('', this); closeFilterModal();" class="gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition text-center {% if not current_gender %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                        <button onclick="onGenderFilterChange('', this)" class="gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition text-center {% if not current_gender %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
                             🌟 All
                         </button>
-                        <button onclick="onGenderFilterChange('men', this); closeFilterModal();" class="gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition text-center {% if current_gender == 'men' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                        <button onclick="onGenderFilterChange('men', this)" class="gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition text-center {% if current_gender == 'men' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
                             👨 Men
                         </button>
-                        <button onclick="onGenderFilterChange('women', this); closeFilterModal();" class="gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition text-center {% if current_gender == 'women' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                        <button onclick="onGenderFilterChange('women', this)" class="gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition text-center {% if current_gender == 'women' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
                             👩 Women
                         </button>
-                        <button onclick="onGenderFilterChange('boys', this); closeFilterModal();" class="gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition text-center {% if current_gender == 'boys' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                        <button onclick="onGenderFilterChange('boys', this)" class="gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition text-center {% if current_gender == 'boys' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
                             👦 Boys
                         </button>
-                        <button onclick="onGenderFilterChange('girls', this); closeFilterModal();" class="gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition text-center {% if current_gender == 'girls' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                        <button onclick="onGenderFilterChange('girls', this)" class="gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition text-center {% if current_gender == 'girls' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
                             👧 Girls
                         </button>
-                        <button onclick="onGenderFilterChange('kids', this); closeFilterModal();" class="gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition text-center {% if current_gender == 'kids' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                        <button onclick="onGenderFilterChange('kids', this)" class="gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition text-center {% if current_gender == 'kids' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
                             👶 Kids
                         </button>
                     </div>
                 </div>
+                {% endif %}
 
                 <!-- Store / Platform Filter -->
                 <div>
@@ -215,26 +217,26 @@
                         <span>🏪</span> Store / Platform
                     </h3>
                     <div class="grid grid-cols-2 gap-2">
-                        <button onclick="onStoreFilterChange(''); closeFilterModal();" class="px-3 py-2.5 rounded-xl text-xs font-bold transition text-left border {% if not current_platform %}bg-indigo-50 border-indigo-600 text-indigo-700 ring-1 ring-indigo-500/20{% else %}bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100{% endif %}">
+                        <button onclick="onStoreFilterChange('')" class="px-3 py-2.5 rounded-xl text-xs font-bold transition text-left border {% if not current_platform %}bg-indigo-50 border-indigo-600 text-indigo-700 ring-1 ring-indigo-500/20{% else %}bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100{% endif %}">
                             All 5 Stores
                         </button>
-                        <button onclick="onStoreFilterChange('amazon'); closeFilterModal();" class="px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 border {% if current_platform == 'amazon' %}bg-amber-50 border-amber-500 text-amber-900 ring-1 ring-amber-500/20{% else %}bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100{% endif %}">
+                        <button onclick="onStoreFilterChange('amazon')" class="px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 border {% if current_platform == 'amazon' %}bg-amber-50 border-amber-500 text-amber-900 ring-1 ring-amber-500/20{% else %}bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100{% endif %}">
                             <span class="w-2.5 h-2.5 rounded-full bg-[#FF9900]"></span>
                             <span>Amazon</span>
                         </button>
-                        <button onclick="onStoreFilterChange('flipkart'); closeFilterModal();" class="px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 border {% if current_platform == 'flipkart' %}bg-blue-50 border-blue-500 text-blue-900 ring-1 ring-blue-500/20{% else %}bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100{% endif %}">
+                        <button onclick="onStoreFilterChange('flipkart')" class="px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 border {% if current_platform == 'flipkart' %}bg-blue-50 border-blue-500 text-blue-900 ring-1 ring-blue-500/20{% else %}bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100{% endif %}">
                             <span class="w-2.5 h-2.5 rounded-full bg-[#2874F0]"></span>
                             <span>Flipkart</span>
                         </button>
-                        <button onclick="onStoreFilterChange('myntra'); closeFilterModal();" class="px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 border {% if current_platform == 'myntra' %}bg-pink-50 border-pink-500 text-pink-900 ring-1 ring-pink-500/20{% else %}bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100{% endif %}">
+                        <button onclick="onStoreFilterChange('myntra')" class="px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 border {% if current_platform == 'myntra' %}bg-pink-50 border-pink-500 text-pink-900 ring-1 ring-pink-500/20{% else %}bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100{% endif %}">
                             <span class="w-2.5 h-2.5 rounded-full bg-[#FF3F6C]"></span>
                             <span>Myntra</span>
                         </button>
-                        <button onclick="onStoreFilterChange('ajio'); closeFilterModal();" class="px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 border {% if current_platform == 'ajio' %}bg-amber-50 border-amber-500 text-amber-900 ring-1 ring-amber-500/20{% else %}bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100{% endif %}">
+                        <button onclick="onStoreFilterChange('ajio')" class="px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 border {% if current_platform == 'ajio' %}bg-amber-50 border-amber-500 text-amber-900 ring-1 ring-amber-500/20{% else %}bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100{% endif %}">
                             <span class="w-2.5 h-2.5 rounded-full bg-[#D99814]"></span>
                             <span>Ajio</span>
                         </button>
-                        <button onclick="onStoreFilterChange('nykaa'); closeFilterModal();" class="px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 border {% if current_platform == 'nykaa' %}bg-rose-50 border-rose-500 text-rose-900 ring-1 ring-rose-500/20{% else %}bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100{% endif %}">
+                        <button onclick="onStoreFilterChange('nykaa')" class="px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 border {% if current_platform == 'nykaa' %}bg-rose-50 border-rose-500 text-rose-900 ring-1 ring-rose-500/20{% else %}bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100{% endif %}">
                             <span class="w-2.5 h-2.5 rounded-full bg-[#FC2779]"></span>
                             <span>Nykaa</span>
                         </button>
@@ -247,11 +249,11 @@
                         <span>🔥</span> Minimum Discount
                     </h3>
                     <div class="grid grid-cols-2 gap-2 text-xs">
-                        <button onclick="setMinDiscount(0); closeFilterModal();" id="discChip0" class="disc-chip px-3 py-2.5 rounded-xl font-bold bg-indigo-600 text-white transition text-center">Any %</button>
-                        <button onclick="setMinDiscount(20); closeFilterModal();" id="discChip20" class="disc-chip px-3 py-2.5 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-center">20%+ OFF</button>
-                        <button onclick="setMinDiscount(40); closeFilterModal();" id="discChip40" class="disc-chip px-3 py-2.5 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-center">40%+ OFF</button>
-                        <button onclick="setMinDiscount(60); closeFilterModal();" id="discChip60" class="disc-chip px-3 py-2.5 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-center">60%+ OFF</button>
-                        <button onclick="setMinDiscount(70); closeFilterModal();" id="discChip70" class="disc-chip col-span-2 px-3 py-2.5 rounded-xl font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition text-center">🔥 70%+ Off Loot</button>
+                        <button onclick="setMinDiscount(0)" id="discChip0" class="disc-chip px-3 py-2.5 rounded-xl font-bold bg-indigo-600 text-white transition text-center">Any %</button>
+                        <button onclick="setMinDiscount(20)" id="discChip20" class="disc-chip px-3 py-2.5 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-center">20%+ OFF</button>
+                        <button onclick="setMinDiscount(40)" id="discChip40" class="disc-chip px-3 py-2.5 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-center">40%+ OFF</button>
+                        <button onclick="setMinDiscount(60)" id="discChip60" class="disc-chip px-3 py-2.5 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-center">60%+ OFF</button>
+                        <button onclick="setMinDiscount(70)" id="discChip70" class="disc-chip col-span-2 px-3 py-2.5 rounded-xl font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition text-center">🔥 70%+ Off Loot</button>
                     </div>
                 </div>
 
@@ -266,11 +268,11 @@
                         <input type="number" id="maxPriceInput" placeholder="Max ₹" class="w-1/2 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-mono" />
                     </div>
                     <div class="grid grid-cols-2 gap-2 mt-2">
-                        <button onclick="onPriceQuickFilter(499); closeFilterModal();" class="px-3 py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition text-center">⚡ Under ₹499</button>
-                        <button onclick="onPriceQuickFilter(999); closeFilterModal();" class="px-3 py-2 rounded-xl text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition text-center">⚡ Under ₹999</button>
+                        <button onclick="onPriceQuickFilter(499)" class="px-3 py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition text-center">⚡ Under ₹499</button>
+                        <button onclick="onPriceQuickFilter(999)" class="px-3 py-2 rounded-xl text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition text-center">⚡ Under ₹999</button>
                     </div>
-                    <button onclick="applyPriceRange(); closeFilterModal();" class="mt-2.5 w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-sm">
-                        Apply Custom Price Range
+                    <button onclick="applyPriceRange()" class="mt-2.5 w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-sm">
+                        Apply Price Filter
                     </button>
                 </div>
 
@@ -280,10 +282,10 @@
                         <span>⭐</span> Minimum Rating
                     </h3>
                     <div class="grid grid-cols-4 gap-2 text-xs">
-                        <button onclick="setMinRating(0); closeFilterModal();" id="ratingChip0" class="rating-chip px-2.5 py-2 rounded-xl font-bold bg-indigo-600 text-white transition text-center">Any ★</button>
-                        <button onclick="setMinRating(3.5); closeFilterModal();" id="ratingChip35" class="rating-chip px-2.5 py-2 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-center">3.5+ ★</button>
-                        <button onclick="setMinRating(4.0); closeFilterModal();" id="ratingChip40" class="rating-chip px-2.5 py-2 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-center">4.0+ ★</button>
-                        <button onclick="setMinRating(4.5); closeFilterModal();" id="ratingChip45" class="rating-chip px-2.5 py-2 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-center">4.5+ ★</button>
+                        <button onclick="setMinRating(0)" id="ratingChip0" class="rating-chip px-2.5 py-2 rounded-xl font-bold bg-indigo-600 text-white transition text-center">Any ★</button>
+                        <button onclick="setMinRating(3.5)" id="ratingChip35" class="rating-chip px-2.5 py-2 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-center">3.5+ ★</button>
+                        <button onclick="setMinRating(4.0)" id="ratingChip40" class="rating-chip px-2.5 py-2 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-center">4.0+ ★</button>
+                        <button onclick="setMinRating(4.5)" id="ratingChip45" class="rating-chip px-2.5 py-2 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition text-center">4.5+ ★</button>
                     </div>
                 </div>
 
@@ -552,7 +554,7 @@
 
                         <!-- Title -->
                         <div class="mt-1.5">
-                            <a href="${dealLink}" target="_blank" rel="noopener noreferrer" 
+                            <a href="${dealLink ? dealLink : '#'}" ${dealLink ? 'target="_blank" rel="noopener noreferrer"' : ''} 
                                class="text-xs font-bold text-slate-900 hover:text-indigo-600 line-clamp-2 break-words transition leading-snug" 
                                title="${safeTitle}">
                                 ${safeTitle}
@@ -581,18 +583,23 @@
                             </div>` : ''}
                         </div>
 
+                        ${dealLink ? `
                         <a href="${dealLink}" target="_blank" rel="noopener noreferrer" 
                            class="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 transition shadow-sm shadow-indigo-600/20 active:scale-98">
                             <span>Buy on ${storeCfg.name}</span>
                             <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                        </a>
+                        </a>` : `
+                        <div class="w-full py-2 px-3 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs flex items-center justify-center gap-1.5 cursor-not-allowed">
+                            <span>Price Tracked on ${storeCfg.name}</span>
+                        </div>`}
 
                         <!-- Report Price Change -->
-                        <div class="mt-2 flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-50">
-                            <span>Price changed?</span>
-                            <button onclick="handleSendForReview(${deal.product_id || deal.id}, '${safeTitle.replace(/'/g, "\'")}', '${dealLink.replace(/'/g, "\'")}', ${cp})" 
-                                    class="font-semibold text-indigo-600 hover:text-indigo-800 transition">
-                                Report Change
+                        <div class="mt-2 flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-slate-50">
+                            <span class="text-[10px] text-slate-400">Tracked Deal</span>
+                            <button onclick="handleSendForReview(${deal.product_id || deal.id}, '${safeTitle.replace(/'/g, "")}', '${dealLink.replace(/'/g, "")}', ${cp})" 
+                                    class="font-semibold text-indigo-600 hover:text-indigo-800 transition flex items-center gap-1">
+                                <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                                <span>Request Price Check</span>
                             </button>
                         </div>
                     </div>
@@ -623,11 +630,12 @@
         dealsState.gender = gender;
         dealsState.page = 1;
         document.querySelectorAll('.gender-btn').forEach(b => {
-            b.className = 'gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200';
+            b.className = 'gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200';
         });
         if (btn) {
-            btn.className = 'gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition bg-indigo-600 text-white shadow-sm';
+            btn.className = 'gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition bg-indigo-600 text-white shadow-sm';
         }
+        updateActiveFilterBadge();
         loadDeals();
     }
 
@@ -637,12 +645,14 @@
         dealsState.page = 1;
         const maxInput = document.getElementById('maxPriceInput');
         if (maxInput) maxInput.value = maxP;
+        updateActiveFilterBadge();
         loadDeals();
     }
 
     function onStoreFilterChange(plat) {
         dealsState.platform = plat;
         dealsState.page = 1;
+        updateActiveFilterBadge();
         loadDeals();
     }
 
@@ -658,6 +668,7 @@
             activeChip.classList.remove('bg-slate-100', 'text-slate-700');
             activeChip.classList.add('bg-indigo-600', 'text-white');
         }
+        updateActiveFilterBadge();
         loadDeals();
     }
 
@@ -667,12 +678,18 @@
         dealsState.minPrice = minVal;
         dealsState.maxPrice = maxVal;
         dealsState.page = 1;
+        updateActiveFilterBadge();
         loadDeals();
     }
 
     function onSortChange(sortBy) {
         dealsState.sortBy = sortBy;
         dealsState.page = 1;
+        try {
+            const url = new URL(window.location);
+            url.searchParams.set('sort_by', sortBy);
+            window.history.replaceState(dealsState, '', url);
+        } catch (e) {}
         loadDeals();
     }
 
@@ -693,8 +710,6 @@
         dealsState.search = '';
         dealsState.sortBy = 'latest';
 
-        const radioAll = document.querySelector('input[name="storeFilter"][value=""]');
-        if (radioAll) radioAll.checked = true;
         const minP = document.getElementById('minPriceInput');
         if (minP) minP.value = '';
         const maxP = document.getElementById('maxPriceInput');
@@ -703,10 +718,11 @@
 
         document.querySelectorAll('.gender-btn').forEach((b, idx) => {
             b.className = idx === 0 
-                ? 'gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition bg-indigo-600 text-white shadow-sm'
-                : 'gender-btn px-3 py-1.5 rounded-xl text-xs font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200';
+                ? 'gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition bg-indigo-600 text-white shadow-sm'
+                : 'gender-btn px-3 py-2.5 rounded-xl text-xs font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200';
         });
 
+        updateActiveFilterBadge();
         loadDeals();
     }
 
@@ -748,6 +764,7 @@
         if (dealsState.platform) count++;
         if (dealsState.minDiscount > 0) count++;
         if (dealsState.minPrice > 0 || dealsState.maxPrice > 0) count++;
+        if (dealsState.minRating > 0) count++;
         
         const badge = document.getElementById('activeFilterBadge');
         if (badge) {

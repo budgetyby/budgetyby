@@ -1,109 +1,158 @@
 """
 BudgetBy — Live Smart Deal Hunter (All Platforms)
-Dynamically scans live store high-discount APIs and deals feeds on each rotation tick:
-- Amazon: Lightning Deals (/deals & /gp/goldbox) & Top Category Deals
-- Flipkart: Top Category Deals & Flash Discounts
-- Myntra: Live Gateway Search API (sort=discount)
-- Ajio: Top Fashion & Clearance Deals
-- Nykaa: Live Beauty, Skincare & Fragrance (sort=discount)
+Systematically scans live store high-discount APIs and deals feeds in strict round-robin ("one by one") order:
+- Amazon: Today's Deals Hub & 27 Category Bestsellers/New Releases
+- Flipkart: 97 Category feeds with exact SIDs (Mobiles, Electronics, Fashion, Home, Appliances, etc.)
+- Myntra: 105 Category feeds with exact slugs (Men, Women, Kids, Ethnic, Western, Footwear, Accessories, etc.)
+- Ajio: 14 Category feeds with exact numeric codes (Men, Women, Footwear, Home)
+- Nykaa: 54 Category feeds with exact full paths (Skincare, Makeup, Haircare, Fragrances, Grooming, Appliances)
 
-Upserts qualifying loot into PostgreSQL (expanding product count organically)
-and returns the deal for immediate Telegram broadcasting.
+Upserts qualifying loot into PostgreSQL (expanding product count organically across all categories)
+and returns the deal for immediate Telegram broadcasting on schedule.
 """
 
+import asyncio
 import random
 import logging
 from typing import Dict, Any, Optional
+from budgetby import config
 from budgetby import database
 from budgetby.engine.cooldown import is_on_cooldown
 
 logger = logging.getLogger("budgetby.engine.live_hunter")
 
-HUNT_CATEGORIES = {
-    "myntra": [
-        "men-tshirts", "women-kurtas-sets", "casual-shoes", "women-dresses",
-        "men-jeans", "handbags", "perfumes", "sports-shoes", "trousers", "watches"
-    ],
-    "nykaa": [
-        "sunscreen", "face-serum", "lipstick", "perfumes-women",
-        "perfumes-men", "shampoo", "mens-grooming", "body-lotion"
-    ],
-    "flipkart": [
-        ("t-shirts", "2oq,s1a,w04,smo"),
-        ("shoes", "osp,cil"),
-        ("casual-shirts", "2oq,s1a,w04,e83"),
-        ("jeans", "2oq,s1a,w04,qda"),
-        ("watches", "r18,f1m"),
-        ("headphones-earphones", "0pm,fcn")
-    ],
-    "ajio": [
-        "men-tshirts", "women-kurtas", "men-casual-shoes", "women-westernwear", "men-jeans"
-    ],
-    "amazon": [
-        "deals_hub",
-        "wireless earbuds", "smart watch", "running shoes men", "men t-shirt cotton",
-        "women kurti set with dupatta", "bluetooth speaker", "perfumes for men"
-    ]
+# ════════════════════════════════════════════════════════════════════════
+# 1. COMPREHENSIVE TARGET MAPPING (298 Total Categories Across 5 Stores)
+# ════════════════════════════════════════════════════════════════════════
+
+# Amazon: Deals Hub + 27 Category Bestsellers & New Releases
+AMAZON_TARGETS = ["deals_hub", "deals_hub"] + list(getattr(config, "AMAZON_DISCOVERY_TARGETS", {}).keys())
+
+# Flipkart: 97 Categories with exact SIDs and category mappings
+FLIPKART_TARGETS = [
+    (k, v["sid"], v.get("category", "fashion"))
+    for k, v in getattr(config, "FLIPKART_DISCOVERY_TARGETS", {}).items()
+]
+
+# Myntra: 105 Categories with exact slugs
+MYNTRA_TARGETS = [
+    (k, v.get("category", "fashion"))
+    for k, v in getattr(config, "MYNTRA_DISCOVERY_TARGETS", {}).items()
+]
+
+# Ajio: 14 Categories with exact numeric codes
+AJIO_TARGETS = [
+    (k, v["code"], v.get("category", "fashion"))
+    for k, v in getattr(config, "AJIO_DISCOVERY_TARGETS", {}).items()
+]
+
+# Nykaa: 54 Categories with exact full paths
+NYKAA_TARGETS = [
+    (k, v["path"], v.get("category", "beauty"))
+    for k, v in getattr(config, "NYKAA_DISCOVERY_TARGETS", {}).items()
+]
+
+# Stateful round-robin pointers (guarantees one-by-one sequential scanning without skipping any category)
+_HUNT_INDICES = {
+    "amazon": 0,
+    "flipkart": 0,
+    "myntra": 0,
+    "ajio": 0,
+    "nykaa": 0
 }
 
 async def hunt_live_store_deal(platform: str) -> Optional[Dict[str, Any]]:
     """
     Hunts for a single fresh, high-discount deal live from any store's live API / deals feed.
-    Upserts it into the DB (expanding product count organically) and returns it.
+    Scrapes categories ONE BY ONE in strict sequential round-robin order.
+    Upserts qualifying loot into PostgreSQL (expanding catalog organically) and returns it.
     """
     platform = platform.lower()
-    min_disc = 0.35  # 35% minimum discount for live hunted flash deals
+    min_disc = 0.25 if platform in ("nykaa", "amazon") else 0.35  # 25% for Amazon & Nykaa, 35% for fashion
+    min_savings = 100 if platform == "nykaa" else 150
 
     try:
         products = []
         
-        # 1. AMAZON LIVE HUNT
+        # 1. AMAZON LIVE HUNT (28 Targets in Sequential Round-Robin)
         if platform == "amazon":
             from budgetby.discovery import amazon_discover
-            kw = random.choice(HUNT_CATEGORIES["amazon"])
-            if kw == "deals_hub":
-                products = await amazon_discover.discover_deals_page(pages=1)
+            if not AMAZON_TARGETS:
+                return None
+            idx = _HUNT_INDICES["amazon"] % len(AMAZON_TARGETS)
+            _HUNT_INDICES["amazon"] += 1
+            target = AMAZON_TARGETS[idx]
+            
+            logger.info(f"🏹 [LIVE HUNT] [AMAZON] Category {idx+1}/{len(AMAZON_TARGETS)}: {target}")
+            if target == "deals_hub":
+                products = await amazon_discover.discover_deals_page(pages=2)
+            elif idx % 2 == 0:
+                products = await amazon_discover.discover_bestsellers(target, pages=1)
             else:
-                products = await amazon_discover.discover_search_keywords(kw, pages=1)
+                products = await amazon_discover.discover_new_releases(target, pages=1)
             for p in products:
                 p["platform"] = "amazon"
-                p["category"] = p.get("category", "electronics")
+                p["category"] = p.get("category", target if target != "deals_hub" else "electronics")
 
-        # 2. MYNTRA LIVE HUNT
+        # 2. MYNTRA LIVE HUNT (105 Categories in Sequential Round-Robin)
         elif platform == "myntra":
             from budgetby.discovery import myntra_discover
-            cat = random.choice(HUNT_CATEGORIES["myntra"])
-            products = await myntra_discover.discover_category(cat, pages=1, sort="discount")
+            if not MYNTRA_TARGETS:
+                return None
+            idx = _HUNT_INDICES["myntra"] % len(MYNTRA_TARGETS)
+            _HUNT_INDICES["myntra"] += 1
+            cat_slug, cat_label = MYNTRA_TARGETS[idx]
+            
+            logger.info(f"🏹 [LIVE HUNT] [MYNTRA] Category {idx+1}/{len(MYNTRA_TARGETS)}: {cat_slug}")
+            products = await myntra_discover.discover_category(cat_slug, pages=1, sort="discount")
             for p in products:
                 p["platform"] = "myntra"
-                p["category"] = "fashion"
+                p["category"] = cat_label
             
-        # 3. NYKAA LIVE HUNT
+        # 3. NYKAA LIVE HUNT (54 Categories in Sequential Round-Robin)
         elif platform == "nykaa":
             from budgetby.discovery import nykaa_discover
-            cat = random.choice(HUNT_CATEGORIES["nykaa"])
-            products = await nykaa_discover.discover_category(cat, pages=1, sort="discount")
+            if not NYKAA_TARGETS:
+                return None
+            idx = _HUNT_INDICES["nykaa"] % len(NYKAA_TARGETS)
+            _HUNT_INDICES["nykaa"] += 1
+            cat_name, cat_path, cat_label = NYKAA_TARGETS[idx]
+            
+            logger.info(f"🏹 [LIVE HUNT] [NYKAA] Category {idx+1}/{len(NYKAA_TARGETS)}: {cat_name} ({cat_path})")
+            products = await nykaa_discover.discover_category(cat_path, pages=1, sort="discount")
             for p in products:
                 p["platform"] = "nykaa"
-                p["category"] = "beauty"
+                p["category"] = cat_label
 
-        # 4. FLIPKART LIVE HUNT
+        # 4. FLIPKART LIVE HUNT (97 Categories in Sequential Round-Robin)
         elif platform == "flipkart":
             from budgetby.discovery import flipkart_discover
-            cat, sid = random.choice(HUNT_CATEGORIES["flipkart"])
-            products = await flipkart_discover.discover_category(cat, sid, pages=1, sort="popularity")
+            if not FLIPKART_TARGETS:
+                return None
+            idx = _HUNT_INDICES["flipkart"] % len(FLIPKART_TARGETS)
+            _HUNT_INDICES["flipkart"] += 1
+            cat_name, sid, cat_label = FLIPKART_TARGETS[idx]
+            
+            logger.info(f"🏹 [LIVE HUNT] [FLIPKART] Category {idx+1}/{len(FLIPKART_TARGETS)}: {cat_name} (sid={sid})")
+            products = await flipkart_discover.discover_category(cat_name, sid, pages=1, sort="popularity")
             for p in products:
                 p["platform"] = "flipkart"
-                p["category"] = "fashion"
+                p["category"] = cat_label
 
-        # 5. AJIO LIVE HUNT
+        # 5. AJIO LIVE HUNT (14 Categories in Sequential Round-Robin)
         elif platform == "ajio":
             from budgetby.discovery import ajio_discover
-            cat = random.choice(HUNT_CATEGORIES["ajio"])
-            products = await ajio_discover.discover_category(cat, pages=1)
+            if not AJIO_TARGETS:
+                return None
+            idx = _HUNT_INDICES["ajio"] % len(AJIO_TARGETS)
+            _HUNT_INDICES["ajio"] += 1
+            cat_name, code, cat_label = AJIO_TARGETS[idx]
+            
+            logger.info(f"🏹 [LIVE HUNT] [AJIO] Category {idx+1}/{len(AJIO_TARGETS)}: {cat_name} (code={code})")
+            products = await ajio_discover.discover_category(code, pages=1)
             for p in products:
                 p["platform"] = "ajio"
-                p["category"] = "fashion"
+                p["category"] = cat_label
 
         else:
             return None
@@ -111,7 +160,20 @@ async def hunt_live_store_deal(platform: str) -> Optional[Dict[str, Any]]:
         if not products:
             return None
 
-        # Filter and pick the best non-cooldown candidate
+        # Organically ingest valid products into PostgreSQL catalog so website covers every category
+        ingest_tasks = []
+        for p in products[:15]:
+            p_price = float(p.get("current_price") or 0)
+            p_title = p.get("title") or ""
+            if p_price > 0 and len(p_title) >= 5:
+                ingest_tasks.append(database.upsert_product(p))
+        if ingest_tasks:
+            try:
+                await asyncio.gather(*ingest_tasks, return_exceptions=True)
+            except Exception as ie:
+                logger.debug(f"Catalog organic ingestion note: {ie}")
+
+        # Filter and pick the best non-cooldown candidate for posting
         random.shuffle(products)
         for p in products:
             price = float(p.get("current_price") or 0)
@@ -122,7 +184,7 @@ async def hunt_live_store_deal(platform: str) -> Optional[Dict[str, Any]]:
                 continue
 
             disc = (mrp - price) / mrp
-            if disc < min_disc or (mrp - price) < 150:
+            if disc < min_disc or (mrp - price) < min_savings:
                 continue
 
             # Upsert into PostgreSQL (adds if new or updates existing)
@@ -150,3 +212,4 @@ async def hunt_live_store_deal(platform: str) -> Optional[Dict[str, Any]]:
         logger.debug(f"Live hunt exception for {platform}: {e}")
 
     return None
+

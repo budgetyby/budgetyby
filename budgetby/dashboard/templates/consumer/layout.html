@@ -8,6 +8,7 @@
     <meta property="og:title" content="BudgetBy — India's Independent Price Tracker & Deal Discovery">
     <meta property="og:description" content="Real price drops & live deals across India's top online stores.">
     <meta property="og:type" content="website">
+    <meta property="og:image" content="/static/og-banner.png">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -68,13 +69,13 @@
     <div id="pageProgressBar" class="fixed top-0 left-0 h-1 bg-gradient-to-r from-indigo-500 via-rose-500 to-emerald-500 z-50 transition-all duration-300 pointer-events-none opacity-0 w-0"></div>
 
     <!-- ── Top Global Alert & Transparency Ticker ────────────────────────── -->
-    <aside aria-label="Announcement" class="bg-slate-900 text-xs py-2 px-4 text-center text-slate-200 flex items-center justify-center gap-2">
-        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 font-bold text-[10px] tracking-wide border border-emerald-500/30">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Live Channel Radar
+    <aside aria-label="Announcement" class="bg-slate-900 text-xs py-2 px-3 sm:px-4 text-center text-slate-200 flex items-center justify-center gap-2 flex-wrap sm:flex-nowrap">
+        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 font-bold text-[10px] tracking-wide border border-emerald-500/30 shrink-0">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Live Deal Sync
         </span>
-        <span class="truncate">Discounts tracked against 30, 60 & 120-day median and minimum price baselines on Amazon, Flipkart, Myntra, Ajio & Nykaa.</span>
-        <a href="https://t.me/DealPulse_Deals" target="_blank" rel="noopener noreferrer" class="hidden sm:inline-flex items-center text-emerald-400 hover:text-emerald-300 font-bold underline underline-offset-2 ml-1">
-            Join Telegram Channel ↗
+        <span class="truncate text-[11px] sm:text-xs">Discounts tracked against 30, 60 & 120-day median & minimum price baselines on Amazon, Flipkart, Myntra, Ajio & Nykaa.</span>
+        <a href="https://t.me/DealPulse_Deals" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-emerald-400 hover:text-emerald-300 font-bold underline underline-offset-2 shrink-0 text-[11px] sm:text-xs">
+            Join Telegram ↗
         </a>
     </aside>
 
@@ -244,6 +245,12 @@
         <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
             <div id="categoryAisleRow" class="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar py-2 text-xs font-bold whitespace-nowrap">
                 
+                <!-- Mobile All Categories Expand Button -->
+                <button onclick="openMobileCategoryDrawer()" class="lg:hidden px-2.5 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-black flex items-center gap-1.5 shrink-0 shadow-sm shadow-indigo-600/20 active:scale-95 transition">
+                    <i data-lucide="grid" class="w-3.5 h-3.5"></i>
+                    <span>All Categories</span>
+                </button>
+
                 <!-- 1. Fashion -->
                 <div class="relative cat-dropdown-group">
                     <a href="/deals?category=fashion" class="cat-trigger px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-purple-600 transition flex items-center gap-1.5 {% if current_category == 'fashion' %}bg-purple-50 text-purple-700 border border-purple-200{% endif %}">
@@ -736,6 +743,97 @@
 
     </footer>
 
+    <!-- ── Mobile Categories Vertical Drawer ─────────────────────────────── -->
+    <div id="mobileCategoryDrawerOverlay" onclick="closeMobileCategoryDrawer()" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 transition-opacity duration-300 opacity-0 pointer-events-none"></div>
+    <aside id="mobileCategoryDrawer" class="fixed top-0 left-0 h-full w-full max-w-xs sm:max-w-sm bg-white border-r border-slate-200 z-50 transform -translate-x-full transition-transform duration-300 flex flex-col shadow-2xl">
+        <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+            <div class="flex items-center gap-2">
+                <i data-lucide="layout-grid" class="w-5 h-5 text-indigo-600"></i>
+                <h2 class="font-extrabold text-slate-900 text-base">All Departments (17)</h2>
+            </div>
+            <button onclick="closeMobileCategoryDrawer()" class="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition" aria-label="Close Categories">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar text-xs font-bold">
+            <a href="/deals?category=fashion" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-purple-50 text-slate-800 hover:text-purple-700 transition">
+                <span class="flex items-center gap-2"><span class="text-base">👗</span> Fashion & Apparel</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+            </a>
+            <a href="/deals?category=beauty" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-rose-50 text-slate-800 hover:text-rose-700 transition">
+                <span class="flex items-center gap-2"><span class="text-base">💄</span> Beauty & Skincare</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+            </a>
+            <a href="/deals?category=electronics" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-blue-50 text-slate-800 hover:text-blue-700 transition">
+                <span class="flex items-center gap-2"><span class="text-base">📱</span> Electronics & Audio</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+            </a>
+            <a href="/deals?category=home" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-amber-50 text-slate-800 hover:text-amber-700 transition">
+                <span class="flex items-center gap-2"><span class="text-base">🏠</span> Home & Kitchen</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+            </a>
+            <a href="/deals?category=sports" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-green-50 text-slate-800 hover:text-green-700 transition">
+                <span class="flex items-center gap-2"><span class="text-base">🏋️</span> Sports & Fitness</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+            </a>
+            <a href="/deals?category=footwear" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-indigo-50 text-slate-800 hover:text-indigo-700 transition">
+                <span class="flex items-center gap-2"><span class="text-base">👟</span> Footwear & Shoes</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+            </a>
+            <a href="/deals?category=watches" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-100 text-slate-800 hover:text-slate-700 transition">
+                <span class="flex items-center gap-2"><span class="text-base">⌚</span> Watches & Wearables</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+            </a>
+            <a href="/deals?category=bags" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-teal-50 text-slate-800 hover:text-teal-700 transition">
+                <span class="flex items-center gap-2"><span class="text-base">👜</span> Bags & Luggage</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+            </a>
+            <a href="/deals?category=health" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-emerald-50 text-slate-800 hover:text-emerald-700 transition">
+                <span class="flex items-center gap-2"><span class="text-base">💊</span> Health & Nutrition</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+            </a>
+            <a href="/deals?category=jewellery" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-pink-50 text-slate-800 hover:text-pink-700 transition">
+                <span class="flex items-center gap-2"><span class="text-base">💍</span> Jewellery & Accessories</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+            </a>
+            <a href="/deals?category=gaming" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-violet-50 text-slate-800 hover:text-violet-700 transition">
+                <span class="flex items-center gap-2"><span class="text-base">🎮</span> Gaming & PC</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+            </a>
+            <a href="/deals?category=toys_kids" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-yellow-50 text-slate-800 hover:text-yellow-700 transition">
+                <span class="flex items-center gap-2"><span class="text-base">🧸</span> Toys & Baby Care</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+            </a>
+            <a href="/deals?category=books" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-cyan-50 text-slate-800 hover:text-cyan-700 transition">
+                <span class="flex items-center gap-2"><span class="text-base">📚</span> Books & Stationery</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+            </a>
+            <a href="/deals?category=grocery" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-lime-50 text-slate-800 hover:text-lime-700 transition">
+                <span class="flex items-center gap-2"><span class="text-base">🍵</span> Grocery & Gourmet</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+            </a>
+            <a href="/deals?category=automotive" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-orange-50 text-slate-800 hover:text-orange-700 transition">
+                <span class="flex items-center gap-2"><span class="text-base">🚗</span> Auto & Bikes</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+            </a>
+            <a href="/deals?category=pets" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-sky-50 text-slate-800 hover:text-sky-700 transition">
+                <span class="flex items-center gap-2"><span class="text-base">🐾</span> Pet Supplies</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+            </a>
+            <a href="/deals?category=miscellaneous" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-amber-50 text-slate-800 hover:text-amber-700 transition">
+                <span class="flex items-center gap-2"><span class="text-base">📦</span> Miscellaneous & Loot</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+            </a>
+        </div>
+
+        <div class="p-3.5 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
+            <a href="/deals" class="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-center transition">
+                View All Deals Feed ➔
+            </a>
+        </div>
+    </aside>
+
     <!-- ── Watchlist / Saved Deals Slideout Drawer ──────────────────────── -->
     <div id="watchlistDrawerOverlay" onclick="closeWatchlistDrawer()" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 transition-opacity duration-300 opacity-0 pointer-events-none"></div>
     <aside id="watchlistDrawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-white border-l border-slate-200 z-50 transform translate-x-full transition-transform duration-300 flex flex-col shadow-2xl">
@@ -877,9 +975,7 @@
                     <label class="font-bold text-slate-800 block mb-1">Live Deal Sync Frequency</label>
                     <p class="text-slate-500 text-[11px] mb-2">How often BudgetBy refreshes price drops in background.</p>
                     <select id="prefSyncInterval" onchange="updateSyncInterval(this.value)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-mono">
-                        <option value="300" selected>Every 5 minutes (Recommended)</option>
-                        <option value="600">Every 10 minutes</option>
-                        <option value="0">Manual Refresh Only</option>
+                        <option value="300" selected>Every 5 minutes (Default & Recommended)</option>
                     </select>
                 </div>
 
@@ -1154,6 +1250,7 @@
                 }
             } catch (e) {
                 if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; if (window.lucide) lucide.createIcons(); }
+                showDealNotification('ℹ️ Please confirm details below to request a price re-check', 'info');
                 openReviewModal({ id: productId, title: title, url: url, current_price: currentPrice, affiliate_url: url });
             }
         }
@@ -1162,13 +1259,16 @@
         function showDealNotification(message, type) {
             const existing = document.getElementById('dealToastNotification');
             if (existing) existing.remove();
-            const bg = type === 'success' ? 'background:#059669' : type === 'error' ? 'background:#dc2626' : 'background:#4f46e5';
+            const bg = type === 'success' ? 'background:#059669' : type === 'error' ? 'background:#dc2626' : (type === 'info' ? 'background:#4f46e5' : 'background:#334155');
             const toast = document.createElement('div');
             toast.id = 'dealToastNotification';
             toast.style.cssText = `position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);z-index:200;${bg};color:#fff;font-size:.75rem;font-weight:700;padding:.75rem 1.25rem;border-radius:1rem;box-shadow:0 4px 24px rgba(0,0,0,.18);display:flex;align-items:center;gap:.5rem;transition:opacity .3s`;
             toast.textContent = message;
             document.body.appendChild(toast);
-            playDealChime();
+            const settings = getUserSettings();
+            if (settings && settings.soundEnabled) {
+                playDealChime();
+            }
             setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 3500);
         }
 
@@ -1222,10 +1322,15 @@
         function updateWatchlistBadge() {
             const list = getWatchlist();
             const badge = document.getElementById('watchlistCountBadge');
+            const mobileBadge = document.getElementById('watchlistCountBadgeMobile');
             const headerCount = document.getElementById('watchlistCountHeader');
             if (badge) {
                 badge.innerText = list.length;
                 badge.classList.toggle('hidden', list.length === 0);
+            }
+            if (mobileBadge) {
+                mobileBadge.innerText = list.length;
+                mobileBadge.classList.toggle('hidden', list.length === 0);
             }
             if (headerCount) {
                 headerCount.innerText = list.length;
@@ -1312,6 +1417,21 @@
             const drawer = document.getElementById('watchlistDrawer');
             overlay.classList.add('opacity-0', 'pointer-events-none');
             drawer.classList.add('translate-x-full');
+        }
+
+        // Mobile Categories Drawer Controller
+        function openMobileCategoryDrawer() {
+            const overlay = document.getElementById('mobileCategoryDrawerOverlay');
+            const drawer = document.getElementById('mobileCategoryDrawer');
+            if (overlay) overlay.classList.remove('opacity-0', 'pointer-events-none');
+            if (drawer) drawer.classList.remove('-translate-x-full');
+            if (window.lucide) lucide.createIcons();
+        }
+        function closeMobileCategoryDrawer() {
+            const overlay = document.getElementById('mobileCategoryDrawerOverlay');
+            const drawer = document.getElementById('mobileCategoryDrawer');
+            if (overlay) overlay.classList.add('opacity-0', 'pointer-events-none');
+            if (drawer) drawer.classList.add('-translate-x-full');
         }
 
         // WhatsApp & Direct Link Share Modal
@@ -1465,10 +1585,10 @@ ${deal.title}
             } else {
                 list.innerHTML = deals.map(d => {
                     const storeCfg = STORES[d.platform?.toLowerCase()] || STORES.amazon;
-                    const link = d.affiliate_url || d.product_url || `/deals?search=${encodeURIComponent(query)}`;
+                    const link = `/deals?search=${encodeURIComponent(d.title || query)}`;
                     const postedTimeStr = formatPostedDateTime(d.posted_at || d.deal_time || d.last_checked);
                     return `
-                        <a href="${link}" target="_blank" rel="noopener noreferrer" class="p-2.5 flex items-center gap-3 hover:bg-slate-50 transition group">
+                        <a href="${link}" class="p-2.5 flex items-center gap-3 hover:bg-slate-50 transition group">
                             <div class="w-10 h-10 rounded-lg bg-white p-1 flex items-center justify-center border border-slate-200 shrink-0">
                                 <img src="${d.image_url || '/static/placeholder.png'}" class="w-full h-full object-contain" />
                             </div>

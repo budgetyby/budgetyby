@@ -40,8 +40,8 @@
                         <div id="statDropsTotal" class="text-xl sm:text-2xl font-black text-slate-900 font-mono mt-0.5">{{ initial_data.total_matches if initial_data and initial_data.total_matches else '--' }}</div>
                     </div>
                     <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-center min-w-[110px]">
-                        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Top Drop</div>
-                        <div id="statDropsMax" class="text-xl sm:text-2xl font-black text-rose-600 font-mono mt-0.5">70%+</div>
+                        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Top Drop Depth</div>
+                        <div id="statDropsMax" class="text-xl sm:text-2xl font-black text-rose-600 font-mono mt-0.5">Up to 80%</div>
                     </div>
                     <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-center min-w-[110px] col-span-2 sm:col-span-1">
                         <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Scan Cycle</div>
@@ -59,6 +59,9 @@
                 <!-- Drop Percentage Quick Filter Chips -->
                 <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                     <span class="text-xs font-bold text-slate-500 mr-1 hidden sm:inline">Drop Depth:</span>
+                    <button onclick="setDropFilter(0)" id="dropChip0" class="drop-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition font-mono">
+                        Any %
+                    </button>
                     <button onclick="setDropFilter(10)" id="dropChip10" class="drop-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition font-mono">
                         10%+
                     </button>
@@ -422,9 +425,10 @@
                     Was ${formatINR(prevPrice)}
                 </div>
             ` : '';
+            const dealLink = deal.affiliate_url || '';
 
             return `
-                <div class="bg-white border border-slate-200/90 hover:border-rose-400 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-md group relative">
+                <div data-deal-id="${deal.id}" class="bg-white border border-slate-200/90 hover:border-rose-400 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-md group relative">
                     <div>
                         <div class="flex items-center justify-between gap-2 mb-2">
                             <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${storeCfg.badge}">
@@ -447,7 +451,7 @@
                         </div>
 
                         <div class="mt-3">
-                            <a href="${dealLink}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-slate-900 hover:text-rose-600 line-clamp-2 break-words transition leading-snug" title="${safeTitle}">
+                            <a href="${dealLink ? dealLink : '#'}" ${dealLink ? 'target="_blank" rel="noopener noreferrer"' : ''} class="text-xs font-bold text-slate-900 hover:text-rose-600 line-clamp-2 break-words transition leading-snug" title="${safeTitle}">
                                 ${safeTitle}
                             </a>
                             ${ratingHtml}
@@ -474,17 +478,21 @@
                             <button onclick="handleDropsCardShare(${deal.id})" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center transition shrink-0" title="Share Deal">
                                 <i data-lucide="share-2" class="w-4 h-4 text-indigo-600"></i>
                             </button>
+                            ${dealLink ? `
                             <a href="${dealLink}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-sm shadow-rose-600/20 hover:scale-[1.02] active:scale-[0.98] transition">
                                 <span>Get Deal</span>
                                 <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                            </a>
+                            </a>` : `
+                            <div class="flex-1 py-2 px-3 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold flex items-center justify-center cursor-not-allowed">
+                                <span>Price Tracked</span>
+                            </div>`}
                         </div>
 
                         <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100 text-[10px] text-slate-500 font-medium">
-                            <span class="truncate">Price changed on the platform?</span>
-                            <button onclick="handleSendForReview(${deal.id}, '${safeTitle.replace(/'/g, "\\'")}', '${dealLink.replace(/'/g, "\\'")}', ${deal.current_price || 0})" class="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 shrink-0 transition" title="Send product for price re-check">
-                                <i data-lucide="help-circle" class="w-3 h-3 text-indigo-500"></i>
-                                <span>Flag for Re-Check</span>
+                            <span class="truncate">Tracked Deal</span>
+                            <button onclick="handleSendForReview(${deal.id}, '${safeTitle.replace(/'/g, "")}', '${dealLink.replace(/'/g, "")}', ${deal.current_price || 0})" class="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 shrink-0 transition" title="Send product for price re-check">
+                                <i data-lucide="refresh-cw" class="w-3 h-3 text-indigo-500"></i>
+                                <span>Request Price Check</span>
                             </button>
                         </div>
 
@@ -493,7 +501,8 @@
             `;
         }).join('');
 
-        lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
+        syncDropsWatchlistHearts();
     }
 
     function setDropFilter(pct) {

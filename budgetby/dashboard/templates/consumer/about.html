@@ -1,0 +1,84 @@
+{% extends "consumer/layout.html" %}
+
+{% block title %}About & Methodology — BudgetBy Price Tracking{% endblock %}
+{% block description %}How BudgetBy tracks and verifies genuine discounts across India top stores with 120-day historical price baselines.{% endblock %}
+
+{% block content %}
+<main class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pb-20">
+    <!-- Header -->
+    <div class="text-center max-w-2xl mx-auto mb-12">
+        <span class="px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-black uppercase tracking-wider font-mono">
+            About BudgetBy
+        </span>
+        <h1 class="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight mt-3 mb-4">
+            Independent Price Intelligence for Indian Shoppers
+        </h1>
+        <p class="text-sm text-slate-600 leading-relaxed">
+            BudgetBy is built to eliminate fake discounts, inflated MRP markups, and artificial flash sales. We track daily prices across millions of products to highlight real savings.
+        </p>
+    </div>
+
+    <!-- 3 Pillars Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div class="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+            <div>
+                <div class="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-600 flex items-center justify-center text-xl mb-4">
+                    📊
+                </div>
+                <h3 class="text-base font-bold text-slate-900 mb-2">120-Day Baseline Audit</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Every listed discount is calculated against the true 30, 60, and 120-day median selling price — not the inflated manufacturer MRP.
+                </p>
+            </div>
+        </div>
+
+        <div class="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+            <div>
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center text-xl mb-4">
+                    🛡️
+                </div>
+                <h3 class="text-base font-bold text-slate-900 mb-2">Zero Paid Promotions</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Our algorithms index products impartially based solely on price drops, drop depth, and verified historical records.
+                </p>
+            </div>
+        </div>
+
+        <div class="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+            <div>
+                <div class="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center text-xl mb-4">
+                    ⚡
+                </div>
+                <h3 class="text-base font-bold text-slate-900 mb-2">24/7 Automated Refresh</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Our distributed indexing engine monitors prices continuously across Amazon, Flipkart, Myntra, Ajio, and Nykaa to capture lightning deals instantly.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Methodology Details -->
+    <div class="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-10 shadow-sm space-y-6">
+        <h2 class="text-xl font-black text-slate-900">Our Deal Verification Standards</h2>
+        
+        <div class="space-y-4 text-xs sm:text-sm text-slate-600 leading-relaxed">
+            <p>
+                <strong>1. All-Time Lows (ATL):</strong> A product earns the 🏆 ATL badge when its current verified price equals or drops below the lowest recorded price in our database history.
+            </p>
+            <p>
+                <strong>2. 24-Hour Price Drops:</strong> We compare the current deal price against the exact price recorded 24 hours prior. Only items with a verified negative price delta are featured in the Drops aisle.
+            </p>
+            <p>
+                <strong>3. Community Re-check:</strong> Every shopper can tap <em>Request Price Check</em> on any card to request an immediate scraper re-evaluation if a merchant changes prices.
+            </p>
+        </div>
+
+        <div class="pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
+            <span class="text-xs text-slate-500 font-medium">Have questions or want to join live alerts?</span>
+            <a href="https://t.me/DealPulse_Deals" target="_blank" rel="noopener noreferrer" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm">
+                <span>Join our Telegram Channel ➔</span>
+            </a>
+        </div>
+    </div>
+</main>
+{% endblock %}
