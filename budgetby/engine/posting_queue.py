@@ -230,7 +230,7 @@ class PostingQueue:
     # ── FAST PATH: Queue drain — NO lock, NO live hunt, NO pre-flight scrape ────
 
     async def _send_to_telegram(self, bot_instance, message_text: str, img_url: str) -> object:
-        """Sends photo or text to Telegram channel. Returns sent message or None."""
+        """Sends photo or text to Telegram channel. Falls back gracefully to plain text if HTML parsing fails."""
         sent_msg = None
         if img_url:
             photo_bytes = await _fetch_and_normalize_image(img_url)
@@ -247,7 +247,16 @@ class PostingQueue:
                     await asyncio.sleep(ra.retry_after)
                     return None
                 except Exception as pe:
-                    logger.debug(f"Photo send fallback: {pe}")
+                    logger.debug(f"Photo send with HTML failed: {pe}. Trying photo without HTML...")
+                    try:
+                        clean_caption = re.sub(r'<[^>]+>', '', message_text)
+                        sent_msg = await bot_instance.send_photo(
+                            chat_id=config.TELEGRAM_CHANNEL_ID,
+                            photo=photo_bytes,
+                            caption=clean_caption
+                        )
+                    except Exception as pe2:
+                        logger.debug(f"Photo send plain fallback also failed: {pe2}")
 
         if not sent_msg:
             try:
@@ -261,6 +270,18 @@ class PostingQueue:
                 logger.warning(f"Rate limit (text): sleeping {ra.retry_after}s")
                 await asyncio.sleep(ra.retry_after)
                 return None
+            except Exception as e:
+                logger.warning(f"send_message with HTML failed: {e}. Falling back to plain text...")
+                try:
+                    clean_text = re.sub(r'<[^>]+>', '', message_text)
+                    sent_msg = await bot_instance.send_message(
+                        chat_id=config.TELEGRAM_CHANNEL_ID,
+                        text=clean_text,
+                        disable_web_page_preview=False
+                    )
+                except Exception as e2:
+                    logger.error(f"Plain text message delivery failed: {e2}")
+                    return None
 
         return sent_msg
 
@@ -361,12 +382,20 @@ class PostingQueue:
 
                 success = await self._post_queued_deal(deal_data, bot_instance)
                 if not success:
-                    # Re-enqueue so the deal isn't lost, then short pause
-                    try:
-                        self._queue.put_nowait(deal_data)
-                    except asyncio.QueueFull:
-                        logger.warning("Queue full — dropping failed re-enqueue.")
-                    await asyncio.sleep(5)
+                    # Retry limit guard: up to 3 retries, then discard to avoid queue starvation
+                    retries = deal_data.get("_retry_count", 0) + 1
+                    deal_data["_retry_count"] = retries
+                    pid = deal_data.get("product", {}).get("id")
+                    if retries < 3:
+                        try:
+                            self._queue.put_nowait(deal_data)
+                            logger.info(f"Deal #{pid} re-queued (attempt {retries}/3).")
+                        except asyncio.QueueFull:
+                            logger.warning("Queue full — dropping failed re-enqueue.")
+                        await asyncio.sleep(5)
+                    else:
+                        logger.warning(f"⚠️ Dropping deal #{pid} after 3 failed attempts to unblock queue.")
+                        self._queued_pids.discard(pid)
                 else:
                     await asyncio.sleep(8)
 

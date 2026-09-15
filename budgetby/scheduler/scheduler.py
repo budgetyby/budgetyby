@@ -358,6 +358,14 @@ def start_scheduler():
     _scheduler.add_job(paced_posting_loop, "interval", seconds=30, id="paced_posting",
                        max_instances=1, coalesce=True, misfire_grace_time=60, replace_existing=True)
 
+    # Public Telegram Deal Channels Monitor (DoH) — every 90 seconds
+    try:
+        from budgetby.ingest.channel_monitor import run_channel_monitor
+        _scheduler.add_job(run_channel_monitor, "interval", seconds=90, id="channel_monitor",
+                           max_instances=1, coalesce=True, misfire_grace_time=30, replace_existing=True)
+    except Exception as e:
+        logger.warning(f"Could not schedule channel_monitor: {e}")
+
     _scheduler.start()
     logger.info("Scheduler started with all jobs configured")
 
