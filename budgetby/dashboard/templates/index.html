@@ -837,6 +837,60 @@
             }
         }
 
+        async function fetchQueueData() {
+            try {
+                const res = await fetch('/api/posting_queue');
+                if (!res.ok) return;
+                const data = await res.json();
+                
+                const qCount = data.queue_size || 0;
+                const badge = document.getElementById('queueCountBadge');
+                if (badge) {
+                    badge.innerText = `${qCount} Deals in Queue`;
+                    badge.className = qCount > 2 
+                        ? "text-xs font-semibold px-3 py-1 bg-amber-500/10 text-amber-400 rounded-full border border-amber-500/20 animate-pulse"
+                        : "text-xs font-semibold px-3 py-1 bg-indigo-500/10 text-indigo-400 rounded-full border border-indigo-500/20";
+                }
+                
+                const nextPlat = document.getElementById('queueNextPlatformBadge');
+                if (nextPlat) {
+                    const np = data.next_scheduled_platform || 'Auto';
+                    nextPlat.innerText = `Next Scheduled: ${np.charAt(0).toUpperCase() + np.slice(1)}`;
+                }
+                
+                const tbody = document.getElementById('queueTableBody');
+                if (!tbody) return;
+                
+                const items = data.items || [];
+                if (!items.length) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="py-6 text-center text-slate-500">Posting queue is clear (0 pending deals). Next deal will be fetched via live store hunt.</td></tr>';
+                    return;
+                }
+                
+                let html = '';
+                items.forEach(it => {
+                    const disc = it.discount_pct ? `${Math.round(it.discount_pct)}% OFF` : '-';
+                    const link = it.affiliate_url || '#';
+                    html += `
+                    <tr class="hover:bg-slate-900/40 transition">
+                        <td class="py-3 font-mono font-bold text-indigo-400">#${it.queue_position}</td>
+                        <td class="py-3 font-medium text-slate-200 max-w-xs truncate" title="${it.title}">${it.title}</td>
+                        <td class="py-3 uppercase font-semibold text-xs text-slate-300">${it.platform}</td>
+                        <td class="py-3 font-mono text-emerald-400 font-bold">${formatINR(it.price)} <span class="text-xs text-slate-500 line-through">${formatINR(it.mrp)}</span></td>
+                        <td class="py-3 font-mono text-amber-400 font-bold text-xs">${disc}</td>
+                        <td class="py-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">${it.badge}</span></td>
+                        <td class="py-3 text-xs text-slate-400 truncate max-w-[130px]">${it.source_channel}</td>
+                        <td class="py-3 text-right">
+                            <a href="${link}" target="_blank" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold">View ↗</a>
+                        </td>
+                    </tr>`;
+                });
+                tbody.innerHTML = html;
+            } catch (err) {
+                console.error("Error fetching queue data:", err);
+            }
+        }
+
         function onDealsFilterChange() {
             fetchDeals();
         }
@@ -1104,10 +1158,12 @@
 
         fetchData();
         fetchDeals();
+        fetchQueueData();
         fetchCategoryMatrix();
         setInterval(() => { if (!document.hidden) fetchCategoryMatrix(); }, 60000);
         setInterval(() => { if (!document.hidden) fetchData(); }, 45000);
         setInterval(() => { if (!document.hidden) fetchDeals(); }, 45000);
+        setInterval(() => { if (!document.hidden) fetchQueueData(); }, 15000);
         
         document.getElementById('searchInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') runSearch();

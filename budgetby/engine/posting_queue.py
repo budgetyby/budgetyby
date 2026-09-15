@@ -257,11 +257,23 @@ class PostingQueue:
                     else:
                         pending_items.append(item)
 
+                # 1b. If no deal matched target_platform, BUT the queue has deals waiting:
+                # Prioritize posting hot live queued deals over searching cold catalog!
+                if not deal_data and pending_items:
+                    # Pick an item with a different platform from _last_posted_platform if available, else first item
+                    selected_idx = 0
+                    for idx, it in enumerate(pending_items):
+                        p_plat = it.get("product", {}).get("platform", "").lower()
+                        if p_plat != self._last_posted_platform:
+                            selected_idx = idx
+                            break
+                    deal_data = pending_items.pop(selected_idx)
+
                 # Re-enqueue remaining items
                 for item in pending_items:
                     await self._queue.put(item)
 
-            # 2. Live Store Flash Hunt: Hunt fresh high-discount deals live from the store API
+            # 2. Live Store Flash Hunt: Hunt fresh high-discount deals live from the store API (only if queue is empty)
             if not deal_data:
                 try:
                     from budgetby.engine.live_hunter import hunt_live_store_deal
@@ -526,10 +538,7 @@ class PostingQueue:
                     await set_cooldown(pid, config.PRICE_DROP_COOLDOWN_HOURS)
 
                 self._last_posted_platform = platform
-                
-                # Advance rotation schedule only if this was on-schedule
-                if platform == target_platform:
-                    self._rotation_index += 1
+                self._rotation_index += 1
 
                 self.posts_this_hour += 1
                 logger.info(f"📢 [POSTED TO TELEGRAM] [{platform.upper()}] {product.get('title', '')[:40]} | ₹{price:.0f} (MRP: ₹{mrp:.0f}) | Source: {source_channel}")

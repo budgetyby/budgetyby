@@ -115,8 +115,10 @@ async def main():
         register_admin_handlers(application)
         
         from budgetby.scheduler import scheduler as sched_module
+        from budgetby.engine.posting_queue import get_posting_queue
         if application:
             sched_module.set_bot(application.bot)
+            get_posting_queue().set_bot(application.bot)
             
         logger.info("Telegram application configured with all handlers.")
     else:
