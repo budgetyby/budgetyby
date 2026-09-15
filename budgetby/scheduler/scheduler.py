@@ -234,14 +234,15 @@ async def _post_digest(digest_type: str, hours_lookback: int = 12):
 async def paced_posting_loop():
     """
     Continuous 30-Second Deal Broadcaster:
-    Fires every 30 seconds to post the next deal from the weighted rotation schedule.
-    Live Deal Hunter runs first (fetches fresh loot live from store APIs, upserts to DB),
-    then falls back to evergreen catalog if no live deal passes filters.
+    - If the posting queue has intercepted channel deals: fast-drains them at 8s cadence
+      (no lock, no live hunt, no pre-flight scraping — already verified).
+    - If the queue is empty: hunts live deals from store APIs, then falls back to
+      evergreen catalog with pre-flight verification.
     """
     try:
         from budgetby.engine.posting_queue import get_posting_queue
         pq = get_posting_queue()
-        await pq.post_next_deal(_bot)
+        await pq.process_queue(_bot)
     except Exception as e:
         logger.error(f"Error in paced_posting_loop: {e}")
 
