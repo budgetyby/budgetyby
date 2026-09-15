@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from budgetby import database, config
 from budgetby.dashboard.filters import register_jinja_filters
 from budgetby.taxonomy import UNIVERSAL_CATEGORIES
-from budgetby.dashboard.helpers import parse_search_query, is_safe_redirect_url, resolve_deal_button_url
+from budgetby.dashboard.helpers import parse_search_query, is_safe_redirect_url, resolve_deal_button_url, build_token_regex_pattern
 
 app = FastAPI(title="BudgetBy Control Center", version="2.0")
 
@@ -1153,14 +1153,15 @@ async def search_products(
 
         if tokens:
             for t in tokens:
-                t_wild = f"%{t}%"
-                where_clauses.append(f"(title ILIKE ${arg_idx} OR platform_id ILIKE ${arg_idx} OR COALESCE(category, '') ILIKE ${arg_idx})")
-                args.append(t_wild)
-                arg_idx += 1
+                pat = build_token_regex_pattern(t)
+                where_clauses.append(f"(title ~* ${arg_idx} OR platform_id ILIKE ${arg_idx+1} OR COALESCE(category, '') ~* ${arg_idx})")
+                args.extend([pat, f"%{t}%"])
+                arg_idx += 2
         else:
-            where_clauses.append(f"(title ILIKE ${arg_idx} OR platform_id ILIKE ${arg_idx})")
-            args.append(f"%{clean_q}%")
-            arg_idx += 1
+            pat = build_token_regex_pattern(clean_q)
+            where_clauses.append(f"(title ~* ${arg_idx} OR platform_id ILIKE ${arg_idx+1})")
+            args.extend([pat, f"%{clean_q}%"])
+            arg_idx += 2
 
         args.append(limit)
         limit_arg_idx = arg_idx
@@ -1993,16 +1994,12 @@ async def get_public_deals(
                     args.append(parsed["min_price"])
                     arg_idx += 1
 
-                # Keyword tokens matching
+                # Keyword tokens matching with precision word boundaries & plurals
                 for t in parsed["tokens"]:
-                    if t == "tshirt":
-                        where_clauses.append(f"(p.title ILIKE ${arg_idx} OR p.title ILIKE ${arg_idx+1} OR COALESCE(p.category, '') ILIKE ${arg_idx})")
-                        args.extend(['%t-shirt%', '%tshirt%'])
-                        arg_idx += 2
-                    else:
-                        where_clauses.append(f"(p.title ILIKE ${arg_idx} OR COALESCE(p.category, '') ILIKE ${arg_idx})")
-                        args.append(f"%{t}%")
-                        arg_idx += 1
+                    pat = build_token_regex_pattern(t)
+                    where_clauses.append(f"(p.title ~* ${arg_idx} OR COALESCE(p.category, '') ~* ${arg_idx})")
+                    args.append(pat)
+                    arg_idx += 1
 
                 # Scoring parameters
                 args.append(f"%{parsed['clean_query']}%")
@@ -2118,16 +2115,29 @@ async def get_public_deals(
             gender_clean = (gender or "").strip().lower()
             if gender_clean and gender_clean != "all":
                 if gender_clean == "men":
-                    where_clauses.append("(p.title ILIKE '% men%' OR p.title ILIKE '%men %' OR p.title ILIKE '%mens%' OR p.title ILIKE '%male%' OR p.title ILIKE '%gentlemen%')")
+                    where_clauses.append(f"(p.title ~* ${arg_idx} AND NOT (p.title ~* ${arg_idx+1}))")
+                    args.append(r"\y(men|mens|male|gentlemen)\y")
+                    args.append(r"\y(women|womens|female|ladies|girls?|kurti|saree|lehenga|bra|heels)\y")
+                    arg_idx += 2
                 elif gender_clean == "women":
-                    where_clauses.append("(p.title ILIKE '% women%' OR p.title ILIKE '%women %' OR p.title ILIKE '%womens%' OR p.title ILIKE '%female%' OR p.title ILIKE '%ladies%' OR p.title ILIKE '%saree%' OR p.title ILIKE '%kurti%' OR p.title ILIKE '%heels%' OR p.title ILIKE '%bra%')")
+                    where_clauses.append(f"p.title ~* ${arg_idx}")
+                    args.append(r"\y(women|womens|female|ladies|girls?|saree|kurti|heels|bra|lehenga)\y")
+                    arg_idx += 1
                 elif gender_clean in ("boy", "boys"):
-                    where_clauses.append("(p.title ILIKE '%boy%' OR p.title ILIKE '%boys%')")
+                    where_clauses.append(f"(p.title ~* ${arg_idx} AND NOT (p.title ~* ${arg_idx+1}))")
+                    args.append(r"\y(boy|boys)\y")
+                    args.append(r"\y(girl|girls|women|womens|ladies)\y")
+                    arg_idx += 2
                 elif gender_clean in ("girl", "girls"):
-                    where_clauses.append("(p.title ILIKE '%girl%' OR p.title ILIKE '%girls%' OR p.title ILIKE '%frock%')")
+                    where_clauses.append(f"p.title ~* ${arg_idx}")
+                    args.append(r"\y(girl|girls|frock)\y")
+                    arg_idx += 1
                 elif gender_clean in ("kid", "kids", "children"):
-                    where_clauses.append("(p.title ILIKE '%kid%' OR p.title ILIKE '%kids%' OR p.title ILIKE '%baby%' OR p.title ILIKE '%infant%' OR p.title ILIKE '%toddler%' OR p.title ILIKE '%children%')")
-            # Subcategory keyword filtering (parameterized)
+                    where_clauses.append(f"p.title ~* ${arg_idx}")
+                    args.append(r"\y(kids?|baby|infant|toddler|children)\y")
+                    arg_idx += 1
+
+            # Subcategory keyword filtering (parameterized with word boundaries)
             if eff_sub:
                 sub_kws = []
                 for cat_data in UNIVERSAL_CATEGORIES.values():
@@ -2142,8 +2152,8 @@ async def get_public_deals(
                 if sub_kws:
                     sub_placeholders = []
                     for kw in sub_kws:
-                        sub_placeholders.append(f"p.title ILIKE ${arg_idx}")
-                        args.append(f"%{kw}%")
+                        sub_placeholders.append(f"p.title ~* ${arg_idx}")
+                        args.append(build_token_regex_pattern(kw))
                         arg_idx += 1
                     where_clauses.append(f"({' OR '.join(sub_placeholders)})")
 

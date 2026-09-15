@@ -58,7 +58,7 @@ def parse_search_query(raw_query: str) -> dict:
 
     # 3. Clean tokens
     words = re.findall(r'\b[a-z0-9]{2,}\b', query)
-    stop_words = {'for', 'with', 'and', 'the', 'best', 'good', 'cheap', 'buy', 'online', 'in', 'on', 'from', 'at', 'to', 'of', 'a', 'an', 'deal', 'deals', 'offer', 'offers', 'all', 'top', 'latest'}
+    stop_words = {'for', 'with', 'and', 'the', 'best', 'good', 'cheap', 'buy', 'online', 'in', 'on', 'from', 'at', 'to', 'of', 'a', 'an', 'deal', 'deals', 'offer', 'offers', 'all', 'latest'}
     meaningful = [w for w in words if w not in stop_words]
     tokens = meaningful if meaningful else words
 
@@ -72,6 +72,56 @@ def parse_search_query(raw_query: str) -> dict:
         'clean_query': " ".join(tokens),
         'is_accessory_query': is_accessory_query
     }
+
+def build_token_regex_pattern(token: str, for_postgres: bool = True) -> str:
+    """
+    Builds a POSIX regular expression pattern with word boundaries and plural/possessive support.
+    e.g.:
+      'hat' -> r'\yhat(s|es|\'?s)?\y'
+      'led' -> r'\yled(s|es|\'?s)?\y'
+      'tshirt' -> r'\y(t[\s\-]?shirts?|tees?)\y'
+      'lower' -> r'\ylower(s|es|\'?s)?\y'
+    """
+    t = token.strip().lower()
+    if not t:
+        return ""
+    b = r"\y" if for_postgres else r"\b"
+
+    # Common e-commerce apparel & gadget synonyms
+    synonyms = {
+        "tshirt": f"{b}(t[\\s\\-]?shirts?|tees?){b}",
+        "tshirts": f"{b}(t[\\s\\-]?shirts?|tees?){b}",
+        "t-shirt": f"{b}(t[\\s\\-]?shirts?|tees?){b}",
+        "tee": f"{b}(t[\\s\\-]?shirts?|tees?){b}",
+        "earbud": f"{b}(earbuds?|tws|airbuds?|airdopes?){b}",
+        "earbuds": f"{b}(earbuds?|tws|airbuds?|airdopes?){b}",
+        "tws": f"{b}(earbuds?|tws|airbuds?|airdopes?){b}",
+        "powerbank": f"{b}(power[\\s\\-]?banks?){b}",
+        "smartwatch": f"{b}(smart[\\s\\-]?watch(es)?){b}",
+        "men": f"{b}(men|man)(\'?s)?{b}",
+        "mens": f"{b}(men|man)(\'?s)?{b}",
+        "women": f"{b}(women|woman)(\'?s)?{b}",
+        "womens": f"{b}(women|woman)(\'?s)?{b}",
+    }
+    if t in synonyms:
+        return synonyms[t]
+
+    # Handle plural roots (e.g. 'hats' -> 'hat', 'lowers' -> 'lower', 'boxes' -> 'box')
+    if len(t) > 3 and t.endswith("ies"):
+        base = t[:-3] + "y"
+        esc = re.escape(base)
+        return f"{b}({esc}|{re.escape(t)}){b}"
+    elif len(t) > 4 and t.endswith("es") and not t.endswith("sses"):
+        base = t[:-2]
+        esc = re.escape(base)
+        return f"{b}{esc}(es|s|'?s)?{b}"
+    elif len(t) > 3 and t.endswith("s") and not t.endswith("ss"):
+        base = t[:-1]
+        esc = re.escape(base)
+        return f"{b}{esc}(s|es|'?s)?{b}"
+    else:
+        esc = re.escape(t)
+        return f"{b}{esc}(s|es|'?s)?{b}"
 
 ALLOWED_REDIRECT_DOMAINS = (
     "amazon.in", "amazon.com", "amzn.to", "amzn.in",
