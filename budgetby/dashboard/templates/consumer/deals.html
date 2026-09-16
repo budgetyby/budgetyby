@@ -502,9 +502,11 @@
             const rating = deal.rating || 0;
             const reviews = deal.review_count || 0;
             const badge = deal.badge || '';
+            const inStock = deal.in_stock !== false; // defaults to true if undefined
 
             return `
-                <div class="bg-white border border-slate-200/90 hover:border-indigo-400 rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-md group relative">
+                <div class="bg-white border border-slate-200/90 hover:border-indigo-400 rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-md group relative ${!inStock ? 'opacity-60 grayscale' : ''}">
+                    ${!inStock ? '<div class="absolute inset-0 bg-white/40 z-10 rounded-2xl pointer-events-none flex items-center justify-center"><span class="bg-black text-white px-3 py-1 rounded-full font-black tracking-widest text-xs uppercase shadow-xl transform -rotate-12 border-2 border-white">Out of Stock</span></div>' : ''}
                     <div>
                         <!-- Store Badge & Discount Tag -->
                         <div class="flex items-center justify-between gap-1.5 mb-2">

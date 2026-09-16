@@ -33,6 +33,10 @@ async def main():
     # 1. Initialize Database Pool
     await database.init_pool()
 
+    # Initialize Local SQLite Engine
+    from budgetby import local_db
+    await local_db.init_db()
+
     # 2. Start Local Web Dashboard on http://localhost:5000
     try:
         import socket
@@ -212,6 +216,7 @@ async def main():
                 await application.shutdown()
             except Exception:
                 pass
+            await local_db.close_db()
             await database.close_pool()
             logger.info("Bot & Database shutdown complete.")
     else:
@@ -225,6 +230,7 @@ async def main():
                 scheduler.stop_scheduler()
             except Exception as se:
                 logger.debug(f"Scheduler stop notice: {se}")
+            await local_db.close_db()
             await database.close_pool()
             logger.info("Daemon shutdown complete.")
 

@@ -36,6 +36,7 @@ if sys.platform == "win32" and sys.stdout and hasattr(sys.stdout, "buffer"):
 else:
     console = logging.StreamHandler(sys.stdout)
 console.setLevel(logging.INFO)
+console.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
 logging.getLogger("").addHandler(console)
 
 def prevent_windows_sleep():
@@ -115,7 +116,7 @@ def main():
     cleanup_orphaned_instances()
 
     python_exe = sys.executable
-    cmd = [python_exe, "-m", "budgetby.main"]
+    cmd = [python_exe, "-u", "-m", "budgetby.main"]
     proc = None
 
     while True:
@@ -139,6 +140,10 @@ def main():
                 line_str = line.strip()
                 if line_str:
                     logging.info(f"[Bot] {line_str}")
+                    try:
+                        sys.stdout.flush()
+                    except Exception:
+                        pass
 
             proc.wait()
             ret_code = proc.returncode

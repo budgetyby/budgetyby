@@ -2213,8 +2213,8 @@ async def get_public_deals(
                         COALESCE(d.deal_score, 50.0) as deal_score,
                         d.posted_at as deal_time,
                         0 as relevance_score
-                    FROM deals d
-                    JOIN products p ON d.product_id = p.id
+                    FROM products p
+                    LEFT JOIN deals d ON d.product_id = p.id AND d.posted_at >= NOW() - INTERVAL '7 days'
                     {where_sql}
                     {order_sql}
                     LIMIT ${arg_idx} OFFSET ${arg_idx + 1};

@@ -10,3 +10,4 @@ venv/
 *.sql.gz
 backups/
 budgetby.db
+budgetby_local.db*

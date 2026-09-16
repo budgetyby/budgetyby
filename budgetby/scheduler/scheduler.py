@@ -5,6 +5,8 @@ Sets up all recurring jobs using APScheduler.
 
 import logging
 import asyncio
+import time
+import datetime
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from budgetby import config, database
 from budgetby.scheduler import cleanup
@@ -14,6 +16,9 @@ logger = logging.getLogger("budgetby.scheduler")
 _scheduler = AsyncIOScheduler(timezone=config.TIMEZONE)
 
 _bot = None
+_total_scanned_count = 0
+_minute_scanned_count = 0
+_last_scan_stat_time = time.time()
 
 def set_bot(bot):
     global _bot
@@ -22,7 +27,7 @@ def set_bot(bot):
 
 async def price_check_loop():
     """
-    Core loop: grab products due for a check, scrape them, detect deals, post.
+    Core loop: grab products from local SQLite, scrape, detect deals, route Hot/Cold path.
     Runs every 30 seconds.
     """
     try:
@@ -36,6 +41,8 @@ async def price_check_loop():
         from budgetby.engine.fake_discount import is_fake_discount
         from budgetby.engine.cooldown import is_on_cooldown
         from budgetby.scheduler.priority import assign_priority
+        from budgetby.engine.posting_queue import get_posting_queue
+        from budgetby import local_db
 
         scrapers = {
             "amazon": AmazonScraper(),
@@ -45,111 +52,150 @@ async def price_check_loop():
             "nykaa": NykaaScraper(),
         }
 
-        products = await database.get_products_due_for_check(limit=15)
+        # Pull from Local DB (Zero Read Egress)
+        products = await local_db.get_products_due_for_check(limit=40)
         if not products:
+            logger.info("🔍 [LOCAL SCANNER] 0 products currently due for check.")
             return
 
-        logger.info(f"Checking {len(products)} products")
+        logger.info(f"🔍 [LOCAL SCANNER] Checking batch of {len(products)} products from local SQLite DB...")
+            
+        import asyncio
+        semaphore = asyncio.Semaphore(config.SCRAPER_WORKERS)
+        
+        async def process_product(prod):
+            async with semaphore:
+                platform = prod["platform"]
+                scraper = scrapers.get(platform)
+                if not scraper:
+                    return
 
-        sem = asyncio.Semaphore(getattr(config, "SCRAPER_WORKERS", 5))
-
-        async def process_product(product):
-            async with sem:
-                await asyncio.sleep(0.05)  # 50ms micro-pause smooths out CPU frequency bursts
                 try:
-                    platform = product["platform"]
-                    scraper = scrapers.get(platform)
-                    if not scraper:
+                    data = await scraper.scrape_product(prod["url"])
+                    # Captcha / Error 503 Protection
+                    if not data or data.get("error_code") in (503, 429):
+                        logger.warning(f"Captcha/Block detected for {prod['url']}. Retrying later.")
+                        local_db.update_product_check_time(platform, prod["platform_id"], prod["priority_tier"])
                         return
 
-                    # Scrape current price
-                    data = await scraper.scrape_product(product["product_url"])
-                    if not data:
-                        await database.schedule_next_check(product["id"], product["priority_tier"])
-                        return
-
-                    if not data.get("current_price") or data.get("in_stock") is False:
-                        # Product is verified out of stock or unavailable
-                        await database.execute(
-                            "UPDATE products SET in_stock = FALSE, last_checked = NOW() WHERE id = $1;",
-                            product["id"]
-                        )
-                        await database.schedule_next_check(product["id"], product["priority_tier"])
-                        return
-
-                    new_price = data["current_price"]
-
-                    # Update price and product metadata in DB
-                    await database.update_price(
-                        product["id"], new_price, data.get("in_stock", True),
-                        title=data.get("title"), mrp=data.get("mrp"), rating=data.get("rating"),
-                        review_count=data.get("review_count"), image_url=data.get("image_url")
-                    )
-                    try:
-                        await database.upsert_daily_price(product["id"], new_price)
-                    except Exception as e:
-                        logger.warning(f"Failed to upsert daily price for product {product['id']}: {e}")
-
-                    # Skip if on cooldown
-                    if await is_on_cooldown(product["id"]):
-                        new_tier = assign_priority(product)
-                        await database.schedule_next_check(product["id"], new_tier)
-                        return
-
-                    # Detect deal
-                    deal_result = await detect_deal(product, new_price)
-                    if not deal_result:
-                        new_tier = assign_priority(product)
-                        await database.schedule_next_check(product["id"], new_tier)
-                        return
-
-                    # Check fake discount
-                    if await is_fake_discount(product, new_price):
-                        deal_result["is_fake"] = True
-
-                    # Score the deal
-                    score = score_deal(product, deal_result)
-                    if score < config.MIN_DEAL_SCORE:
-                        new_tier = assign_priority(product)
-                        await database.schedule_next_check(product["id"], new_tier)
-                        return
-
-                    # Queue for posting
-                    deal_data = {
-                        "product": dict(product),
-                        "deal_result": deal_result,
-                        "score": score,
-                        "new_price": new_price,
-                    }
-                    deal_data["product"].update(data)
-
-                    logger.info(
-                        f"Deal found: {product['title'][:50]}... "
-                        f"Score={score:.0f} Badge={deal_result['badge']}"
-                    )
-
-
-                    # Actually queue and post the deal
-                    from budgetby.engine.posting_queue import get_posting_queue
-                    pq = get_posting_queue()
-                    deal_data["badge"] = deal_result["badge"]
-                    await pq.queue_deal(deal_data)
-                    if _bot is not None:
-                        asyncio.create_task(pq.process_queue(_bot))
+                    new_p = float(data.get("current_price", 0.0))
+                    in_stock = data.get("in_stock", True)
+                    
+                    if new_p <= 0 or not in_stock:
+                        new_status = 'TEMP_OOS'
+                        new_p = prod["current_price"] # Keep old price for reference
                     else:
-                        asyncio.create_task(pq.process_queue())
+                        new_status = 'ACTIVE'
 
-                    # Reschedule with updated priority (critical since price just changed)
-                    await database.schedule_next_check(product["id"], 1)
+                    # Determine new priority
+                    temp_prod = dict(prod)
+                    temp_prod['current_price'] = new_p
+                    temp_prod['status'] = new_status
+                    temp_prod['last_price_change'] = datetime.datetime.now(datetime.timezone.utc) if new_p != prod["current_price"] else None
+                    new_priority = assign_priority(temp_prod)
+
+                    # Update local check time immediately
+                    local_db.update_product_check_time(platform, prod["platform_id"], new_priority)
+
+                    # Did price change or stock status change?
+                    if new_p != prod["current_price"] or new_status != prod["status"]:
+                        # 1. Hot Path (Tier 1 & 2) -> Instant Supabase Update
+                        if new_priority in (1, 2):
+                            # Update local DB first
+                            local_db.update_product_locally(
+                                platform, prod["platform_id"], prod["url"], new_p, 
+                                data.get("mrp") or prod["mrp"], new_priority, new_status
+                            )
+                            # Instantly send to Supabase (Zero Egress, Free Ingress)
+                            await database.execute("""
+                                UPDATE products SET current_price = $1, status = $2, priority_tier = $3, in_stock = $4, last_checked = NOW()
+                                WHERE platform = $5 AND platform_id = $6
+                            """, new_p, new_status, new_priority, in_stock, platform, prod["platform_id"])
+                        
+                        # 2. Cold Path (Tier 3 & 4) -> Queue in Local DB
+                        else:
+                            local_db.queue_pending_sync(platform, prod["platform_id"], new_p, in_stock, new_status)
+                            
+                        # Deal Detection
+                        if new_status == 'ACTIVE':
+                            deal = await detect_deal(temp_prod, new_p)
+                            if deal:
+                                if is_fake_discount(deal):
+                                    return
+                                score, badge = score_deal(deal)
+                                deal["deal_score"] = score
+                                deal["badge"] = badge
+                                # Add to Telegram Queue (will use platform_id)
+                                get_posting_queue().add_deal(deal)
 
                 except Exception as e:
-                    logger.error(f"Error checking product {product['id']}: {e}")
-                    await database.schedule_next_check(product["id"], product["priority_tier"])
+                    logger.error(f"Error checking {prod['url']}: {e}")
+                    local_db.update_product_check_time(platform, prod["platform_id"], prod["priority_tier"])
 
-        await asyncio.gather(*(process_product(p) for p in products))
+        await asyncio.gather(*(process_product(dict(p)) for p in products))
+
+        global _total_scanned_count, _minute_scanned_count, _last_scan_stat_time
+        _total_scanned_count += len(products)
+        _minute_scanned_count += len(products)
+        now_ts = time.time()
+        if now_ts - _last_scan_stat_time >= 60:
+            rate_per_min = _minute_scanned_count
+            logger.info(f"📊 [SCAN PROGRESS] Checked {rate_per_min} products in the last minute | Total scanned this session: {_total_scanned_count:,} products (Zero Supabase Egress)")
+            _minute_scanned_count = 0
+            _last_scan_stat_time = now_ts
+        else:
+            logger.info(f"✅ [LOCAL SCANNER] Batch of {len(products)} products checked. Total session scans: {_total_scanned_count:,}")
 
     except Exception as e:
         logger.error(f"Error in price_check_loop: {e}")
+
+async def nightly_batch_sync():
+    """10:00 PM Batch Sync for Tier 3/4 Cold Path updates."""
+    try:
+        from budgetby import local_db
+        logger.info("Starting 10:00 PM nightly batch sync...")
+        
+        # 1. Grab all queued updates and clear local outbox
+        rows = await local_db.get_and_clear_pending_syncs()
+        if rows:
+            logger.info(f"Uploading {len(rows)} batched price updates to Supabase...")
+            
+            # 2. Chunk updates in batches of 500
+            updates = []
+            for r in rows:
+                updates.append((r["new_price"], r["in_stock"], r["status"], r["platform"], r["platform_id"]))
+                
+                if len(updates) >= 500:
+                    await database.batch_update_products(updates)
+                    updates = []
+            
+            # Flush remaining
+            if updates:
+                await database.batch_update_products(updates)
+                
+        # 3. Take Midnight Snapshot instantly after sync is guaranteed finished
+        await database.sync_daily_price_baselines()
+        logger.info("Nightly batch sync and snapshot completed successfully.")
+    except Exception as e:
+        logger.error(f"Error in nightly_batch_sync: {e}")
+
+async def hourly_new_product_sync():
+    """Pulls products manually added to Supabase in the last hour to prevent local blindness."""
+    try:
+        from budgetby import local_db
+        logger.info("Syncing new products from Supabase...")
+        rows = await database.fetch("""
+            SELECT platform, platform_id, product_url, current_price, mrp, priority_tier, status
+            FROM products 
+            WHERE created_at >= NOW() - INTERVAL '65 minutes'
+        """)
+        for r in rows:
+            local_db.update_product_locally(
+                r["platform"], r["platform_id"], r["product_url"], 
+                r["current_price"] or 0.0, r["mrp"] or 0.0, r["priority_tier"] or 3, r["status"]
+            )
+    except Exception as e:
+        logger.error(f"Error in hourly sync: {e}")
 
 
 async def discovery_job():
@@ -162,13 +208,6 @@ async def discovery_job():
         logger.info(f"Discovery complete: {stats}")
     except Exception as e:
         logger.error(f"Error in discovery_job: {e}")
-
-
-
-
-
-
-
 
 
 async def morning_digest():
@@ -325,8 +364,21 @@ def start_scheduler():
     logger.info("Starting scheduler...")
 
     # Core catalog price checking — every 120 seconds (15 products / 2 min)
-    _scheduler.add_job(price_check_loop, "interval", seconds=120, id="price_check",
+    
+    # Core catalog price checking - Every 30 seconds local DB
+    _scheduler.add_job(price_check_loop, "interval", seconds=30, id="price_check",
                        max_instances=1, coalesce=True, misfire_grace_time=60, replace_existing=True)
+
+    # 10 PM Batch Sync (Cold Path)
+    _scheduler.add_job(nightly_batch_sync, "cron", hour=22, minute=0, timezone="Asia/Kolkata", id="nightly_batch_sync", misfire_grace_time=300, replace_existing=True)
+    
+    # Hourly New Product Sync (Admin blindspot fix)
+    _scheduler.add_job(hourly_new_product_sync, "interval", hours=1, id="hourly_new_product_sync", misfire_grace_time=300, replace_existing=True)
+    
+    # Weekly SQLite Vacuum (Defragmentation)
+    from budgetby import local_db
+    _scheduler.add_job(local_db.vacuum_db, "cron", day_of_week="sun", hour=23, minute=0, timezone="Asia/Kolkata", id="sqlite_vacuum", misfire_grace_time=300, replace_existing=True)
+
 
     # Targeted Micro-Job Deal Verifier — every 180 seconds (3 minutes)
     _scheduler.add_job(verify_active_deals_loop, "interval", seconds=180, id="deal_verifier",

@@ -118,6 +118,8 @@ async def executemany(query: str, args_list: list) -> None:
 # ── Product-Specific Helpers ───────────────────────────────────────────
 
 
+from budgetby import local_db
+
 async def upsert_product(data: dict) -> int:
     """
     Insert a new product or update if it already exists (same platform + platform_id).
@@ -545,7 +547,8 @@ async def insert_deal(data: dict) -> int:
             posted_mrp, savings_amount, savings_pct, deal_score,
             badge, source_channel, posted_at
         ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, NOW()
+            COALESCE($1, (SELECT id FROM products WHERE platform = $10 AND platform_id = $11)), 
+            $2, $3, $4, $5, $6, $7, $8, $9, NOW()
         )
         ON CONFLICT (product_id) DO UPDATE SET
             deal_type = EXCLUDED.deal_type,
@@ -567,7 +570,9 @@ async def insert_deal(data: dict) -> int:
         data.get("savings_pct", 0.0),
         data.get("deal_score", 50.0),
         data.get("badge", "DEAL"),
-        data.get("source_channel", "local_scanner")
+        data.get("source_channel", "local_scanner"),
+        data.get("platform"),
+        data.get("platform_id")
     )
     if pid and posted_price:
         try:
@@ -664,3 +669,20 @@ async def get_core_metrics() -> dict:
     _CORE_METRICS_CACHE["expires_at"] = now + 600
     return res
 
+
+
+async def batch_update_products(updates: list):
+    """Batch update prices from the local queue."""
+    if not updates:
+        return
+    
+    # updates is a list of tuples: (new_price, in_stock, status, platform, platform_id)
+    query = """
+        UPDATE products 
+        SET current_price = $1, 
+            in_stock = $2, 
+            status = $3,
+            last_checked = NOW()
+        WHERE platform = $4 AND platform_id = $5
+    """
+    await executemany(query, updates)

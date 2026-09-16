@@ -67,7 +67,7 @@ DAILY_PRICE_RETENTION_DAYS = 30
 # ════════════════════════════════════════════════════════════════════════
 
 # Number of concurrent async scraper workers
-SCRAPER_WORKERS = 5
+SCRAPER_WORKERS = 15
 
 # Delay between requests (seconds) — per worker
 SCRAPER_DELAY_MIN = 2.0
@@ -97,10 +97,10 @@ USER_AGENTS = [
 # ════════════════════════════════════════════════════════════════════════
 
 PRIORITY_INTERVALS = {
-    1: 20 * 60,      # Critical:   20 minutes
-    2: 2 * 3600,     # High:       2 hours
-    3: 6 * 3600,     # Medium:     6 hours
-    4: 18 * 3600,    # Low:        18 hours
+    1: 3 * 3600,   # Tier 1: 3 hours
+    2: 6 * 3600,   # Tier 2: 6 hours
+    3: 24 * 3600,  # Tier 3: 24 hours
+    4: 24 * 3600   # Tier 4: 24 hours
 }
 
 # Sale mode multiplier — check frequencies during detected sale events
