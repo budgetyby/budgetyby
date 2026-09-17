@@ -179,24 +179,6 @@ async def nightly_batch_sync():
     except Exception as e:
         logger.error(f"Error in nightly_batch_sync: {e}")
 
-async def hourly_new_product_sync():
-    """Pulls products manually added to Supabase in the last hour to prevent local blindness."""
-    try:
-        from budgetby import local_db
-        logger.info("Syncing new products from Supabase...")
-        rows = await database.fetch("""
-            SELECT platform, platform_id, product_url, current_price, mrp, priority_tier, status
-            FROM products 
-            WHERE created_at >= NOW() - INTERVAL '65 minutes'
-        """)
-        for r in rows:
-            local_db.update_product_locally(
-                r["platform"], r["platform_id"], r["product_url"], 
-                r["current_price"] or 0.0, r["mrp"] or 0.0, r["priority_tier"] or 3, r["status"]
-            )
-    except Exception as e:
-        logger.error(f"Error in hourly sync: {e}")
-
 
 async def discovery_job():
     """Run full product discovery across all platforms."""
@@ -371,9 +353,6 @@ def start_scheduler():
 
     # 10 PM Batch Sync (Cold Path)
     _scheduler.add_job(nightly_batch_sync, "cron", hour=22, minute=0, timezone="Asia/Kolkata", id="nightly_batch_sync", misfire_grace_time=300, replace_existing=True)
-    
-    # Hourly New Product Sync (Admin blindspot fix)
-    _scheduler.add_job(hourly_new_product_sync, "interval", hours=1, id="hourly_new_product_sync", misfire_grace_time=300, replace_existing=True)
     
     # Weekly SQLite Vacuum (Defragmentation)
     from budgetby import local_db
