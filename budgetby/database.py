@@ -195,6 +195,13 @@ async def upsert_product(data: dict) -> int:
                 await upsert_daily_price(existing_id, cur_price)
             except Exception:
                 pass
+        try:
+            local_db.update_product_locally(
+                platform, platform_id, p_url, cur_price or 0.0, mrp_val or 0.0,
+                data.get("priority_tier", 2), data.get("status", config.STATUS_ACTIVE)
+            )
+        except Exception:
+            pass
         return existing_id
 
     aff_url = data.get("affiliate_url") or p_url
@@ -241,6 +248,13 @@ async def upsert_product(data: dict) -> int:
             await upsert_daily_price(row["id"], cur_price)
         except Exception:
             pass
+    try:
+        local_db.update_product_locally(
+            platform, platform_id, p_url, cur_price or 0.0, mrp_val or 0.0,
+            data.get("priority_tier", 2), data.get("status", config.STATUS_ACTIVE)
+        )
+    except Exception:
+        pass
     return row["id"]
 
 
