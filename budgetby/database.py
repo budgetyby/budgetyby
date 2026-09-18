@@ -373,7 +373,7 @@ async def get_products_due_for_check(limit: int = 15) -> list[asyncpg.Record]:
 
 async def schedule_next_check(product_id: int, priority_tier: int):
     """Set the product's next check time based on its priority tier."""
-    interval_seconds = config.PRIORITY_INTERVALS.get(priority_tier, 6 * 3600)
+    interval_seconds = config.PRIORITY_INTERVALS.get(priority_tier, 48 * 3600)
     await execute("""
         UPDATE products SET
             priority_tier = $2,

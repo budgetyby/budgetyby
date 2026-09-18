@@ -114,7 +114,7 @@ async def get_products_due_for_check(limit: int = 40) -> List[aiosqlite.Row]:
 
 def update_product_check_time(platform: str, platform_id: str, priority_tier: int):
     """Update the local next_check time based on priority tier."""
-    interval = config.PRIORITY_INTERVALS.get(priority_tier, 24 * 3600)
+    interval = config.PRIORITY_INTERVALS.get(priority_tier, 48 * 3600)
     next_check = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=interval)).isoformat()
     
     query = """

@@ -99,8 +99,8 @@ USER_AGENTS = [
 PRIORITY_INTERVALS = {
     1: 3 * 3600,   # Tier 1: 3 hours
     2: 6 * 3600,   # Tier 2: 6 hours
-    3: 24 * 3600,  # Tier 3: 24 hours
-    4: 24 * 3600   # Tier 4: 24 hours
+    3: 48 * 3600,  # Tier 3: 48 hours
+    4: 48 * 3600   # Tier 4: 48 hours
 }
 
 # Sale mode multiplier — check frequencies during detected sale events
