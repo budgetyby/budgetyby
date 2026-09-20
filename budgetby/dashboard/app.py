@@ -1615,7 +1615,6 @@ async def get_public_price_drops(
                 "p.current_price > 0",
                 "p.previous_price > p.current_price",
                 "p.previous_price <= GREATEST(COALESCE(NULLIF(p.mrp, 0), p.current_price * 1.35) * 1.15, p.current_price * 3.0)",
-                "p.last_price_change >= NOW() - INTERVAL '48 hours'",
                 "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) >= $1",
                 "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) <= 95.0"
             ]
@@ -1680,9 +1679,7 @@ async def get_public_price_drops(
                     WHERE in_stock = TRUE AND status = 'ACTIVE' 
                       AND previous_price > current_price AND current_price > 0 
                       AND previous_price <= GREATEST(COALESCE(NULLIF(mrp, 0), current_price * 1.35) * 1.15, current_price * 3.0)
-                      AND last_price_change >= NOW() - INTERVAL '48 hours'
-                      AND (((previous_price - current_price) / NULLIF(previous_price, 0)) * 100) <= 85.0
-;
+                      AND (((previous_price - current_price) / NULLIF(previous_price, 0)) * 100) <= 85.0;
                 """) or 5000
                 await ram_cache.set("total_drops_today_count", cached_total_drops, ttl=1800)
 
@@ -1914,6 +1911,55 @@ async def submit_product_review(request: Request):
             "status": "success",
             "message": "Product received and queued for review."
         }
+
+
+@app.post("/api/public/contact")
+@limiter.limit("5/minute")
+async def submit_contact_inquiry(request: Request):
+    """
+    Public contact form endpoint: forwards user queries/feedback directly to admin Telegram chat.
+    """
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+
+    name = (data.get("name") or "Anonymous Shopper").strip()[:100]
+    contact_info = (data.get("contact") or data.get("email") or "Not provided").strip()[:150]
+    subject = (data.get("subject") or "General Feedback").strip()[:150]
+    message = (data.get("message") or "").strip()[:1500]
+
+    if not message:
+        raise HTTPException(status_code=400, detail="Message cannot be empty.")
+
+    # Format Telegram Notification for Admin
+    tele_text = (
+        f"📬 <b>New In-App Inquiry / Feedback</b>\n\n"
+        f"👤 <b>Name:</b> {name}\n"
+        f"✉️ <b>Contact:</b> {contact_info}\n"
+        f"🏷️ <b>Subject:</b> {subject}\n\n"
+        f"💬 <b>Message:</b>\n{message}\n\n"
+        f"🌐 <i>Source: BudgetBy Storefront (/about)</i>"
+    )
+
+    try:
+        if config.TELEGRAM_BOT_TOKEN and config.ADMIN_CHAT_ID:
+            import httpx
+            tg_url = f"https://api.telegram.org/bot{config.TELEGRAM_BOT_TOKEN}/sendMessage"
+            async with httpx.AsyncClient(timeout=6.0) as client:
+                await client.post(tg_url, json={
+                    "chat_id": config.ADMIN_CHAT_ID,
+                    "text": tele_text,
+                    "parse_mode": "HTML"
+                })
+            logger.info(f"📨 In-app contact message dispatched to Admin Telegram ({config.ADMIN_CHAT_ID})")
+    except Exception as e:
+        logger.error(f"Error sending contact message via Telegram: {e}")
+
+    return {
+        "status": "success",
+        "message": "Thank you! Your message has been sent to our team."
+    }
 
 
 @app.get("/api/public/deals")
@@ -2790,7 +2836,7 @@ async def page_stores(request: Request, platform: str = ""):
             "active_page": "stores", 
             "store_id": plat_clean if plat_clean in STORE_DISPLAY_NAMES else None,
             "store_name": store_name,
-            "initial_deals": initial_deals
+            "initial_data": initial_deals
         },
         cache_seconds=300
     )

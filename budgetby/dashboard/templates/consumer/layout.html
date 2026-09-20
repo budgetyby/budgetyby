@@ -18,6 +18,35 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 
+    <!-- Tailwind CSS (Loaded in head to prevent unstyled flash) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        },
+                        amazon: { DEFAULT: '#FF9900', dark: '#232F3E', light: '#FFAA33' },
+                        flipkart: { DEFAULT: '#2874F0', dark: '#004BBB', light: '#4B8DF8' },
+                        myntra: { DEFAULT: '#FF3F6C', dark: '#D6204C', light: '#FF658B' },
+                        ajio: { DEFAULT: '#D99814', dark: '#2C4152', light: '#F5B027' },
+                        nykaa: { DEFAULT: '#FC2779', dark: '#C41357', light: '#FD5797' },
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
         /* Custom scrollbars */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -1708,34 +1737,5 @@ ${deal.title}
             <span id="watchlistCountBadgeMobile" class="hidden absolute top-0.5 right-2 px-1 rounded-full text-[8px] font-extrabold bg-rose-500 text-white">0</span>
         </button>
     </div>
-
-    <!-- Tailwind moved to end of body to unblock HTML parsing -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-                        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
-                    },
-                    colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                        },
-                        amazon: { DEFAULT: '#FF9900', dark: '#232F3E', light: '#FFAA33' },
-                        flipkart: { DEFAULT: '#2874F0', dark: '#004BBB', light: '#4B8DF8' },
-                        myntra: { DEFAULT: '#FF3F6C', dark: '#D6204C', light: '#FF658B' },
-                        ajio: { DEFAULT: '#D99814', dark: '#2C4152', light: '#F5B027' },
-                        nykaa: { DEFAULT: '#FC2779', dark: '#C41357', light: '#FD5797' },
-                    }
-                }
-            }
-        }
-    </script>
 </body>
 </html>
