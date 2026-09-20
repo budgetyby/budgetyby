@@ -9,14 +9,59 @@ import re
 from typing import Optional
 
 CATEGORY_RULES = [
-    # 1. Pets (highest priority to catch feeds, pet supplies)
+    # 0a. Smart Home & Connected Devices (before general electronics/home)
+    ("electronics", [
+        r"\b(smart\s*(?:[a-z0-9]+\s*)?(bulbs?|plugs?|switches?|lights?|strips?)|alexa|google\s*home|wifi\s*smart|smart\s*speakers?|voice\s*assistant)\b",
+    ]),
+    # 0b. Cameras & Photography (before electronics general)
+    ("electronics", [
+        r"\b(dslr|mirrorless\s*camera|action\s*cameras?|webcams?|camera\s*lens|ring\s*lights?|photography\s*tripod)\b",
+    ]),
+    # 0c. Storage & Drives (before laptops general)
+    ("electronics", [
+        r"\b(pen\s*drives?|usb\s*drives?|memory\s*cards?|sd\s*cards?|external\s*hard\s*disks?|portable\s*ssds?|flash\s*drives?)\b",
+    ]),
+    # 0d. Activewear & Yoga apparel (must fire before beauty to catch titles like 'Blush Embody Yoga Tights')
+    ("fashion", [
+        r"\b(yoga\s*(tights?|pants?|leggings?|shorts?)|gym\s*(tights?|leggings?|wear)|compression\s*(tights?|leggings?)|tracksuits?|track\s*suits?|sportswear|activewear|athletic\s*wear)\b",
+    ]),
+    # 0e. Baby care & Diapers (must fire before beauty so baby lotions/shampoos don't get trapped in adult beauty)
+    ("toys_kids", [
+        r"\b(baby\s*(lotions?|shampoos?|soaps?|oils?|wipes?|diapers?|creams?|massage\s*oil)|pampers|huggies|mamy\s*poko|feeding\s*bottles?|prams?|strollers?)\b",
+    ]),
+    # 0f. Nail Care (precision beauty subcategory)
+    ("beauty", [
+        r"\b(nail\s*(polish|paint|remover|art|cutter|gel|lacquer)|cuticle\s*oil|gel\s*nails?)\b",
+    ]),
+    # 0g. Body Wash & Soaps (precision beauty subcategory)
+    ("beauty", [
+        r"\b(body\s*wash|shower\s*gel|bathing\s*bar|bath\s*soaps?|glycerin\s*soap|hand\s*wash\s*liquid|antibacterial\s*soaps?)\b",
+    ]),
+    # 0h. Towels & Bath Linen (precision home subcategory)
+    ("home", [
+        r"\b(bath\s*towels?|hand\s*towels?|face\s*towels?|towel\s*sets?|cotton\s*towels?|microfiber\s*towels?|beach\s*towels?)\b",
+    ]),
+    # 0i. Home Decor (precision home subcategory)
+    ("home", [
+        r"\b(photo\s*frames?|wall\s*art|scented\s*candles?|flower\s*vases?|wall\s*clocks?|table\s*lamps?|fairy\s*lights?|showpieces?|figurines?)\b",
+    ]),
+    # 0j. Bathroom Accessories (precision home subcategory)
+    ("home", [
+        r"\b(soap\s*dispensers?|toothbrush\s*holders?|bath\s*mats?|shower\s*curtains?|bathroom\s*organizers?|toilet\s*brush)\b",
+    ]),
+    # 0k. Winterwear & Woollens (precision fashion subcategory)
+    ("fashion", [
+        r"\b(sweaters?|pullovers?|cardigans?|woollen\s*sweaters?|mufflers?|winter\s*scarf|winter\s*caps?|thermal\s*wear|turtle\s*necks?)\b",
+    ]),
+
+    # 1. Pets (highest priority for feeds & pet supplies)
     ("pets", [
         r"\b(dog food|cat food|puppy food|kitten food|pet food|pedigree|whiskas|drools|purepet|royal canin|me-o|dog treats?|cat treats?)\b",
         r"\b(cat litter|dog leash|pet leash|dog collar|cat collar|pet collar|pet harness|dog bed|pet bed|chew bones?|chew toy|pet shampoo|murgi dana|bird food|hen food|aquarium|fish food|poultry bird)\b",
     ]),
-    # 2. Footwear (shoes, sneakers, clogs, heels, slippers)
+    # 2. Footwear (shoes, sneakers, running shoes, clogs, heels, slippers)
     ("footwear", [
-        r"\b(sneakers?|running shoes?|sports shoes?|walking shoes?|casual shoes?|formal shoes?|loafers?|oxfords?|derby shoes?|monk strap)\b",
+        r"\b(sneakers?|running shoes?|sports shoes?|walking shoes?|training shoes?|athletic shoes?|casual shoes?|formal shoes?|loafers?|oxfords?|derby shoes?|monk strap)\b",
         r"\b(slippers?|flip[\s-]?flops?|slides?|chappals?|sandals?|floaters?|high heels?|block heels?|wedges?|stilettos?|pumps?)\b",
         r"\b(boots?|ankle boots?|chelsea boots?|clogs?|crocs|mules?|moccasins?|footwear)\b",
     ]),
@@ -54,16 +99,17 @@ CATEGORY_RULES = [
     ]),
     # 8. Automotive
     ("automotive", [
-        r"\b(motorcycle helmets?|bike helmets?|full face helmets?|riding gloves|riding jackets?|bike face mask)\b",
+        r"\b(helmets?|half\s*face\s*helmets?|full\s*face\s*helmets?|motorcycle\s*helmets?|bike\s*helmets?|riding\s*gloves|riding\s*jackets?|bike\s*face\s*mask)\b",
         r"\b(car mobile holder|car mounts?|car chargers?|car vacuum|tire inflators?|car body covers?|bike body covers?|car perfume|car air freshener|car shampoo)\b",
     ]),
-    # 9. Beauty & Skincare
+    # 9. Beauty & Skincare (Contextual makeup only — NO bare 'blush')
     ("beauty", [
         r"\b(face\s*wash|cleansers?|face\s*scrub|sunscreen|sun\s*block|spf\s*\d+|face\s*serum|niacinamide|salicylic acid|vitamin c serum|retinol)\b",
         r"\b(moisturizers?|body\s*lotions?|night\s*cream|day\s*cream|cold\s*cream|face\s*cream)\b",
         r"\b(perfumes?|eau\s*de\s*parfum|deodorants?|body\s*sprays?|body\s*mists?|attar|cologne)\b",
         r"\b(shampoos?|hair\s*conditioners?|hair\s*oils?|hair\s*masks?|hair\s*serums?|hair\s*dyes?|hair\s*colors?)\b",
-        r"\b(lipsticks?|lip\s*balms?|lip\s*gloss|kajals?|eyeliners?|foundations?|compact\s*powders?|mascaras?|blush|makeup)\b",
+        r"\b(lipsticks?|lip\s*balms?|lip\s*gloss|lip\s*tints?|lip\s*liners?|kajals?|eyeliners?|mascaras?|eye\s*shadows?|eyebrow\s*pencils?|kohl\s*pencils?)\b",
+        r"\b(foundations?|compact\s*powders?|blush\s*(powder|palette|on)|concealer|contour|primer\s*makeup|highlighter\s*makeup|bb\s*cream|cc\s*cream|makeup\s*remover)\b",
         r"\b(beard\s*trimmers?|hair\s*clippers?|shavers?|shaving\s*creams?|after\s*shaves?|razors?|beard\s*oils?)\b",
     ]),
     # 10. Electronics & Gadgets
@@ -80,7 +126,7 @@ CATEGORY_RULES = [
         r"\b(cookwares?|frying\s*pans?|kadhais?|tawa\s*pans?|pressure\s*cookers?|non[\s-]?stick|triply|casseroles?)\b",
         r"\b(storage\s*containers?|airtight jars?|spice racks?|kitchen organizers?|storage box(es)?|masala box(es)?)\b",
         r"\b(dustbins?|garbage bins?|mops?|spin mops?|brooms?|wipers?|cleaning cloth)\b",
-        r"\b(bedsheets?|bed covers?|curtains?|pillow covers?|pillows?|blankets?|quilts?|comforters?|bath towels?)\b",
+        r"\b(bedsheets?|bed covers?|curtains?|pillow covers?|pillows?|blankets?|quilts?|comforters?)\b",
         r"\b(electric kettles?|air fryers?|mixer grinders?|juicers?|choppers?|sandwich makers?|induction cooktops?|toasters?|irons?|steam irons?)\b",
     ]),
     # 12. Sports & Fitness
