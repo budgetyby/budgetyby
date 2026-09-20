@@ -174,8 +174,18 @@
                 </div>
             </div>
 
-            <!-- Right Utilities: Watchlist, Preferences, Mobile Menu Toggle -->
+            <!-- Right Utilities: Watchlist, About & Support, Mobile Menu Toggle -->
             <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <!-- About & Methodology / Contact Link -->
+                <a 
+                    href="/about" 
+                    class="hidden sm:flex px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold items-center gap-1.5 transition" 
+                    title="About BudgetBy & Contact Support"
+                >
+                    <i data-lucide="help-circle" class="w-4 h-4 text-indigo-600"></i>
+                    <span>About & Help</span>
+                </a>
+
                 <!-- Watchlist / Saved Deals Button -->
                 <button 
                     id="watchlistOpenBtn" 
@@ -187,16 +197,6 @@
                     <i data-lucide="heart" class="w-4 h-4 text-rose-500"></i>
                     <span class="hidden sm:inline">Saved</span>
                     <span id="watchlistCountBadge" class="hidden px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-rose-500 text-white leading-tight">0</span>
-                </button>
-
-                <!-- Shopper Preferences Button (Sound & Refresh Settings) -->
-                <button 
-                    onclick="openPreferencesModal()" 
-                    class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs transition" 
-                    title="Shopper Settings & Sync Rate"
-                    aria-label="Open Shopper Settings"
-                >
-                    <i data-lucide="settings-2" class="w-4 h-4"></i>
                 </button>
 
                 <!-- Mobile Hamburger Toggle -->
@@ -229,6 +229,10 @@
             <a href="/stores" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-slate-700 hover:text-indigo-600 hover:bg-slate-50 text-xs font-bold transition">
                 <i data-lucide="store" class="w-4 h-4 text-indigo-600"></i>
                 <span>Stores Directory (Amazon, Flipkart, Myntra, Ajio, Nykaa)</span>
+            </a>
+            <a href="/about" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-slate-700 hover:text-indigo-600 hover:bg-slate-50 text-xs font-bold transition">
+                <i data-lucide="help-circle" class="w-4 h-4 text-indigo-600"></i>
+                <span>About BudgetBy & Contact Us</span>
             </a>
             <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 px-2">
                 <span class="flex items-center gap-1 font-semibold text-emerald-600">
@@ -681,6 +685,10 @@
                     India's independent price tracker and real-time deal discovery platform. Helping shoppers beat dynamic pricing and artificial discounts since 2024.
                 </p>
                 <div class="flex items-center gap-2">
+                    <a href="/about" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition border border-slate-700">
+                        <i data-lucide="help-circle" class="w-3.5 h-3.5 text-indigo-400"></i>
+                        <span>About & Help</span>
+                    </a>
                     <a href="https://t.me/DealPulse_Deals" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition">
                         <i data-lucide="send" class="w-3.5 h-3.5"></i>
                         <span>Telegram Alerts</span>
@@ -957,46 +965,6 @@
         </div>
     </div>
 
-    <!-- ── Shopper Preferences Modal ────────────────────────────────────── -->
-    <div id="prefModalOverlay" onclick="closePreferencesModal()" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-200 opacity-0 pointer-events-none">
-        <div onclick="event.stopPropagation()" class="bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-5 shadow-2xl text-slate-900">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="font-extrabold text-slate-900 text-sm flex items-center gap-2">
-                    <i data-lucide="sliders" class="w-4 h-4 text-indigo-600"></i>
-                    <span>Shopper Preferences</span>
-                </h3>
-                <button onclick="closePreferencesModal()" class="text-slate-400 hover:text-slate-700">
-                    <i data-lucide="x" class="w-4 h-4"></i>
-                </button>
-            </div>
-
-            <div class="space-y-4 text-xs">
-                <div>
-                    <label class="font-bold text-slate-800 block mb-1">Live Deal Sync Frequency</label>
-                    <p class="text-slate-500 text-[11px] mb-2">How often BudgetBy refreshes price drops in background.</p>
-                    <select id="prefSyncInterval" onchange="updateSyncInterval(this.value)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-mono">
-                        <option value="300" selected>Every 5 minutes (Default & Recommended)</option>
-                    </select>
-                </div>
-
-                <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
-                    <div>
-                        <div class="font-bold text-slate-800">Deal Alert Chime</div>
-                        <div class="text-slate-500 text-[11px]">Subtle audio cue when high discount drop occurs.</div>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="prefSoundToggle" onchange="toggleSoundPref(this.checked)" class="sr-only peer" checked>
-                        <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                    </label>
-                </div>
-            </div>
-
-            <button onclick="closePreferencesModal()" class="mt-5 w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition">
-                Save & Close
-            </button>
-        </div>
-    </div>
-
     <!-- ── Core Client Scripts ──────────────────────────────────────────── -->
     <script>
         // Global Store Registry for authentic badges and branding in light theme
@@ -1104,20 +1072,6 @@
             settings.soundEnabled = enabled;
             saveUserSettings(settings);
             if (enabled) playDealChime();
-        }
-
-        function openPreferencesModal() {
-            const settings = getUserSettings();
-            const intervalSelect = document.getElementById('prefSyncInterval');
-            const soundCheck = document.getElementById('prefSoundToggle');
-            if (intervalSelect) intervalSelect.value = settings.syncInterval !== undefined ? settings.syncInterval : 300;
-            if (soundCheck) soundCheck.checked = settings.soundEnabled !== undefined ? settings.soundEnabled : true;
-            const overlay = document.getElementById('prefModalOverlay');
-            overlay.classList.remove('opacity-0', 'pointer-events-none');
-        }
-        function closePreferencesModal() {
-            const overlay = document.getElementById('prefModalOverlay');
-            overlay.classList.add('opacity-0', 'pointer-events-none');
         }
 
         // ── Review Modal & Flag-for-Re-Check ─────────────────────────────────
@@ -1520,7 +1474,6 @@ ${deal.title}
                     suggestionsDropdown?.classList.add('hidden');
                     closeWatchlistDrawer();
                     closeShareModal();
-                    closePreferencesModal();
                     closeReviewModal();
                 }
             });
