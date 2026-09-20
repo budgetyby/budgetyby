@@ -493,7 +493,7 @@ async def compress_old_daily_prices():
 
 async def cleanup_old_daily_prices():
     """
-    Delete ALL daily_prices rows (raw AND compressed) older than DAILY_PRICE_RETENTION_DAYS (14 days).
+    Delete ALL daily_prices rows (raw AND compressed) older than DAILY_PRICE_RETENTION_DAYS (18 days).
     Benchmarks (min_30d, median_30d_price) are recalculated and persisted on the products row FIRST
     so no historical data is lost when rows are deleted.
     """
