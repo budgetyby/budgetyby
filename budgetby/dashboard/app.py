@@ -25,7 +25,25 @@ from budgetby.dashboard.filters import register_jinja_filters
 from budgetby.taxonomy import UNIVERSAL_CATEGORIES
 from budgetby.dashboard.helpers import parse_search_query, is_safe_redirect_url, resolve_deal_button_url, build_token_regex_pattern
 
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+import sentry_sdk
+
+SENTRY_DSN = os.getenv("SENTRY_DSN", "")
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        traces_sample_rate=0.05,
+        environment=os.getenv("ENVIRONMENT", "production"),
+    )
+
 app = FastAPI(title="BudgetBy Control Center", version="2.0")
+
+# Rate limiter — in-memory per-IP token bucket (single instance)
+limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Compress responses larger than 500 bytes to speed up mobile transfer and reduce bandwidth
 app.add_middleware(GZipMiddleware, minimum_size=500)
@@ -1108,7 +1126,9 @@ async def get_deals(limit: int = 36, platform: str = ""):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/api/search")
+@limiter.limit("30/minute")
 async def search_products(
+    request: Request,
     q: str = Query(..., min_length=1, max_length=100),
     limit: int = Query(8, ge=1, le=50)
 ):
@@ -1368,7 +1388,7 @@ async def get_public_categories():
                 FROM products p
                 WHERE p.in_stock = TRUE AND p.status = 'ACTIVE' AND p.current_price > 0 AND p.mrp > p.current_price
                   AND (p.created_at >= NOW() - INTERVAL '48 hours' OR p.last_price_change >= NOW() - INTERVAL '48 hours')
-                  AND p.id NOT IN (SELECT product_id FROM deals WHERE posted_at >= NOW() - INTERVAL '72 hours')
+                  AND NOT EXISTS (SELECT 1 FROM deals d2 WHERE d2.product_id = p.id AND d2.posted_at >= NOW() - INTERVAL '72 hours')
             )
             SELECT 
                 category,
@@ -1490,6 +1510,7 @@ async def _background_convert_top_deals(limit: int = 100):
         """, limit)
         
         converted_count = 0
+        pending_updates = []
         for d in deals:
             pid = d["product_id"]
             plat = d["platform"].lower()
@@ -1500,18 +1521,31 @@ async def _background_convert_top_deals(limit: int = 100):
                 if plat in ("flipkart", "myntra", "ajio"):
                     new_url = await convert_url_via_ek_bot(url, timeout=4.0)
                     if new_url and new_url != url and any(dom in new_url.lower() for dom in ("fktr.in", "myntr.it", "ajiio.in", "ekaro.in")):
-                        await database.execute("UPDATE products SET affiliate_url = $1 WHERE id = $2;", new_url, pid)
+                        pending_updates.append((new_url, pid))
                         converted_count += 1
                         logger.info(f"✨ [BATCH CONVERTED] Prod {pid} [{plat}] ➔ {new_url}")
                 elif plat == "nykaa":
                     new_url = await convert_url_via_cuelinks_bot(url, timeout=6.0)
                     if new_url and new_url != url and "clnk.in" in new_url.lower():
-                        await database.execute("UPDATE products SET affiliate_url = $1 WHERE id = $2;", new_url, pid)
+                        pending_updates.append((new_url, pid))
                         converted_count += 1
                         logger.info(f"✨ [BATCH CONVERTED] Prod {pid} [NYKAA] ➔ {new_url}")
             except Exception as e:
                 logger.debug(f"Batch conversion error on prod {pid}: {e}")
             await asyncio.sleep(0.5)
+
+        # Bulk UPDATE in a single round-trip instead of N round-trips
+        if pending_updates:
+            urls = [u[0] for u in pending_updates]
+            pids = [u[1] for u in pending_updates]
+            await database.execute("""
+                UPDATE products AS p
+                SET affiliate_url = v.url
+                FROM (SELECT UNNEST($1::text[]) AS url, UNNEST($2::int[]) AS id) AS v
+                WHERE p.id = v.id;
+            """, urls, pids)
+            logger.info(f"✅ Bulk updated {len(pending_updates)} affiliate URLs in single query.")
+
         logger.info(f"✅ Background deal conversion finished: {converted_count}/{len(deals)} converted.")
     except Exception as e:
         logger.error(f"Error in background deal pre-converter: {e}")
@@ -1527,9 +1561,11 @@ async def trigger_convert_top_deals(limit: int = 100):
 
 
 @app.get("/api/public/price-drops")
+@limiter.limit("30/minute")
 async def get_public_price_drops(
+    request: Request,
     page: int = Query(1, ge=1),
-    limit: int = Query(14, ge=1, le=100),
+    limit: int = Query(14, ge=1, le=50),
     min_drop_pct: float = Query(5.0, ge=1.0, le=90.0),
     min_drop_percent: float = Query(None),
     platform: str = Query("", max_length=50),
@@ -1732,7 +1768,8 @@ async def get_public_price_drops(
 _report_cooldowns: dict[int, float] = {}
 
 @app.post("/api/public/report-price/{product_id}")
-async def report_product_price(product_id: int):
+@limiter.limit("5/minute")
+async def report_product_price(request: Request, product_id: int):
     """
     Crowdsourced price reporting with anti-abuse cooldown:
     Flags a product for immediate price re-verification by the micro-verifier.
@@ -1880,7 +1917,9 @@ async def submit_product_review(request: Request):
 
 
 @app.get("/api/public/deals")
+@limiter.limit("60/minute")
 async def get_public_deals(
+    request: Request,
     platform: str = Query("", max_length=50),
     last_id: int = Query(0, ge=0),
     platforms: str = Query("", max_length=200),
@@ -1900,7 +1939,7 @@ async def get_public_deals(
     deal_type: str = Query("", max_length=30),
     ids: str = Query("", max_length=500),
     page: int = Query(1, ge=1),
-    limit: int = Query(24, ge=1, le=100)
+    limit: int = Query(24, ge=1, le=50)
 ):
     """
     Public paginated deals & catalog feed.

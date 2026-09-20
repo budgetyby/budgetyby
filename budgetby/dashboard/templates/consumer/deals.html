@@ -386,6 +386,7 @@
         }
 
         if (!hasInitialData) {
+            showSkeletonCards(6);
             loadDeals();
         } else {
             if (window.lucide) lucide.createIcons();
@@ -393,13 +394,35 @@
         startDealsAutoRefresh();
     });
 
+    function showSkeletonCards(count = 6) {
+        const grid = document.getElementById('dealsGrid');
+        if (!grid) return;
+        const skeleton = Array(count).fill(0).map(() => `
+            <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden animate-pulse">
+                <div class="h-48 bg-slate-200 rounded-t-2xl"></div>
+                <div class="p-4 space-y-3">
+                    <div class="h-2.5 bg-slate-200 rounded w-1/3"></div>
+                    <div class="h-3 bg-slate-200 rounded w-full"></div>
+                    <div class="h-3 bg-slate-200 rounded w-4/5"></div>
+                    <div class="h-8 bg-slate-200 rounded-xl mt-4 w-full"></div>
+                </div>
+            </div>
+        `).join('');
+        grid.innerHTML = skeleton;
+        grid.classList.remove('opacity-50', 'pointer-events-none');
+    }
+
     async function loadDeals(isBackground = false) {
         if (isBackground && document.hidden) return;
         const grid = document.getElementById('dealsGrid');
         if (!isBackground) {
             if (typeof showPageProgress === 'function') showPageProgress();
             if (grid) {
-                grid.classList.add('opacity-50', 'pointer-events-none');
+                if (dealsState.items && dealsState.items.length > 0) {
+                    grid.classList.add('opacity-50', 'pointer-events-none');
+                } else {
+                    showSkeletonCards(6);
+                }
             }
         }
 
@@ -419,7 +442,15 @@
             if (dealsState.maxPrice > 0) params.append('max_price', dealsState.maxPrice);
             if (dealsState.minRating > 0) params.append('min_rating', dealsState.minRating);
 
-            const res = await fetch(`/api/public/deals?${params.toString()}`);
+            const controller = new AbortController();
+            const fetchTimeout = setTimeout(() => controller.abort(), 8000); // 8-second timeout
+            let res;
+            try {
+                res = await fetch(`/api/public/deals?${params.toString()}`, { signal: controller.signal });
+            } finally {
+                clearTimeout(fetchTimeout);
+            }
+            if (!res.ok) throw new Error(`Server error: ${res.status}`);
             const data = await res.json();
 
             dealsState.items = (data.deals || data.items || []).map(d => ({

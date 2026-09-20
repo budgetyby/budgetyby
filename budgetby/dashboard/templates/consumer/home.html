@@ -363,8 +363,11 @@
     (function startHomeLiveAutoPolling() {
         setInterval(async () => {
             if (document.hidden) return;
+            const controller = new AbortController();
+            const fetchTimeout = setTimeout(() => controller.abort(), 8000);
             try {
-                const res = await fetch('/api/public/deals?sort_by=latest&limit=10');
+                const res = await fetch('/api/public/deals?sort_by=latest&limit=10', { signal: controller.signal });
+                clearTimeout(fetchTimeout);
                 if (!res.ok) return;
                 const data = await res.json();
                 const deals = data.deals || data.items || [];
@@ -373,7 +376,7 @@
                 const container = document.getElementById('justDroppedContainer');
                 if (!container) return;
 
-                const html = deals.map(deal => {
+                const html = deals.map((deal, dealIndex) => {
                     const store = (deal.platform || 'amazon').toLowerCase();
                     const storeCfg = STORES[store] || STORES.amazon;
                     const cp = deal.current_price || deal.deal_price || 0;
@@ -400,7 +403,7 @@
                                     ${isAtl ? `<span class="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-amber-50 text-amber-800 border border-amber-200 uppercase font-mono">👑 ATL</span>` : (discPct >= 60 ? `<span class="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-rose-50 text-rose-700 border border-rose-200 uppercase font-mono">🔥 LOOT</span>` : '')}
                                 </div>
                                 <div class="relative w-full h-36 sm:h-44 rounded-xl bg-slate-50 p-2 flex items-center justify-center overflow-hidden border border-slate-100">
-                                    <img src="${deal.image_url || '/static/placeholder.png'}" alt="${safeTitle}" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                                    <img src="${deal.image_url || '/static/placeholder.png'}" alt="${safeTitle}" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" loading="${dealIndex < 6 ? 'eager' : 'lazy'}" />
                                     ${isAtl ? `<span class="absolute top-2 left-2 px-1.5 py-0.5 rounded-md text-[9px] font-black bg-amber-500 text-slate-950 uppercase font-mono shadow-sm">🏆 ATL</span>` : (discPct >= 60 ? `<span class="absolute top-2 left-2 px-1.5 py-0.5 rounded-md text-[9px] font-black bg-rose-600 text-white uppercase font-mono shadow-sm">🔥 LOOT</span>` : '')}
                                     <button onclick="handleHomeWatchlist(this, ${pid})" class="absolute top-2 right-2 p-1.5 rounded-xl bg-white/90 backdrop-blur-md border border-slate-200 text-slate-400 hover:text-rose-500 transition shadow-sm" title="Save to Watchlist">
                                         <i data-lucide="heart" class="w-3.5 h-3.5"></i>
@@ -448,7 +451,9 @@
 
                 container.innerHTML = html;
                 if (window.lucide) lucide.createIcons();
-            } catch (e) {}
+            } catch (e) {
+                clearTimeout(fetchTimeout);
+            }
         }, 60000); // 60-second live auto-polling
     })();
 </script>
