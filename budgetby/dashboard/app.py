@@ -1326,7 +1326,7 @@ async def get_public_stats():
         }
 
 @app.get("/api/public/search-suggestions")
-async def get_public_search_suggestions(q: str = Query("", max_length=100)):
+async def get_public_search_suggestions(request: Request, q: str = Query("", max_length=100)):
     """Returns lightweight search suggestion candidates (max 5) with 300s RAM cache."""
     clean_q = (q or "").strip().lower()
     if not clean_q:
@@ -1341,7 +1341,7 @@ async def get_public_search_suggestions(q: str = Query("", max_length=100)):
         c = await ram_cache.get(cache_key)
         if c is not None:
             return c
-        res = await get_public_deals(search=clean_q, page=1, limit=5, verified_only=False)
+        res = await get_public_deals(request=request, search=clean_q, page=1, limit=5, verified_only=False)
         raw_deals = res.get("deals", []) if isinstance(res, dict) else []
         suggestions = []
         for d in raw_deals:
@@ -2504,9 +2504,9 @@ async def page_home(request: Request):
     initial_stats = {}
 
     try:
-        drops_task = get_public_price_drops(page=1, limit=12, min_drop_pct=5.0, min_drop_percent=None, platform="", category="", sort_by="drop_pct")
-        just_dropped_task = get_public_deals(platform="", platforms="", category="", categories="", sub="", subcategory="", gender="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=True, deal_type="", ids="", page=1, limit=10)
-        atl_task = get_public_deals(platform="", platforms="", category="", categories="", sub="", subcategory="", gender="", tab="atl", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=10)
+        drops_task = get_public_price_drops(request=request, page=1, limit=12, min_drop_pct=5.0, min_drop_percent=None, platform="", category="", sort_by="drop_pct")
+        just_dropped_task = get_public_deals(request=request, platform="", platforms="", category="", categories="", sub="", subcategory="", gender="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=True, deal_type="", ids="", page=1, limit=10)
+        atl_task = get_public_deals(request=request, platform="", platforms="", category="", categories="", sub="", subcategory="", gender="", tab="atl", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=10)
         stats_task = get_public_stats()
 
         results = await asyncio.gather(
@@ -2522,31 +2522,32 @@ async def page_home(request: Request):
         if not isinstance(results[3], Exception):
             initial_stats = results[3]
     except Exception as e:
-        logger.warning(f"Home SSR prefetch error: {e}")
+        logger.warning(f"Homepage prefetch error: {e}")
 
-    resp = render_consumer_template("consumer/home.html", request, {
+    rendered_html = render_consumer_template("consumer/home.html", request, {
         "active_page": "home",
         "initial_drops": initial_drops,
         "just_dropped": just_dropped,
         "atl_mini": atl_mini,
-        "initial_stats": initial_stats
+        "initial_stats": initial_stats,
+        "categories": UNIVERSAL_CATEGORIES
     }, cache_seconds=60)
-    if resp.status_code == 200 and hasattr(resp, "body"):
-        await set_cached_ssr_html(ssr_key, resp.body.decode("utf-8"), ttl=60)
-    return resp
+    if rendered_html.status_code == 200 and hasattr(rendered_html, "body"):
+        await set_cached_ssr_html(ssr_key, rendered_html.body.decode("utf-8"), ttl=60)
+    return rendered_html
 
-@app.get("/drops", response_class=HTMLResponse)
 @app.get("/price-drops", response_class=HTMLResponse)
+@app.get("/drops", response_class=HTMLResponse)
 async def page_drops(
     request: Request,
     page: int = Query(1, ge=1),
     limit: int = Query(24, ge=1, le=100),
+    min_drop_pct: float = Query(15.0, ge=1.0, le=90.0),
     min_drop_percent: float = Query(None),
-    min_drop_pct: float = Query(15.0),
     platform: str = Query(""),
     sort_by: str = Query("drop_pct")
 ):
-    """Renders the dedicated 24-Hour Price Drops Hub with complete pre-rendered items (SSR)."""
+    """Renders the 24-Hour Price Drops Hub with complete pre-rendered items (SSR)."""
     page_num = int(page) if not hasattr(page, 'default') and str(page).isdigit() else 1
     limit_num = int(limit) if not hasattr(limit, 'default') and str(limit).isdigit() else 24
     plat_str = str(platform) if not hasattr(platform, 'default') else ""
@@ -2562,6 +2563,7 @@ async def page_drops(
     initial_data = {"drops": [], "total_drops_24h": 0, "total_pages": 1, "page": page_num}
     try:
         initial_data = await get_public_price_drops(
+            request=request,
             page=page_num,
             limit=limit_num,
             min_drop_pct=eff_min_drop,
@@ -2630,6 +2632,7 @@ async def page_deals(
     initial_data = {"deals": [], "total_matches": 0, "total_pages": 1, "page": page_num}
     try:
         initial_data = await get_public_deals(
+            request=request,
             platform=plat_str,
             platforms="",
             category=cat_str,
@@ -2704,6 +2707,7 @@ async def page_atl(
     initial_data = {"deals": [], "total_matches": 0, "total_pages": 1, "page": page_num}
     try:
         initial_data = await get_public_deals(
+            request=request,
             platform=plat_str,
             platforms="",
             category=cat_str,
@@ -2758,6 +2762,7 @@ async def page_stores(request: Request, platform: str = ""):
     if plat_clean in STORE_DISPLAY_NAMES:
         try:
             initial_deals = await get_public_deals(
+                request=request,
                 platform=plat_clean,
                 platforms="",
                 category="",
