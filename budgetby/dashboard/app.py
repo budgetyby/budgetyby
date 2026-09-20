@@ -1566,7 +1566,7 @@ async def get_public_price_drops(
     request: Request,
     page: int = Query(1, ge=1),
     limit: int = Query(14, ge=1, le=50),
-    min_drop_pct: float = Query(5.0, ge=1.0, le=90.0),
+    min_drop_pct: float = Query(5.0, ge=0.0, le=90.0),
     min_drop_percent: float = Query(None),
     platform: str = Query("", max_length=50),
     category: str = Query("", max_length=50),
@@ -1642,7 +1642,7 @@ async def get_public_price_drops(
             elif sort_by == "latest":
                 order_by = f"{aff_priority}, p.last_price_change DESC NULLS LAST, drop_pct DESC"
 
-            args.extend([limit, offset])
+            args.extend([limit_val, offset])
 
             query = f"""
                 SELECT 
@@ -1677,15 +1677,15 @@ async def get_public_price_drops(
                 cached_total_drops = await database.fetchval("""
                     SELECT COUNT(*) FROM products 
                     WHERE in_stock = TRUE AND status = 'ACTIVE' 
-                      AND previous_price > current_price AND current_price > 0 
-                      AND previous_price <= GREATEST(COALESCE(NULLIF(mrp, 0), current_price * 1.35) * 1.15, current_price * 3.0)
-                      AND (((previous_price - current_price) / NULLIF(previous_price, 0)) * 100) <= 85.0;
+                    AND previous_price > current_price AND current_price > 0 
+                    AND previous_price <= GREATEST(COALESCE(NULLIF(mrp, 0), current_price * 1.35) * 1.15, current_price * 3.0)
+                    AND (((previous_price - current_price) / NULLIF(previous_price, 0)) * 100) <= 85.0;
                 """) or 5000
                 await ram_cache.set("total_drops_today_count", cached_total_drops, ttl=1800)
 
             total_reported = cached_total_drops
-            total_pages = max(1, math.ceil(total_reported / limit)) if total_reported > 0 else 1
-            has_more = page < total_pages
+            total_pages = max(1, math.ceil(total_reported / limit_val)) if total_reported > 0 else 1
+            has_more = page_val < total_pages
 
             drops = []
             seen_pids = set()
@@ -2260,15 +2260,15 @@ async def get_public_deals(
                     where_clauses.append("(p.mrp IS NULL OR ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) >= 0.30)")
 
                 if sort_by in ("discount_desc", "discount"):
-                    order_sql = f"ORDER BY {aff_priority}, ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) DESC NULLS LAST, d.posted_at DESC"
+                    order_sql = f"ORDER BY {aff_priority}, ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) DESC NULLS LAST, d.posted_at DESC NULLS LAST, p.id DESC"
                 elif sort_by == "price_asc":
-                    order_sql = f"ORDER BY {aff_priority}, p.current_price ASC, d.posted_at DESC"
+                    order_sql = f"ORDER BY {aff_priority}, p.current_price ASC, d.posted_at DESC NULLS LAST, p.id DESC"
                 elif sort_by == "price_desc":
-                    order_sql = f"ORDER BY {aff_priority}, p.current_price DESC, d.posted_at DESC"
+                    order_sql = f"ORDER BY {aff_priority}, p.current_price DESC, d.posted_at DESC NULLS LAST, p.id DESC"
                 elif sort_by == "score_desc":
-                    order_sql = f"ORDER BY {aff_priority}, COALESCE(d.deal_score, 50.0) DESC, d.posted_at DESC"
+                    order_sql = f"ORDER BY {aff_priority}, COALESCE(d.deal_score, 50.0) DESC, d.posted_at DESC NULLS LAST, p.id DESC"
                 else:
-                    order_sql = f"ORDER BY {aff_priority}, d.posted_at DESC"
+                    order_sql = f"ORDER BY {aff_priority}, d.posted_at DESC NULLS LAST, p.id DESC"
 
                 args.extend([limit, offset])
                 where_sql = f"WHERE {' AND '.join(where_clauses)}"
@@ -2588,7 +2588,7 @@ async def page_drops(
     request: Request,
     page: int = Query(1, ge=1),
     limit: int = Query(24, ge=1, le=100),
-    min_drop_pct: float = Query(15.0, ge=1.0, le=90.0),
+    min_drop_pct: float = Query(15.0, ge=0.0, le=90.0),
     min_drop_percent: float = Query(None),
     platform: str = Query(""),
     sort_by: str = Query("drop_pct")
@@ -2793,13 +2793,15 @@ async def page_atl(
 @app.get("/stores", response_class=HTMLResponse)
 @app.get("/stores/{platform}", response_class=HTMLResponse)
 async def page_stores(request: Request, platform: str = ""):
-    """Renders the Stores Directory or Dedicated Store Deals Page."""
+    """Renders the Stores Directory or 301 Redirects to Canonical Deals Feed."""
     plat_clean = platform.strip().lower() if platform else ""
-    if plat_clean and plat_clean not in STORE_DISPLAY_NAMES:
+    if plat_clean:
+        if plat_clean in STORE_DISPLAY_NAMES:
+            return RedirectResponse(url=f"/deals?platform={plat_clean}", status_code=301)
         return RedirectResponse(url="/stores", status_code=302)
-    store_name = STORE_DISPLAY_NAMES.get(plat_clean, plat_clean.capitalize()) if plat_clean else None
+    store_name = None
     
-    ssr_key = f"stores:{plat_clean}"
+    ssr_key = f"stores:hub"
     cached_html = await get_cached_ssr_html(ssr_key)
     if cached_html:
         return make_html_response(request, cached_html, cache_seconds=300)

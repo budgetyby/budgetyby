@@ -59,19 +59,19 @@
                 <!-- Drop Percentage Quick Filter Chips -->
                 <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                     <span class="text-xs font-bold text-slate-500 mr-1 hidden sm:inline">Drop Depth:</span>
-                    <button onclick="setDropFilter(0)" id="dropChip0" class="drop-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition font-mono">
+                    <button onclick="setDropFilter(0)" id="dropChip0" class="drop-pill px-2.5 py-1 rounded-lg text-xs font-bold transition font-mono {% if current_min_drop is defined and current_min_drop|round_int == 0 %}bg-rose-600 text-white shadow-sm{% else %}bg-slate-100 hover:bg-slate-200 text-slate-700{% endif %}">
                         Any %
                     </button>
-                    <button onclick="setDropFilter(10)" id="dropChip10" class="drop-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition font-mono">
+                    <button onclick="setDropFilter(10)" id="dropChip10" class="drop-pill px-2.5 py-1 rounded-lg text-xs font-bold transition font-mono {% if current_min_drop is defined and current_min_drop|round_int == 10 %}bg-rose-600 text-white shadow-sm{% else %}bg-slate-100 hover:bg-slate-200 text-slate-700{% endif %}">
                         10%+
                     </button>
-                    <button onclick="setDropFilter(20)" id="dropChip20" class="drop-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-600 text-white transition font-mono shadow-sm">
+                    <button onclick="setDropFilter(20)" id="dropChip20" class="drop-pill px-2.5 py-1 rounded-lg text-xs font-bold transition font-mono {% if current_min_drop is not defined or current_min_drop|round_int == 20 or current_min_drop|round_int == 15 %}bg-rose-600 text-white shadow-sm{% else %}bg-slate-100 hover:bg-slate-200 text-slate-700{% endif %}">
                         20%+
                     </button>
-                    <button onclick="setDropFilter(35)" id="dropChip35" class="drop-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition font-mono">
+                    <button onclick="setDropFilter(35)" id="dropChip35" class="drop-pill px-2.5 py-1 rounded-lg text-xs font-bold transition font-mono {% if current_min_drop is defined and current_min_drop|round_int == 35 %}bg-rose-600 text-white shadow-sm{% else %}bg-slate-100 hover:bg-slate-200 text-slate-700{% endif %}">
                         35%+
                     </button>
-                    <button onclick="setDropFilter(50)" id="dropChip50" class="drop-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition font-mono">
+                    <button onclick="setDropFilter(50)" id="dropChip50" class="drop-pill px-2.5 py-1 rounded-lg text-xs font-bold transition font-mono {% if current_min_drop is defined and current_min_drop|round_int == 50 %}bg-rose-600 text-white shadow-sm{% else %}bg-slate-100 hover:bg-slate-200 text-slate-700{% endif %}">
                         50%+ 🔥
                     </button>
                 </div>
@@ -79,19 +79,19 @@
                 <!-- Store & Sort Dropdowns -->
                 <div class="flex items-center gap-2 self-end sm:self-auto shrink-0">
                     <select id="dropsStoreSelect" onchange="onDropsStoreChange(this.value)" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-rose-500 transition">
-                        <option value="">All 5 Stores</option>
-                        <option value="amazon">Amazon</option>
-                        <option value="flipkart">Flipkart</option>
-                        <option value="myntra">Myntra</option>
-                        <option value="ajio">Ajio</option>
-                        <option value="nykaa">Nykaa</option>
+                        <option value="" {% if not current_platform %}selected{% endif %}>All 5 Stores</option>
+                        <option value="amazon" {% if current_platform == 'amazon' %}selected{% endif %}>Amazon</option>
+                        <option value="flipkart" {% if current_platform == 'flipkart' %}selected{% endif %}>Flipkart</option>
+                        <option value="myntra" {% if current_platform == 'myntra' %}selected{% endif %}>Myntra</option>
+                        <option value="ajio" {% if current_platform == 'ajio' %}selected{% endif %}>Ajio</option>
+                        <option value="nykaa" {% if current_platform == 'nykaa' %}selected{% endif %}>Nykaa</option>
                     </select>
 
                     <select id="dropsSortSelect" onchange="onDropsSortChange(this.value)" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-rose-500 transition">
-                        <option value="drop_desc">Largest Drop %</option>
-                        <option value="latest">Recently Dropped</option>
-                        <option value="price_asc">Price: Low to High</option>
-                        <option value="price_desc">Price: High to Low</option>
+                        <option value="drop_desc" {% if not current_sort or current_sort == 'drop_desc' %}selected{% endif %}>Largest Drop %</option>
+                        <option value="latest" {% if current_sort == 'latest' %}selected{% endif %}>Recently Dropped</option>
+                        <option value="price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+                        <option value="price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
                     </select>
                 </div>
             </div>
@@ -237,9 +237,9 @@
         page: {{ current_page if current_page else 1 }},
         limit: 24,
         totalPages: {{ initial_data.total_pages if initial_data and initial_data.total_pages else 1 }},
-        minDrop: 20,
-        platform: '',
-        sortBy: 'drop_desc',
+        minDrop: {{ current_min_drop if current_min_drop is not none else 20 }},
+        platform: '{{ current_platform if current_platform else "" }}',
+        sortBy: '{{ current_sort if current_sort else "drop_desc" }}',
         items: [],
         itemsMap: {}
     };
@@ -511,26 +511,47 @@
         dropsState.minDrop = pct;
         dropsState.page = 1;
         document.querySelectorAll('.drop-pill').forEach(btn => {
-            btn.classList.remove('bg-rose-600', 'text-white');
+            btn.classList.remove('bg-rose-600', 'text-white', 'shadow-sm');
             btn.classList.add('bg-slate-100', 'text-slate-700');
         });
         const activeBtn = document.getElementById(`dropChip${pct}`);
         if (activeBtn) {
             activeBtn.classList.remove('bg-slate-100', 'text-slate-700');
-            activeBtn.classList.add('bg-rose-600', 'text-white');
+            activeBtn.classList.add('bg-rose-600', 'text-white', 'shadow-sm');
         }
+        try {
+            const url = new URL(window.location);
+            if (pct > 0) {
+                url.searchParams.set('min_drop_pct', pct);
+            } else {
+                url.searchParams.delete('min_drop_pct');
+            }
+            window.history.replaceState(dropsState, '', url);
+        } catch (e) {}
         loadPriceDrops();
     }
 
     function onDropsStoreChange(val) {
         dropsState.platform = val;
         dropsState.page = 1;
+        try {
+            const url = new URL(window.location);
+            if (val) url.searchParams.set('platform', val);
+            else url.searchParams.delete('platform');
+            window.history.replaceState(dropsState, '', url);
+        } catch (e) {}
         loadPriceDrops();
     }
 
     function onDropsSortChange(val) {
         dropsState.sortBy = val;
         dropsState.page = 1;
+        try {
+            const url = new URL(window.location);
+            if (val) url.searchParams.set('sort_by', val);
+            else url.searchParams.delete('sort_by');
+            window.history.replaceState(dropsState, '', url);
+        } catch (e) {}
         loadPriceDrops();
     }
 

@@ -91,17 +91,16 @@ class FlipkartScraper(BaseScraper):
                 if m_node and extract_price(m_node.text()) > 0:
                     cand = extract_price(m_node.text())
                     if cand > price:
-                        # Plausibility sanity clamp: MRP cannot exceed 4.5x price or 15k for cheap items
-                        if cand > 4.5 * price or (price < 1500 and cand > 15000) or cand > 200000:
-                            cand = round((price * 1.35) / 10) * 10
+                        if cand > 15.0 * price or cand > 500000:
+                            cand = price
                         mrp = cand
                         break
 
         # Final MRP fallback & bounds check
         if not mrp or mrp < price:
             mrp = price
-        elif mrp > 4.5 * price or (price < 1500 and mrp > 15000) or mrp > 200000:
-            mrp = round((price * 1.35) / 10) * 10
+        elif mrp > 15.0 * price or mrp > 500000:
+            mrp = price
             
         # 4. Fallback Rating & Review count
         if not rating:
@@ -124,10 +123,17 @@ class FlipkartScraper(BaseScraper):
             if img_node:
                 image_url = img_node.attributes.get("src", "") or img_node.attributes.get("data-src", "")
             
-        out_node = tree.css_first(".Z8NC81, div._16FRp0, ._16FRp0")
-        if out_node and any(s in out_node.text().lower() for s in ["sold out", "currently unavailable", "item is out of stock"]):
+        # 6. Out of Stock & Placeholder Anomaly Guard (Flipkart ₹24 / ₹32 placeholder anomaly)
+        page_text_lower = r.text.lower()
+        out_node = tree.css_first(".Z8NC81, div._16FRp0, ._16FRp0, button._2KpZ6l._2U9uOA._3v1-ww")
+        is_oos_text = any(s in page_text_lower for s in ["notify me", "currently unavailable", "item is out of stock", "sold out", "temporarily out of stock"])
+        
+        # Detect bogus ₹24 price (shipping/placeholder charge scraped when OOS)
+        is_cheap_item = any(k in title.lower() for k in ["sticker", "pen", "pencil", "eraser", "pouch", "cover", "card", "badge"])
+        if (price <= 50 and not is_cheap_item) or (price == 24 or mrp == 32):
             in_stock = False
-        elif price <= 0:
+            price = 0.0
+        elif out_node or is_oos_text or price <= 0:
             in_stock = False
             
         return {

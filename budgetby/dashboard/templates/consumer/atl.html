@@ -59,26 +59,26 @@
                 <!-- Store Selector Pills -->
                 <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                     <span class="text-xs font-bold text-slate-500 mr-1 hidden sm:inline">Store:</span>
-                    <button onclick="setAtlStoreFilter('')" id="atlStoreAll" class="atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 transition font-mono shadow-sm">
+                    <button onclick="setAtlStoreFilter('')" id="atlStoreAll" class="atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold transition font-mono {% if not current_platform %}bg-amber-500 text-slate-950 shadow-sm{% else %}bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200{% endif %}">
                         All Stores
                     </button>
-                    <button onclick="setAtlStoreFilter('amazon')" id="atlStoreAmazon" class="atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition flex items-center gap-1">
+                    <button onclick="setAtlStoreFilter('amazon')" id="atlStoreAmazon" class="atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 {% if current_platform == 'amazon' %}bg-amber-500 text-slate-950 shadow-sm{% else %}bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200{% endif %}">
                         <span class="w-2 h-2 rounded-full bg-[#FF9900]"></span>
                         <span>Amazon</span>
                     </button>
-                    <button onclick="setAtlStoreFilter('flipkart')" id="atlStoreFlipkart" class="atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition flex items-center gap-1">
+                    <button onclick="setAtlStoreFilter('flipkart')" id="atlStoreFlipkart" class="atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 {% if current_platform == 'flipkart' %}bg-amber-500 text-slate-950 shadow-sm{% else %}bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200{% endif %}">
                         <span class="w-2 h-2 rounded-full bg-[#2874F0]"></span>
                         <span>Flipkart</span>
                     </button>
-                    <button onclick="setAtlStoreFilter('myntra')" id="atlStoreMyntra" class="atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition flex items-center gap-1">
+                    <button onclick="setAtlStoreFilter('myntra')" id="atlStoreMyntra" class="atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 {% if current_platform == 'myntra' %}bg-amber-500 text-slate-950 shadow-sm{% else %}bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200{% endif %}">
                         <span class="w-2 h-2 rounded-full bg-[#FF3F6C]"></span>
                         <span>Myntra</span>
                     </button>
-                    <button onclick="setAtlStoreFilter('ajio')" id="atlStoreAjio" class="atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition flex items-center gap-1">
+                    <button onclick="setAtlStoreFilter('ajio')" id="atlStoreAjio" class="atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 {% if current_platform == 'ajio' %}bg-amber-500 text-slate-950 shadow-sm{% else %}bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200{% endif %}">
                         <span class="w-2 h-2 rounded-full bg-[#D99814]"></span>
                         <span>Ajio</span>
                     </button>
-                    <button onclick="setAtlStoreFilter('nykaa')" id="atlStoreNykaa" class="atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition flex items-center gap-1">
+                    <button onclick="setAtlStoreFilter('nykaa')" id="atlStoreNykaa" class="atl-store-pill px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 {% if current_platform == 'nykaa' %}bg-amber-500 text-slate-950 shadow-sm{% else %}bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200{% endif %}">
                         <span class="w-2 h-2 rounded-full bg-[#FC2779]"></span>
                         <span>Nykaa</span>
                     </button>
@@ -530,27 +530,45 @@
         atlState.store = storeKey;
         atlState.page = 1;
         document.querySelectorAll('.atl-store-pill').forEach(btn => {
-            btn.classList.remove('bg-amber-500', 'text-slate-950');
+            btn.classList.remove('bg-amber-500', 'text-slate-950', 'shadow-sm');
             btn.classList.add('bg-slate-100', 'text-slate-700');
         });
         const activeKey = storeKey ? `atlStore${storeKey.charAt(0).toUpperCase() + storeKey.slice(1)}` : 'atlStoreAll';
         const activeBtn = document.getElementById(activeKey);
         if (activeBtn) {
             activeBtn.classList.remove('bg-slate-100', 'text-slate-700');
-            activeBtn.classList.add('bg-amber-500', 'text-slate-950');
+            activeBtn.classList.add('bg-amber-500', 'text-slate-950', 'shadow-sm');
         }
+        try {
+            const url = new URL(window.location);
+            if (storeKey) url.searchParams.set('platform', storeKey);
+            else url.searchParams.delete('platform');
+            window.history.replaceState(atlState, '', url);
+        } catch (e) {}
         loadAtlDeals();
     }
 
     function onAtlCategoryChange(cat) {
         atlState.category = cat;
         atlState.page = 1;
+        try {
+            const url = new URL(window.location);
+            if (cat) url.searchParams.set('category', cat);
+            else url.searchParams.delete('category');
+            window.history.replaceState(atlState, '', url);
+        } catch (e) {}
         loadAtlDeals();
     }
 
     function onAtlSortChange(sortBy) {
         atlState.sortBy = sortBy;
         atlState.page = 1;
+        try {
+            const url = new URL(window.location);
+            if (sortBy) url.searchParams.set('sort_by', sortBy);
+            else url.searchParams.delete('sort_by');
+            window.history.replaceState(atlState, '', url);
+        } catch (e) {}
         loadAtlDeals();
     }
 

@@ -144,8 +144,8 @@ async def upsert_product(data: dict) -> int:
     if cur_price and mrp_val and cur_price > 0:
         if mrp_val < cur_price:
             mrp_val = cur_price
-        elif mrp_val > 4.5 * cur_price or (cur_price < 1500 and mrp_val > 15000) or mrp_val > 200000:
-            mrp_val = round((cur_price * 1.35) / 10) * 10
+        elif mrp_val > 15.0 * cur_price or mrp_val > 500000:
+            mrp_val = cur_price
 
     platform = data.get("platform")
     platform_id = str(data.get("platform_id") or "")
@@ -270,21 +270,21 @@ async def update_price(product_id: int, new_price: float, in_stock: bool,
         if mrp:
             if new_price > mrp:
                 mrp = new_price
-            elif mrp > 4.5 * new_price or (new_price < 1500 and mrp > 15000) or mrp > 200000:
-                mrp = round((new_price * 1.35) / 10) * 10
+            elif mrp > 15.0 * new_price or mrp > 500000:
+                mrp = new_price
     await execute("""
         UPDATE products SET
             previous_price = CASE
                 -- If current price is higher than new price, verify it is realistic before storing as previous_price
                 WHEN current_price IS NOT NULL 
                  AND current_price > $2::numeric 
-                 AND current_price <= GREATEST(COALESCE($5::numeric, mrp, $2::numeric * 1.35) * 1.15, $2::numeric * 3.0)
+                 AND current_price <= GREATEST(COALESCE($5::numeric, mrp, $2::numeric * 2.5) * 1.25, $2::numeric * 5.0)
                 THEN current_price
                 WHEN current_price IS NOT NULL AND current_price <= $2::numeric
                 THEN current_price
                 -- If old current_price was an absurd anomaly (e.g. 61,190 on a 133 item), do NOT inherit it
                 ELSE CASE 
-                    WHEN previous_price > GREATEST(COALESCE($5::numeric, mrp, $2::numeric * 1.35) * 1.15, $2::numeric * 3.0)
+                    WHEN previous_price > GREATEST(COALESCE($5::numeric, mrp, $2::numeric * 2.5) * 1.25, $2::numeric * 5.0)
                     THEN NULL
                     ELSE previous_price
                 END
@@ -295,7 +295,7 @@ async def update_price(product_id: int, new_price: float, in_stock: bool,
             mrp = CASE 
                 WHEN $5::numeric IS NOT NULL THEN $5::numeric
                 WHEN mrp < $2::numeric THEN $2::numeric
-                WHEN mrp > $2::numeric * 4.5 THEN ROUND(($2::numeric * 1.35) / 10) * 10
+                WHEN mrp > $2::numeric * 15.0 THEN $2::numeric
                 ELSE mrp 
             END,
             rating = COALESCE($6::numeric, rating),
