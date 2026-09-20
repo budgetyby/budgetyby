@@ -38,7 +38,13 @@ if SENTRY_DSN:
         environment=os.getenv("ENVIRONMENT", "production"),
     )
 
+from fastapi.staticfiles import StaticFiles
+
 app = FastAPI(title="BudgetBy Control Center", version="2.0")
+
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Rate limiter — in-memory per-IP token bucket (single instance)
 limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
@@ -2048,17 +2054,15 @@ async def get_public_deals(
                 "p.current_price > 0",
                 "(d.id IS NOT NULL OR p.mrp IS NULL OR p.mrp <= p.current_price * 25.0)"
             ]
-            args = []
-            arg_idx = 1
+            where_args = []
             relevance_select = "0 as relevance_score"
 
             # Shared watchlist IDs filtering
             if ids:
                 clean_ids = [int(x.strip()) for x in ids.split(",") if x.strip().isdigit()][:50]
                 if clean_ids:
-                    where_clauses.append(f"p.id = ANY(${arg_idx})")
-                    args.append(clean_ids)
-                    arg_idx += 1
+                    where_clauses.append(f"p.id = ANY(${len(where_args) + 1})")
+                    where_args.append(clean_ids)
 
             # ── SEARCH INTENT EXTRACTION & FILTERING ────────────────────────────
             parsed = None
@@ -2069,55 +2073,17 @@ async def get_public_deals(
 
                 # Price constraints from search query
                 if parsed["max_price"]:
-                    where_clauses.append(f"p.current_price <= ${arg_idx}")
-                    args.append(parsed["max_price"])
-                    arg_idx += 1
+                    where_clauses.append(f"p.current_price <= ${len(where_args) + 1}")
+                    where_args.append(parsed["max_price"])
                 if parsed["min_price"]:
-                    where_clauses.append(f"p.current_price >= ${arg_idx}")
-                    args.append(parsed["min_price"])
-                    arg_idx += 1
+                    where_clauses.append(f"p.current_price >= ${len(where_args) + 1}")
+                    where_args.append(parsed["min_price"])
 
                 # Keyword tokens matching with precision word boundaries & plurals
                 for t in parsed["tokens"]:
                     pat = build_token_regex_pattern(t)
-                    where_clauses.append(f"(p.title ~* ${arg_idx} OR COALESCE(p.category, '') ~* ${arg_idx})")
-                    args.append(pat)
-                    arg_idx += 1
-
-                # Scoring parameters
-                args.append(f"%{parsed['clean_query']}%")
-                exact_idx = arg_idx
-                arg_idx += 1
-
-                first_token = parsed["tokens"][0] if parsed["tokens"] else ""
-                args.append(f"{first_token}%")
-                starts_idx = arg_idx
-                arg_idx += 1
-
-                acc_sql = "0"
-                if not parsed["is_accessory_query"]:
-                    acc_sql = """
-                        CASE 
-                            WHEN (p.title ILIKE '%case%' OR p.title ILIKE '%cover%' OR p.title ILIKE '%tempered glass%' 
-                                  OR p.title ILIKE '%screen protector%' OR p.title ILIKE '%charger%' OR p.title ILIKE '%adapter%'
-                                  OR p.title ILIKE '%cable%' OR p.title ILIKE '%sleeve%' OR p.title ILIKE '%bag%'
-                                  OR p.title ILIKE '%backpack%' OR p.title ILIKE '%stand%' OR p.title ILIKE '%mount%'
-                                  OR p.title ILIKE '%pouch%' OR p.title ILIKE '%cooling pad%' OR p.title ILIKE '%mouse pad%') 
-                            THEN -300 
-                            ELSE 0 
-                        END
-                    """
-
-                relevance_select = f"""
-                    (
-                        (CASE WHEN p.title ILIKE ${exact_idx} THEN 200 ELSE 0 END) +
-                        (CASE WHEN p.title ILIKE ${starts_idx} THEN 100 ELSE 0 END) +
-                        (CASE WHEN p.all_time_low IS NOT NULL AND p.current_price <= p.all_time_low * 1.02 THEN 50 ELSE 0 END) +
-                        (COALESCE(ROUND((((p.mrp - p.current_price)/NULLIF(p.mrp,0)) * 100)::numeric, 0), 0) * 0.5) +
-                        (COALESCE(p.rating, 0) * 8) +
-                        {acc_sql}
-                    ) as relevance_score
-                """
+                    where_clauses.append(f"(p.title ~* ${len(where_args) + 1} OR COALESCE(p.category, '') ~* ${len(where_args) + 1})")
+                    where_args.append(pat)
 
             # ── PLATFORM FILTER ─────────────────────────────────────────────────
             selected_platforms = []
@@ -2127,19 +2093,16 @@ async def get_public_deals(
                 selected_platforms = [platform_clean]
 
             if selected_platforms:
-                where_clauses.append(f"LOWER(p.platform) = ANY(${arg_idx})")
-                args.append(selected_platforms)
-                arg_idx += 1
+                where_clauses.append(f"LOWER(p.platform) = ANY(${len(where_args) + 1})")
+                where_args.append(selected_platforms)
 
             # ── EXPLICIT PRICE RANGE FILTER ─────────────────────────────────────
             if min_price and min_price > 0:
-                where_clauses.append(f"p.current_price >= ${arg_idx}")
-                args.append(min_price)
-                arg_idx += 1
+                where_clauses.append(f"p.current_price >= ${len(where_args) + 1}")
+                where_args.append(min_price)
             if max_price and max_price > 0:
-                where_clauses.append(f"p.current_price <= ${arg_idx}")
-                args.append(max_price)
-                arg_idx += 1
+                where_clauses.append(f"p.current_price <= ${len(where_args) + 1}")
+                where_args.append(max_price)
 
             # ── MINIMUM DISCOUNT FILTER ─────────────────────────────────────────
             if min_discount and min_discount > 0:
@@ -2148,16 +2111,14 @@ async def get_public_deals(
                         ROUND((((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) * 100)::numeric, 0),
                         ROUND((((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100)::numeric, 0),
                         0
-                    ) >= ${arg_idx}
+                    ) >= ${len(where_args) + 1}
                 """)
-                args.append(min_discount)
-                arg_idx += 1
+                where_args.append(min_discount)
 
             # ── CUSTOMER RATING FILTER ──────────────────────────────────────────
             if min_rating and min_rating > 0:
-                where_clauses.append(f"COALESCE(p.rating, 0) >= ${arg_idx}")
-                args.append(min_rating)
-                arg_idx += 1
+                where_clauses.append(f"COALESCE(p.rating, 0) >= ${len(where_args) + 1}")
+                where_args.append(min_rating)
 
             # ── VERIFIED ONLY FILTER ────────────────────────────────────────────
             if verified_only:
@@ -2187,9 +2148,8 @@ async def get_public_deals(
                         combined = " OR ".join(sub_aliases)
                         cat_clauses.append(f"({combined})")
                     else:
-                        cat_clauses.append(f"LOWER(p.category) = ${arg_idx}")
-                        args.append(cat)
-                        arg_idx += 1
+                        cat_clauses.append(f"LOWER(p.category) = ${len(where_args) + 1}")
+                        where_args.append(cat)
                 if cat_clauses:
                     where_clauses.append(f"({' OR '.join(cat_clauses)})")
 
@@ -2198,27 +2158,22 @@ async def get_public_deals(
             gender_clean = (gender or "").strip().lower()
             if gender_clean and gender_clean != "all":
                 if gender_clean == "men":
-                    where_clauses.append(f"(p.title ~* ${arg_idx} AND NOT (p.title ~* ${arg_idx+1}))")
-                    args.append(r"\y(men|mens|male|gentlemen)\y")
-                    args.append(r"\y(women|womens|female|ladies|girls?|kurti|saree|lehenga|bra|heels)\y")
-                    arg_idx += 2
+                    where_clauses.append(f"(p.title ~* ${len(where_args) + 1} AND NOT (p.title ~* ${len(where_args) + 2}))")
+                    where_args.append(r"\y(men|mens|male|gentlemen)\y")
+                    where_args.append(r"\y(women|womens|female|ladies|girls?|kurti|saree|lehenga|bra|heels)\y")
                 elif gender_clean == "women":
-                    where_clauses.append(f"p.title ~* ${arg_idx}")
-                    args.append(r"\y(women|womens|female|ladies|girls?|saree|kurti|heels|bra|lehenga)\y")
-                    arg_idx += 1
+                    where_clauses.append(f"p.title ~* ${len(where_args) + 1}")
+                    where_args.append(r"\y(women|womens|female|ladies|girls?|saree|kurti|heels|bra|lehenga)\y")
                 elif gender_clean in ("boy", "boys"):
-                    where_clauses.append(f"(p.title ~* ${arg_idx} AND NOT (p.title ~* ${arg_idx+1}))")
-                    args.append(r"\y(boy|boys)\y")
-                    args.append(r"\y(girl|girls|women|womens|ladies)\y")
-                    arg_idx += 2
+                    where_clauses.append(f"(p.title ~* ${len(where_args) + 1} AND NOT (p.title ~* ${len(where_args) + 2}))")
+                    where_args.append(r"\y(boy|boys)\y")
+                    where_args.append(r"\y(girl|girls|women|womens|ladies)\y")
                 elif gender_clean in ("girl", "girls"):
-                    where_clauses.append(f"p.title ~* ${arg_idx}")
-                    args.append(r"\y(girl|girls|frock)\y")
-                    arg_idx += 1
+                    where_clauses.append(f"p.title ~* ${len(where_args) + 1}")
+                    where_args.append(r"\y(girl|girls|frock)\y")
                 elif gender_clean in ("kid", "kids", "children"):
-                    where_clauses.append(f"p.title ~* ${arg_idx}")
-                    args.append(r"\y(kids?|baby|infant|toddler|children)\y")
-                    arg_idx += 1
+                    where_clauses.append(f"p.title ~* ${len(where_args) + 1}")
+                    where_args.append(r"\y(kids?|baby|infant|toddler|children)\y")
 
             # Subcategory keyword filtering (parameterized with word boundaries)
             if eff_sub:
@@ -2235,19 +2190,31 @@ async def get_public_deals(
                 if sub_kws:
                     sub_placeholders = []
                     for kw in sub_kws:
-                        sub_placeholders.append(f"p.title ~* ${arg_idx}")
-                        args.append(build_token_regex_pattern(kw))
-                        arg_idx += 1
+                        sub_placeholders.append(f"p.title ~* ${len(where_args) + 1}")
+                        where_args.append(build_token_regex_pattern(kw))
                     where_clauses.append(f"({' OR '.join(sub_placeholders)})")
 
             use_fast_deals_path = (
                 not search_clean 
                 and not ids 
-                and deal_type_clean not in ("drops", "atl") 
-                and tab_clean not in ("drops", "atl")
+                and deal_type_clean not in ("drops", "atl", "verified") 
+                and tab_clean not in ("drops", "atl", "verified", "under499", "under999", "featured")
+                and (not category_clean or category_clean == "all")
+                and not categories
+                and (not platform_clean or platform_clean == "all")
+                and not platforms
+                and not eff_sub
+                and (not gender_clean or gender_clean == "all")
+                and not (min_price and min_price > 0)
+                and not (max_price and max_price > 0)
+                and not (min_discount and min_discount > 0)
+                and not (min_rating and min_rating > 0)
+                and not verified_only
             )
 
             aff_priority = "(CASE WHEN p.affiliate_url ILIKE '%fktr.in%' OR p.affiliate_url ILIKE '%myntr.it%' OR p.affiliate_url ILIKE '%ajiio.in%' OR p.affiliate_url ILIKE '%clnk.in%' OR LOWER(p.platform) = 'amazon' THEN 1 ELSE 0 END) DESC"
+
+            query_args = list(where_args)
 
             if use_fast_deals_path:
                 if tab_clean == "under499":
@@ -2268,7 +2235,9 @@ async def get_public_deals(
                 else:
                     order_sql = f"ORDER BY {aff_priority}, d.posted_at DESC NULLS LAST, p.id DESC"
 
-                args.extend([limit, offset])
+                limit_idx = len(query_args) + 1
+                offset_idx = len(query_args) + 2
+                query_args.extend([limit, offset])
                 where_sql = f"WHERE {' AND '.join(where_clauses)}"
 
                 query = f"""
@@ -2300,7 +2269,7 @@ async def get_public_deals(
                     LEFT JOIN deals d ON d.product_id = p.id AND d.posted_at >= NOW() - INTERVAL '7 days'
                     {where_sql}
                     {order_sql}
-                    LIMIT ${arg_idx} OFFSET ${arg_idx + 1};
+                    LIMIT ${limit_idx} OFFSET ${offset_idx};
                 """
             else:
                 if deal_type_clean == "verified" or tab_clean == "verified" or verified_only:
@@ -2319,6 +2288,38 @@ async def get_public_deals(
                 elif tab_clean == "featured":
                     where_clauses.append("(d.id IS NOT NULL OR ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) >= 0.50)")
 
+                if search_clean and parsed:
+                    exact_idx = len(query_args) + 1
+                    query_args.append(f"%{parsed['clean_query']}%")
+                    starts_idx = len(query_args) + 1
+                    first_token = parsed["tokens"][0] if parsed["tokens"] else ""
+                    query_args.append(f"{first_token}%")
+
+                    acc_sql = "0"
+                    if not parsed["is_accessory_query"]:
+                        acc_sql = """
+                            CASE 
+                                WHEN (p.title ILIKE '%case%' OR p.title ILIKE '%cover%' OR p.title ILIKE '%tempered glass%' 
+                                      OR p.title ILIKE '%screen protector%' OR p.title ILIKE '%charger%' OR p.title ILIKE '%adapter%'
+                                      OR p.title ILIKE '%cable%' OR p.title ILIKE '%sleeve%' OR p.title ILIKE '%bag%'
+                                      OR p.title ILIKE '%backpack%' OR p.title ILIKE '%stand%' OR p.title ILIKE '%mount%'
+                                      OR p.title ILIKE '%pouch%' OR p.title ILIKE '%cooling pad%' OR p.title ILIKE '%mouse pad%') 
+                                THEN -300 
+                                ELSE 0 
+                            END
+                        """
+
+                    relevance_select = f"""
+                        (
+                            (CASE WHEN p.title ILIKE ${exact_idx} THEN 200 ELSE 0 END) +
+                            (CASE WHEN p.title ILIKE ${starts_idx} THEN 100 ELSE 0 END) +
+                            (CASE WHEN p.all_time_low IS NOT NULL AND p.current_price <= p.all_time_low * 1.02 THEN 50 ELSE 0 END) +
+                            (COALESCE(ROUND((((p.mrp - p.current_price)/NULLIF(p.mrp,0)) * 100)::numeric, 0), 0) * 0.5) +
+                            (COALESCE(p.rating, 0) * 8) +
+                            {acc_sql}
+                        ) as relevance_score
+                    """
+
                 if sort_by in ("discount_desc", "discount"):
                     order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, ((p.mrp - p.current_price) / NULLIF(p.mrp, 0)) DESC NULLS LAST, p.id DESC"
                 elif sort_by == "price_asc":
@@ -2335,7 +2336,9 @@ async def get_public_deals(
                     else:
                         order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, COALESCE(d.posted_at, p.last_price_change, p.created_at) DESC, p.id DESC"
 
-                args.extend([limit, offset])
+                limit_idx = len(query_args) + 1
+                offset_idx = len(query_args) + 2
+                query_args.extend([limit, offset])
                 where_sql = f"WHERE {' AND '.join(where_clauses)}"
 
                 query = f"""
@@ -2374,25 +2377,35 @@ async def get_public_deals(
                     LEFT JOIN deals d ON d.product_id = p.id
                     {where_sql}
                     {order_sql}
-                    LIMIT ${arg_idx} OFFSET ${arg_idx + 1};
+                    LIMIT ${limit_idx} OFFSET ${offset_idx};
                 """
 
-            rows = await database.fetch(query, *args)
+            rows = await database.fetch(query, *query_args)
 
-            cached_total_catalog = await ram_cache.get("total_catalog_deals_count")
-            if cached_total_catalog is None:
-                cached_total_catalog = await database.fetchval("""
-                    SELECT COUNT(*) FROM products 
-                    WHERE in_stock = TRUE AND status = 'ACTIVE' AND current_price > 0;
-                """) or 100000
-                await ram_cache.set("total_catalog_deals_count", cached_total_catalog, ttl=900)
-
-            if len(rows) < limit and page == 1:
-                total_matches = len(rows)
-                verified_matches = sum(1 for r in rows if r.get("is_verified"))
-            else:
+            if use_fast_deals_path:
+                cached_total_catalog = await ram_cache.get("total_catalog_deals_count")
+                if cached_total_catalog is None:
+                    cached_total_catalog = await database.fetchval("""
+                        SELECT COUNT(*) FROM products 
+                        WHERE in_stock = TRUE AND status = 'ACTIVE' AND current_price > 0;
+                    """) or 100000
+                    await ram_cache.set("total_catalog_deals_count", cached_total_catalog, ttl=900)
                 total_matches = cached_total_catalog
-                verified_matches = 1500
+            else:
+                cnt_key = f"cnt:{hashlib.md5(f'{where_sql}:{where_args}'.encode()).hexdigest()}"
+                cached_count = await ram_cache.get(cnt_key)
+                if cached_count is None:
+                    count_query = f"""
+                        SELECT COUNT(*) FROM products p
+                        LEFT JOIN deals d ON d.product_id = p.id
+                        {where_sql};
+                    """
+                    cached_count = await database.fetchval(count_query, *where_args) or 0
+                    await ram_cache.set(cnt_key, cached_count, ttl=600)
+                total_matches = cached_count
+
+            total_pages = max(1, math.ceil(total_matches / limit)) if total_matches > 0 else 1
+            verified_matches = sum(1 for r in rows if r.get("is_verified"))
             catalog_matches = max(0, total_matches - verified_matches)
 
             deals = []
@@ -2643,7 +2656,10 @@ async def page_deals(
     tab: str = Query("all"),
     verified_only: bool = Query(True),
     sort_by: str = Query("latest"),
-    min_discount: float = Query(0.0)
+    min_discount: float = Query(0.0),
+    min_price: float = Query(0.0),
+    max_price: float = Query(0.0),
+    min_rating: float = Query(0.0)
 ):
     """Renders the Deals Catalog with complete pre-rendered items (SSR)."""
     page_num = int(page) if not hasattr(page, 'default') and str(page).isdigit() else 1
@@ -2658,6 +2674,9 @@ async def page_deals(
     tab_str = str(tab) if not hasattr(tab, 'default') and tab is not None else "all"
     sort_str = str(sort_by) if not hasattr(sort_by, 'default') and sort_by is not None else "latest"
     min_disc_val = float(min_discount) if not hasattr(min_discount, 'default') and min_discount is not None else 0.0
+    min_price_val = float(min_price) if not hasattr(min_price, 'default') and min_price is not None else 0.0
+    max_price_val = float(max_price) if not hasattr(max_price, 'default') and max_price is not None else 0.0
+    min_rating_val = float(min_rating) if not hasattr(min_rating, 'default') and min_rating is not None else 0.0
     ver_val = bool(verified_only) if not hasattr(verified_only, 'default') and verified_only is not None else True
 
     # When user searches, show all matching products across catalog unless verified_only is explicitly set
@@ -2666,7 +2685,7 @@ async def page_deals(
         ver_val = False
 
     ssr_ttl = 60 if (search_str or sort_str == "latest" or tab_str == "all") else 300
-    ssr_key = f"deals:{page_num}:{limit_num}:{search_str}:{plat_str}:{cat_str}:{eff_sub_page}:{gender_str}:{tab_str}:{ver_val}:{sort_str}:{min_disc_val}"
+    ssr_key = f"deals:{page_num}:{limit_num}:{search_str}:{plat_str}:{cat_str}:{eff_sub_page}:{gender_str}:{tab_str}:{ver_val}:{sort_str}:{min_disc_val}:{min_price_val}:{max_price_val}:{min_rating_val}"
     cached_html = await get_cached_ssr_html(ssr_key)
     if cached_html:
         return make_html_response(request, cached_html, cache_seconds=ssr_ttl)
@@ -2686,9 +2705,9 @@ async def page_deals(
             search=search_str,
             sort_by=sort_str,
             min_discount=min_disc_val,
-            min_price=0.0,
-            max_price=0.0,
-            min_rating=0.0,
+            min_price=min_price_val,
+            max_price=max_price_val,
+            min_rating=min_rating_val,
             verified_only=ver_val,
             deal_type="",
             ids="",
@@ -2711,7 +2730,10 @@ async def page_deals(
         "current_tab": tab_str,
         "current_verified_only": ver_val,
         "current_sort": sort_str,
-        "current_min_discount": min_disc_val
+        "current_min_discount": min_disc_val,
+        "current_min_price": min_price_val,
+        "current_max_price": max_price_val,
+        "current_min_rating": min_rating_val
     }, cache_seconds=ssr_ttl)
     if resp.status_code == 200 and hasattr(resp, "body"):
         await set_cached_ssr_html(ssr_key, resp.body.decode("utf-8"), ttl=ssr_ttl)

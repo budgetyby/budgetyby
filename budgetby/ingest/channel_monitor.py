@@ -210,11 +210,20 @@ async def verify_and_ingest_single_deal(channel: str, post_id: int, raw_url: str
 
         price = float(live_data.get("current_price"))
         mrp = float(live_data.get("mrp") or price)
-        title = live_data.get("title") or f"{platform.capitalize()} Product"
+        from budgetby.scrapers.utils import clean_title, is_blacklisted_utility_item
+        title = clean_title(live_data.get("title") or f"{platform.capitalize()} Product")
         rating = float(live_data.get("rating") or 4.2)
         review_count = int(live_data.get("review_count") or 100)
         image_url = live_data.get("image_url") or ""
         in_stock = bool(live_data.get("in_stock", True))
+
+        if is_blacklisted_utility_item(title, clean_url):
+            logger.info(f"Skipping blacklisted utility/service item: {title} ({clean_url})")
+            await database.execute("""
+                INSERT INTO ingested_channel_deals (source_channel, message_id, raw_url, resolved_url, platform, status, title, price, mrp)
+                VALUES ($1, $2, $3, $4, $5, 'BLACKLISTED_UTILITY', $6, $7, $8);
+            """, channel, post_id, raw_url, clean_url, platform, title, price, mrp)
+            return None
 
         if not in_stock:
             await database.execute("""

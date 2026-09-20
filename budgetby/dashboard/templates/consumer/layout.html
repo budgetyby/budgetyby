@@ -1309,11 +1309,10 @@
 
             container.innerHTML = list.map(item => {
                 const storeCfg = STORES[item.platform?.toLowerCase()] || STORES.amazon;
-                const postedTimeStr = formatPostedDateTime(item.posted_at || item.saved_at);
                 return `
                     <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex gap-3 items-center justify-between group">
                         <div class="w-14 h-14 rounded-lg bg-white p-1 flex items-center justify-center shrink-0 border border-slate-200 overflow-hidden">
-                            <img src="${item.image_url || '/static/placeholder.png'}" alt="" class="w-full h-full object-contain" onerror="this.src='/static/placeholder.png'"/>
+                            <img src="${item.image_url || '/static/placeholder.svg'}" alt="" class="w-full h-full object-contain" onerror="this.src='/static/placeholder.svg'"/>
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-1.5 mb-1">
@@ -1326,7 +1325,6 @@
                                 <span class="text-sm font-black text-slate-900 font-mono">${formatINR(item.current_price)}</span>
                                 ${item.mrp && item.mrp > item.current_price ? `<span class="text-[11px] text-slate-400 line-through font-mono">${formatINR(item.mrp)}</span>` : ''}
                             </div>
-                            <div class="text-[10px] text-slate-500 font-mono mt-0.5">📢 ${postedTimeStr}</div>
                         </div>
                         <div class="flex flex-col items-end gap-1.5">
                             <button onclick="removeWatchlistItem('${item.id}')" class="text-slate-400 hover:text-rose-600 p-1 transition" title="Remove">
@@ -1396,24 +1394,22 @@
             const container = document.getElementById('shareModalContent');
             const storeCfg = STORES[deal.platform?.toLowerCase()] || STORES.amazon;
             const dealUrl = deal.affiliate_url || deal.product_url || window.location.href;
-            const postedTimeStr = formatPostedDateTime(deal.posted_at || deal.deal_time || deal.last_checked);
             
             container.innerHTML = `
                 <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex gap-3 items-center mb-3">
                     <div class="w-12 h-12 rounded-lg bg-white p-1 flex items-center justify-center shrink-0 border border-slate-200">
-                        <img src="${deal.image_url || '/static/placeholder.png'}" class="w-full h-full object-contain" />
+                        <img src="${deal.image_url || '/static/placeholder.svg'}" class="w-full h-full object-contain" onerror="this.src='/static/placeholder.svg'"/>
                     </div>
                     <div class="min-w-0 flex-1">
                         <span class="px-1.5 py-0.2 rounded text-[9px] font-bold ${storeCfg.badge}">${storeCfg.name}</span>
                         <div class="font-bold text-slate-900 truncate mt-0.5">${escapeHtml(deal.title)}</div>
                         <div class="font-black text-emerald-700 font-mono text-sm">${formatINR(deal.current_price)}</div>
-                        <div class="text-[10px] text-slate-500 mt-0.5">📢 Posted on Channel: ${postedTimeStr}</div>
                     </div>
                 </div>
             `;
 
             // Setup WhatsApp link
-            const waText = encodeURIComponent(`🔥 Check out this deal on BudgetBy (Posted: ${postedTimeStr}):
+            const waText = encodeURIComponent(`🔥 Check out this deal on BudgetBy:
 ${deal.title}
 💰 Deal Price: ${formatINR(deal.current_price)}
 🔗 Link: ${dealUrl}`);
@@ -1539,16 +1535,13 @@ ${deal.title}
                 list.innerHTML = deals.map(d => {
                     const storeCfg = STORES[d.platform?.toLowerCase()] || STORES.amazon;
                     const link = `/deals?search=${encodeURIComponent(d.title || query)}`;
-                    const postedTimeStr = formatPostedDateTime(d.posted_at || d.deal_time || d.last_checked);
-                    return `
                         <a href="${link}" class="p-2.5 flex items-center gap-3 hover:bg-slate-50 transition group">
                             <div class="w-10 h-10 rounded-lg bg-white p-1 flex items-center justify-center border border-slate-200 shrink-0">
-                                <img src="${d.image_url || '/static/placeholder.png'}" class="w-full h-full object-contain" />
+                                <img src="${d.image_url || '/static/placeholder.svg'}" class="w-full h-full object-contain" onerror="this.src='/static/placeholder.svg'"/>
                             </div>
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-1.5 mb-0.5">
                                     <span class="px-1.5 py-0.2 rounded text-[9px] font-bold ${storeCfg.badge}">${storeCfg.name}</span>
-                                    <span class="text-[10px] text-slate-400 font-mono">📢 ${postedTimeStr}</span>
                                 </div>
                                 <div class="font-bold text-slate-900 truncate group-hover:text-indigo-600 transition">${escapeHtml(d.title)}</div>
                             </div>

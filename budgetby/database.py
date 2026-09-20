@@ -136,8 +136,12 @@ async def upsert_product(data: dict) -> int:
             slug = re.sub(r'https?://[^/]+/', '', p_url).split('/p/')[0].split('?')[0].lstrip('/').replace('-', ' ').title()
             if len(slug) >= 4:
                 title = slug
+    from budgetby.scrapers.utils import clean_title, is_blacklisted_utility_item
+    title = clean_title(title)
     if not title:
         title = f"{str(data.get('platform', '')).capitalize()} Item {data.get('platform_id', '')}"
+    if is_blacklisted_utility_item(title, p_url):
+        return None
 
     cur_price = data.get("current_price")
     mrp_val = data.get("mrp")

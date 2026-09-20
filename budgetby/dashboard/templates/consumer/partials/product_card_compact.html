@@ -21,11 +21,11 @@
         </div>
 
         <div class="relative w-full h-36 rounded-xl bg-slate-50 p-2 flex items-center justify-center overflow-hidden border border-slate-100">
-            <img src="{{ deal.image_url or '/static/placeholder.png' }}" 
+            <img src="{{ deal.image_url or '/static/placeholder.svg' }}" 
                  alt="{{ deal.title or '' }}" 
                  class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                  loading="lazy"
-                 onerror="this.src='/static/placeholder.png'" />
+                 onerror="this.src='/static/placeholder.svg'" />
             <button onclick="handleHomeWatchlist(this, {{ pid }})" 
                     class="absolute top-2 right-2 p-1.5 rounded-xl bg-white/90 backdrop-blur-md border border-slate-200 text-slate-400 hover:text-rose-500 transition shadow-sm" 
                     title="Save to Watchlist">

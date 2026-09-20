@@ -5,10 +5,10 @@
 
 {% block content %}
 <main class="w-full">
-    <!-- ── Page Header & Stats Banner ───────────────────────────────────── -->
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-6 pb-4">
+    <!-- ── Page Header ───────────────────────────────────── -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-6 pb-2">
         <!-- Breadcrumb -->
-        <nav class="flex items-center gap-2 text-xs text-slate-500 mb-3" aria-label="Breadcrumb">
+        <nav class="flex items-center gap-2 text-xs text-slate-500 mb-2" aria-label="Breadcrumb">
             <a href="/" class="hover:text-slate-900 transition flex items-center gap-1">
                 <span>🏠</span> Home
             </a>
@@ -18,37 +18,10 @@
             </span>
         </nav>
 
-        <div class="relative overflow-hidden rounded-3xl bg-white border border-slate-200/90 p-6 sm:p-8 shadow-sm">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-                <div class="max-w-2xl">
-                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 text-amber-800 font-bold text-xs tracking-wide uppercase border border-amber-200 mb-3">
-                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                        Historical Rock-Bottom Pricing
-                    </div>
-                    <h1 class="text-2xl sm:text-4xl font-black tracking-tight text-slate-900 leading-tight">
-                        All-Time Low Deals
-                    </h1>
-                    <p class="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                        Every single item featured below is currently selling at or below its lowest recorded price in our 30, 60 & 120-day database history. Beat seasonal sales with real-time rock-bottom pricing.
-                    </p>
-                </div>
-
-                <!-- Header Stats Summary -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 shrink-0">
-                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-center min-w-[110px]">
-                        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Active ATLs</div>
-                        <div id="statAtlTotal" class="text-xl sm:text-2xl font-black text-amber-600 font-mono mt-0.5">{{ initial_data.total_matches if initial_data and initial_data.total_matches else '--' }}</div>
-                    </div>
-                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-center min-w-[110px]">
-                        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Guarantee</div>
-                        <div class="text-sm font-black text-emerald-700 font-mono mt-1">Lowest Ever</div>
-                    </div>
-                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-center min-w-[110px] col-span-2 sm:col-span-1">
-                        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Price History</div>
-                        <div class="text-xs font-bold text-emerald-700 font-mono mt-2">Zero Fake Sales</div>
-                    </div>
-                </div>
-            </div>
+        <div class="flex items-center justify-between pb-2">
+            <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 leading-tight">
+                All-Time Low Deals
+            </h1>
         </div>
     </section>
 
@@ -108,7 +81,7 @@
                     </select>
 
                     <select id="atlSortSelect" onchange="onAtlSortChange(this.value)" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-amber-500 transition">
-                        <option value="latest" {% if current_sort == 'latest' %}selected{% endif %}>Recently Added</option>
+                        <option value="latest" {% if not current_sort or current_sort == 'latest' %}selected{% endif %}>Recently Added</option>
                         <option value="discount" {% if current_sort == 'discount' %}selected{% endif %}>Highest Discount %</option>
                         <option value="price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
                         <option value="price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
@@ -137,11 +110,11 @@
 
                         <!-- Product Image Area -->
                         <div class="relative w-full h-44 rounded-xl bg-slate-50 p-2 flex items-center justify-center overflow-hidden border border-slate-100">
-                            <img src="{{ deal.image_url or '/static/placeholder.png' }}" 
+                            <img src="{{ deal.image_url or '/static/placeholder.svg' }}" 
                                  alt="{{ deal.title }}" 
                                  class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                                  loading="lazy"
-                                 onerror="this.src='/static/placeholder.png'" />
+                                 onerror="this.onerror=null;this.src='/static/placeholder.svg'" />
                             
                             <!-- Watchlist Quick Toggle -->
                             <button onclick="handleAtlCardWatchlist(this, {{ deal.product_id or deal.id }})" 
@@ -149,12 +122,6 @@
                                     title="Save to Watchlist">
                                 <i data-lucide="heart" class="w-4 h-4"></i>
                             </button>
-
-                            <!-- Freshness Pill -->
-                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-white/90 border border-slate-200 text-[10px] font-medium text-emerald-700 flex items-center gap-1 shadow-sm">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                <span>Live {{ (deal.last_price_change or deal.last_checked)|time_ago }}</span>
-                            </div>
                         </div>
 
                         <!-- Product Title -->
@@ -174,13 +141,6 @@
                                 {% endif %}
                             </div>
                             {% endif %}
-                        </div>
-
-                        <!-- Price Checked Timestamp Badge -->
-                        <div class="flex items-center gap-1.5 text-[10px] text-slate-600 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200 mt-2 font-medium">
-                            <i data-lucide="clock-3" class="w-3 h-3 text-indigo-500 shrink-0"></i>
-                            <span>Price Checked:</span>
-                            <span class="font-bold text-slate-900 font-mono ml-auto">{{ (deal.last_price_change or deal.deal_time or deal.last_checked or deal.posted_at)|format_posted_time }}</span>
                         </div>
                     </div>
 
@@ -461,14 +421,10 @@
                         </div>
 
                         <div class="relative w-full h-44 rounded-xl bg-slate-50 p-2 flex items-center justify-center overflow-hidden border border-slate-100">
-                            <img src="${deal.image_url || '/static/placeholder.png'}" alt="${safeTitle}" class="w-full h-full object-contain group-hover:scale-105 transition" loading="lazy" onerror="this.src='/static/placeholder.png'"/>
+                            <img src="${deal.image_url || '/static/placeholder.svg'}" alt="${safeTitle}" class="w-full h-full object-contain group-hover:scale-105 transition" loading="lazy" onerror="this.onerror=null;this.src='/static/placeholder.svg'"/>
                             <button onclick="handleAtlCardWatchlist(this, ${deal.id})" class="absolute top-2 right-2 p-1.5 rounded-xl bg-white/90 backdrop-blur-md border border-slate-200 text-slate-400 hover:text-rose-500 transition shadow-sm" title="Save to Watchlist">
                                 <i data-lucide="heart" class="w-4 h-4 ${inWatch ? 'fill-rose-500 text-rose-500' : ''}"></i>
                             </button>
-                            <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-white/90 border border-slate-200 text-[10px] font-medium text-emerald-700 flex items-center gap-1 shadow-sm">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                <span>Live ${liveAgo}</span>
-                            </div>
                         </div>
 
                         <div class="mt-3">
@@ -476,12 +432,6 @@
                                 ${safeTitle}
                             </a>
                             ${ratingHtml}
-                        </div>
-
-                        <div class="flex items-center gap-1.5 text-[10px] text-slate-600 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200 mt-2 font-medium">
-                            <i data-lucide="clock-3" class="w-3 h-3 text-indigo-500 shrink-0"></i>
-                            <span>Price Checked:</span>
-                            <span class="font-bold text-slate-900 font-mono ml-auto">${postedTimeStr}</span>
                         </div>
                     </div>
 
@@ -543,7 +493,8 @@
             const url = new URL(window.location);
             if (storeKey) url.searchParams.set('platform', storeKey);
             else url.searchParams.delete('platform');
-            window.history.replaceState(atlState, '', url);
+            url.searchParams.set('page', '1');
+            window.history.pushState(atlState, '', url);
         } catch (e) {}
         loadAtlDeals();
     }
@@ -555,7 +506,8 @@
             const url = new URL(window.location);
             if (cat) url.searchParams.set('category', cat);
             else url.searchParams.delete('category');
-            window.history.replaceState(atlState, '', url);
+            url.searchParams.set('page', '1');
+            window.history.pushState(atlState, '', url);
         } catch (e) {}
         loadAtlDeals();
     }
@@ -567,7 +519,8 @@
             const url = new URL(window.location);
             if (sortBy) url.searchParams.set('sort_by', sortBy);
             else url.searchParams.delete('sort_by');
-            window.history.replaceState(atlState, '', url);
+            url.searchParams.set('page', '1');
+            window.history.pushState(atlState, '', url);
         } catch (e) {}
         loadAtlDeals();
     }
@@ -597,5 +550,12 @@
         const deal = atlState.itemsMap[id];
         if (deal) openShareModal(deal);
     }
+
+    window.setAtlStoreFilter = setAtlStoreFilter;
+    window.onAtlCategoryChange = onAtlCategoryChange;
+    window.onAtlSortChange = onAtlSortChange;
+    window.changeAtlPage = changeAtlPage;
+    window.handleAtlCardWatchlist = handleAtlCardWatchlist;
+    window.handleAtlCardShare = handleAtlCardShare;
 </script>
 {% endblock %}

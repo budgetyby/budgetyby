@@ -66,6 +66,32 @@ def extract_price(text: str) -> float:
     except ValueError:
         return 0.0
 
+UTILITY_BLACKLIST_PATTERNS = [
+    r'\blpg\b.*\b(cylinder|booking|gas)\b',
+    r'\bcylinder\s+booking\b',
+    r'\bgas\s+booking\b',
+    r'\belectricity\s+bill\b',
+    r'\bbill\s+payment\b',
+    r'\b(mobile|dth|fastag|metro)\s+recharge\b',
+    r'\bgoogle\s+play\s+recharge\b',
+    r'\b(amazon\s+pay|flipkart)\s+(e-?gift|gift\s+card)\b',
+    r'\be-?gift\s+(card|voucher)\b',
+    r'\bsubscription\s+(plan|pack)\b',
+    r'\bprepaid\s+recharge\b'
+]
+
+def is_blacklisted_utility_item(title: str, url: str = "") -> bool:
+    """Returns True if the item is a utility bill payment, recharge, gift card, or booking service rather than a physical retail product."""
+    if not title:
+        return False
+    t_lower = title.lower()
+    for pat in UTILITY_BLACKLIST_PATTERNS:
+        if re.search(pat, t_lower, re.IGNORECASE):
+            return True
+    if url and any(sub in url.lower() for sub in ["/billpay", "/recharge", "/gift-cards", "/lpg-booking"]):
+        return True
+    return False
+
 def clean_title(text: str) -> str:
     """Sanitizes product titles, removing leaked prices, discounts, leading numbers, and trailing ratings/card junk."""
     if not text:
@@ -78,20 +104,22 @@ def clean_title(text: str) -> str:
     # Strip leading bracketed SKU/ASIN codes (e.g. "[B09XKZV7S8] Men's...", "[1202621] ...")
     cleaned = re.sub(r'^\[[A-Za-z0-9_\-]+\]\s*', '', cleaned)
     
-    # Strip trailing rating and review text (e.g. "...4115 Ratings&10 Reviews", "...4.2★ (120)")
-    cleaned = re.sub(r'\b\d[\d,]*\s*Ratings?\s*&?\s*[\d,]*\s*Reviews?.*', '', cleaned, flags=re.IGNORECASE)
-    cleaned = re.sub(r'\b\d(?:\.\d)?\s*★.*', '', cleaned)
+    # Strip trailing rating and review text (e.g. "...4.43,338 Ratings&224 Reviews", "...4.21,200 Ratings", "... 4.5 2,100 Reviews", "Black4.6 (15,000)")
+    cleaned = re.sub(r'(?:\.{2,}|…|\s*)\d(?:\.\d+)?(?:\s*[\d,]+)?\s*(?:Ratings?\s*(?:&|and)?\s*[\d,]*\s*Reviews?|Ratings?|Reviews?).*', '', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'(?:\.{2,}|…|\s*)\d(?:\.\d+)?\s*(?:[★*]|\([\d,]+\)).*', '', cleaned)
+    cleaned = re.sub(r'(?:\.{2,}|…|\s*)\d\.\d\s*\([\d,]+\).*', '', cleaned)
     
     # Remove discount percentages and attached stock/delivery text
     cleaned = re.sub(r'\b\d{1,2}%\s*off\b.*', '', cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r'\b(only\s+\w+\s+left|in\s+stock|out\s+of\s+stock|free\s+delivery|bank\s+offer|special\s+price)\b.*', '', cleaned, flags=re.IGNORECASE)
     
-    # Add space between concatenated brand and title words (e.g. "COLLECTIONCasual" -> "COLLECTION Casual", "CollectionsCasual" -> "Collections Casual")
-    cleaned = re.sub(r'([a-z])([A-Z])', r'\1 \2', cleaned)
+    # Add space between concatenated brand and title words (e.g. "COLLECTIONCasual" -> "COLLECTION Casual", "CollectionsCasual" -> "Collections Casual", preserving "iPhone")
+    cleaned = re.sub(r'([a-z]{2,})([A-Z])', r'\1 \2', cleaned)
     cleaned = re.sub(r'([A-Z]{2,})([A-Z][a-z])', r'\1 \2', cleaned)
 
-    # Clean up non-breaking spaces and collapse whitespace
+    # Clean up non-breaking spaces, trailing ellipsis, and collapse whitespace
     cleaned = cleaned.replace('\xa0', ' ')
+    cleaned = re.sub(r'\.{2,}$', '', cleaned)
     cleaned = re.sub(r'\s+', ' ', cleaned)
-    return cleaned.strip(' -–—,:|')
+    return cleaned.strip(' -–—,:|.')
 
