@@ -560,8 +560,6 @@
                 </div>
             ` : '';
 
-            const cp = deal.current_price || 0;
-            const mrp = deal.mrp || 0;
             const savingsHtml = (mrp > cp) ? `
                 <div class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-mono">
                     Save ${formatINR(mrp - cp)}

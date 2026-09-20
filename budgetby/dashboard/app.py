@@ -1643,9 +1643,11 @@ async def get_public_price_drops(
             order_by = f"{aff_priority}, drop_pct DESC, drop_amount DESC"
             if sort_by_val == "price_asc":
                 order_by = f"{aff_priority}, p.current_price ASC, drop_pct DESC"
-            elif sort_by == "discount":
-                order_by = f"{aff_priority}, drop_amount DESC, drop_pct DESC"
-            elif sort_by == "latest":
+            elif sort_by_val == "price_desc":
+                order_by = f"{aff_priority}, p.current_price DESC, drop_pct DESC"
+            elif sort_by_val in ("discount", "drop_desc", "drop_pct"):
+                order_by = f"{aff_priority}, drop_pct DESC, drop_amount DESC"
+            elif sort_by_val == "latest":
                 order_by = f"{aff_priority}, p.last_price_change DESC NULLS LAST, drop_pct DESC"
 
             args.extend([limit_val, offset])
@@ -1715,6 +1717,8 @@ async def get_public_price_drops(
 
                 drop_amt = max(0.0, prev_p - cur_p)
                 drop_pct = round((drop_amt / prev_p) * 100, 1) if prev_p > 0 else 0.0
+                if drop_pct < min_drop_pct_val:
+                    continue
                 aff_url = resolve_deal_button_url(r["platform"], None, r["affiliate_url"], r["product_url"], product_id=r["product_id"])
 
                 if aff_url and "/api/deal/redirect/" not in aff_url:
@@ -2597,18 +2601,18 @@ async def page_drops(
     request: Request,
     page: int = Query(1, ge=1),
     limit: int = Query(24, ge=1, le=100),
-    min_drop_pct: float = Query(15.0, ge=0.0, le=90.0),
+    min_drop_pct: float = Query(20.0, ge=0.0, le=90.0),
     min_drop_percent: float = Query(None),
     platform: str = Query(""),
-    sort_by: str = Query("drop_pct")
+    sort_by: str = Query("drop_desc")
 ):
     """Renders the 24-Hour Price Drops Hub with complete pre-rendered items (SSR)."""
     page_num = int(page) if not hasattr(page, 'default') and str(page).isdigit() else 1
     limit_num = int(limit) if not hasattr(limit, 'default') and str(limit).isdigit() else 24
     plat_str = str(platform) if not hasattr(platform, 'default') else ""
-    sort_str = str(sort_by) if not hasattr(sort_by, 'default') else "drop_pct"
+    sort_str = str(sort_by) if not hasattr(sort_by, 'default') else "drop_desc"
     raw_min_drop = min_drop_percent if not hasattr(min_drop_percent, 'default') and min_drop_percent is not None else min_drop_pct
-    eff_min_drop = float(raw_min_drop) if not hasattr(raw_min_drop, 'default') and raw_min_drop is not None else 15.0
+    eff_min_drop = float(raw_min_drop) if not hasattr(raw_min_drop, 'default') and raw_min_drop is not None else 20.0
 
     ssr_key = f"drops:{page_num}:{limit_num}:{eff_min_drop}:{plat_str}:{sort_str}"
     cached_html = await get_cached_ssr_html(ssr_key)
@@ -2786,7 +2790,7 @@ async def page_atl(
             max_price=0.0,
             min_rating=0.0,
             verified_only=False,
-            deal_type="",
+            deal_type="atl",
             ids="",
             page=page_num,
             limit=limit_num

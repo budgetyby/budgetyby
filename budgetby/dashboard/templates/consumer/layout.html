@@ -10,12 +10,11 @@
     <meta property="og:type" content="website">
     <meta property="og:image" content="/static/og-banner.png">
 
-    <!-- Lucide Icons -->
-    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+    <!-- Lucide Icons: Local first-party bundle for 100% offline & AdBlock resilience with CDN fallback -->
+    <script src="/static/lucide.min.js"></script>
     <script>
-        // Fallback to unpkg if jsdelivr fails
         if (!window.lucide) {
-            document.write('<script src="https://unpkg.com/lucide@latest"><\/script>');
+            document.write('<script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"><\/script>');
         }
     </script>
 
@@ -97,13 +96,13 @@
                             title="Go Back" 
                             aria-label="Go Back"
                             class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 border border-slate-200 text-slate-700 flex items-center justify-center transition shadow-xs">
-                        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                     </button>
                     <button onclick="window.history.forward()" 
                             title="Go Forward" 
                             aria-label="Go Forward"
                             class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 border border-slate-200 text-slate-700 flex items-center justify-center transition shadow-xs">
-                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                     </button>
                 </div>
 
@@ -124,19 +123,19 @@
             <!-- Primary Navigation Links (Desktop) -->
             <nav class="hidden lg:flex items-center gap-1 text-xs font-bold" aria-label="Main Navigation">
                 <a href="/deals" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-indigo-600 hover:bg-slate-100 transition flex items-center gap-1.5">
-                    <i data-lucide="tag" class="w-4 h-4 text-indigo-600"></i>
+                    <svg class="w-4 h-4 text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>
                     <span>All Deals</span>
                 </a>
                 <a href="/drops" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-rose-600 hover:bg-slate-100 transition flex items-center gap-1.5">
-                    <i data-lucide="trending-down" class="w-4 h-4 text-rose-600"></i>
+                    <svg class="w-4 h-4 text-rose-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
                     <span>Price Drops</span>
                 </a>
                 <a href="/all-time-lows" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-amber-600 hover:bg-slate-100 transition flex items-center gap-1.5">
-                    <i data-lucide="award" class="w-4 h-4 text-amber-600"></i>
+                    <svg class="w-4 h-4 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
                     <span>All-Time Lows</span>
                 </a>
                 <a href="/stores" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-indigo-600 hover:bg-slate-100 transition flex items-center gap-1.5">
-                    <i data-lucide="store" class="w-4 h-4 text-indigo-600"></i>
+                    <svg class="w-4 h-4 text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/></svg>
                     <span>Stores</span>
                 </a>
             </nav>
@@ -145,12 +144,12 @@
             <div id="globalSearchContainer" class="flex-1 min-w-[160px] sm:min-w-[240px] max-w-xl relative mx-1 sm:mx-2">
                 <form action="/deals" method="GET" id="globalSearchForm" class="relative w-full" autocomplete="off">
                     <div class="relative flex items-center">
-                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                        <svg class="w-4 h-4 text-slate-400 absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                         <input 
                             type="text" 
                             name="search"
                             id="globalSearchInput"
-                            value="{{ (request.query_params.get('search', '') if request is defined and request and request.query_params is defined else (current_search or '')) }}"
+                            value="{{ current_search or '' }}"
                             placeholder="Search 100,000+ products (e.g. 'smartwatch', 'boat earphone', 'shoes under 1000')..." 
                             autocomplete="off"
                             spellcheck="false"
@@ -159,7 +158,7 @@
                         <!-- Right Controls inside input -->
                         <div class="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
                             <button type="button" id="globalSearchClearBtn" class="hidden text-slate-400 hover:text-slate-700 p-1 rounded-md hover:bg-slate-200 transition" title="Clear search">
-                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                             </button>
                             <kbd class="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono text-slate-500 bg-slate-200/80 border border-slate-300 rounded pointer-events-none">/</kbd>
                         </div>
@@ -188,7 +187,7 @@
                     class="hidden sm:flex px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold items-center gap-1.5 transition" 
                     title="About BudgetBy & Contact Support"
                 >
-                    <i data-lucide="help-circle" class="w-4 h-4 text-indigo-600"></i>
+                    <svg class="w-4 h-4 text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
                     <span>About & Help</span>
                 </a>
 
@@ -200,7 +199,7 @@
                     title="Saved Deals Watchlist"
                     aria-label="View Saved Deals Watchlist"
                 >
-                    <i data-lucide="heart" class="w-4 h-4 text-rose-500"></i>
+                    <svg class="w-4 h-4 text-rose-500 fill-rose-500/20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
                     <span class="hidden sm:inline">Saved</span>
                     <span id="watchlistCountBadge" class="hidden px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-rose-500 text-white leading-tight">0</span>
                 </button>
@@ -212,7 +211,7 @@
                     class="lg:hidden p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs transition" 
                     aria-label="Toggle Navigation Menu"
                 >
-                    <i data-lucide="menu" id="mobileMenuIcon" class="w-5 h-5"></i>
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
                 </button>
             </div>
 
@@ -1541,6 +1540,7 @@ ${deal.title}
                 list.innerHTML = deals.map(d => {
                     const storeCfg = STORES[d.platform?.toLowerCase()] || STORES.amazon;
                     const link = `/deals?search=${encodeURIComponent(d.title || query)}`;
+                    return `
                         <a href="${link}" class="p-2.5 flex items-center gap-3 hover:bg-slate-50 transition group">
                             <div class="w-10 h-10 rounded-lg bg-white p-1 flex items-center justify-center border border-slate-200 shrink-0">
                                 <img src="${d.image_url || '/static/placeholder.svg'}" class="w-full h-full object-contain" onerror="this.src='/static/placeholder.svg'"/>
@@ -1668,23 +1668,23 @@ ${deal.title}
     <!-- ── Mobile Sticky Bottom Navigation Bar ────────────────────────────── -->
     <div class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 py-1.5 flex items-center justify-around text-center shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
         <a href="/" class="flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl {% if active_page == 'home' %}text-indigo-600 font-black{% else %}text-slate-500 font-medium hover:text-slate-900{% endif %} transition">
-            <i data-lucide="home" class="w-4 h-4"></i>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             <span class="text-[10px]">Home</span>
         </a>
         <a href="/deals" class="flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl {% if active_page == 'deals' %}text-indigo-600 font-black{% else %}text-slate-500 font-medium hover:text-slate-900{% endif %} transition">
-            <i data-lucide="tag" class="w-4 h-4"></i>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>
             <span class="text-[10px]">Deals</span>
         </a>
         <a href="/drops" class="flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl {% if active_page == 'drops' %}text-rose-600 font-black{% else %}text-slate-500 font-medium hover:text-rose-600{% endif %} transition">
-            <i data-lucide="trending-down" class="w-4 h-4"></i>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
             <span class="text-[10px]">Drops</span>
         </a>
         <a href="/all-time-lows" class="flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl {% if active_page == 'atl' %}text-amber-600 font-black{% else %}text-slate-500 font-medium hover:text-amber-600{% endif %} transition">
-            <i data-lucide="award" class="w-4 h-4"></i>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
             <span class="text-[10px]">ATLs</span>
         </a>
         <button onclick="openWatchlistDrawer()" class="flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl text-slate-500 font-medium hover:text-rose-600 transition relative">
-            <i data-lucide="heart" class="w-4 h-4 text-rose-500"></i>
+            <svg class="w-4 h-4 text-rose-500 fill-rose-500/20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
             <span class="text-[10px]">Saved</span>
             <span id="watchlistCountBadgeMobile" class="hidden absolute top-0.5 right-2 px-1 rounded-full text-[8px] font-extrabold bg-rose-500 text-white">0</span>
         </button>

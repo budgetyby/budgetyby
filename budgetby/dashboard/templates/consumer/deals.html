@@ -388,6 +388,46 @@
             if (window.lucide) lucide.createIcons();
         }
         startDealsAutoRefresh();
+
+        // Dynamically bind global search form on deals page to prevent losing active filters
+        const searchForm = document.getElementById('globalSearchForm');
+        if (searchForm) {
+            searchForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const searchInput = document.getElementById('globalSearchInput');
+                const val = searchInput ? searchInput.value.trim() : '';
+                dealsState.search = val;
+                dealsState.page = 1;
+                
+                try {
+                    const url = new URL(window.location);
+                    if (val) url.searchParams.set('search', val);
+                    else url.searchParams.delete('search');
+                    url.searchParams.set('page', '1');
+                    window.history.pushState(dealsState, '', url);
+                } catch (err) {}
+
+                const suggestionsDropdown = document.getElementById('searchSuggestionsDropdown');
+                if (suggestionsDropdown) suggestionsDropdown.classList.add('hidden');
+
+                loadDeals();
+            });
+        }
+
+        const clearBtn = document.getElementById('globalSearchClearBtn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                dealsState.search = '';
+                dealsState.page = 1;
+                try {
+                    const url = new URL(window.location);
+                    url.searchParams.delete('search');
+                    url.searchParams.set('page', '1');
+                    window.history.pushState(dealsState, '', url);
+                } catch (err) {}
+                loadDeals();
+            });
+        }
     });
 
     function showSkeletonCards(count = 6) {
@@ -650,10 +690,10 @@
     let draftFilterState = {
         platform: "{{ current_platform if current_platform else '' }}",
         gender: "{{ current_gender if current_gender else '' }}",
-        minDiscount: 0,
-        minRating: 0,
-        minPrice: 0,
-        maxPrice: 0
+        minDiscount: {{ current_min_discount if current_min_discount is defined and current_min_discount else 0 }},
+        minRating: {{ current_min_rating if current_min_rating is defined and current_min_rating else 0 }},
+        minPrice: {{ current_min_price if current_min_price is defined and current_min_price else 0 }},
+        maxPrice: {{ current_max_price if current_max_price is defined and current_max_price else 0 }}
     };
 
     function syncDraftFilterUI() {
@@ -768,8 +808,15 @@
         dealsState.maxPrice = draftFilterState.maxPrice;
         dealsState.page = 1;
 
+        const searchInput = document.getElementById('globalSearchInput');
+        if (searchInput && searchInput.value.trim()) {
+            dealsState.search = searchInput.value.trim();
+        }
+
         try {
             const url = new URL(window.location);
+            if (dealsState.search) url.searchParams.set('search', dealsState.search);
+            else url.searchParams.delete('search');
             if (dealsState.platform) url.searchParams.set('platform', dealsState.platform);
             else url.searchParams.delete('platform');
             if (dealsState.gender) url.searchParams.set('gender', dealsState.gender);
@@ -827,14 +874,22 @@
         dealsState.minDiscount = 0;
         dealsState.minPrice = 0;
         dealsState.maxPrice = 0;
-        dealsState.search = '';
+        dealsState.minRating = 0;
+
+        const searchInput = document.getElementById('globalSearchInput');
+        dealsState.search = searchInput ? searchInput.value.trim() : '';
 
         try {
             const url = new URL(window.location);
             url.searchParams.delete('platform');
             url.searchParams.delete('gender');
             url.searchParams.delete('min_discount');
+            url.searchParams.delete('min_price');
+            url.searchParams.delete('max_price');
+            url.searchParams.delete('min_rating');
             url.searchParams.delete('sub');
+            if (dealsState.search) url.searchParams.set('search', dealsState.search);
+            else url.searchParams.delete('search');
             url.searchParams.set('page', '1');
             window.history.pushState(dealsState, '', url);
         } catch (e) {}
