@@ -2161,23 +2161,44 @@ async def get_public_deals(
             # ── AUDIENCE / GENDER FILTER ────────────────────────────────────────
             gender_clean = (gender or "").strip().lower()
             if gender_clean and gender_clean != "all":
+                unisex_regex = r"\y(unisex)\y|men\s*(and|&)\s*women|women\s*(and|&)\s*men|for\s+men\s+(and|&)\s+women|for\s+women\s+(and|&)\s+men"
+                neutral_cat_sql = "LOWER(p.category) IN ('sports', 'health', 'home', 'electronics', 'automotive', 'gaming', 'books', 'grocery', 'pets', 'miscellaneous')"
                 if gender_clean == "men":
-                    where_clauses.append(f"(p.title ~* ${len(where_args) + 1} AND NOT (p.title ~* ${len(where_args) + 2}))")
+                    where_clauses.append(
+                        f"((p.title ~* ${len(where_args) + 1} OR p.title ~* ${len(where_args) + 3} OR {neutral_cat_sql})"
+                        f" AND NOT (p.title ~* ${len(where_args) + 2} AND NOT (p.title ~* ${len(where_args) + 3})))"
+                    )
                     where_args.append(r"\y(men|mens|male|gentlemen)\y")
                     where_args.append(r"\y(women|womens|female|ladies|girls?|kurti|saree|lehenga|bra|heels)\y")
+                    where_args.append(unisex_regex)
                 elif gender_clean == "women":
-                    where_clauses.append(f"p.title ~* ${len(where_args) + 1}")
+                    where_clauses.append(
+                        f"((p.title ~* ${len(where_args) + 1} OR p.title ~* ${len(where_args) + 3} OR {neutral_cat_sql})"
+                        f" AND NOT (p.title ~* ${len(where_args) + 2} AND NOT (p.title ~* ${len(where_args) + 3})))"
+                    )
                     where_args.append(r"\y(women|womens|female|ladies|girls?|saree|kurti|heels|bra|lehenga)\y")
+                    where_args.append(r"\y(men|mens|male|gentlemen)\y")
+                    where_args.append(unisex_regex)
                 elif gender_clean in ("boy", "boys"):
-                    where_clauses.append(f"(p.title ~* ${len(where_args) + 1} AND NOT (p.title ~* ${len(where_args) + 2}))")
+                    where_clauses.append(
+                        f"((p.title ~* ${len(where_args) + 1} OR p.title ~* ${len(where_args) + 3})"
+                        f" AND NOT (p.title ~* ${len(where_args) + 2} AND NOT (p.title ~* ${len(where_args) + 3})))"
+                    )
                     where_args.append(r"\y(boy|boys)\y")
                     where_args.append(r"\y(girl|girls|women|womens|ladies)\y")
+                    where_args.append(unisex_regex)
                 elif gender_clean in ("girl", "girls"):
-                    where_clauses.append(f"p.title ~* ${len(where_args) + 1}")
+                    where_clauses.append(
+                        f"((p.title ~* ${len(where_args) + 1} OR p.title ~* ${len(where_args) + 3})"
+                        f" AND NOT (p.title ~* ${len(where_args) + 2} AND NOT (p.title ~* ${len(where_args) + 3})))"
+                    )
                     where_args.append(r"\y(girl|girls|frock)\y")
+                    where_args.append(r"\y(boy|boys|men|mens|gentlemen)\y")
+                    where_args.append(unisex_regex)
                 elif gender_clean in ("kid", "kids", "children"):
-                    where_clauses.append(f"p.title ~* ${len(where_args) + 1}")
+                    where_clauses.append(f"(p.title ~* ${len(where_args) + 1} OR p.title ~* ${len(where_args) + 2})")
                     where_args.append(r"\y(kids?|baby|infant|toddler|children)\y")
+                    where_args.append(unisex_regex)
 
             # Subcategory keyword filtering (parameterized with word boundaries)
             if eff_sub:
@@ -2688,7 +2709,7 @@ async def page_deals(
     if search_str and has_query_params and "verified_only" not in request.query_params:
         ver_val = False
 
-    ssr_ttl = 60 if (search_str or sort_str == "latest" or tab_str == "all") else 300
+    ssr_ttl = 60 if (search_str or sort_str == "latest" or tab_str == "all" or eff_sub_page) else 300
     ssr_key = f"deals:{page_num}:{limit_num}:{search_str}:{plat_str}:{cat_str}:{eff_sub_page}:{gender_str}:{tab_str}:{ver_val}:{sort_str}:{min_disc_val}:{min_price_val}:{max_price_val}:{min_rating_val}"
     cached_html = await get_cached_ssr_html(ssr_key)
     if cached_html:
