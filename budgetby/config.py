@@ -54,12 +54,12 @@ CUELINKS_API_KEY = os.getenv("CUELINKS_API_KEY", "")
 # 2 = keep only today + yesterday (the minimum needed for price-drop detection)
 PRICE_RAW_RETENTION_DAYS = 2
 
-# Stage 2: Compress old raw rows into 3-day bucket averages (1 row per 3 days)
-PRICE_BUCKET_SIZE_DAYS = 3
+# Stage 2: Compress old raw rows into 6-day bucket minimums (1 row per 6 days)
+PRICE_BUCKET_SIZE_DAYS = 6
 
-# Stage 3: Delete ALL daily_prices rows (raw + buckets) older than 30 days.
+# Stage 3: Delete ALL daily_prices rows (raw + buckets) older than 14 days.
 #          Benchmarks (min_30d, median_30d_price) are persisted on products row first.
-DAILY_PRICE_RETENTION_DAYS = 30
+DAILY_PRICE_RETENTION_DAYS = 14
 
 
 # ════════════════════════════════════════════════════════════════════════
@@ -110,8 +110,8 @@ SALE_MODE_INTERVAL_MULTIPLIER = 0.5  # 2x faster checks
 # 4. PRICE STORAGE — Tiered Compression (defined in section 1.5 above)
 # ════════════════════════════════════════════════════════════════════════
 # PRICE_RAW_RETENTION_DAYS = 2        (keep today + yesterday raw only)
-# PRICE_BUCKET_SIZE_DAYS   = 3        (compress every 3 old days into 1 bucket)
-# DAILY_PRICE_RETENTION_DAYS = 30     (delete all rows after 30 days)
+# PRICE_BUCKET_SIZE_DAYS   = 6        (compress every 6 old days into 1 bucket)
+# DAILY_PRICE_RETENTION_DAYS = 14     (delete all rows after 14 days)
 # After 30d: benchmarks live on products.min_30d / median_30d_price
 # After 60d: products.min_60d  | After 90d: products.min_90d
 # After 120d: products.min_120d

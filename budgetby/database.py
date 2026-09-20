@@ -432,34 +432,34 @@ async def monthly_benchmark_shift():
 async def compress_old_daily_prices():
     """
     Tiered compression: raw daily rows older than PRICE_RAW_RETENTION_DAYS get compressed
-    into 3-day bucket averages to save storage.
+    into 6-day bucket minimums to save storage.
 
     Algorithm:
-    1. Find all uncompressed rows older than 5 days.
-    2. For each complete 3-day window (per product), compute:
-       - bucket date = start of the 3-day window (aligned to fixed epoch)
-       - min_price   = MIN of the 3 daily min_prices
-       - close_price = AVG of the 3 daily close_prices
+    1. Find all uncompressed rows older than raw_days (2 days).
+    2. For each complete 6-day window (per product), compute:
+       - bucket date = start of the 6-day window (aligned to fixed epoch)
+       - min_price   = MIN of the daily min_prices
+       - close_price = MIN of the daily close_prices
     3. Insert those as is_compressed=TRUE bucket rows.
     4. Delete the original raw rows that were compressed.
 
     This runs DAILY before cleanup_old_daily_prices().
     """
-    raw_days = config.PRICE_RAW_RETENTION_DAYS   # 5
-    bucket_size = config.PRICE_BUCKET_SIZE_DAYS  # 3
+    raw_days = config.PRICE_RAW_RETENTION_DAYS   # 2
+    bucket_size = config.PRICE_BUCKET_SIZE_DAYS  # 6
 
     pool = get_pool()
     async with pool.acquire() as conn:
         async with conn.transaction():
-            # Step A: Insert compressed bucket rows for all complete 3-day windows
+            # Step A: Insert compressed bucket rows for 6-day windows
             await conn.execute(f"""
                 INSERT INTO daily_prices (product_id, date, min_price, close_price, is_compressed)
                 SELECT
                     product_id,
-                    -- Align bucket start to fixed 3-day epoch from 2000-01-01
+                    -- Align bucket start to fixed 6-day epoch from 2000-01-01
                     (DATE '2000-01-01' + (((date - DATE '2000-01-01') / {bucket_size}) * {bucket_size})) AS bucket_start,
                     MIN(min_price)                                     AS agg_min,
-                    ROUND(AVG(close_price)::numeric, 2)                AS agg_close,
+                    MIN(close_price)                                   AS agg_close,
                     TRUE
                 FROM daily_prices
                 WHERE is_compressed = FALSE
@@ -467,10 +467,10 @@ async def compress_old_daily_prices():
                 GROUP BY
                     product_id,
                     (DATE '2000-01-01' + (((date - DATE '2000-01-01') / {bucket_size}) * {bucket_size}))
-                HAVING COUNT(*) >= 1   -- Compress ALL old raw rows, even partial windows (1 or 2 day buckets)
+                HAVING COUNT(*) >= 1   -- Compress ALL old raw rows, even partial windows
                 ON CONFLICT (product_id, date) DO UPDATE SET
                     min_price     = LEAST(daily_prices.min_price, EXCLUDED.min_price),
-                    close_price   = EXCLUDED.close_price,
+                    close_price   = LEAST(daily_prices.close_price, EXCLUDED.close_price),
                     is_compressed = TRUE;
             """)
 
@@ -493,7 +493,7 @@ async def compress_old_daily_prices():
 
 async def cleanup_old_daily_prices():
     """
-    Delete ALL daily_prices rows (raw AND compressed) older than DAILY_PRICE_RETENTION_DAYS (30 days).
+    Delete ALL daily_prices rows (raw AND compressed) older than DAILY_PRICE_RETENTION_DAYS (14 days).
     Benchmarks (min_30d, median_30d_price) are recalculated and persisted on the products row FIRST
     so no historical data is lost when rows are deleted.
     """
