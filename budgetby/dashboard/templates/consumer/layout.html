@@ -10,8 +10,14 @@
     <meta property="og:type" content="website">
     <meta property="og:image" content="/static/og-banner.png">
 
-    <!-- Lucide Icons — defer so it doesn't block HTML parsing -->
-    <script src="https://unpkg.com/lucide@latest" defer></script>
+    <!-- Lucide Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script>
+        // Fallback to unpkg if jsdelivr fails
+        if (!window.lucide) {
+            document.write('<script src="https://unpkg.com/lucide@latest"><\/script>');
+        }
+    </script>
 
     <!-- Google Fonts: Plus Jakarta Sans for clean e-commerce typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1683,5 +1689,20 @@ ${deal.title}
             <span id="watchlistCountBadgeMobile" class="hidden absolute top-0.5 right-2 px-1 rounded-full text-[8px] font-extrabold bg-rose-500 text-white">0</span>
         </button>
     </div>
+
+    <!-- Global Lucide Icon Initializer -->
+    <script>
+        function initializeLucideGlobal() {
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                window.lucide.createIcons();
+            }
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeLucideGlobal);
+        } else {
+            initializeLucideGlobal();
+        }
+        window.addEventListener('load', initializeLucideGlobal);
+    </script>
 </body>
 </html>
