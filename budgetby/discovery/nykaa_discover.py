@@ -149,8 +149,7 @@ async def discover_category(category_path: str, pages: int = 3, sort: str = "pop
                             mrp = mrp_cand
 
                     if not mrp and price:
-                        # Beauty products have typical 25-40% discount
-                        mrp = round((price * 1.35) / 10) * 10
+                        mrp = price
 
                     # Rating extraction (e.g. 4.3 in span.css-15wd42o, span.css-1r05unw, .rating)
                     rating = None

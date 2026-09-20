@@ -124,7 +124,7 @@ async def discover_category(name: str, sid: str, pages: int = 5, sort: str = "po
                                 pass
 
                         if not mrp or mrp <= (price or 0):
-                            mrp = round(((price or 500) * 1.5) / 10) * 10 if price else None
+                            mrp = price
 
                         # Rating extraction (e.g. 4.2 in div.XQDdHH or div._3LWZlK)
                         rating = None

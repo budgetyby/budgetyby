@@ -49,15 +49,15 @@ class AmazonScraper(BaseScraper):
             if node:
                 mrp_cand = extract_price(node.text())
                 if mrp_cand > (price or 0):
-                    if price and (mrp_cand > 4.5 * price or (price < 1500 and mrp_cand > 15000) or mrp_cand > 200000):
-                        mrp_cand = round((price * 1.35) / 10) * 10
+                    if price and (mrp_cand > 15.0 * price or mrp_cand > 500000):
+                        mrp_cand = price
                     mrp = mrp_cand
                     break
 
         if not mrp or mrp < (price or 0):
             mrp = price
-        elif price and (mrp > 4.5 * price or (price < 1500 and mrp > 15000) or mrp > 200000):
-            mrp = round((price * 1.35) / 10) * 10
+        elif price and (mrp > 15.0 * price or mrp > 500000):
+            mrp = price
             
         # Rating & Review Count (Strictly inside true product review container)
         rating = 0.0

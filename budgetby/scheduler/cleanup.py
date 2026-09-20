@@ -18,7 +18,7 @@ async def daily_cleanup():
         # 1. Price and MRP Sanity Guard
         await database.execute("""
             UPDATE products SET mrp = current_price WHERE current_price > mrp AND mrp > 0;
-            UPDATE products SET mrp = ROUND((current_price * 1.40) / 10) * 10 WHERE mrp > (4.0 * current_price) AND current_price > 0;
+            UPDATE products SET mrp = current_price WHERE (mrp > (15.0 * current_price) OR mrp > 500000) AND current_price > 0;
             UPDATE daily_prices dp SET close_price = p.current_price, min_price = p.current_price
             FROM products p WHERE dp.product_id = p.id AND p.mrp > 0 AND (dp.close_price > (p.mrp * 1.10) OR dp.min_price > (p.mrp * 1.10));
             UPDATE daily_prices dp SET close_price = p.current_price, min_price = p.current_price

@@ -132,14 +132,12 @@ async def _parse_amazon_listing(tree: HTMLParser) -> List[Dict[str, Any]]:
         if mrp_node:
             mrp_cand = extract_price(mrp_node.text())
             if mrp_cand and mrp_cand > (price or 0):
-                # Plausibility sanity clamp
-                if price and (mrp_cand > 3.5 * price or (mrp_cand > 100000 and price < 10000)):
-                    mrp_cand = round((price * 1.35) / 10) * 10
+                if price and (mrp_cand > 15.0 * price or mrp_cand > 500000):
+                    mrp_cand = price
                 mrp = mrp_cand
 
         if not mrp and price:
-            # Real-world benchmark: default strike-through is ~30-50% higher than selling price
-            mrp = round((price * 1.40) / 10) * 10
+            mrp = price
 
         # Rating & Review Count
         rating = None

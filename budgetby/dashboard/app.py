@@ -1614,7 +1614,7 @@ async def get_public_price_drops(
                 "p.status = 'ACTIVE'",
                 "p.current_price > 0",
                 "p.previous_price > p.current_price",
-                "p.previous_price <= GREATEST(COALESCE(NULLIF(p.mrp, 0), p.current_price * 1.35) * 1.15, p.current_price * 3.0)",
+                "p.previous_price <= GREATEST(COALESCE(NULLIF(p.mrp, 0), p.current_price), p.current_price * 15.0)",
                 "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) >= $1",
                 "(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) <= 95.0"
             ]
@@ -1678,7 +1678,7 @@ async def get_public_price_drops(
                     SELECT COUNT(*) FROM products 
                     WHERE in_stock = TRUE AND status = 'ACTIVE' 
                     AND previous_price > current_price AND current_price > 0 
-                    AND previous_price <= GREATEST(COALESCE(NULLIF(mrp, 0), current_price * 1.35) * 1.15, current_price * 3.0)
+                    AND previous_price <= GREATEST(COALESCE(NULLIF(mrp, 0), current_price), current_price * 15.0)
                     AND (((previous_price - current_price) / NULLIF(previous_price, 0)) * 100) <= 85.0;
                 """) or 5000
                 await ram_cache.set("total_drops_today_count", cached_total_drops, ttl=1800)
@@ -1698,16 +1698,14 @@ async def get_public_price_drops(
                 cur_p = float(r["current_price"])
                 prev_p = float(r["previous_price"])
                 mrp_p = float(r["mrp"]) if r["mrp"] and float(r["mrp"]) > cur_p else None
-                if mrp_p and mrp_p > cur_p * 4.5:
-                    mrp_p = round(cur_p * 1.35, 2)
-                if mrp_p and cur_p < 1500 and mrp_p > 15000:
-                    mrp_p = round(cur_p * 1.35, 2)
+                if mrp_p and (mrp_p > cur_p * 15.0 or mrp_p > 500000):
+                    mrp_p = None
 
                 # Plausibility clamps on consumer display
                 if mrp_p and prev_p > mrp_p:
                     prev_p = mrp_p
-                elif prev_p > cur_p * 3.0:
-                    prev_p = round(cur_p * 1.35, 2)
+                elif prev_p > cur_p * 15.0:
+                    prev_p = cur_p
 
                 drop_amt = max(0.0, prev_p - cur_p)
                 drop_pct = round((drop_amt / prev_p) * 100, 1) if prev_p > 0 else 0.0
@@ -2310,7 +2308,7 @@ async def get_public_deals(
                     where_clauses.append("(p.mrp IS NULL OR p.mrp > p.current_price)")
                 elif deal_type_clean == "drops" or tab_clean == "drops":
                     where_clauses.append("p.previous_price > p.current_price")
-                    where_clauses.append("p.previous_price <= GREATEST(COALESCE(NULLIF(p.mrp, 0), p.current_price * 1.35) * 1.15, p.current_price * 3.0)")
+                    where_clauses.append("p.previous_price <= GREATEST(COALESCE(NULLIF(p.mrp, 0), p.current_price), p.current_price * 15.0)")
                     where_clauses.append("(((p.previous_price - p.current_price) / NULLIF(p.previous_price, 0)) * 100) <= 85.0")
                 elif deal_type_clean == "atl" or tab_clean == "atl":
                     where_clauses.append("(d.badge ILIKE '%ATL%' OR (p.all_time_low IS NOT NULL AND p.current_price <= p.all_time_low * 1.02))")
@@ -2407,10 +2405,8 @@ async def get_public_deals(
 
                 cur_p = float(r["current_price"]) if r["current_price"] and float(r["current_price"]) > 0 else 0.0
                 mrp_p = float(r["mrp"]) if r["mrp"] and float(r["mrp"]) > cur_p else cur_p
-                if mrp_p > cur_p * 4.5:
-                    mrp_p = round(cur_p * 1.35, 2)
-                if cur_p < 1500 and mrp_p > 15000:
-                    mrp_p = round(cur_p * 1.35, 2)
+                if mrp_p > cur_p * 15.0 or mrp_p > 500000:
+                    mrp_p = cur_p
 
                 if mrp_p > cur_p and mrp_p > 0:
                     pct = round(((mrp_p - cur_p) / mrp_p) * 100)
@@ -2423,8 +2419,8 @@ async def get_public_deals(
                 if prev_p:
                     if mrp_p and prev_p > mrp_p:
                         prev_p = mrp_p
-                    elif prev_p > cur_p * 3.0:
-                        prev_p = round(cur_p * 1.35, 2)
+                    elif prev_p > cur_p * 15.0:
+                        prev_p = cur_p
 
                 drop_pct = round(((prev_p - cur_p) / prev_p) * 100) if prev_p else 0
                 drop_amount = round(prev_p - cur_p, 2) if prev_p else 0.0
