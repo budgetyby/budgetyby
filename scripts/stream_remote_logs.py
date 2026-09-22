@@ -73,14 +73,14 @@ async def probe_ip(ip: str, port: int = 5000, timeout: float = 0.8) -> str | Non
         req = f"GET /api/live-logs/ping HTTP/1.1\r\nHost: {ip}:{port}\r\nConnection: close\r\n\r\n"
         writer.write(req.encode())
         await writer.drain()
-        data = await asyncio.wait_for(reader.read(512), timeout=timeout)
+        data = await asyncio.wait_for(reader.read(), timeout=timeout)
         writer.close()
         try:
             await writer.wait_closed()
         except Exception:
             pass
-        resp_text = data.decode("utf-8", errors="ignore")
-        if "budgetby" in resp_text.lower():
+        resp_text = data.decode("utf-8", errors="ignore").lower()
+        if "200 ok" in resp_text and ("budgetby" in resp_text or "uvicorn" in resp_text):
             return ip
     except Exception:
         pass
@@ -110,6 +110,27 @@ async def discover_server_ip() -> str | None:
         if await probe_ip(env_ip, timeout=1.5):
             CACHE_FILE.write_text(env_ip)
             return env_ip
+
+    # 3. Check ARP table (finds hotspot devices, router peers in 50ms)
+    try:
+        import subprocess, re
+        arp_res = subprocess.run(["arp", "-a"], capture_output=True, text=True, timeout=2)
+        arp_ips = re.findall(r'(\d+\.\d+\.\d+\.\d+)', arp_res.stdout)
+        candidates = [
+            ip for ip in set(arp_ips)
+            if not ip.endswith(".255") and not ip.startswith("224.") and not ip.startswith("255.") and ip != local_ip
+        ]
+        if candidates:
+            print(f"{DIM}Probing {len(candidates)} active network devices (Hotspot/LAN)...{RESET}")
+            arp_tasks = [probe_ip(ip, timeout=0.8) for ip in candidates]
+            arp_results = await asyncio.gather(*arp_tasks)
+            for ip in arp_results:
+                if ip:
+                    print(f"{GREEN}✓ Found BudgetBy server via network ARP: {ip}{RESET}")
+                    CACHE_FILE.write_text(ip)
+                    return ip
+    except Exception:
+        pass
 
     # 3. Scan local /24 subnet
     parts = local_ip.split(".")
