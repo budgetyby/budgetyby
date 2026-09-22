@@ -179,7 +179,7 @@ def sync_and_reload():
     # 1. Pull latest code with forced IPv4 to avoid Windows DNS timeout
     logger.info("📥 Executing git pull origin main...")
     pull_res = subprocess.run(
-        [GIT_EXE, "-c", "http.version=HTTP/1.1", "-4", "pull", "origin", "main"],
+        [GIT_EXE, "-c", "http.ipresolve=4", "pull", "origin", "main"],
         cwd=BASE_DIR,
         capture_output=True,
         text=True,
@@ -228,7 +228,7 @@ def main():
             prevent_windows_sleep()
 
             fetch_res = subprocess.run(
-                [GIT_EXE, "-c", "http.version=HTTP/1.1", "-4", "fetch", "origin", "main"],
+                [GIT_EXE, "-c", "http.ipresolve=4", "fetch", "origin", "main"],
                 cwd=BASE_DIR,
                 capture_output=True,
                 text=True,
