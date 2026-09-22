@@ -2,11 +2,24 @@
 BudgetBy — Amazon Scraper
 """
 import re
-from selectolax.parser import HTMLParser
+from curl_cffi import CurlOpt
 from curl_cffi.requests import AsyncSession
+from selectolax.parser import HTMLParser
 from budgetby.scrapers.base import BaseScraper
 from budgetby.scrapers.utils import get_random_ua, extract_price, clean_title
 from budgetby import config
+
+AMAZON_HEADERS = {
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Language": "en-IN,en-GB;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept-Encoding": "gzip, deflate, br",
+    "DNT": "1",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+}
 
 class AmazonScraper(BaseScraper):
     async def _do_scrape_product(self, url: str) -> dict:
@@ -16,7 +29,7 @@ class AmazonScraper(BaseScraper):
             
         affiliate_url = f"{url}?tag={config.AMAZON_ASSOCIATE_TAG}"
         
-        async with AsyncSession(impersonate="chrome124", timeout=config.SCRAPER_TIMEOUT) as s:
+        async with AsyncSession(impersonate="chrome120", curl_options={CurlOpt.IPRESOLVE: 1}, headers=AMAZON_HEADERS, timeout=config.SCRAPER_TIMEOUT) as s:
             r = await s.get(url)
             
         tree = HTMLParser(r.text)

@@ -11,3 +11,4 @@ venv/
 backups/
 budgetby.db
 budgetby_local.db*
+.dell_server_ip

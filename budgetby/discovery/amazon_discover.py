@@ -4,12 +4,27 @@ Amazon discovery engine with massive keyword matrix for scaling to 15k+ products
 import logging
 import re
 import asyncio
+import random
 from typing import List, Dict, Any
+
+from curl_cffi import CurlOpt
 from curl_cffi.requests import AsyncSession
 from selectolax.parser import HTMLParser
 from budgetby import config
 from budgetby.affiliate.amazon_links import build_affiliate_url
 from budgetby.scrapers.utils import extract_price, fetch_with_retry
+
+AMAZON_HEADERS = {
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Language": "en-IN,en-GB;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept-Encoding": "gzip, deflate, br",
+    "DNT": "1",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+}
 
 logger = logging.getLogger("budgetby.discovery.amazon")
 
@@ -128,7 +143,7 @@ async def _parse_amazon_listing(tree: HTMLParser) -> List[Dict[str, Any]]:
             price = extract_price(price_node.text())
 
         mrp = None
-        mrp_node = item.css_first("span.a-price.a-text-price span.a-offscreen, span.a-text-strike, span.basisPrice span.a-offscreen")
+        mrp_node = item.css_first("span.a-price.a-text-price span.a-offscreen, span.a-text-strike, span.basisPrice span.a-offscreen, .dcl-product-price-old span.a-offscreen, span[data-a-strike='true'] span.a-offscreen")
         if mrp_node:
             mrp_cand = extract_price(mrp_node.text())
             if mrp_cand and mrp_cand > (price or 0):
@@ -136,8 +151,22 @@ async def _parse_amazon_listing(tree: HTMLParser) -> List[Dict[str, Any]]:
                     mrp_cand = price
                 mrp = mrp_cand
 
+        # Fallback: Check for discount percentage on card (e.g. "(88% off)" or "70% off")
+        if (not mrp or mrp <= (price or 0)) and price:
+            for span in item.css("span"):
+                txt = span.text(strip=True)
+                disc_match = re.search(r'\(?(\d{1,2})%\s*off\)?', txt, re.IGNORECASE)
+                if disc_match:
+                    pct = float(disc_match.group(1))
+                    if 15 <= pct <= 95:
+                        calc_mrp = round(price / (1.0 - (pct / 100.0)), 2)
+                        if calc_mrp > price:
+                            mrp = calc_mrp
+                            break
+
         if not mrp and price:
             mrp = price
+
 
         # Rating & Review Count
         rating = None
@@ -176,7 +205,7 @@ async def _parse_amazon_listing(tree: HTMLParser) -> List[Dict[str, Any]]:
 
 async def discover_bestsellers(category_slug: str, pages: int = 3) -> List[Dict[str, Any]]:
     results = []
-    async with AsyncSession(impersonate="chrome", timeout=config.SCRAPER_TIMEOUT) as session:
+    async with AsyncSession(impersonate="chrome120", curl_options={CurlOpt.IPRESOLVE: 1}, headers=AMAZON_HEADERS, timeout=config.SCRAPER_TIMEOUT) as session:
         for page in range(1, pages + 1):
             url = f"https://www.amazon.in/gp/bestsellers/{category_slug}/ref=zg_bs_pg_{page}?ie=UTF8&pg={page}"
             try:
@@ -192,7 +221,7 @@ async def discover_bestsellers(category_slug: str, pages: int = 3) -> List[Dict[
 
 async def discover_new_releases(category_slug: str, pages: int = 2) -> List[Dict[str, Any]]:
     results = []
-    async with AsyncSession(impersonate="chrome", timeout=config.SCRAPER_TIMEOUT) as session:
+    async with AsyncSession(impersonate="chrome120", curl_options={CurlOpt.IPRESOLVE: 1}, headers=AMAZON_HEADERS, timeout=config.SCRAPER_TIMEOUT) as session:
         for page in range(1, pages + 1):
             url = f"https://www.amazon.in/gp/new-releases/{category_slug}/ref=zg_bs_pg_{page}?ie=UTF8&pg={page}"
             try:
@@ -209,6 +238,34 @@ async def discover_new_releases(category_slug: str, pages: int = 2) -> List[Dict
 
 
 
+async def discover_category_deals(category: str, min_discount: int = 35, pages: int = 1) -> List[Dict[str, Any]]:
+    """
+    Discovers live high-discount deals for an Amazon category using high-yield keyword queries
+    with Amazon's native &pct-off filter.
+    Guarantees products have both selling price and valid MRP on their listing cards.
+    """
+    results = []
+    keywords = AMAZON_CATEGORY_KEYWORDS.get(category, [category])
+    sample_kws = random.sample(keywords, min(2, len(keywords))) if len(keywords) > 2 else keywords
+    
+    async with AsyncSession(impersonate="chrome120", curl_options={CurlOpt.IPRESOLVE: 1}, headers=AMAZON_HEADERS, timeout=config.SCRAPER_TIMEOUT) as session:
+        for kw in sample_kws:
+            for page in range(1, pages + 1):
+                url = f"https://www.amazon.in/s?k={kw.replace(' ', '+')}&pct-off={min_discount}-&page={page}"
+                try:
+                    await asyncio.sleep(0.5)
+                    response = await fetch_with_retry(session, url, timeout=config.SCRAPER_TIMEOUT)
+                    if response and response.status_code == 200:
+                        tree = HTMLParser(response.text)
+                        items = await _parse_amazon_listing(tree)
+                        for it in items:
+                            it["category"] = category
+                        results.extend(items)
+                except Exception as e:
+                    logger.debug(f"Error scraping Amazon category deals for {category} ({kw}): {e}")
+    return results
+
+
 async def discover_deals_page(pages: int = 3) -> List[Dict[str, Any]]:
     """Scrapes Amazon India Today's Deals and Goldbox Lightning Deals hub."""
     results = []
@@ -216,7 +273,7 @@ async def discover_deals_page(pages: int = 3) -> List[Dict[str, Any]]:
         "https://www.amazon.in/deals",
         "https://www.amazon.in/gp/goldbox",
     ]
-    async with AsyncSession(impersonate="chrome", timeout=config.SCRAPER_TIMEOUT) as session:
+    async with AsyncSession(impersonate="chrome120", curl_options={CurlOpt.IPRESOLVE: 1}, headers=AMAZON_HEADERS, timeout=config.SCRAPER_TIMEOUT) as session:
         for base_url in deal_urls:
             for page in range(1, pages + 1):
                 url = f"{base_url}?page={page}" if page > 1 else base_url
@@ -233,4 +290,6 @@ async def discover_deals_page(pages: int = 3) -> List[Dict[str, Any]]:
                 except Exception as e:
                     logger.error(f"Error scraping Amazon deals {url}: {e}")
     return results
+
+
 

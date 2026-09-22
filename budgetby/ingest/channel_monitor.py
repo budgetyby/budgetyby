@@ -68,6 +68,8 @@ def clean_and_tag_url(resolved_url: str) -> tuple[Optional[str], Optional[str], 
     if "amazon.in" in resolved_url or "amzn." in resolved_url or "link.amazon" in resolved_url:
         asin_match = re.search(r'/(?:dp|gp/product|gp/aw/d)/([A-Z0-9]{10})', resolved_url)
         if not asin_match:
+            asin_match = re.search(r'hidden-keywords=([A-Z0-9]{10})', resolved_url)
+        if not asin_match:
             asin_match = re.search(r'/([A-Z0-9]{10})(?:[/?]|$)', resolved_url)
         if asin_match:
             asin = asin_match.group(1)
@@ -77,6 +79,7 @@ def clean_and_tag_url(resolved_url: str) -> tuple[Optional[str], Optional[str], 
 
     # 2. Flipkart
     elif "flipkart.com" in resolved_url or "fkrt." in resolved_url:
+        resolved_url = resolved_url.replace("dl.flipkart.com/dl/", "www.flipkart.com/").replace("dl.flipkart.com/", "www.flipkart.com/")
         pid_match = re.search(r'[?&]pid=([A-Za-z0-9]+)', resolved_url)
         base_path = resolved_url.split('?')[0]
         clean_url = f"{base_path}?pid={pid_match.group(1)}" if pid_match else base_path

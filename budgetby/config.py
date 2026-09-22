@@ -74,7 +74,7 @@ SCRAPER_DELAY_MIN = 2.0
 SCRAPER_DELAY_MAX = 5.0
 
 # Request timeout (seconds)
-SCRAPER_TIMEOUT = 15
+SCRAPER_TIMEOUT = 25
 
 # Max retry attempts for failed scrapes
 SCRAPER_MAX_RETRIES = 3
