@@ -1,11 +1,13 @@
 """
-BudgetBy — Automatic GitHub Sync Watcher.
-Checks `git fetch origin main` every 30 seconds.
-When new commits are detected:
-1. Stops existing daemon & bot instances.
+BudgetBy — Automatic GitHub Sync Runner & Live Console Monitor.
+Runs `budgetby.main` directly in the active terminal with full live streaming output.
+Background thread checks `git fetch origin main` every 30 seconds.
+When a new commit is detected on GitHub:
+1. Gracefully stops the current engine process.
 2. Runs `git pull origin main`.
-3. Installs any updated dependencies if requirements.txt changed.
-4. Gracefully restarts run_local_daemon.py.
+3. If requirements.txt changed, updates dependencies.
+4. Seamlessly re-launches the engine in the SAME terminal window.
+Zero blank screens, zero orphaned windows, full real-time console visibility.
 """
 
 import os
@@ -14,10 +16,11 @@ import time
 import shutil
 import logging
 import ctypes
+import threading
 import subprocess
 import psutil
 
-# Ensure proper encoding on Windows console
+# Ensure UTF-8 output on Windows console
 if sys.platform == "win32":
     try:
         if sys.stdout and hasattr(sys.stdout, "reconfigure"):
@@ -81,80 +84,14 @@ PYTHON_EXE = find_python()
 
 
 def prevent_windows_sleep():
-    """Keep system awake while watcher is active."""
+    """Keep system awake while active."""
     if sys.platform == "win32":
         try:
             ES_CONTINUOUS = 0x80000000
             ES_SYSTEM_REQUIRED = 0x00000001
             ctypes.windll.kernel32.SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED)
-        except Exception as e:
-            logger.debug(f"Keep-awake call notice: {e}")
-
-
-def is_daemon_running() -> bool:
-    """Checks if run_local_daemon.py or budgetby.main is running."""
-    my_pid = os.getpid()
-    for proc in psutil.process_iter(['pid', 'cmdline']):
-        try:
-            if proc.info['pid'] == my_pid:
-                continue
-            cmdline = proc.info.get('cmdline') or []
-            cmd_str = " ".join(cmdline)
-            if "run_local_daemon.py" in cmd_str or "budgetby.main" in cmd_str:
-                return True
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
+        except Exception:
             pass
-    return False
-
-
-def stop_daemon_processes():
-    """Terminates running run_local_daemon.py and budgetby.main processes and closes their windows."""
-    my_pid = os.getpid()
-    killed_any = False
-    for proc in psutil.process_iter(['pid', 'cmdline']):
-        try:
-            if proc.info['pid'] == my_pid:
-                continue
-            cmdline = proc.info.get('cmdline') or []
-            cmd_str = " ".join(cmdline)
-            if "run_local_daemon.py" in cmd_str or "budgetby.main" in cmd_str:
-                pid = proc.info['pid']
-                logger.info(f"Terminating process and closing attached window (PID {pid})...")
-                if sys.platform == "win32":
-                    # /F = force, /T = terminate entire process tree (closes console/terminal window)
-                    subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)], capture_output=True)
-                else:
-                    proc.kill()
-                killed_any = True
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
-
-    if killed_any:
-        time.sleep(2)
-        logger.info("Processes and windows closed cleanly. Sockets and DB released.")
-
-
-def start_daemon():
-    """Starts run_local_daemon.py silently in background with NO blank popup window."""
-    daemon_script = os.path.join(BASE_DIR, "run_local_daemon.py")
-    cmd = [PYTHON_EXE, daemon_script]
-    logger.info(f"▶️ Starting BudgetBy daemon (silent background): {' '.join(cmd)}")
-    
-    creationflags = 0
-    if sys.platform == "win32":
-        # CREATE_NO_WINDOW prevents Windows from popping open empty/blank terminal windows
-        creationflags = subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP
-
-    proc = subprocess.Popen(
-        cmd,
-        cwd=BASE_DIR,
-        creationflags=creationflags,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        close_fds=True
-    )
-    logger.info(f"🚀 Daemon started silently in background with PID {proc.pid}")
-    return proc
 
 
 def get_commit_hash(ref: str) -> str:
@@ -183,98 +120,164 @@ def check_requirements_diff(old_commit: str, new_commit: str) -> bool:
         return False
 
 
-def sync_and_restart():
-    """Performs git pull and gracefully restarts daemon."""
-    old_hash = get_commit_hash("HEAD")
-    remote_hash = get_commit_hash("origin/main")
+class EngineManager:
+    """Manages the BudgetBy engine process with live console streaming and auto-sync."""
     
-    logger.info(f"📢 New commit(s) detected on GitHub! {old_hash[:7]} ➔ {remote_hash[:7]}")
-    
-    # 1. Stop current running instances
-    logger.info("🛑 Stopping existing bot daemon processes...")
-    stop_daemon_processes()
+    def __init__(self):
+        self.proc = None
+        self.restart_requested = False
+        self.lock = threading.Lock()
+        self.running = True
 
-    # 2. Pull latest code
-    logger.info("📥 Executing git pull origin main...")
-    pull_res = subprocess.run(
-        [GIT_EXE, "pull", "origin", "main"],
-        cwd=BASE_DIR,
-        capture_output=True,
-        text=True
-    )
-    logger.info(f"Git pull output:\n{pull_res.stdout.strip()}")
-    if pull_res.returncode != 0:
-        logger.error(f"Git pull error:\n{pull_res.stderr.strip()}")
+    def stop_existing_orphans(self):
+        """Kills any orphaned budgetby processes from previous runs."""
+        my_pid = os.getpid()
+        for p in psutil.process_iter(['pid', 'cmdline']):
+            try:
+                if p.info['pid'] == my_pid:
+                    continue
+                cmdline = p.info.get('cmdline') or []
+                cmd_str = " ".join(cmdline)
+                if ("budgetby.main" in cmd_str or "run_local_daemon.py" in cmd_str) and "auto_sync_runner.py" not in cmd_str:
+                    logger.info(f"Cleaning up orphaned instance (PID {p.info['pid']})...")
+                    if sys.platform == "win32":
+                        subprocess.run(["taskkill", "/F", "/T", "/PID", str(p.info['pid'])], capture_output=True)
+                    else:
+                        p.kill()
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+        time.sleep(1)
 
-    # 3. Check if dependencies changed
-    if check_requirements_diff(old_hash, remote_hash):
-        logger.info("📦 requirements.txt changed. Updating python dependencies...")
-        req_file = os.path.join(BASE_DIR, "requirements.txt")
-        subprocess.run(
-            [PYTHON_EXE, "-m", "pip", "install", "-r", req_file, "--quiet"],
-            cwd=BASE_DIR
-        )
+    def terminate_engine(self):
+        """Terminates current engine process cleanly."""
+        with self.lock:
+            if self.proc and self.proc.poll() is None:
+                pid = self.proc.pid
+                logger.info(f"Stopping active engine process (PID {pid})...")
+                try:
+                    if sys.platform == "win32":
+                        subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)], capture_output=True)
+                    else:
+                        self.proc.terminate()
+                        try:
+                            self.proc.wait(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            self.proc.kill()
+                except Exception as e:
+                    logger.warning(f"Process termination notice: {e}")
+                self.proc = None
+                time.sleep(2)
 
-    # 4. Restart daemon
-    logger.info("🔄 Restarting BudgetBy daemon with fresh code...")
-    start_daemon()
-    logger.info("✨ Daemon successfully updated and restarted!")
+    def git_watcher_loop(self):
+        """Background thread that polls GitHub every 30s."""
+        logger.info(f"🔍 Background Git poller active (checking every {CHECK_INTERVAL}s)...")
+        while self.running:
+            try:
+                prevent_windows_sleep()
+                fetch_res = subprocess.run(
+                    [GIT_EXE, "fetch", "origin", "main"],
+                    cwd=BASE_DIR,
+                    capture_output=True,
+                    text=True,
+                    timeout=45
+                )
+                if fetch_res.returncode == 0:
+                    local_hash = get_commit_hash("HEAD")
+                    remote_hash = get_commit_hash("origin/main")
+
+                    if local_hash != remote_hash:
+                        logger.info(f"📢 New commit detected on GitHub: {local_hash[:7]} ➔ {remote_hash[:7]}")
+                        self.restart_requested = True
+                        
+                        # Stop engine so git pull doesn't conflict
+                        self.terminate_engine()
+                        
+                        # Pull latest code
+                        logger.info("📥 Running git pull origin main...")
+                        pull_res = subprocess.run(
+                            [GIT_EXE, "pull", "origin", "main"],
+                            cwd=BASE_DIR,
+                            capture_output=True,
+                            text=True
+                        )
+                        logger.info(f"Git pull: {pull_res.stdout.strip()}")
+                        
+                        # Check dependencies
+                        if check_requirements_diff(local_hash, remote_hash):
+                            logger.info("📦 requirements.txt changed. Installing updates...")
+                            subprocess.run(
+                                [PYTHON_EXE, "-m", "pip", "install", "-r", "requirements.txt", "--quiet"],
+                                cwd=BASE_DIR
+                            )
+                        
+                        logger.info("✨ Code updated successfully! Engine will restart immediately.")
+                        self.restart_requested = False
+            except Exception as e:
+                logger.error(f"Git watcher check error: {e}")
+
+            time.sleep(CHECK_INTERVAL)
+
+    def run(self):
+        """Main process runner: starts engine and streams live output to console."""
+        prevent_windows_sleep()
+        self.stop_existing_orphans()
+
+        # Start watcher thread
+        watcher_thread = threading.Thread(target=self.git_watcher_loop, daemon=True)
+        watcher_thread.start()
+
+        cmd = [PYTHON_EXE, "-u", "-m", "budgetby.main"]
+
+        while self.running:
+            prevent_windows_sleep()
+            logger.info(f"▶️ Starting BudgetBy Engine (Live Output Mode)...")
+            logger.info("─" * 60)
+
+            # Notice: stdout=None and stderr=None streams output LIVE to terminal!
+            with self.lock:
+                self.proc = subprocess.Popen(
+                    cmd,
+                    cwd=BASE_DIR,
+                    stdout=None,
+                    stderr=None
+                )
+
+            # Wait for process to exit or be restarted by watcher
+            self.proc.wait()
+            ret_code = self.proc.returncode
+
+            if not self.running:
+                break
+
+            if self.restart_requested:
+                logger.info("🔄 Applying git update restart...")
+                time.sleep(1)
+            else:
+                if ret_code == 0:
+                    logger.info("✅ Engine exited cleanly. Restarting in 5s...")
+                else:
+                    logger.warning(f"⚠️ Engine exited with code {ret_code}. Auto-restarting in 5s...")
+                time.sleep(5)
 
 
 def main():
-    logger.info("================================================================")
-    logger.info("   BUDGETBY AUTOMATIC GITHUB SYNC WATCHER ACTIVE (30s POLLING)  ")
-    logger.info("================================================================")
-    logger.info(f"Repository Dir : {BASE_DIR}")
-    logger.info(f"Git Path       : {GIT_EXE}")
-    logger.info(f"Python Path    : {PYTHON_EXE}")
-    logger.info(f"Check Interval : {CHECK_INTERVAL} seconds")
-    logger.info(f"Logging To     : {LOG_FILE}")
-    logger.info("================================================================")
+    print("\n" + "=" * 64)
+    print("   BUDGETBY LIVE TERMINAL RUNNER & AUTOMATIC SYNC WATCHER   ")
+    print("=" * 64)
+    print(f"Repository : {BASE_DIR}")
+    print(f"Git Path   : {GIT_EXE}")
+    print(f"Python     : {PYTHON_EXE}")
+    print(f"Watch Loop : Every {CHECK_INTERVAL}s (Auto-pull from origin/main)")
+    print("=" * 64 + "\n")
 
-    prevent_windows_sleep()
-
-    # If daemon is not running when watcher starts, boot it up
-    if not is_daemon_running():
-        logger.info("Daemon is not currently running. Starting it now...")
-        start_daemon()
-
-    while True:
-        try:
-            prevent_windows_sleep()
-
-            # Run git fetch
-            fetch_res = subprocess.run(
-                [GIT_EXE, "fetch", "origin", "main"],
-                cwd=BASE_DIR,
-                capture_output=True,
-                text=True,
-                timeout=45
-            )
-
-            if fetch_res.returncode == 0:
-                local_hash = get_commit_hash("HEAD")
-                remote_hash = get_commit_hash("origin/main")
-
-                if local_hash != remote_hash:
-                    sync_and_restart()
-                else:
-                    logger.debug("Code is up to date with origin/main.")
-            else:
-                logger.warning(f"git fetch failed: {fetch_res.stderr.strip()[:200]}")
-
-            # Also verify daemon health: if crashed or killed, ensure it runs
-            if not is_daemon_running():
-                logger.warning("⚠️ Daemon not detected! Auto-restarting...")
-                start_daemon()
-
-        except KeyboardInterrupt:
-            logger.info("🛑 Sync watcher stopped by user.")
-            break
-        except Exception as e:
-            logger.error(f"Error in sync loop: {e}", exc_info=True)
-
-        time.sleep(CHECK_INTERVAL)
+    manager = EngineManager()
+    try:
+        manager.run()
+    except KeyboardInterrupt:
+        logger.info("\n🛑 User pressed Ctrl+C. Stopping BudgetBy and watcher...")
+        manager.running = False
+        manager.terminate_engine()
+        logger.info("Shutdown complete.")
 
 
 if __name__ == "__main__":
