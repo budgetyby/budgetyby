@@ -3,7 +3,7 @@ BudgetBy — Independent Automatic GitHub Sync Watcher.
 Runs independently in its own window (Window 2).
 Checks `git fetch origin main` every 30 seconds.
 When a new commit is detected:
-1. Runs `git pull origin main`.
+1. Fast-forwards local branch to origin/main (100% local, zero network/DNS errors).
 2. Installs updated dependencies if requirements.txt changed.
 3. Signals the Deal Engine in Window 1 to reload with the new code.
 Zero conflict, zero blank windows, clean independent execution.
@@ -170,38 +170,50 @@ def trigger_engine_reload():
 
 
 def sync_and_reload():
-    """Pulls latest git commits and triggers reload in Window 1."""
+    """Merges latest git commits locally from origin/main and triggers reload in Window 1."""
     local_hash = get_commit_hash("HEAD")
     remote_hash = get_commit_hash("origin/main")
 
     logger.info(f"📢 New commit detected on GitHub: {local_hash[:7]} ➔ {remote_hash[:7]}")
 
-    # 1. Pull latest code with forced IPv4 to avoid Windows DNS timeout
-    logger.info("📥 Executing git pull origin main...")
-    pull_res = subprocess.run(
-        [GIT_EXE, "-c", "http.ipresolve=4", "pull", "origin", "main"],
+    # 1. Commits were already downloaded locally by git fetch!
+    # Fast-forward local branch to origin/main (100% local, zero network calls, zero DNS errors).
+    logger.info("📥 Fast-forwarding local branch to origin/main...")
+    merge_res = subprocess.run(
+        [GIT_EXE, "merge", "--ff-only", "origin/main"],
         cwd=BASE_DIR,
         capture_output=True,
         text=True,
-        timeout=60
+        timeout=30
     )
-    
-    if pull_res.returncode != 0:
-        logger.warning(f"⚠️ Git pull failed (will retry in {CHECK_INTERVAL}s):\n{pull_res.stderr.strip()[:250]}")
-        logger.info("🛡️ Deal Engine in Window 1 NOT interrupted because pull did not succeed.")
+
+    if merge_res.returncode != 0:
+        logger.warning(f"⚠️ Fast-forward failed ({merge_res.stderr.strip()[:150]}). Attempting standard git merge...")
+        merge_res = subprocess.run(
+            [GIT_EXE, "merge", "origin/main", "-m", "Auto-sync update from origin/main"],
+            cwd=BASE_DIR,
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+
+    if merge_res.returncode != 0:
+        logger.warning(f"⚠️ Git merge failed (will retry in {CHECK_INTERVAL}s):\n{merge_res.stderr.strip()[:250]}")
+        logger.info("🛡️ Deal Engine in Window 1 NOT interrupted because merge did not succeed.")
         return False
 
-    logger.info(f"Git pull succeeded:\n{pull_res.stdout.strip()}")
+    new_hash = get_commit_hash("HEAD")
+    logger.info(f"✅ Code updated successfully to {new_hash[:7]}:\n{merge_res.stdout.strip()}")
 
     # 2. Check if dependencies changed
-    if check_requirements_diff(local_hash, remote_hash):
+    if check_requirements_diff(local_hash, new_hash):
         logger.info("📦 requirements.txt changed. Updating dependencies...")
         subprocess.run(
             [PYTHON_EXE, "-m", "pip", "install", "-r", "requirements.txt", "--quiet"],
             cwd=BASE_DIR
         )
 
-    # 3. Reload the Deal Engine in Window 1 ONLY after successful pull
+    # 3. Reload the Deal Engine in Window 1 ONLY after successful merge
     trigger_engine_reload()
     return True
 
