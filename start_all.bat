@@ -13,11 +13,11 @@ echo.
 echo Launching both services in independent windows...
 
 start "BudgetBy Deal Engine" cmd /k "%~dp0start_bot.bat"
-timeout /t 2 /nobreak >nul
+ping 127.0.0.1 -n 3 >nul
 start "BudgetBy GitHub Auto-Sync" cmd /k "%~dp0start_sync_watcher.bat"
 
 echo.
 echo Both services launched successfully!
 echo You can minimize these windows. Do not close them.
-timeout /t 5
+ping 127.0.0.1 -n 4 >nul
 exit
