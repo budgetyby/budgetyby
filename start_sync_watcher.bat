@@ -1,7 +1,7 @@
 @echo off
 title BudgetBy Automatic GitHub Sync Watcher
 color 0E
-cd /d "c:\budget-by"
+cd /d "%~dp0"
 
 echo ================================================================
 echo           BUDGETBY AUTOMATIC GITHUB SYNC WATCHER
@@ -12,6 +12,6 @@ echo  * Action        : Auto-Pull ^& Graceful Daemon Restart
 echo ================================================================
 echo.
 
-"C:\Users\jay\AppData\Local\Programs\Python\Python311\python.exe" scripts\auto_sync_runner.py
+python scripts\auto_sync_runner.py
 
 pause

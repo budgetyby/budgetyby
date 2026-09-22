@@ -1,7 +1,7 @@
 @echo off
 title BudgetBy 24/7 Deal Engine ^& Telegram Bot
 color 0B
-cd /d "c:\budget-by"
+cd /d "%~dp0"
 
 echo ================================================================
 echo           BUDGETBY 24/7 AUTONOMOUS DEAL ENGINE
@@ -16,7 +16,7 @@ echo.
 echo Starting bot daemon... (Keep this window open. Minimizing is fine!)
 echo.
 
-"C:\Users\jay\AppData\Local\Programs\Python\Python311\python.exe" run_local_daemon.py
+python run_local_daemon.py
 
 echo.
 echo Daemon stopped.
