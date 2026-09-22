@@ -176,17 +176,22 @@ def sync_and_reload():
 
     logger.info(f"📢 New commit detected on GitHub: {local_hash[:7]} ➔ {remote_hash[:7]}")
 
-    # 1. Pull latest code
+    # 1. Pull latest code with forced IPv4 to avoid Windows DNS timeout
     logger.info("📥 Executing git pull origin main...")
     pull_res = subprocess.run(
-        [GIT_EXE, "pull", "origin", "main"],
+        [GIT_EXE, "-c", "http.version=HTTP/1.1", "-4", "pull", "origin", "main"],
         cwd=BASE_DIR,
         capture_output=True,
-        text=True
+        text=True,
+        timeout=60
     )
-    logger.info(f"Git pull:\n{pull_res.stdout.strip()}")
+    
     if pull_res.returncode != 0:
-        logger.error(f"Git pull error:\n{pull_res.stderr.strip()}")
+        logger.warning(f"⚠️ Git pull failed (will retry in {CHECK_INTERVAL}s):\n{pull_res.stderr.strip()[:250]}")
+        logger.info("🛡️ Deal Engine in Window 1 NOT interrupted because pull did not succeed.")
+        return False
+
+    logger.info(f"Git pull succeeded:\n{pull_res.stdout.strip()}")
 
     # 2. Check if dependencies changed
     if check_requirements_diff(local_hash, remote_hash):
@@ -196,8 +201,9 @@ def sync_and_reload():
             cwd=BASE_DIR
         )
 
-    # 3. Reload the Deal Engine in Window 1
+    # 3. Reload the Deal Engine in Window 1 ONLY after successful pull
     trigger_engine_reload()
+    return True
 
 
 def main():
@@ -222,7 +228,7 @@ def main():
             prevent_windows_sleep()
 
             fetch_res = subprocess.run(
-                [GIT_EXE, "fetch", "origin", "main"],
+                [GIT_EXE, "-c", "http.version=HTTP/1.1", "-4", "fetch", "origin", "main"],
                 cwd=BASE_DIR,
                 capture_output=True,
                 text=True,
