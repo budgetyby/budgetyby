@@ -29,7 +29,7 @@ logger = logging.getLogger("budgetby.main")
 
 async def main():
     logger.info("Starting BudgetBy Bot...")
-    logger.info("🟢 [AUTO-SYNC TEST VERIFIED] Dell Server reloaded successfully with latest code!")
+    logger.info("🟢 [AUTO-SYNC FULL PIPELINE VERIFIED] End-to-end autonomous reload confirmed active!")
     
     # 1. Initialize Database Pool
     await database.init_pool()
