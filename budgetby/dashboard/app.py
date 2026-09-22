@@ -5,11 +5,13 @@ import math
 import re
 import sys
 import os
+import json
+import ipaddress
 import secrets
 import hmac
 import hashlib
 from fastapi import FastAPI, Query, HTTPException, Request, Depends, Response, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -3044,6 +3046,174 @@ async def custom_404_handler(request: Request, exc):
     return render_consumer_template("consumer/404.html", request, {
         "active_page": "404"
     }, cache_seconds=60)
+
+# ── Live Remote Log Streaming (Local Private Network Only / Zero Cloud Egress) ───
+
+def _is_private_ip(host: str) -> bool:
+    """Returns True only for loopback and private LAN IP addresses."""
+    if not host:
+        return False
+    if host in ("127.0.0.1", "localhost", "::1", "testclient"):
+        return True
+    try:
+        ip = ipaddress.ip_address(host)
+        return ip.is_private or ip.is_loopback
+    except ValueError:
+        return False
+
+
+def _clean_log_line(raw_line: str, source: str) -> dict | None:
+    """Cleans, redacts credentials, and filters out high-frequency polling spam."""
+    line = raw_line.strip()
+    if not line:
+        return None
+    # Strip spammy telegram getUpdates 200 OK polling logs
+    if "getUpdates" in line and "200 OK" in line:
+        return None
+    # Strip repetitive internal scheduler idle logs
+    if "0 products currently due for check" in line:
+        return None
+    # Redact credentials and tokens
+    line = re.sub(r'bot\d+:[A-Za-z0-9_-]+', 'bot***[REDACTED]***', line)
+    line = re.sub(r'postgres://[^@]+@', 'postgres://***:***@', line)
+    line = re.sub(r'postgresql://[^@]+@', 'postgresql://***:***@', line)
+
+    level = "INFO"
+    if "ERROR" in line or "CRITICAL" in line:
+        level = "ERROR"
+    elif "WARNING" in line:
+        level = "WARNING"
+    elif "DEBUG" in line:
+        level = "DEBUG"
+
+    return {
+        "source": source,
+        "level": level,
+        "text": line,
+        "timestamp": int(time.time())
+    }
+
+
+def _read_initial_backlog(bot_log_path: str, sync_log_path: str, max_lines: int = 35) -> list[dict]:
+    """Reads recent lines from both log files so the terminal starts with immediate context."""
+    items = []
+    for path, src in [(bot_log_path, "engine"), (sync_log_path, "sync_watcher")]:
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8", errors="replace") as f:
+                    lines = f.readlines()[-max_lines:]
+                    for l in lines:
+                        cleaned = _clean_log_line(l, src)
+                        if cleaned:
+                            items.append(cleaned)
+            except Exception:
+                pass
+    return items[-max_lines:]
+
+
+@app.get("/api/live-logs/ping")
+async def ping_live_logs(request: Request):
+    """
+    Zero-database discovery probe for the local desktop viewer.
+    - Completely disabled (404) on Render and cloud deployments.
+    - Restricted to private LAN subnets.
+    """
+    if os.getenv("RENDER") or os.getenv("ENVIRONMENT") == "production":
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    client_host = getattr(getattr(request, "client", None), "host", "")
+    if not _is_private_ip(client_host):
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    return {"service": "budgetby", "node": "server", "status": "online"}
+
+
+@app.get("/api/live-logs/stream")
+async def stream_live_logs(request: Request):
+    """
+    Server-Sent Events (SSE) live log streaming for local network administration.
+    - Completely disabled (404) on Render and cloud deployments.
+    - Restricted to private LAN subnets.
+    - Authenticated with ADMIN_SECRET_KEY.
+    - Zero cloud egress (100% local LAN traffic).
+    - 100% on-demand: stops immediately when viewer disconnects.
+    """
+    if os.getenv("RENDER") or os.getenv("ENVIRONMENT") == "production":
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    client_host = getattr(getattr(request, "client", None), "host", "")
+    if not _is_private_ip(client_host):
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    req_key = request.headers.get("X-Admin-Key") or request.query_params.get("key") or ""
+    if not req_key or not secrets.compare_digest(str(req_key), ADMIN_SECRET_KEY):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    bot_log_path = os.path.join(base_dir, "bot_runner.log")
+    sync_log_path = os.path.join(base_dir, "sync_watcher.log")
+
+    async def log_event_generator():
+        # 1. Send initial context lines
+        backlog = _read_initial_backlog(bot_log_path, sync_log_path, max_lines=25)
+        for item in backlog:
+            yield f"data: {json.dumps(item)}\n\n"
+
+        # 2. Tail new lines continuously
+        bot_pos = os.path.getsize(bot_log_path) if os.path.exists(bot_log_path) else 0
+        sync_pos = os.path.getsize(sync_log_path) if os.path.exists(sync_log_path) else 0
+
+        while True:
+            if await request.is_disconnected():
+                break
+
+            had_data = False
+
+            # Check bot_runner.log (Deal Engine)
+            if os.path.exists(bot_log_path):
+                try:
+                    curr_size = os.path.getsize(bot_log_path)
+                    if curr_size < bot_pos:
+                        bot_pos = 0  # Rotated
+                    if curr_size > bot_pos:
+                        with open(bot_log_path, "r", encoding="utf-8", errors="replace") as f:
+                            f.seek(bot_pos)
+                            new_lines = f.readlines()
+                            bot_pos = f.tell()
+                        for line in new_lines:
+                            clean = _clean_log_line(line, "engine")
+                            if clean:
+                                yield f"data: {json.dumps(clean)}\n\n"
+                                had_data = True
+                except Exception:
+                    pass
+
+            # Check sync_watcher.log (Sync Watcher)
+            if os.path.exists(sync_log_path):
+                try:
+                    curr_size = os.path.getsize(sync_log_path)
+                    if curr_size < sync_pos:
+                        sync_pos = 0
+                    if curr_size > sync_pos:
+                        with open(sync_log_path, "r", encoding="utf-8", errors="replace") as f:
+                            f.seek(sync_pos)
+                            new_lines = f.readlines()
+                            sync_pos = f.tell()
+                        for line in new_lines:
+                            clean = _clean_log_line(line, "sync_watcher")
+                            if clean:
+                                yield f"data: {json.dumps(clean)}\n\n"
+                                had_data = True
+                except Exception:
+                    pass
+
+            if not had_data:
+                await asyncio.sleep(0.5)
+            else:
+                await asyncio.sleep(0.05)
+
+    return StreamingResponse(log_event_generator(), media_type="text/event-stream")
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=5000)
