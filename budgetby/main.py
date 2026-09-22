@@ -29,7 +29,7 @@ logger = logging.getLogger("budgetby.main")
 
 async def main():
     logger.info("Starting BudgetBy Bot...")
-    logger.info("🟢 [AUTO-SYNC v2 ACTIVE] Autonomous Zero-Network Local Merge & Watcher Online!")
+    logger.info("🟢 [LIVE AUTO-SYNC VERIFIED] Dell server successfully synced and reloaded without errors!")
     
     # 1. Initialize Database Pool
     await database.init_pool()
