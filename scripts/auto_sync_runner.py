@@ -108,9 +108,9 @@ def is_daemon_running() -> bool:
 
 
 def stop_daemon_processes():
-    """Terminates any running run_local_daemon.py and budgetby.main processes."""
+    """Terminates running run_local_daemon.py and budgetby.main processes and closes their windows."""
     my_pid = os.getpid()
-    killed = []
+    killed_any = False
     for proc in psutil.process_iter(['pid', 'cmdline']):
         try:
             if proc.info['pid'] == my_pid:
@@ -118,33 +118,32 @@ def stop_daemon_processes():
             cmdline = proc.info.get('cmdline') or []
             cmd_str = " ".join(cmdline)
             if "run_local_daemon.py" in cmd_str or "budgetby.main" in cmd_str:
-                logger.info(f"Stopping active process (PID {proc.info['pid']})...")
-                proc.terminate()
-                killed.append(proc)
+                pid = proc.info['pid']
+                logger.info(f"Terminating process and closing attached window (PID {pid})...")
+                if sys.platform == "win32":
+                    # /F = force, /T = terminate entire process tree (closes console/terminal window)
+                    subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)], capture_output=True)
+                else:
+                    proc.kill()
+                killed_any = True
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
 
-    if killed:
-        gone, alive = psutil.wait_procs(killed, timeout=6)
-        for p in alive:
-            try:
-                logger.warning(f"Force killing PID {p.pid}...")
-                p.kill()
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
+    if killed_any:
         time.sleep(2)
-        logger.info(f"Terminated {len(killed)} process(es). Sockets and DB released.")
+        logger.info("Processes and windows closed cleanly. Sockets and DB released.")
 
 
 def start_daemon():
-    """Starts run_local_daemon.py in background."""
+    """Starts run_local_daemon.py silently in background with NO blank popup window."""
     daemon_script = os.path.join(BASE_DIR, "run_local_daemon.py")
     cmd = [PYTHON_EXE, daemon_script]
-    logger.info(f"▶️ Starting BudgetBy daemon: {' '.join(cmd)}")
+    logger.info(f"▶️ Starting BudgetBy daemon (silent background): {' '.join(cmd)}")
     
     creationflags = 0
     if sys.platform == "win32":
-        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
+        # CREATE_NO_WINDOW prevents Windows from popping open empty/blank terminal windows
+        creationflags = subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP
 
     proc = subprocess.Popen(
         cmd,
@@ -154,7 +153,7 @@ def start_daemon():
         stderr=subprocess.DEVNULL,
         close_fds=True
     )
-    logger.info(f"🚀 Daemon started with PID {proc.pid}")
+    logger.info(f"🚀 Daemon started silently in background with PID {proc.pid}")
     return proc
 
 
