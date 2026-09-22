@@ -18,7 +18,7 @@ if not API_ID_RAW or not API_HASH:
     sys.exit(1)
 
 API_ID = int(API_ID_RAW)
-SESSION_PATH = os.path.join(r"c:\Users\jaysi\.gemini\antigravity\scratch\budget-by", "telegram_user.session")
+SESSION_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "telegram_user.session")
 
 def phone_getter():
     phone = input("Please enter your phone number (e.g. +917060435399): ").strip()

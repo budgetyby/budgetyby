@@ -16,7 +16,7 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-BASE_DIR = r"c:\Users\jaysi\.gemini\antigravity\scratch\budget-by"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 from budgetby import config
 

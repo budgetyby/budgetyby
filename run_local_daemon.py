@@ -20,7 +20,7 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-BASE_DIR = r"c:\Users\jaysi\.gemini\antigravity\scratch\budget-by"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_FILE = os.path.join(BASE_DIR, "bot_runner.log")
 
 logging.basicConfig(

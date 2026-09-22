@@ -13,7 +13,7 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-sys.path.insert(0, r"c:\Users\jaysi\.gemini\antigravity\scratch\budget-by")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import asyncio
 import asyncpg
 from budgetby import config
