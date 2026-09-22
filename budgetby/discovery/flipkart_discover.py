@@ -4,7 +4,7 @@ Flipkart discovery engine.
 import logging
 import re
 import asyncio
-from typing import List, Dict, Any
+from curl_cffi import CurlOpt
 from curl_cffi.requests import AsyncSession
 from selectolax.parser import HTMLParser
 from budgetby import config
@@ -17,7 +17,7 @@ PID_REGEX = re.compile(r'pid=([A-Z0-9]+)')
 
 async def discover_category(name: str, sid: str, pages: int = 5, sort: str = "popularity") -> List[Dict[str, Any]]:
     results = []
-    async with AsyncSession(impersonate="chrome", timeout=config.SCRAPER_TIMEOUT) as session:
+    async with AsyncSession(impersonate="chrome124", curl_options={CurlOpt.IPRESOLVE: 1}, timeout=config.SCRAPER_TIMEOUT) as session:
         for page in range(1, pages + 1):
             url = f"https://www.flipkart.com/{name}/pr?sid={sid}&sort={sort}&page={page}"
             try:

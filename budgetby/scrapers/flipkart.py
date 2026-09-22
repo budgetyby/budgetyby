@@ -3,6 +3,7 @@ BudgetBy — Flipkart Scraper
 """
 import re
 import json
+from curl_cffi import CurlOpt
 from curl_cffi.requests import AsyncSession
 from selectolax.parser import HTMLParser
 from budgetby.scrapers.base import BaseScraper
@@ -11,7 +12,7 @@ from budgetby import config
 
 class FlipkartScraper(BaseScraper):
     async def _do_scrape_product(self, url: str) -> dict:
-        async with AsyncSession(impersonate="chrome", timeout=config.SCRAPER_TIMEOUT) as client:
+        async with AsyncSession(impersonate="chrome124", curl_options={CurlOpt.IPRESOLVE: 1}, timeout=config.SCRAPER_TIMEOUT) as client:
             r = await client.get(url, allow_redirects=True)
             
         tree = HTMLParser(r.text)
@@ -150,7 +151,7 @@ class FlipkartScraper(BaseScraper):
         }
 
     async def _do_scrape_listing(self, url: str) -> list[dict]:
-        async with AsyncSession(impersonate="chrome", timeout=config.SCRAPER_TIMEOUT) as client:
+        async with AsyncSession(impersonate="chrome124", curl_options={CurlOpt.IPRESOLVE: 1}, timeout=config.SCRAPER_TIMEOUT) as client:
             r = await client.get(url, follow_redirects=True)
             
         tree = HTMLParser(r.text)
