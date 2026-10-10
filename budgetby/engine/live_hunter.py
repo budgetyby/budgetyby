@@ -187,7 +187,7 @@ async def hunt_live_store_deal(platform: str) -> Optional[Dict[str, Any]]:
 
                     logger.info(f"🎯 [LIVE HUNT SUCCESS] [{platform.upper()}] Found fresh deal #{pid}: {title[:40]} | ₹{price} ({round(disc*100)}% OFF)")
 
-                    badge = "LOOT" if disc >= 0.70 else ("ATL" if disc >= 0.50 else "HOT_DEAL")
+                    badge = "LOOT" if disc >= 0.70 else ("MEGA_DROP" if disc >= 0.50 else "HOT_DEAL")
                     return {
                         "product": p,
                         "type": "flash_hunt",

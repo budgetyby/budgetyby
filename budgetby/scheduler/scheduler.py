@@ -64,73 +64,104 @@ async def price_check_loop():
         semaphore = asyncio.Semaphore(config.SCRAPER_WORKERS)
         
         async def process_product(prod):
-            async with semaphore:
-                platform = prod["platform"]
-                scraper = scrapers.get(platform)
-                if not scraper:
-                    return
-
-                try:
-                    data = await scraper.scrape_product(prod["url"])
-                    # Captcha / Error 503 Protection
-                    if not data or data.get("error_code") in (503, 429):
-                        logger.warning(f"Captcha/Block detected for {prod['url']}. Retrying later.")
-                        local_db.update_product_check_time(platform, prod["platform_id"], prod["priority_tier"])
+            platform = prod["platform"]
+            pid = prod["platform_id"]
+            if not local_db.mark_in_flight(platform, pid):
+                return
+            try:
+                async with semaphore:
+                    scraper = scrapers.get(platform)
+                    if not scraper:
                         return
 
-                    new_p = float(data.get("current_price", 0.0))
-                    in_stock = data.get("in_stock", True)
-                    
-                    if new_p <= 0 or not in_stock:
-                        new_status = 'TEMP_OOS'
-                        new_p = prod["current_price"] # Keep old price for reference
-                    else:
-                        new_status = 'ACTIVE'
+                    try:
+                        data = await scraper.scrape_product(prod["url"])
+                        # Captcha / Error 503 Protection
+                        if not data or data.get("error_code") in (503, 429):
+                            logger.warning(f"Captcha/Block detected for {prod['url']}. Retrying later.")
+                            local_db.update_product_check_time(platform, pid, prod["priority_tier"])
+                            return
 
-                    # Determine new priority
-                    temp_prod = dict(prod)
-                    temp_prod['current_price'] = new_p
-                    temp_prod['status'] = new_status
-                    temp_prod['last_price_change'] = datetime.datetime.now(datetime.timezone.utc) if new_p != prod["current_price"] else None
-                    new_priority = assign_priority(temp_prod)
-
-                    # Update local check time immediately
-                    local_db.update_product_check_time(platform, prod["platform_id"], new_priority)
-
-                    # Did price change or stock status change?
-                    if new_p != prod["current_price"] or new_status != prod["status"]:
-                        # 1. Hot Path (Tier 1 & 2) -> Instant Supabase Update
-                        if new_priority in (1, 2):
-                            # Update local DB first
-                            local_db.update_product_locally(
-                                platform, prod["platform_id"], prod["url"], new_p, 
-                                data.get("mrp") or prod["mrp"], new_priority, new_status
-                            )
-                            # Instantly send to Supabase (Zero Egress, Free Ingress)
-                            await database.execute("""
-                                UPDATE products SET current_price = $1, status = $2, priority_tier = $3, in_stock = $4, last_checked = NOW()
-                                WHERE platform = $5 AND platform_id = $6
-                            """, new_p, new_status, new_priority, in_stock, platform, prod["platform_id"])
+                        new_p = float(data.get("current_price", 0.0))
+                        in_stock = data.get("in_stock", True)
                         
-                        # 2. Cold Path (Tier 3 & 4) -> Queue in Local DB
+                        if new_p <= 0 or not in_stock:
+                            new_status = 'TEMP_OOS'
+                            new_p = prod["current_price"] # Keep old price for reference
                         else:
-                            local_db.queue_pending_sync(platform, prod["platform_id"], new_p, in_stock, new_status)
-                            
-                        # Deal Detection
-                        if new_status == 'ACTIVE':
-                            deal = await detect_deal(temp_prod, new_p)
-                            if deal:
-                                if is_fake_discount(deal):
-                                    return
-                                score, badge = score_deal(deal)
-                                deal["deal_score"] = score
-                                deal["badge"] = badge
-                                # Add to Telegram Queue (will use platform_id)
-                                get_posting_queue().add_deal(deal)
+                            new_status = 'ACTIVE'
 
-                except Exception as e:
-                    logger.error(f"Error checking {prod['url']}: {e}")
-                    local_db.update_product_check_time(platform, prod["platform_id"], prod["priority_tier"])
+                        # Determine new priority
+                        temp_prod = dict(prod)
+                        temp_prod['previous_price'] = prod["current_price"]
+                        temp_prod['current_price'] = new_p
+                        temp_prod['mrp'] = data.get("mrp") or prod.get("mrp") or new_p
+                        temp_prod['status'] = new_status
+                        temp_prod['last_price_change'] = datetime.datetime.now(datetime.timezone.utc) if new_p != prod["current_price"] else None
+                        new_priority = assign_priority(temp_prod)
+
+                        # Update local check time immediately
+                        local_db.update_product_check_time(platform, pid, new_priority)
+                        
+                        # Record daily MRP observation in local SQLite (Zero Cloud Egress)
+                        observed_mrp = data.get("mrp") or prod.get("mrp")
+                        if observed_mrp and float(observed_mrp) > 0:
+                            local_db.record_mrp_observation(platform, pid, float(observed_mrp))
+
+                        # Did price change or stock status change?
+                        if new_p != prod["current_price"] or new_status != prod["status"]:
+                            # 1. Hot Path (Tier 1 & 2) -> Instant Supabase Update
+                            if new_priority in (1, 2):
+                                # Update local DB first
+                                local_db.update_product_locally(
+                                    platform, pid, prod["url"], new_p, 
+                                    data.get("mrp") or prod["mrp"], new_priority, new_status
+                                )
+                                # Instantly send to Supabase (Zero Egress, Free Ingress)
+                                await database.execute("""
+                                    UPDATE products SET current_price = $1, status = $2, priority_tier = $3, in_stock = $4, last_checked = NOW()
+                                    WHERE platform = $5 AND platform_id = $6
+                                """, new_p, new_status, new_priority, in_stock, platform, pid)
+                            
+                            # 2. Cold Path (Tier 3 & 4) -> Queue in Local DB
+                            else:
+                                local_db.queue_pending_sync(platform, pid, new_p, in_stock, new_status)
+                                
+                            # Deal Detection (detect_deal checks fake discount internally)
+                            if new_status == 'ACTIVE':
+                                deal = await detect_deal(temp_prod, new_p)
+                                if deal:
+                                    score = score_deal(temp_prod, deal)
+                                    badge = deal.get("badge", "PRICE_DROP")
+                                    deal_data = {
+                                        "product": {
+                                            "id": prod.get("id"),
+                                            "platform": platform,
+                                            "platform_id": pid,
+                                            "title": data.get("title") or prod.get("title") or f"{platform.title()} Product",
+                                            "url": prod["url"],
+                                            "product_url": prod["url"],
+                                            "affiliate_url": data.get("affiliate_url") or prod.get("affiliate_url", ""),
+                                            "image_url": data.get("image_url") or prod.get("image_url", ""),
+                                            "current_price": new_p,
+                                            "mrp": data.get("mrp") or prod.get("mrp") or new_p,
+                                            "rating": data.get("rating") or prod.get("rating", 0.0),
+                                            "review_count": data.get("review_count") or prod.get("review_count", 0),
+                                            "category": prod.get("category") or data.get("category") or "general",
+                                        },
+                                        "type": deal.get("deal_type", "price_drop"),
+                                        "badge": badge,
+                                        "score": score,
+                                        "source_channel": "scheduler"
+                                    }
+                                    # Add to Telegram Queue for immediate delivery
+                                    await get_posting_queue().queue_deal(deal_data)
+
+                    except Exception as e:
+                        logger.error(f"Error checking {prod['url']}: {e}")
+                        local_db.update_product_check_time(platform, pid, prod["priority_tier"])
+            finally:
+                local_db.release_in_flight(platform, pid)
 
         await asyncio.gather(*(process_product(dict(p)) for p in products))
 

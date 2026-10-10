@@ -299,7 +299,7 @@ async def verify_and_ingest_single_deal(channel: str, post_id: int, raw_url: str
             from budgetby.engine.posting_queue import get_posting_queue
             pq = get_posting_queue()
             
-            badge = "ATL" if discount_pct >= 50 else ("HOT_DEAL" if discount_pct >= 25 else "DEAL")
+            badge = "LOOT" if discount_pct >= 70 else ("MEGA_DROP" if discount_pct >= 50 else ("HOT_DEAL" if discount_pct >= 25 else "DEAL"))
             deal_data = {
                 "product": {
                     "id": pid,

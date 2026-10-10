@@ -28,16 +28,16 @@ async def daily_cleanup():
         # 2. Compress raw rows older than 5 days into 3-day buckets (must run BEFORE cleanup)
         await database.compress_old_daily_prices()
 
-        # 3. Delete rows older than 30 days (benchmarks are persisted inside cleanup before delete)
+        # 3. Delete rows older than config.DAILY_PRICE_RETENTION_DAYS (benchmarks are persisted inside cleanup before delete)
         await database.cleanup_old_daily_prices()
         await database.sync_daily_price_baselines()
         await database.finalize_expired_tracking()
         
-        # Prune ingested_channel_deals older than 30 days (prevents unbounded table growth)
+        # Prune ingested_channel_deals older than 14 days (prevents unbounded table growth)
         try:
             deleted_icd = await database.execute("""
                 DELETE FROM ingested_channel_deals
-                WHERE created_at < NOW() - INTERVAL '30 days';
+                WHERE created_at < NOW() - INTERVAL '14 days';
             """)
             logger.info(f"Pruned old ingested_channel_deals: {deleted_icd}")
         except Exception as e:
@@ -48,12 +48,26 @@ async def daily_cleanup():
             await cleanup_expired_cooldowns()
         except Exception as e:
             logger.warning(f"Could not cleanup expired cooldowns: {e}")
+
+        # 4. Prune local SQLite MRP history older than 14 days (Zero Cloud Egress)
+        try:
+            from budgetby import local_db
+            await local_db.cleanup_old_mrp_history(retention_days=14)
+        except Exception as e:
+            logger.warning(f"Could not cleanup local MRP history: {e}")
             
         # Archive OOS > DORMANT_THRESHOLD_DAYS
         await database.execute(f"UPDATE products SET status = '{config.STATUS_DORMANT}' WHERE LOWER(status) = LOWER('{config.STATUS_TEMP_OOS}') AND last_checked < NOW() - INTERVAL '{config.DORMANT_THRESHOLD_DAYS} days'")
         
         # Delete OOS > DELETE_THRESHOLD_DAYS
         await database.execute(f"DELETE FROM products WHERE LOWER(status) IN (LOWER('{config.STATUS_TEMP_OOS}'), LOWER('{config.STATUS_DORMANT}')) AND last_checked < NOW() - INTERVAL '{config.DELETE_THRESHOLD_DAYS} days'")
+
+        # Periodic VACUUM ANALYZE to reclaim dead tuple disk space without locks
+        try:
+            for tbl in ['daily_prices', 'deals', 'ingested_channel_deals', 'post_cooldowns']:
+                await database.execute(f"VACUUM ANALYZE {tbl};")
+        except Exception as e:
+            logger.debug(f"Daily maintenance VACUUM notice: {e}")
         
                 # Decay stale Tier 1 products back to Tier 3 if no price change for 7 days
         decayed = await database.execute("""
