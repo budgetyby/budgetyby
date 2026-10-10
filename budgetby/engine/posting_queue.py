@@ -224,6 +224,19 @@ class PostingQueue:
             self._queued_pids.add(dedup_key)
 
         deal_data["_enqueued_at"] = time.time()
+
+        # Non-blocking background image prefetch: normalizes image in RAM before deal is popped by drainer!
+        img_url = product.get("image_url")
+        if img_url:
+            async def _bg_prefetch(d_ref, url):
+                try:
+                    bytes_io = await _fetch_and_normalize_image(url, timeout=3.5)
+                    if bytes_io:
+                        d_ref["_cached_photo_bytes"] = bytes_io
+                except Exception:
+                    pass
+            asyncio.create_task(_bg_prefetch(deal_data, img_url))
+
         await self._queue.put(deal_data)
         qsize = self._queue.qsize()
         logger.info(f"📥 Queued #{dedup_key or 'deal'} [{plat.upper()}] (Queue size: {qsize})")
@@ -260,34 +273,44 @@ class PostingQueue:
 
     # ── FAST PATH: Queue drain — NO lock, NO live hunt, NO pre-flight scrape ────
 
-    async def _send_to_telegram(self, bot_instance, message_text: str, img_url: str) -> object:
-        """Sends photo or text to Telegram channel. Falls back gracefully to plain text if HTML parsing fails."""
+    async def _send_to_telegram(self, bot_instance, message_text: str, img_url: str, preloaded_bytes: io.BytesIO = None) -> object:
+        """Sends photo or text to Telegram channel. Uses pre-fetched image bytes if available for zero-latency send."""
         sent_msg = None
-        if img_url:
-            photo_bytes = await _fetch_and_normalize_image(img_url)
-            if photo_bytes:
+        photo_bytes = preloaded_bytes
+        if not photo_bytes and img_url:
+            photo_bytes = await _fetch_and_normalize_image(img_url, timeout=3.0)
+
+        if photo_bytes:
+            try:
+                photo_bytes.seek(0)
+            except Exception:
+                pass
+            try:
+                sent_msg = await bot_instance.send_photo(
+                    chat_id=config.TELEGRAM_CHANNEL_ID,
+                    photo=photo_bytes,
+                    caption=message_text,
+                    parse_mode="HTML"
+                )
+            except telegram.error.RetryAfter as ra:
+                logger.warning(f"Rate limit (photo): sleeping {ra.retry_after}s")
+                await asyncio.sleep(ra.retry_after + 0.5)
+                return None
+            except Exception as pe:
+                logger.debug(f"Photo send with HTML failed: {pe}. Trying photo without HTML...")
                 try:
+                    clean_caption = re.sub(r'<[^>]+>', '', message_text)
+                    try:
+                        photo_bytes.seek(0)
+                    except Exception:
+                        pass
                     sent_msg = await bot_instance.send_photo(
                         chat_id=config.TELEGRAM_CHANNEL_ID,
                         photo=photo_bytes,
-                        caption=message_text,
-                        parse_mode="HTML"
+                        caption=clean_caption
                     )
-                except telegram.error.RetryAfter as ra:
-                    logger.warning(f"Rate limit (photo): sleeping {ra.retry_after}s")
-                    await asyncio.sleep(ra.retry_after)
-                    return None
-                except Exception as pe:
-                    logger.debug(f"Photo send with HTML failed: {pe}. Trying photo without HTML...")
-                    try:
-                        clean_caption = re.sub(r'<[^>]+>', '', message_text)
-                        sent_msg = await bot_instance.send_photo(
-                            chat_id=config.TELEGRAM_CHANNEL_ID,
-                            photo=photo_bytes,
-                            caption=clean_caption
-                        )
-                    except Exception as pe2:
-                        logger.debug(f"Photo send plain fallback also failed: {pe2}")
+                except Exception as pe2:
+                    logger.debug(f"Photo send plain fallback also failed: {pe2}")
 
         if not sent_msg:
             try:
@@ -299,7 +322,7 @@ class PostingQueue:
                 )
             except telegram.error.RetryAfter as ra:
                 logger.warning(f"Rate limit (text): sleeping {ra.retry_after}s")
-                await asyncio.sleep(ra.retry_after)
+                await asyncio.sleep(ra.retry_after + 0.5)
                 return None
             except Exception as e:
                 logger.warning(f"send_message with HTML failed: {e}. Falling back to plain text...")
@@ -318,12 +341,11 @@ class PostingQueue:
 
     async def _post_queued_deal(self, deal_data: dict, bot_instance) -> str:
         """
-        Fast-path for queued deals. No lock. No network calls to DB scrapers.
-        Queued deals are already verified by channel_monitor.
+        Fast-path for queued deals. Zero network scraping.
         Returns:
-          - "POSTED": Successfully sent to Telegram. Drain worker will sleep 3.2s.
-          - "SKIPPED": Deal was on cooldown, stale (>6h), or invalid. Drain worker skips with 0.01s delay.
-          - "FAILED": Delivery or Telegram error. Drain worker handles retry.
+          - "POSTED": Successfully sent to Telegram.
+          - "SKIPPED": Deal was on cooldown, stale (>4h), or auto-persisted to DB. Instant 0.001s skip.
+          - "FAILED": Delivery or Telegram error. Handled with backoff.
         """
         pid = None
         dedup_key = None
@@ -358,28 +380,30 @@ class PostingQueue:
             score = float(deal_data.get("score") or 60)
             source_channel = deal_data.get("source_channel", "channel")
 
-            # 3. High-Backlog Fast Path: When queue > 30 items, auto-persist low-tier deals directly to DB without Telegram broadcast delay
             savings_amount = max(0.0, mrp - price)
             savings_pct = (savings_amount / mrp) if mrp > 0 else 0.0
             current_backlog = self._queue.qsize()
 
-            if current_backlog > 30 and score < 50 and badge not in ["ATL", "LOOT", "MEGA_DROP"]:
-                try:
-                    await database.insert_deal({
-                        "product_id": pid,
-                        "platform": platform,
-                        "platform_id": plat_id,
-                        "deal_type": deal_type,
-                        "posted_price": price,
-                        "posted_mrp": mrp,
-                        "savings_amount": savings_amount,
-                        "savings_pct": savings_pct,
-                        "deal_score": score,
-                        "badge": badge,
-                        "source_channel": source_channel
-                    })
-                except Exception:
-                    pass
+            # 3. High-Backlog Fast Path: When queue > 20 items, auto-persist low-tier deals directly to DB without Telegram broadcast delay
+            if current_backlog > 20 and score < 60 and badge not in ["ATL", "LOOT", "MEGA_DROP"]:
+                async def _bg_save():
+                    try:
+                        await database.insert_deal({
+                            "product_id": pid,
+                            "platform": platform,
+                            "platform_id": plat_id,
+                            "deal_type": deal_type,
+                            "posted_price": price,
+                            "posted_mrp": mrp,
+                            "savings_amount": savings_amount,
+                            "savings_pct": savings_pct,
+                            "deal_score": score,
+                            "badge": badge,
+                            "source_channel": source_channel
+                        })
+                    except Exception:
+                        pass
+                asyncio.create_task(_bg_save())
                 return "SKIPPED"
 
             url = product.get("affiliate_url") or product.get("product_url") or ""
@@ -389,12 +413,12 @@ class PostingQueue:
 
             message_text = format_deal_message(deal_data)
             img_url = product.get("image_url") or ""
+            preloaded_bytes = deal_data.get("_cached_photo_bytes")
 
-            sent_msg = await self._send_to_telegram(bot_instance, message_text, img_url)
+            sent_msg = await self._send_to_telegram(bot_instance, message_text, img_url, preloaded_bytes)
             if not sent_msg:
                 logger.warning(f"Delivery failed for queued #{pid or dedup_key} — will retry.")
-                return "FAILED"
-
+                return False
             await database.insert_deal({
                 "product_id": pid,
                 "platform": platform,
@@ -418,7 +442,7 @@ class PostingQueue:
                 f"⚡ [QUEUE POST] [{platform.upper()}] {product.get('title', '')[:40]} "
                 f"| ₹{price:.0f} / ₹{mrp:.0f} | {source_channel}"
             )
-            return "POSTED"
+            return True
 
         except Exception as e:
             logger.error(f"Error posting queued deal #{pid or dedup_key}: {e}", exc_info=True)
@@ -431,21 +455,26 @@ class PostingQueue:
 
     async def _drain_overflow_queue(self):
         """
-        High-throughput fast-drain worker: posts queued deals at 2.8s cadence.
-        Instantly skips (0.01s) duplicate, on-cooldown, stale, or catalog-persisted deals.
-        Runs until queue is fully empty.
+        Ultra-High-Throughput Fast-Drain Worker:
+        - Non-blocking image prefetching & non-blocking DB persistence
+        - Clock-deadline pacing (~2.5s cadence, max safe Telegram channel throughput)
+        - Instant 0.001s fast-path persistence for low-tier deals during large backlogs
+        - Automatic RetryAfter backoff
         """
         if self._draining:
             return
         self._draining = True
         qsize = self._queue.qsize()
-        logger.info(f"⚡ [DRAIN START] {qsize} deals in queue — draining at 2.8s turbo cadence.")
+        logger.info(f"⚡ [TURBO DRAIN START] {qsize} deals in queue — draining at maximum safe throughput.")
 
         bot_instance = self._get_bot()
         if not bot_instance:
             logger.warning("No Telegram bot available for queue drain. Aborting.")
             self._draining = False
             return
+
+        last_post_mono = 0.0
+        target_post_gap = getattr(self, "target_post_gap", 2.5)  # 2.5s cadence (~24 posts/min peak with Telegram flood-wait safety)
 
         try:
             while not self._queue.empty():
@@ -455,25 +484,37 @@ class PostingQueue:
                 except asyncio.QueueEmpty:
                     break
 
+                # Before dispatching a post, ensure minimum 2.5s gap from last post to prevent 429 flood errors
+                now = time.monotonic()
+                time_since_last = now - last_post_mono
+                if last_post_mono > 0 and time_since_last < target_post_gap:
+                    # Check if deal is eligible before waiting
+                    prod_temp = deal_data.get("product", {})
+                    score_temp = float(deal_data.get("score") or 60)
+                    badge_temp = deal_data.get("badge", "DEAL")
+                    # If backlog > 20 and low score, don't wait for rate limit gap — skip immediately!
+                    if self._queue.qsize() > 20 and score_temp < 60 and badge_temp not in ["ATL", "LOOT", "MEGA_DROP"]:
+                        pass
+                    else:
+                        await asyncio.sleep(target_post_gap - time_since_last)
+
                 status = await self._post_queued_deal(deal_data, bot_instance)
-                if status == "POSTED":
-                    await asyncio.sleep(2.8)
+                if status is True or status == "POSTED":
+                    last_post_mono = time.monotonic()
                 elif status == "SKIPPED":
-                    await asyncio.sleep(0.01)
-                else:
-                    # Retry limit guard: up to 2 retries, then discard to avoid queue starvation
+                    await asyncio.sleep(0.001)
+                else: # FAILED
                     retries = deal_data.get("_retry_count", 0) + 1
                     deal_data["_retry_count"] = retries
                     pid = deal_data.get("product", {}).get("id")
                     if retries < 2:
                         try:
                             self._queue.put_nowait(deal_data)
-                            logger.info(f"Deal #{pid} re-queued (attempt {retries}/2).")
                         except asyncio.QueueFull:
-                            logger.warning("Queue full — dropping failed re-enqueue.")
-                        await asyncio.sleep(1.5)
+                            pass
+                        await asyncio.sleep(1.0)
                     else:
-                        logger.warning(f"⚠️ Dropping deal #{pid} after {retries} failed attempts to unblock queue.")
+                        logger.warning(f"⚠️ Dropping deal #{pid} after failed attempts to unblock queue.")
                         self._queued_pids.discard(pid)
 
         except Exception as e:

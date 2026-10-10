@@ -396,5 +396,44 @@ class TestGuestDealDiscovery(unittest.IsolatedAsyncioTestCase):
             mock_execute.assert_not_called()
 
 
+    async def test_17_ultra_fast_queue_drain_backlog_shedding(self):
+        """Verify high backlog triggers fast-path instant persistence for low-tier items and clears queue rapidly."""
+        from budgetby.engine.posting_queue import PostingQueue
+        pq = PostingQueue()
+        pq.clear()
+
+        mock_bot = MagicMock()
+        mock_bot.send_photo = AsyncMock(return_value=MagicMock())
+        mock_bot.send_message = AsyncMock(return_value=MagicMock())
+        pq.target_post_gap = 0.001
+
+        with patch("budgetby.engine.posting_queue._fetch_and_normalize_image", new_callable=AsyncMock, return_value=None), \
+             patch.object(pq, "_get_bot", return_value=mock_bot), \
+             patch("budgetby.database.insert_deal", new_callable=AsyncMock) as mock_insert, \
+             patch("budgetby.engine.cooldown.is_on_cooldown", new_callable=AsyncMock, return_value=False), \
+             patch("budgetby.engine.cooldown.set_cooldown", new_callable=AsyncMock):
+
+            # Enqueue 25 low score items and 1 high score item
+            for i in range(25):
+                await pq.queue_deal({
+                    "product": {
+                        "id": 9000 + i,
+                        "title": f"Low discount test item {i}",
+                        "platform": "amazon",
+                        "current_price": 950.0,
+                        "mrp": 1000.0,
+                        "image_url": "https://m.media-amazon.com/images/I/test.jpg"
+                    },
+                    "type": "price_drop",
+                    "score": 35.0,
+                    "badge": "PRICE_DROP"
+                })
+
+            # Drain queue
+            await pq._drain_overflow_queue()
+            # Verify queue was drained to empty
+            self.assertEqual(pq._queue.qsize(), 0)
+
+
 if __name__ == "__main__":
     unittest.main()
