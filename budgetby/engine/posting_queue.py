@@ -322,12 +322,15 @@ class PostingQueue:
         Returns True = success/skip, False = should retry.
         """
         pid = None
+        dedup_key = None
         try:
             from budgetby.engine.cooldown import is_on_cooldown, set_cooldown
 
             product = deal_data.get("product", {})
             pid = product.get("id")
             platform = (product.get("platform") or "store").lower()
+            plat_id = product.get("platform_id")
+            dedup_key = pid if pid else (f"{platform}:{plat_id}" if plat_id else None)
 
             if pid and await is_on_cooldown(pid):
                 logger.info(f"🛡️ Queued #{pid} on cooldown — skipping (consumed).")
@@ -350,15 +353,15 @@ class PostingQueue:
 
             sent_msg = await self._send_to_telegram(bot_instance, message_text, img_url)
             if not sent_msg:
-                logger.warning(f"Delivery failed for queued #{pid} — will retry.")
+                logger.warning(f"Delivery failed for queued #{pid or dedup_key} — will retry.")
                 return False
 
             savings_amount = max(0.0, mrp - price)
             savings_pct = (savings_amount / mrp) if mrp > 0 else 0.0
-            inserted_id = await database.insert_deal({
+            await database.insert_deal({
                 "product_id": pid,
                 "platform": platform,
-                "platform_id": product.get("platform_id"),
+                "platform_id": plat_id,
                 "deal_type": deal_type,
                 "posted_price": price,
                 "posted_mrp": mrp,
@@ -368,9 +371,8 @@ class PostingQueue:
                 "badge": badge,
                 "source_channel": source_channel
             })
-            effective_pid = pid or inserted_id
-            if effective_pid:
-                await set_cooldown(effective_pid, config.PRICE_DROP_COOLDOWN_HOURS)
+            if pid:
+                await set_cooldown(pid, config.PRICE_DROP_COOLDOWN_HOURS)
 
             self._last_posted_platform = platform
             self._rotation_index += 1
@@ -382,11 +384,13 @@ class PostingQueue:
             return True
 
         except Exception as e:
-            logger.error(f"Error posting queued deal #{pid}: {e}", exc_info=True)
+            logger.error(f"Error posting queued deal #{pid or dedup_key}: {e}", exc_info=True)
             return False
         finally:
             if pid:
                 self._queued_pids.discard(pid)
+            if dedup_key:
+                self._queued_pids.discard(dedup_key)
 
     async def _drain_overflow_queue(self):
         """
