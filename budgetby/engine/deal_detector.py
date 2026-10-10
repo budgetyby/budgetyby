@@ -35,7 +35,7 @@ async def detect_deal(product: Record, new_price: float) -> dict | None:
         # 2. Strict Price Drop Filter: Price MUST have actually dropped from previous or current price
         # Drop must be >= 3% AND >= ₹20
         has_dropped = False
-        baseline = current_price or previous_price
+        baseline = previous_price if (previous_price and previous_price > new_price) else current_price
         if baseline and baseline > new_price:
             drop_val = baseline - new_price
             drop_pct = drop_val / baseline
@@ -43,7 +43,7 @@ async def detect_deal(product: Record, new_price: float) -> dict | None:
                 has_dropped = True
                 
         # If product is newly discovered and has 25%+ discount, allow it
-        if not baseline and mrp_discount_pct >= 0.25:
+        if (not baseline or baseline <= new_price) and mrp_discount_pct >= 0.25:
             has_dropped = True
 
         if not has_dropped:
