@@ -104,10 +104,9 @@ def clean_title(text: str) -> str:
     # Strip leading bracketed SKU/ASIN codes (e.g. "[B09XKZV7S8] Men's...", "[1202621] ...")
     cleaned = re.sub(r'^\[[A-Za-z0-9_\-]+\]\s*', '', cleaned)
     
-    # Strip trailing rating and review text (e.g. "...4.43,338 Ratings&224 Reviews", "...4.21,200 Ratings", "... 4.5 2,100 Reviews", "Black4.6 (15,000)")
-    cleaned = re.sub(r'(?:\.{2,}|…|\s*)\d(?:\.\d+)?(?:\s*[\d,]+)?\s*(?:Ratings?\s*(?:&|and)?\s*[\d,]*\s*Reviews?|Ratings?|Reviews?).*', '', cleaned, flags=re.IGNORECASE)
-    cleaned = re.sub(r'(?:\.{2,}|…|\s*)\d(?:\.\d+)?\s*(?:[★*]|\([\d,]+\)).*', '', cleaned)
-    cleaned = re.sub(r'(?:\.{2,}|…|\s*)\d\.\d\s*\([\d,]+\).*', '', cleaned)
+    # Strip trailing rating and review text (e.g. "...4.4 3,338 Ratings & 224 Reviews", "...4.2 (1,200 Ratings)", "... 4.5 2,100 Reviews", "Black 4.6 (15,000)")
+    cleaned = re.sub(r'(?:\.{2,}|…|\s+)\d(?:\.\d+)?\s*(?:[★*]|\([\d,\.kKMB\s\w]+\)).*$', '', cleaned)
+    cleaned = re.sub(r'(?:\.{2,}|…|\s+)\d(?:\.\d+)?(?:\s*[\d,]+)?\s*(?:Ratings?\s*(?:&|and)?\s*[\d,]*\s*Reviews?|Ratings?|Reviews?).*$', '', cleaned, flags=re.IGNORECASE)
     
     # Remove discount percentages and attached stock/delivery text
     cleaned = re.sub(r'\b\d{1,2}%\s*off\b.*', '', cleaned, flags=re.IGNORECASE)

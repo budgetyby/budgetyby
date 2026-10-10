@@ -16,7 +16,7 @@ load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHANNEL_ID = os.getenv("TELEGRAM_CHANNEL_ID", "")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "")
-ADMIN_SECRET_KEY = os.getenv("ADMIN_SECRET_KEY", "bb_sec_9e72f8a14b30c5e7d82f091a384b62d1")
+ADMIN_SECRET_KEY = os.getenv("ADMIN_SECRET_KEY", "")
 TG_API_ID = int(os.getenv("TG_API_ID", "0")) if os.getenv("TG_API_ID") else None
 TG_API_HASH = os.getenv("TG_API_HASH", "")
 
@@ -41,7 +41,7 @@ else:
     DB_SSL = os.getenv("DB_SSL", "require" if os.getenv("DB_HOST", "localhost") != "localhost" else None)
 
 AMAZON_ASSOCIATE_TAG = os.getenv("AMAZON_ASSOCIATE_TAG", "dealpulse21-21")
-EARNKARO_API_KEY = os.getenv("EARNKARO_API_KEY", "5549565")
+EARNKARO_API_KEY = os.getenv("EARNKARO_API_KEY", "")
 CUELINKS_CHANNEL_ID = os.getenv("CUELINKS_CHANNEL_ID", "314807")
 CUELINKS_API_KEY = os.getenv("CUELINKS_API_KEY", "")
 
@@ -54,12 +54,12 @@ CUELINKS_API_KEY = os.getenv("CUELINKS_API_KEY", "")
 # 2 = keep only today + yesterday (the minimum needed for price-drop detection)
 PRICE_RAW_RETENTION_DAYS = 2
 
-# Stage 2: Compress old raw rows into 6-day bucket minimums (1 row per 6 days)
-PRICE_BUCKET_SIZE_DAYS = 6
+# Stage 2: Compress old raw rows into 3-day bucket minimums (1 row per 3 days)
+PRICE_BUCKET_SIZE_DAYS = 3
 
-# Stage 3: Delete ALL daily_prices rows (raw + buckets) older than 18 days.
+# Stage 3: Delete ALL daily_prices rows (raw + buckets) older than 5 days.
 #          Benchmarks (min_30d, median_30d_price) are persisted on products row first.
-DAILY_PRICE_RETENTION_DAYS = 18
+DAILY_PRICE_RETENTION_DAYS = 5
 
 
 # ════════════════════════════════════════════════════════════════════════
@@ -97,13 +97,13 @@ USER_AGENTS = [
 # ════════════════════════════════════════════════════════════════════════
 
 PRIORITY_INTERVALS = {
-    1: 3 * 3600,   # Tier 1: 3 hours
-    2: 6 * 3600,   # Tier 2: 6 hours
-    3: 48 * 3600,  # Tier 3: 48 hours
-    4: 48 * 3600   # Tier 4: 48 hours
+    1: 1 * 3600,   # Tier 1 (Flash Deals / Volatile Price Changes): 1 hour
+    2: 3 * 3600,   # Tier 2 (New Discoveries / High-Velocity Categories): 3 hours
+    3: 18 * 3600,  # Tier 3 (Standard Catalog): 18 hours
+    4: 48 * 3600   # Tier 4 (Dormant / Out of Stock / Low Priority): 48 hours
 }
 
-# Sale mode multiplier — check frequencies during detected sale events
+# Sale mode multiplier — check frequencies during detected sale events (e.g. 2x faster)
 SALE_MODE_INTERVAL_MULTIPLIER = 0.5  # 2x faster checks
 
 # ════════════════════════════════════════════════════════════════════════
@@ -152,21 +152,32 @@ CATEGORY_MIN_DROPS = {
 DEFAULT_MIN_DROP = (0.15, 200)
 
 # ════════════════════════════════════════════════════════════════════════
-# 6. DEAL SCORING WEIGHTS
+# ════════════════════════════════════════════════════════════════════════
+# 6. DEAL SCORING WEIGHTS (SEPARATE SHOPPER QUALITY & MONETIZATION)
 # ════════════════════════════════════════════════════════════════════════
 
-SCORE_WEIGHTS = {
-    "drop_magnitude":      0.30,   # How big is the price drop?
-    "historical_position": 0.20,   # Where vs historical lows?
-    "commission_potential": 0.30,   # How much ₹ do we earn?
-    "popularity":          0.20,   # Review count / rating
+# A. Shopper Deal Quality Score (0–100): Pure consumer deal strength (Zero Commission Bias)
+SHOPPER_SCORE_WEIGHTS = {
+    "drop_magnitude":      0.40,   # 40%: Savings percentage / price drop magnitude
+    "historical_position": 0.30,   # 30%: Proximity to ATL / 90d / 60d / 30d lows
+    "popularity":          0.30,   # 30%: Social proof (review count 15% + rating 15%)
 }
 
-# Minimum score to post a deal (0-100)
+# B. Monetization Score (0–100): Internal affiliate business value
+MONETIZATION_SCORE_WEIGHTS = {
+    "commission_rate":     0.30,   # 30%: Platform & category affiliate commission %
+    "commission_payout":   0.50,   # 50%: Absolute estimated ₹ payout per sale
+    "price_tier":          0.20,   # 20%: High-ticket GMV potential
+}
+
+# Backward compatibility alias
+SCORE_WEIGHTS = SHOPPER_SCORE_WEIGHTS
+
+# Minimum shopper score to post a deal (0-100)
 MIN_DEAL_SCORE = 35
 
 # Penalty for detected fake discount (subtracted from score)
-FAKE_DISCOUNT_PENALTY = 12
+FAKE_DISCOUNT_PENALTY = 20
 
 # ════════════════════════════════════════════════════════════════════════
 # 7. POSTING RULES & PER-PLATFORM MINIMUMS

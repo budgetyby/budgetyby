@@ -20,8 +20,8 @@ class NykaaScraper(BaseScraper):
         title = ""
         price = 0.0
         mrp = 0.0
-        rating = 4.3
-        review_count = 100
+        rating = 0.0
+        review_count = 0
         image_url = ""
         in_stock = True
 

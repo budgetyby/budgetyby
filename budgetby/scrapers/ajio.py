@@ -22,8 +22,8 @@ class AjioScraper(BaseScraper):
         mrp = 0.0
         image_url = ""
         in_stock = True
-        rating = 4.2
-        review_count = 50
+        rating = 0.0
+        review_count = 0
 
         try:
             from selectolax.parser import HTMLParser

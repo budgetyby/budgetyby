@@ -395,15 +395,14 @@ async def refresh_30d_benchmarks():
     async with pool.acquire() as conn:
         await conn.execute("""
             UPDATE products p SET
-                min_30d = sub.min_30d,
-                median_30d_price = sub.median_price
+                min_30d = LEAST(COALESCE(p.min_30d, sub.min_30d), sub.min_30d),
+                median_30d_price = COALESCE(sub.median_price, p.median_30d_price, p.current_price)
             FROM (
                 SELECT
                     product_id,
                     MIN(min_price) AS min_30d,
                     PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY close_price) AS median_price
                 FROM daily_prices
-                WHERE date >= ((NOW() AT TIME ZONE 'Asia/Kolkata')::DATE - 30)
                 GROUP BY product_id
             ) sub
             WHERE p.id = sub.product_id

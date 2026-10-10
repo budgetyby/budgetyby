@@ -19,9 +19,9 @@ sys.path.insert(0, str(BASE_DIR))
 
 try:
     from budgetby import config
-    ADMIN_SECRET_KEY = getattr(config, "ADMIN_SECRET_KEY", "") or os.getenv("ADMIN_SECRET_KEY", "bb_sec_9e72f8a14b30c5e7d82f091a384b62d1")
+    ADMIN_SECRET_KEY = getattr(config, "ADMIN_SECRET_KEY", "") or os.getenv("ADMIN_SECRET_KEY", "")
 except Exception:
-    ADMIN_SECRET_KEY = os.getenv("ADMIN_SECRET_KEY", "bb_sec_9e72f8a14b30c5e7d82f091a384b62d1")
+    ADMIN_SECRET_KEY = os.getenv("ADMIN_SECRET_KEY", "")
 
 CACHE_FILE = BASE_DIR / ".dell_server_ip"
 
