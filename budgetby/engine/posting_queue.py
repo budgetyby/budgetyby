@@ -223,6 +223,7 @@ class PostingQueue:
         if dedup_key:
             self._queued_pids.add(dedup_key)
 
+        deal_data["_enqueued_at"] = time.time()
         await self._queue.put(deal_data)
         qsize = self._queue.qsize()
         logger.info(f"📥 Queued #{dedup_key or 'deal'} [{plat.upper()}] (Queue size: {qsize})")
@@ -315,11 +316,14 @@ class PostingQueue:
 
         return sent_msg
 
-    async def _post_queued_deal(self, deal_data: dict, bot_instance) -> bool:
+    async def _post_queued_deal(self, deal_data: dict, bot_instance) -> str:
         """
         Fast-path for queued deals. No lock. No network calls to DB scrapers.
         Queued deals are already verified by channel_monitor.
-        Returns True = success/skip, False = should retry.
+        Returns:
+          - "POSTED": Successfully sent to Telegram. Drain worker will sleep 3.2s.
+          - "SKIPPED": Deal was on cooldown, stale (>6h), or invalid. Drain worker skips with 0.01s delay.
+          - "FAILED": Delivery or Telegram error. Drain worker handles retry.
         """
         pid = None
         dedup_key = None
@@ -332,12 +336,23 @@ class PostingQueue:
             plat_id = product.get("platform_id")
             dedup_key = pid if pid else (f"{platform}:{plat_id}" if plat_id else None)
 
+            # 1. Stale Deal Guard: Discard deals queued > 6 hours ago
+            enqueued_at = deal_data.get("_enqueued_at")
+            if enqueued_at and (time.time() - enqueued_at > 21600):
+                logger.info(f"⌛ Queued deal #{pid or dedup_key} is > 6h old — skipping stale deal.")
+                return "SKIPPED"
+
+            # 2. Cooldown Guard
             if pid and await is_on_cooldown(pid):
-                logger.info(f"🛡️ Queued #{pid} on cooldown — skipping (consumed).")
-                return True
+                logger.info(f"🛡️ Queued #{pid} on cooldown — skipping instantly.")
+                return "SKIPPED"
 
             price = float(product.get("current_price") or 0)
             mrp = float(product.get("mrp") or price)
+            if price <= 0:
+                logger.info(f"🚫 Queued #{pid or dedup_key} has price ₹0 — skipping.")
+                return "SKIPPED"
+
             deal_type = deal_data.get("type", "channel_deal")
             badge = deal_data.get("badge", "DEAL")
             score = float(deal_data.get("score") or 60)
@@ -354,7 +369,7 @@ class PostingQueue:
             sent_msg = await self._send_to_telegram(bot_instance, message_text, img_url)
             if not sent_msg:
                 logger.warning(f"Delivery failed for queued #{pid or dedup_key} — will retry.")
-                return False
+                return "FAILED"
 
             savings_amount = max(0.0, mrp - price)
             savings_pct = (savings_amount / mrp) if mrp > 0 else 0.0
@@ -381,11 +396,11 @@ class PostingQueue:
                 f"⚡ [QUEUE POST] [{platform.upper()}] {product.get('title', '')[:40]} "
                 f"| ₹{price:.0f} / ₹{mrp:.0f} | {source_channel}"
             )
-            return True
+            return "POSTED"
 
         except Exception as e:
             logger.error(f"Error posting queued deal #{pid or dedup_key}: {e}", exc_info=True)
-            return False
+            return "FAILED"
         finally:
             if pid:
                 self._queued_pids.discard(pid)
@@ -394,14 +409,15 @@ class PostingQueue:
 
     async def _drain_overflow_queue(self):
         """
-        Fast-drain worker: posts queued deals at 8s cadence.
-        No lock. No live scraping. Runs until queue is fully empty.
+        High-throughput fast-drain worker: posts queued deals at 3.2s cadence (~18.7 posts/min, safe under Telegram's 20/min limit).
+        Instantly skips (0.01s) duplicate, on-cooldown, stale, or invalid deals.
+        Runs until queue is fully empty.
         """
         if self._draining:
             return
         self._draining = True
         qsize = self._queue.qsize()
-        logger.info(f"⚡ [DRAIN START] {qsize} deals in queue — draining at 8s cadence.")
+        logger.info(f"⚡ [DRAIN START] {qsize} deals in queue — draining at 3.2s turbo cadence.")
 
         bot_instance = self._get_bot()
         if not bot_instance:
@@ -417,31 +433,33 @@ class PostingQueue:
                 except asyncio.QueueEmpty:
                     break
 
-                success = await self._post_queued_deal(deal_data, bot_instance)
-                if not success:
-                    # Retry limit guard: up to 3 retries, then discard to avoid queue starvation
+                status = await self._post_queued_deal(deal_data, bot_instance)
+                if status == "POSTED":
+                    await asyncio.sleep(3.2)
+                elif status == "SKIPPED":
+                    await asyncio.sleep(0.01)
+                else:
+                    # Retry limit guard: up to 2 retries, then discard to avoid queue starvation
                     retries = deal_data.get("_retry_count", 0) + 1
                     deal_data["_retry_count"] = retries
                     pid = deal_data.get("product", {}).get("id")
-                    if retries < 3:
+                    if retries < 2:
                         try:
                             self._queue.put_nowait(deal_data)
-                            logger.info(f"Deal #{pid} re-queued (attempt {retries}/3).")
+                            logger.info(f"Deal #{pid} re-queued (attempt {retries}/2).")
                         except asyncio.QueueFull:
                             logger.warning("Queue full — dropping failed re-enqueue.")
-                        await asyncio.sleep(5)
+                        await asyncio.sleep(2.0)
                     else:
-                        logger.warning(f"⚠️ Dropping deal #{pid} after 3 failed attempts to unblock queue.")
+                        logger.warning(f"⚠️ Dropping deal #{pid} after {retries} failed attempts to unblock queue.")
                         self._queued_pids.discard(pid)
-                else:
-                    await asyncio.sleep(8)
 
         except Exception as e:
             logger.error(f"Drain loop error: {e}", exc_info=True)
         finally:
             self._draining = False
             remaining = self._queue.qsize()
-            logger.info(f"✅ [DRAIN DONE] Queue empty. Remaining: {remaining}. Back to 30s catalog pacing.")
+            logger.info(f"✅ [DRAIN DONE] Remaining in queue: {remaining}. Back to 30s catalog pacing.")
 
     # ── SLOW PATH: Catalog / live-hunt posting (called by 30s paced scheduler) ─
 
