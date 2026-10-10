@@ -204,11 +204,15 @@ class PostingQueue:
         Enqueue an intercepted or organic deal with deduplication.
         Immediately kicks off the fast-drain worker.
         """
-        pid = deal_data.get('product', {}).get('id')
-        plat = deal_data.get('product', {}).get('platform', 'unknown')
+        product = deal_data.get('product', {})
+        pid = product.get('id')
+        plat = (product.get('platform') or 'unknown').lower()
+        plat_id = product.get('platform_id')
 
-        if pid and pid in self._queued_pids:
-            logger.info(f"🛡️ #{pid} already in queue. Skipping duplicate.")
+        dedup_key = pid if pid else (f"{plat}:{plat_id}" if plat_id else None)
+
+        if dedup_key and dedup_key in self._queued_pids:
+            logger.info(f"🛡️ #{dedup_key} already in queue. Skipping duplicate.")
             return
 
         from budgetby.engine.cooldown import is_on_cooldown
@@ -216,16 +220,42 @@ class PostingQueue:
             logger.info(f"🛡️ #{pid} on 24h cooldown. Skipping.")
             return
 
-        if pid:
-            self._queued_pids.add(pid)
+        if dedup_key:
+            self._queued_pids.add(dedup_key)
 
         await self._queue.put(deal_data)
         qsize = self._queue.qsize()
-        logger.info(f"📥 Queued #{pid} [{plat.upper()}] (Queue size: {qsize})")
+        logger.info(f"📥 Queued #{dedup_key or 'deal'} [{plat.upper()}] (Queue size: {qsize})")
 
         # Always kick drain when a new deal lands
         if not self._draining:
             asyncio.create_task(self._drain_overflow_queue())
+
+    def add_deal(self, deal_data: dict):
+        """
+        Synchronous / task wrapper for queue_deal to support flexible callers.
+        """
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(self.queue_deal(deal_data))
+        except RuntimeError:
+            asyncio.run(self.queue_deal(deal_data))
+
+    def clear(self) -> int:
+        """
+        Clears all queued deals from the in-memory queue and resets tracking.
+        Returns the number of items removed.
+        """
+        cleared_count = 0
+        while not self._queue.empty():
+            try:
+                self._queue.get_nowait()
+                cleared_count += 1
+            except asyncio.QueueEmpty:
+                break
+        self._queued_pids.clear()
+        logger.info(f"🧹 PostingQueue cleared ({cleared_count} items removed).")
+        return cleared_count
 
     # ── FAST PATH: Queue drain — NO lock, NO live hunt, NO pre-flight scrape ────
 
@@ -325,8 +355,10 @@ class PostingQueue:
 
             savings_amount = max(0.0, mrp - price)
             savings_pct = (savings_amount / mrp) if mrp > 0 else 0.0
-            await database.insert_deal({
+            inserted_id = await database.insert_deal({
                 "product_id": pid,
+                "platform": platform,
+                "platform_id": product.get("platform_id"),
                 "deal_type": deal_type,
                 "posted_price": price,
                 "posted_mrp": mrp,
@@ -336,8 +368,9 @@ class PostingQueue:
                 "badge": badge,
                 "source_channel": source_channel
             })
-            if pid:
-                await set_cooldown(pid, config.PRICE_DROP_COOLDOWN_HOURS)
+            effective_pid = pid or inserted_id
+            if effective_pid:
+                await set_cooldown(effective_pid, config.PRICE_DROP_COOLDOWN_HOURS)
 
             self._last_posted_platform = platform
             self._rotation_index += 1

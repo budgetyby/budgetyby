@@ -62,6 +62,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         path = request.url.path
         if request.method in ("POST", "PUT", "DELETE", "PATCH"):
             response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
@@ -147,7 +148,7 @@ ADMIN_TEMPLATE_PATH = os.path.join(TEMPLATES_DIR, "index.html")
 EXPLORER_TEMPLATE_PATH = os.path.join(TEMPLATES_DIR, "explorer.html")
 ADMIN_LOGIN_TEMPLATE_PATH = os.path.join(TEMPLATES_DIR, "admin_login.html")
 
-ADMIN_SECRET_KEY = getattr(config, "ADMIN_SECRET_KEY", "") or os.getenv("ADMIN_SECRET_KEY", "bb_sec_9e72f8a14b30c5e7d82f091a384b62d1")
+ADMIN_SECRET_KEY = getattr(config, "ADMIN_SECRET_KEY", "") or os.getenv("ADMIN_SECRET_KEY", "")
 
 def _get_admin_credentials() -> list[tuple[str, str]]:
     """Loads authorized admin credentials securely from environment variables."""
@@ -163,15 +164,14 @@ def _get_admin_credentials() -> list[tuple[str, str]]:
         p = os.getenv("ADMIN_PASSWORD", "")
         if p:
             creds.append((u, p))
-        else:
-            # Fallback secure credential pair
-            creds = [("admin", "BudgetBy@Admin2026"), ("pnther", "BudgetBy@Pnther2026")]
     return creds
 
 ADMIN_CREDENTIALS = _get_admin_credentials()
 
 def create_admin_session_token(username: str) -> str:
     """Creates a tamper-proof HMAC-SHA256 signed session token."""
+    if not ADMIN_SECRET_KEY:
+        return ""
     now_ts = int(time.time())
     msg = f"{username}:{now_ts}"
     sig = hmac.new(ADMIN_SECRET_KEY.encode(), msg.encode(), hashlib.sha256).hexdigest()
@@ -179,10 +179,10 @@ def create_admin_session_token(username: str) -> str:
 
 def verify_admin_session_token(token: str) -> bool:
     """Verifies that the session token is authentic, unexpired, and properly signed."""
-    if not token:
+    if not token or not ADMIN_SECRET_KEY:
         return False
     # Backwards compatibility: raw ADMIN_SECRET_KEY as cookie
-    if secrets.compare_digest(str(token), ADMIN_SECRET_KEY):
+    if ADMIN_SECRET_KEY and secrets.compare_digest(str(token), ADMIN_SECRET_KEY):
         return True
     try:
         parts = token.split(":")
@@ -196,7 +196,7 @@ def verify_admin_session_token(token: str) -> bool:
         token_time = int(ts_str)
         if (time.time() - token_time) > 86400 * 7:  # 7 days max age
             return False
-        return username in ("pnther", "vidushi")
+        return username in ("pnther", "vidushi", "admin")
     except Exception:
         return False
 
@@ -223,6 +223,8 @@ def is_admin_authorized(request: Request) -> bool:
     3. Query parameter: ?key=<ADMIN_SECRET_KEY> or ?admin_key=<ADMIN_SECRET_KEY>
     4. Query parameter: ?auth_token=<token>
     """
+    if not ADMIN_SECRET_KEY:
+        return False
     session_hdr = request.headers.get("X-Admin-Session") or request.headers.get("x-admin-session")
     if session_hdr and verify_admin_session_token(session_hdr):
         return True
@@ -508,6 +510,18 @@ async def get_posting_queue_endpoint():
         return pq.get_queue_snapshot()
     except Exception as e:
         logger.error(f"Posting queue error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.post("/api/posting_queue/clear", dependencies=[Depends(require_admin)])
+async def clear_posting_queue_endpoint():
+    """Flushes and clears all items currently waiting in the in-memory posting queue."""
+    try:
+        from budgetby.engine.posting_queue import get_posting_queue
+        pq = get_posting_queue()
+        cleared = pq.clear()
+        return {"status": "ok", "cleared_items": cleared, "queue_size": 0}
+    except Exception as e:
+        logger.error(f"Posting queue clear error: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/api/category_platform_stats", dependencies=[Depends(require_admin)])
@@ -2353,7 +2367,7 @@ async def get_public_deals(
                     order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, p.current_price ASC, p.id DESC"
                 elif sort_by == "price_desc":
                     order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, p.current_price DESC, p.id DESC"
-                elif sort_by == "score_desc":
+                elif sort_by in ("score_desc", "score", "best", "deal_score"):
                     order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, COALESCE(d.deal_score, 50.0) DESC, p.id DESC"
                 elif search_clean:
                     order_sql = f"ORDER BY {aff_priority}, (CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END) DESC, relevance_score DESC, COALESCE(d.posted_at, p.last_price_change, p.created_at) DESC"
@@ -2530,6 +2544,153 @@ async def get_public_deals(
         raise HTTPException(status_code=500, detail="Failed to fetch deals")
 
 
+async def get_public_deal_detail(product_id: int) -> dict | None:
+    """
+    Returns complete product & deal details with bounded 30-day price history.
+    Protected by 60s RAM cache and single-flight request coalescing. Zero Supabase egress on cache hit.
+    """
+    if not product_id or product_id <= 0:
+        return None
+
+    cache_key = f"deal_detail:{product_id}"
+    cached = await ram_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    async def _fetch_deal_detail():
+        # Double check cache inside coalescer
+        c = await ram_cache.get(cache_key)
+        if c is not None:
+            return c
+
+        prod_task = database.fetchrow("""
+            SELECT 
+                p.id as product_id,
+                p.platform,
+                p.platform_id,
+                p.title,
+                p.category,
+                p.product_url,
+                p.affiliate_url,
+                p.image_url,
+                p.current_price,
+                p.previous_price,
+                p.mrp,
+                p.median_30d_price,
+                p.min_30d,
+                p.min_60d,
+                p.min_90d,
+                p.min_120d,
+                p.all_time_low,
+                p.rating,
+                p.review_count,
+                p.in_stock,
+                p.status,
+                p.last_checked,
+                p.last_price_change,
+                p.created_at,
+                d.id as deal_id,
+                d.deal_type,
+                d.badge,
+                d.posted_price,
+                d.posted_mrp,
+                d.savings_amount,
+                d.savings_pct,
+                d.deal_score,
+                d.posted_at
+            FROM products p
+            LEFT JOIN LATERAL (
+                SELECT id, deal_type, badge, posted_price, posted_mrp, savings_amount, savings_pct, deal_score, posted_at
+                FROM deals
+                WHERE product_id = p.id
+                ORDER BY posted_at DESC
+                LIMIT 1
+            ) d ON TRUE
+            WHERE p.id = $1;
+        """, product_id)
+
+        history_task = database.fetch("""
+            SELECT date, min_price, close_price
+            FROM daily_prices
+            WHERE product_id = $1
+            ORDER BY date ASC
+            LIMIT 30;
+        """, product_id)
+
+        product_row, history_rows = await asyncio.gather(prod_task, history_task)
+        if not product_row:
+            return None
+
+        history = []
+        for r in history_rows:
+            p_val = float(r["min_price"]) if r["min_price"] is not None else (float(r["close_price"]) if r["close_price"] is not None else None)
+            if p_val is not None:
+                history.append({
+                    "date": str(r["date"]),
+                    "price": p_val
+                })
+
+        cp = float(product_row["current_price"] or 0.0)
+        mrp = float(product_row["mrp"] or cp)
+        prev_p = float(product_row["previous_price"] or cp)
+        atl = float(product_row["all_time_low"]) if product_row["all_time_low"] is not None else None
+        min_30d = float(product_row["min_30d"]) if product_row["min_30d"] is not None else None
+        min_90d = float(product_row["min_90d"]) if product_row["min_90d"] is not None else None
+
+        if len(history) < 2:
+            created = product_row["created_at"]
+            start_date = str(created.date()) if hasattr(created, "date") else "Start"
+            today_date = "Today"
+            if prev_p and prev_p != cp:
+                history = [
+                    {"date": start_date, "price": prev_p},
+                    {"date": today_date, "price": cp}
+                ]
+            elif atl and atl != cp:
+                history = [
+                    {"date": "Historical Low", "price": atl},
+                    {"date": today_date, "price": cp}
+                ]
+            else:
+                history = [
+                    {"date": start_date, "price": cp},
+                    {"date": today_date, "price": cp}
+                ]
+
+        savings = max(0.0, mrp - cp) if mrp > cp else 0.0
+        discount_pct = int(round(((mrp - cp) / mrp) * 100)) if (mrp > cp and mrp > 0) else 0
+
+        prod_dict = dict(product_row)
+        prod_dict["current_price"] = cp
+        prod_dict["mrp"] = mrp
+        prod_dict["discount_pct"] = discount_pct
+        prod_dict["savings_amount"] = savings
+        prod_dict["all_time_low"] = atl
+        prod_dict["min_30d"] = min_30d
+        prod_dict["min_90d"] = min_90d
+        prod_dict["deal_score"] = float(prod_dict.get("deal_score") or 75.0)
+
+        result = {
+            "product": prod_dict,
+            "price_history": history,
+            "history_count": len(history)
+        }
+        await ram_cache.set(cache_key, result, ttl=60)
+        return result
+
+    return await coalescer.run(cache_key, _fetch_deal_detail)
+
+
+@app.get("/api/public/deal/{product_id}")
+@app.get("/api/public/product/{product_id}")
+async def api_public_deal_detail(product_id: int):
+    """Returns structured JSON product deal details and bounded 30-day price history."""
+    detail = await get_public_deal_detail(product_id)
+    if not detail or not detail.get("product"):
+        raise HTTPException(status_code=404, detail="Product not found")
+    return detail
+
+
 # ── Page Rendering Routes ───────────────────────────────────────────────────
 
 STORE_DISPLAY_NAMES = {
@@ -2546,7 +2707,7 @@ async def get_cached_ssr_html(key: str) -> str | None:
 async def set_cached_ssr_html(key: str, html_content: str, ttl: int = 120):
     await ram_cache.set(f"ssr_html:{key}", html_content, ttl=ttl)
 
-def make_html_response(request: Request, html_content: str, cache_seconds: int = 60) -> Response:
+def make_html_response(request: Request, html_content: str, cache_seconds: int = 60, status_code: int = 200) -> Response:
     etag = hashlib.md5(html_content.encode("utf-8")).hexdigest()
     client_etag = request.headers.get("if-none-match", "").strip('"')
     headers = {
@@ -2556,9 +2717,9 @@ def make_html_response(request: Request, html_content: str, cache_seconds: int =
     }
     if client_etag and client_etag == etag:
         return Response(status_code=304, headers=headers)
-    return HTMLResponse(content=html_content, status_code=200, headers=headers)
+    return HTMLResponse(content=html_content, status_code=status_code, headers=headers)
 
-def render_consumer_template(template_name: str, request: Request, context: dict = None, cache_seconds: int = 60) -> Response:
+def render_consumer_template(template_name: str, request: Request, context: dict = None, cache_seconds: int = 60, status_code: int = 200) -> Response:
     if context is None:
         context = {}
     context["request"] = request
@@ -2566,7 +2727,7 @@ def render_consumer_template(template_name: str, request: Request, context: dict
     try:
         tpl = templates.get_template(template_name)
         rendered_html = tpl.render(context)
-        return make_html_response(request, rendered_html, cache_seconds=cache_seconds)
+        return make_html_response(request, rendered_html, cache_seconds=cache_seconds, status_code=status_code)
     except Exception as e:
         logger.error(f"Render error for {template_name}: {e}", exc_info=True)
         import traceback
@@ -2580,34 +2741,39 @@ async def page_home(request: Request):
     if cached_html:
         return make_html_response(request, cached_html, cache_seconds=60)
 
+    best_deals = {"deals": []}
     initial_drops = {"drops": []}
     just_dropped = {"deals": []}
     atl_mini = {"deals": []}
     initial_stats = {}
 
     try:
+        best_deals_task = get_public_deals(request=request, platform="", platforms="", category="", categories="", sub="", subcategory="", gender="", tab="all", search="", sort_by="score_desc", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=True, deal_type="", ids="", page=1, limit=10)
         drops_task = get_public_price_drops(request=request, page=1, limit=12, min_drop_pct=5.0, min_drop_percent=None, platform="", category="", sort_by="drop_pct")
         just_dropped_task = get_public_deals(request=request, platform="", platforms="", category="", categories="", sub="", subcategory="", gender="", tab="all", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=True, deal_type="", ids="", page=1, limit=10)
         atl_task = get_public_deals(request=request, platform="", platforms="", category="", categories="", sub="", subcategory="", gender="", tab="atl", search="", sort_by="latest", min_discount=0.0, min_price=0.0, max_price=0.0, min_rating=0.0, verified_only=False, deal_type="", ids="", page=1, limit=10)
         stats_task = get_public_stats()
 
         results = await asyncio.gather(
-            drops_task, just_dropped_task, atl_task, stats_task,
+            best_deals_task, drops_task, just_dropped_task, atl_task, stats_task,
             return_exceptions=True
         )
         if not isinstance(results[0], Exception):
-            initial_drops = results[0]
+            best_deals = results[0]
         if not isinstance(results[1], Exception):
-            just_dropped = results[1]
+            initial_drops = results[1]
         if not isinstance(results[2], Exception):
-            atl_mini = results[2]
+            just_dropped = results[2]
         if not isinstance(results[3], Exception):
-            initial_stats = results[3]
+            atl_mini = results[3]
+        if not isinstance(results[4], Exception):
+            initial_stats = results[4]
     except Exception as e:
         logger.warning(f"Homepage prefetch error: {e}")
 
     rendered_html = render_consumer_template("consumer/home.html", request, {
         "active_page": "home",
+        "best_deals": best_deals,
         "initial_drops": initial_drops,
         "just_dropped": just_dropped,
         "atl_mini": atl_mini,
@@ -2891,6 +3057,58 @@ async def page_stores(request: Request, platform: str = ""):
         await set_cached_ssr_html(ssr_key, resp.body.decode("utf-8"), ttl=300)
     return resp
 
+
+@app.get("/deal/{product_id}", response_class=HTMLResponse)
+@app.get("/product/{product_id}", response_class=HTMLResponse)
+async def page_deal_detail(request: Request, product_id: int):
+    """Renders the comprehensive Product & Deal Detail Experience with visual price history."""
+    ssr_key = f"deal_detail:{product_id}"
+    cached_html = await get_cached_ssr_html(ssr_key)
+    if cached_html:
+        return make_html_response(request, cached_html, cache_seconds=60)
+
+    try:
+        detail_data = await get_public_deal_detail(product_id)
+        if not detail_data or not detail_data.get("product"):
+            return render_consumer_template("consumer/404.html", request, {
+                "active_page": "deals",
+                "categories": UNIVERSAL_CATEGORIES
+            }, cache_seconds=60, status_code=404)
+
+        prod = detail_data["product"]
+        cat = prod.get("category", "")
+
+        # Related deals: pre-fetched from existing RAM-cached deals endpoint (0 extra DB queries)
+        related_deals = []
+        if cat:
+            try:
+                rel_res = await get_public_deals(request=request, category=cat, page=1, limit=4, verified_only=False)
+                if isinstance(rel_res, dict):
+                    related_deals = [d for d in rel_res.get("deals", []) if int(d.get("product_id") or d.get("id") or 0) != product_id][:4]
+            except Exception as e:
+                logger.debug(f"Related deals prefetch note: {e}")
+
+        rendered_html = render_consumer_template("consumer/deal_detail.html", request, {
+            "active_page": "deals",
+            "product": prod,
+            "price_history": detail_data.get("price_history", []),
+            "related_deals": related_deals,
+            "categories": UNIVERSAL_CATEGORIES
+        }, cache_seconds=60)
+
+        if rendered_html.status_code == 200 and hasattr(rendered_html, "body"):
+            await set_cached_ssr_html(ssr_key, rendered_html.body.decode("utf-8"), ttl=60)
+        return rendered_html
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error rendering deal detail for {product_id}: {e}", exc_info=True)
+        return render_consumer_template("consumer/404.html", request, {
+            "active_page": "deals",
+            "categories": UNIVERSAL_CATEGORIES
+        }, cache_seconds=60, status_code=404)
+
+
 def render_admin_login_template(request: Request, context: dict, status_code: int = 200):
     context["request"] = request
     try:
@@ -3075,8 +3293,11 @@ def _clean_log_line(raw_line: str, source: str) -> dict | None:
         return None
     # Redact credentials and tokens
     line = re.sub(r'bot\d+:[A-Za-z0-9_-]+', 'bot***[REDACTED]***', line)
-    line = re.sub(r'postgres://[^@]+@', 'postgres://***:***@', line)
-    line = re.sub(r'postgresql://[^@]+@', 'postgresql://***:***@', line)
+    line = re.sub(r'postgres://[^@]+@', 'postgres://***[REDACTED]***@', line)
+    line = re.sub(r'postgresql://[^@]+@', 'postgresql://***[REDACTED]***@', line)
+    line = re.sub(r'((?:key|admin_key|token|auth_token|password|secret)=)[^&\s]+', r'\1***[REDACTED]***', line, flags=re.IGNORECASE)
+    line = re.sub(r'Bearer\s+[A-Za-z0-9\._-]+', 'Bearer ***[REDACTED]***', line, flags=re.IGNORECASE)
+    line = re.sub(r'bb_sec_[a-f0-9]+', 'bb_sec_***[REDACTED]***', line)
 
     level = "INFO"
     if "ERROR" in line or "CRITICAL" in line:

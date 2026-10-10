@@ -4,11 +4,13 @@
 {% set discount_pct = ((((mrp - cp) / mrp) * 100)|round_int) if (has_discount and mrp > 0) else (deal.discount_pct or deal.discount_percent or deal.savings_pct or 0) %}
 {% set savings = (mrp - cp) if has_discount else (deal.savings_amount or 0) %}
 {% set platform = (deal.platform or 'store')|lower %}
-{% set buy_url = deal.affiliate_url or '' %}
 {% set pid = deal.product_id or deal.id or 0 %}
+{% set buy_url = deal.affiliate_url or (('/api/deal/redirect/' ~ pid) if (pid and pid > 0) else '') %}
 {% set rating = deal.rating or 0 %}
 {% set reviews = deal.review_count or 0 %}
 {% set is_atl = deal.is_atl or (deal.all_time_low and cp <= (deal.all_time_low * 1.02)) %}
+
+{% set deal_url = ('/deal/' ~ pid) if (pid and pid > 0) else (buy_url if buy_url else '#') %}
 
 <div data-deal-id="{{ pid }}" class="bg-white border border-slate-200/90 hover:border-indigo-400 rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-md group relative">
     <div>
@@ -30,11 +32,13 @@
 
         <!-- Product Image Area -->
         <div class="relative w-full h-36 sm:h-44 rounded-xl bg-slate-50 p-2 flex items-center justify-center overflow-hidden border border-slate-100">
-            <img src="{{ deal.image_url or '/static/placeholder.svg' }}" 
-                 alt="{{ deal.title or '' }}" 
-                 class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                 loading="lazy"
-                 onerror="this.src='/static/placeholder.svg'" />
+            <a href="{{ deal_url }}" class="w-full h-full flex items-center justify-center">
+                <img src="{{ deal.image_url or '/static/placeholder.svg' }}" 
+                     alt="{{ deal.title or '' }}" 
+                     class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                     loading="lazy"
+                     onerror="this.src='/static/placeholder.svg'" />
+            </a>
             
             {% if is_atl %}
             <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded-md text-[9px] font-black bg-amber-500 text-slate-950 uppercase font-mono shadow-sm">
@@ -67,7 +71,7 @@
 
         <!-- Title -->
         <div class="mt-1.5">
-            <a href="{{ buy_url if buy_url else '#' }}" {% if buy_url %}target="_blank" rel="noopener noreferrer"{% endif %} 
+            <a href="{{ deal_url }}" 
                class="text-xs font-bold text-slate-900 hover:text-indigo-600 line-clamp-2 break-words transition leading-snug" 
                title="{{ deal.title or '' }}">
                 {{ deal.title or '' }}

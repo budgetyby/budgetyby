@@ -1551,7 +1551,8 @@ ${deal.title}
             } else {
                 list.innerHTML = deals.map(d => {
                     const storeCfg = STORES[d.platform?.toLowerCase()] || STORES.amazon;
-                    const link = `/deals?search=${encodeURIComponent(d.title || query)}`;
+                    const dealId = d.product_id || d.deal_id || d.id;
+                    const link = dealId ? `/deal/${dealId}` : `/deals?search=${encodeURIComponent(d.title || query)}`;
                     return `
                         <a href="${link}" class="p-2.5 flex items-center gap-3 hover:bg-slate-50 transition group">
                             <div class="w-10 h-10 rounded-lg bg-white p-1 flex items-center justify-center border border-slate-200 shrink-0">

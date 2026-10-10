@@ -110,6 +110,7 @@
                 <label for="dealsSortSelect" class="text-xs font-bold text-slate-500 hidden sm:inline">Sort By:</label>
                 <select id="dealsSortSelect" onchange="onSortChange(this.value)" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 transition font-bold">
                     <option value="latest" {% if not current_sort or current_sort == 'latest' %}selected{% endif %}>⚡ Recently Added</option>
+                    <option value="score_desc" {% if current_sort == 'score_desc' or current_sort == 'best' %}selected{% endif %}>🎯 Best Deal Quality</option>
                     <option value="discount_desc" {% if current_sort == 'discount_desc' %}selected{% endif %}>🔥 Highest Discount %</option>
                     <option value="price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>💰 Price: Low to High</option>
                     <option value="price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>💎 Price: High to Low</option>

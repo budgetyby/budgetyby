@@ -74,7 +74,37 @@
         </div>
     </section>
 
-    <!-- ── 2. Just Dropped 🔥 Live Fresh Deals Carousel ───────────────────── -->
+    <!-- ── 2. Best Deals Today 🎯 Ranked by Shopper Deal Quality Score ──────── -->
+    {% if best_deals and best_deals.deals %}
+    <section class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full pt-3 pb-3">
+        <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+                <span class="text-xl">🎯</span>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-base sm:text-lg font-black text-slate-900">Best Deals Today</h2>
+                        <span class="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-black font-mono">TOP VALUE</span>
+                    </div>
+                    <p class="text-xs text-slate-500">Highest shopper quality scores based on real discount, price history & ratings</p>
+                </div>
+            </div>
+            <a href="/deals?sort_by=score_desc" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 shrink-0 bg-indigo-50 px-2.5 py-1 rounded-xl transition">
+                <span>View All Best</span>
+                <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+        </div>
+
+        <div id="bestDealsContainer" class="flex gap-3 overflow-x-auto pb-3 pt-1 no-scrollbar scroll-smooth">
+            {% for deal in best_deals.deals %}
+            <div class="w-56 sm:w-64 shrink-0">
+                {% include "consumer/partials/product_card.html" %}
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- ── 3. Just Dropped 🔥 Live Fresh Deals Carousel ───────────────────── -->
     {% if just_dropped and just_dropped.deals %}
     <section class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full pt-3 pb-3">
         <div class="flex items-center justify-between mb-3">
@@ -381,98 +411,4 @@
     </section>
 
 </main>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-    (function startHomeLiveAutoPolling() {
-        setInterval(async () => {
-            if (document.hidden) return;
-            const controller = new AbortController();
-            const fetchTimeout = setTimeout(() => controller.abort(), 8000);
-            try {
-                const res = await fetch('/api/public/deals?sort_by=latest&limit=10', { signal: controller.signal });
-                clearTimeout(fetchTimeout);
-                if (!res.ok) return;
-                const data = await res.json();
-                const deals = data.deals || data.items || [];
-                if (!deals || deals.length === 0) return;
-                
-                const container = document.getElementById('justDroppedContainer');
-                if (!container) return;
-
-                const html = deals.map((deal, dealIndex) => {
-                    const store = (deal.platform || 'amazon').toLowerCase();
-                    const storeCfg = STORES[store] || STORES.amazon;
-                    const cp = deal.current_price || deal.deal_price || 0;
-                    const mrp = deal.mrp || 0;
-                    const hasDiscount = mrp > cp;
-                    const discPct = hasDiscount ? Math.round(((mrp - cp) / mrp) * 100) : Math.round(deal.discount_percent || 0);
-                    const savings = hasDiscount ? mrp - cp : 0;
-                    const safeTitle = escapeHtml(deal.title);
-                    const dealLink = deal.affiliate_url || '';
-                    const pid = deal.product_id || deal.id || 0;
-                    const rating = deal.rating || 0;
-                    const reviews = deal.review_count || 0;
-                    const isAtl = deal.is_atl || (deal.all_time_low && cp <= (deal.all_time_low * 1.02));
-
-                    return `
-                    <div class="w-56 sm:w-64 shrink-0">
-                        <div data-deal-id="${pid}" class="bg-white border border-slate-200/90 hover:border-indigo-400 rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-md group relative">
-                            <div>
-                                <div class="flex items-center justify-between gap-1.5 mb-2">
-                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${storeCfg.badge}">
-                                        ${storeCfg.name}
-                                    </span>
-                                    ${isAtl ? `<span class="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-amber-50 text-amber-800 border border-amber-200 uppercase font-mono">👑 ATL</span>` : (discPct >= 60 ? `<span class="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-rose-50 text-rose-700 border border-rose-200 uppercase font-mono">🔥 LOOT</span>` : '')}
-                                </div>
-                                <div class="relative w-full h-36 sm:h-44 rounded-xl bg-slate-50 p-2 flex items-center justify-center overflow-hidden border border-slate-100">
-                                    <img src="${deal.image_url || '/static/placeholder.svg'}" alt="${safeTitle}" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" loading="${dealIndex < 6 ? 'eager' : 'lazy'}" onerror="this.src='/static/placeholder.svg'" />
-                                    ${isAtl ? `<span class="absolute top-2 left-2 px-1.5 py-0.5 rounded-md text-[9px] font-black bg-amber-500 text-slate-950 uppercase font-mono shadow-sm">🏆 ATL</span>` : (discPct >= 60 ? `<span class="absolute top-2 left-2 px-1.5 py-0.5 rounded-md text-[9px] font-black bg-rose-600 text-white uppercase font-mono shadow-sm">🔥 LOOT</span>` : '')}
-                                    <button onclick="handleHomeWatchlist(this, ${pid})" class="absolute top-2 right-2 p-1.5 rounded-xl bg-white/90 backdrop-blur-md border border-slate-200 text-slate-400 hover:text-rose-500 transition shadow-sm" title="Save to Watchlist">
-                                        <i data-lucide="heart" class="w-3.5 h-3.5"></i>
-                                    </button>
-                                </div>
-                                <div class="mt-2 flex items-center justify-between text-[10px] text-slate-500">
-                                    ${rating > 0 ? `<span class="flex items-center gap-1 font-bold text-amber-600 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200/60"><span>★</span> ${rating.toFixed(1)} ${reviews > 0 ? `<span class="text-slate-400 font-normal">(${reviews})</span>` : ''}</span>` : `<span class="text-slate-400 text-[10px] font-medium">Live Verified</span>`}
-                                </div>
-                                <div class="mt-1.5 text-xs font-bold text-slate-900 line-clamp-2 leading-snug">${safeTitle}</div>
-                            </div>
-                            <div class="mt-3 pt-2.5 border-t border-slate-100">
-                                <div class="flex items-baseline justify-between gap-1 mb-2">
-                                    <div class="flex items-baseline gap-1.5 flex-wrap">
-                                        <span class="text-base sm:text-lg font-black text-slate-900 font-mono">${formatINR(cp)}</span>
-                                        ${hasDiscount ? `<span class="text-xs text-slate-400 line-through font-mono">${formatINR(mrp)}</span>` : ''}
-                                        ${discPct > 0 ? `<span class="text-xs font-black text-rose-600 font-mono">(${discPct}% OFF)</span>` : ''}
-                                    </div>
-                                    ${savings > 0 ? `<div class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-mono shrink-0">Save ${formatINR(savings)}</div>` : ''}
-                                </div>
-                                ${dealLink ? `
-                                <a href="${dealLink}" target="_blank" rel="noopener noreferrer" class="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 transition shadow-sm shadow-indigo-600/20">
-                                    <span>Buy on ${storeCfg.name}</span>
-                                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                                </a>` : `
-                                <div class="w-full py-2 px-3 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs flex items-center justify-center gap-1.5 cursor-not-allowed">
-                                    <span>Price Tracked on ${storeCfg.name}</span>
-                                </div>`}
-                                <div class="mt-2 flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-slate-50">
-                                    <span class="text-[10px] text-slate-400">Tracked Deal</span>
-                                    <button onclick="handleSendForReview(${pid}, '${safeTitle.replace(/'/g, "")}', '${dealLink}', ${cp})" class="font-semibold text-indigo-600 hover:text-indigo-800 transition flex items-center gap-1">
-                                        <i data-lucide="refresh-cw" class="w-3 h-3"></i>
-                                        <span>Request Price Check</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>`;
-                }).join('');
-
-                container.innerHTML = html;
-                if (window.lucide) lucide.createIcons();
-            } catch (e) {
-                clearTimeout(fetchTimeout);
-            }
-        }, 60000); // 60-second live auto-polling
-    })();
-</script>
 {% endblock %}
