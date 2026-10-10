@@ -336,10 +336,10 @@ class PostingQueue:
             plat_id = product.get("platform_id")
             dedup_key = pid if pid else (f"{platform}:{plat_id}" if plat_id else None)
 
-            # 1. Stale Deal Guard: Discard deals queued > 6 hours ago
+            # 1. Stale Deal Guard: Discard deals queued > 4 hours ago
             enqueued_at = deal_data.get("_enqueued_at")
-            if enqueued_at and (time.time() - enqueued_at > 21600):
-                logger.info(f"⌛ Queued deal #{pid or dedup_key} is > 6h old — skipping stale deal.")
+            if enqueued_at and (time.time() - enqueued_at > 14400):
+                logger.info(f"⌛ Queued deal #{pid or dedup_key} is > 4h old — skipping stale deal.")
                 return "SKIPPED"
 
             # 2. Cooldown Guard
@@ -358,6 +358,30 @@ class PostingQueue:
             score = float(deal_data.get("score") or 60)
             source_channel = deal_data.get("source_channel", "channel")
 
+            # 3. High-Backlog Fast Path: When queue > 30 items, auto-persist low-tier deals directly to DB without Telegram broadcast delay
+            savings_amount = max(0.0, mrp - price)
+            savings_pct = (savings_amount / mrp) if mrp > 0 else 0.0
+            current_backlog = self._queue.qsize()
+
+            if current_backlog > 30 and score < 50 and badge not in ["ATL", "LOOT", "MEGA_DROP"]:
+                try:
+                    await database.insert_deal({
+                        "product_id": pid,
+                        "platform": platform,
+                        "platform_id": plat_id,
+                        "deal_type": deal_type,
+                        "posted_price": price,
+                        "posted_mrp": mrp,
+                        "savings_amount": savings_amount,
+                        "savings_pct": savings_pct,
+                        "deal_score": score,
+                        "badge": badge,
+                        "source_channel": source_channel
+                    })
+                except Exception:
+                    pass
+                return "SKIPPED"
+
             url = product.get("affiliate_url") or product.get("product_url") or ""
             if platform == "amazon" and url:
                 url = _apply_amazon_tag(url)
@@ -371,8 +395,6 @@ class PostingQueue:
                 logger.warning(f"Delivery failed for queued #{pid or dedup_key} — will retry.")
                 return "FAILED"
 
-            savings_amount = max(0.0, mrp - price)
-            savings_pct = (savings_amount / mrp) if mrp > 0 else 0.0
             await database.insert_deal({
                 "product_id": pid,
                 "platform": platform,
@@ -409,15 +431,15 @@ class PostingQueue:
 
     async def _drain_overflow_queue(self):
         """
-        High-throughput fast-drain worker: posts queued deals at 3.2s cadence (~18.7 posts/min, safe under Telegram's 20/min limit).
-        Instantly skips (0.01s) duplicate, on-cooldown, stale, or invalid deals.
+        High-throughput fast-drain worker: posts queued deals at 2.8s cadence.
+        Instantly skips (0.01s) duplicate, on-cooldown, stale, or catalog-persisted deals.
         Runs until queue is fully empty.
         """
         if self._draining:
             return
         self._draining = True
         qsize = self._queue.qsize()
-        logger.info(f"⚡ [DRAIN START] {qsize} deals in queue — draining at 3.2s turbo cadence.")
+        logger.info(f"⚡ [DRAIN START] {qsize} deals in queue — draining at 2.8s turbo cadence.")
 
         bot_instance = self._get_bot()
         if not bot_instance:
@@ -435,7 +457,7 @@ class PostingQueue:
 
                 status = await self._post_queued_deal(deal_data, bot_instance)
                 if status == "POSTED":
-                    await asyncio.sleep(3.2)
+                    await asyncio.sleep(2.8)
                 elif status == "SKIPPED":
                     await asyncio.sleep(0.01)
                 else:
@@ -449,7 +471,7 @@ class PostingQueue:
                             logger.info(f"Deal #{pid} re-queued (attempt {retries}/2).")
                         except asyncio.QueueFull:
                             logger.warning("Queue full — dropping failed re-enqueue.")
-                        await asyncio.sleep(2.0)
+                        await asyncio.sleep(1.5)
                     else:
                         logger.warning(f"⚠️ Dropping deal #{pid} after {retries} failed attempts to unblock queue.")
                         self._queued_pids.discard(pid)

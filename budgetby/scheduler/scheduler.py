@@ -133,29 +133,33 @@ async def price_check_loop():
                                 if deal:
                                     score = score_deal(temp_prod, deal)
                                     badge = deal.get("badge", "PRICE_DROP")
-                                    deal_data = {
-                                        "product": {
-                                            "id": prod.get("id"),
-                                            "platform": platform,
-                                            "platform_id": pid,
-                                            "title": data.get("title") or prod.get("title") or f"{platform.title()} Product",
-                                            "url": prod["url"],
-                                            "product_url": prod["url"],
-                                            "affiliate_url": data.get("affiliate_url") or prod.get("affiliate_url", ""),
-                                            "image_url": data.get("image_url") or prod.get("image_url", ""),
-                                            "current_price": new_p,
-                                            "mrp": data.get("mrp") or prod.get("mrp") or new_p,
-                                            "rating": data.get("rating") or prod.get("rating", 0.0),
-                                            "review_count": data.get("review_count") or prod.get("review_count", 0),
-                                            "category": prod.get("category") or data.get("category") or "general",
-                                        },
-                                        "type": deal.get("deal_type", "price_drop"),
-                                        "badge": badge,
-                                        "score": score,
-                                        "source_channel": "scheduler"
-                                    }
-                                    # Add to Telegram Queue for immediate delivery
-                                    await get_posting_queue().queue_deal(deal_data)
+                                    discount_val = deal.get("discount_pct", 0)
+                                    # Only queue to Telegram if it meets deal threshold (Score >= 50 or discount >= 15% or ATL/LOOT)
+                                    # Otherwise it is already saved to DB/catalog for website shoppers without choking Telegram queue
+                                    if score >= 50 or discount_val >= 15 or badge in ["ATL", "LOOT", "MEGA_DROP"]:
+                                        deal_data = {
+                                            "product": {
+                                                "id": prod.get("id"),
+                                                "platform": platform,
+                                                "platform_id": pid,
+                                                "title": data.get("title") or prod.get("title") or f"{platform.title()} Product",
+                                                "url": prod["url"],
+                                                "product_url": prod["url"],
+                                                "affiliate_url": data.get("affiliate_url") or prod.get("affiliate_url", ""),
+                                                "image_url": data.get("image_url") or prod.get("image_url", ""),
+                                                "current_price": new_p,
+                                                "mrp": data.get("mrp") or prod.get("mrp") or new_p,
+                                                "rating": data.get("rating") or prod.get("rating", 0.0),
+                                                "review_count": data.get("review_count") or prod.get("review_count", 0),
+                                                "category": prod.get("category") or data.get("category") or "general",
+                                            },
+                                            "type": deal.get("deal_type", "price_drop"),
+                                            "badge": badge,
+                                            "score": score,
+                                            "source_channel": "scheduler"
+                                        }
+                                        # Add to Telegram Queue for immediate delivery
+                                        await get_posting_queue().queue_deal(deal_data)
 
                     except Exception as e:
                         logger.error(f"Error checking {prod['url']}: {e}")
